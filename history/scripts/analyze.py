@@ -531,11 +531,14 @@ def main():
     # Stratification thresholds and landmark labels (in ascending order
     # of severity). Sandy Hook MLLW = landmark NAVD88 + 2.42 ft.
     strata = [
-        ("curb",          "Curb at walkway",          6.58),
-        ("road_middle",   "Bay Ave road middle",      6.78),
-        ("intersection",  "Intersection center",      6.96),
-        ("lawn_step",     "Lawn / walkway step",      7.00),
-        ("porch_step",    "Front porch first step",   7.50),
+        ("lowest_road_corner", "Lowest road corner across Bay", 6.06),
+        ("gutter_walkway",     "Gutter / curb edge at walkway", 6.20),
+        ("corner_grate",       "Storm grate at Bay+Central",    6.33),
+        ("curb",               "Curb at walkway",               6.58),
+        ("road_middle",        "Bay Ave road middle",           6.78),
+        ("intersection",       "Intersection center",           6.96),
+        ("lawn_step",          "Lawn / walkway step",           7.00),
+        ("porch_step",         "Front porch first step",        7.50),
     ]
     rows = []
     for key, label, thresh in strata:

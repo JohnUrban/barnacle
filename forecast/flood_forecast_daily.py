@@ -40,6 +40,7 @@ LOCAL_ENHANCEMENT_FT = 0.40        # Sandy Hook obs -> 342 Bay water level
 # (= +2.82 datum offset − 0.40 local enhancement).
 LOWEST_ROAD_CORNER = 3.64   # corner across Bay (early-warning sentinel) (SH 6.06)
 GUTTER_WALKWAY     = 3.78   # street-curb interface at walkway          (SH 6.20)
+CORNER_GRATE       = 3.91   # Bay+Central storm grate; Pathway B onset  (SH 6.33)
 CURB_TOP           = 4.16   # Bay Ave side at walkway                   (SH 6.58)
 ROAD_MIDDLE        = 4.36   # Bay Ave centerline at user's spot         (SH 6.78)
 INTERSECTION       = 4.54   # Bay+Central intersection (local high)     (SH 6.96)
@@ -56,6 +57,7 @@ FRONT_PORCH_STEP   = 5.08   # ~6" above lawn step, est. first step      (SH 7.50
 LANDMARKS = [
     ("lowest_road_corner", "Lowest road corner across Bay", LOWEST_ROAD_CORNER, 6.06),
     ("gutter_walkway",     "Gutter / curb edge at walkway", GUTTER_WALKWAY,     6.20),
+    ("corner_grate",       "Storm grate at Bay+Central",    CORNER_GRATE,       6.33),
     ("curb",               "Curb at walkway",               CURB_TOP,           6.58),
     ("road_middle",        "Bay Ave road middle",           ROAD_MIDDLE,        6.78),
     ("intersection",       "Intersection center",           INTERSECTION,       6.96),
@@ -235,6 +237,7 @@ def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
         # gutter level. Same physics as at the curb.
         d["lowest_road_corner"] += rain_add
         d["gutter_walkway"]     += rain_add
+        d["corner_grate"]       += rain_add
         d["curb"]               += rain_add
         d["road_middle"]        += rain_add
         d["intersection"]       += max(0.0, rain_add - 2.0)  # crown sheds some
@@ -603,61 +606,125 @@ def _format_decimal(v):
     return f"{v:.2f}" if v < 1.0 else f"{v:.1f}"
 
 
-def _seasonal_context_table_text(ctx, today=None):
-    """Plain-text severity table: 5 strata × (typical days / MTD days).
-    Returns list of strings (the table rows + caption); empty if no data."""
-    today = today or dt.date.today()
-    strata = (ctx or {}).get("strata") or []
-    if not strata:
-        return []
-    mtd = (ctx or {}).get("mtd") or {}
+# Per-landmark short role tags used in the unified table. Blank means
+# the landmark name itself is descriptive enough.
+LANDMARK_ROLES = {
+    "lowest_road_corner": "sentinel",
+    "gutter_walkway":     "parking",
+    "corner_grate":       "Pathway B",
+    "curb":               "flood onset",
+}
+
+
+def _unified_landmark_rows(forecast):
+    """Build per-landmark row dicts used by both the text and HTML renderers.
+    Each row has: key, label, elev_navd88, sh_threshold, today_in,
+    avg_days, mtd_days, descriptor, role."""
+    d = forecast.get("depths_in") or {}
+    ctx = forecast.get("seasonal_context") or {}
+    strata = ctx.get("strata") or []
+    season_by_key = {s.get("landmark_key"): s for s in strata}
+    mtd = ctx.get("mtd") or {}
     mtd_by_thresh = {s["threshold_ft"]: s for s in (mtd.get("strata") or [])}
-    window = (strata[0].get("window") or "").split(" (")[0]
+
+    out = []
+    for key, label, elev, sh in LANDMARKS:
+        season = season_by_key.get(key, {})
+        mtd_row = mtd_by_thresh.get(sh, {})
+        out.append({
+            "key":         key,
+            "label":       label,
+            "elev_navd88": elev,
+            "sh":          sh,
+            "today_in":    d.get(key, 0.0),
+            "avg_days":    season.get("avg_days"),
+            "mtd_days":    mtd_row.get("n_flood_days", 0),
+            "descriptor":  season.get("descriptor", ""),
+            "role":        LANDMARK_ROLES.get(key, ""),
+        })
+    return out
+
+
+def _unified_landmark_table_text(forecast, today=None):
+    """Plain-text unified table: per-landmark prediction + history.
+    Returns list of strings (header + rows + footnote)."""
+    today = today or dt.date.today()
+    rows = _unified_landmark_rows(forecast)
+    if not rows:
+        return []
     month_name = today.strftime("%B")
-    lines = [f"Flood days by severity, {month_name} typical (avg over {window}) "
-             f"vs month-to-date:"]
-    # Header
-    lines.append(f"  {'Landmark':<26}{'typical':>10}{'MTD':>8}")
-    for s in strata:
-        days_typ = s.get("avg_days", 0.0)
-        days_mtd = mtd_by_thresh.get(s["threshold_ft"], {}).get("n_flood_days", 0)
+    # Window string from any seasonality row that has it
+    ctx = forecast.get("seasonal_context") or {}
+    strata = ctx.get("strata") or []
+    window = (strata[0].get("window").split(" (")[0]
+              if strata and strata[0].get("window") else "1996-2025")
+
+    lines = [f"Landmarks at 342 Bay Ave (worst-case tide; {month_name} typical "
+             f"avg over {window}, MTD = this month):"]
+    # Column widths chosen to keep the table compact but readable.
+    lines.append(f"   {'Landmark':<42}{'NAVD':>5}{'Today':>8}{'Typ':>7}{'MTD':>5}  Notes")
+    for r in rows:
+        label_with_role = r["label"]
+        if r["role"]:
+            label_with_role = f"{r['label']} ({r['role']})"
+        label_with_role = label_with_role[:42]
+        avg_str = _format_decimal(r["avg_days"]) if r["avg_days"] is not None else "—"
+        marker = "★" if r["today_in"] > 0 else " "
         lines.append(
-            f"  {s.get('landmark_label','')[:26]:<26}"
-            f"{_format_decimal(days_typ):>10}{days_mtd:>8}"
+            f"  {marker} {label_with_role:<42}"
+            f"{r['elev_navd88']:>5.2f}"
+            f"{r['today_in']:>7.1f}\""
+            f"{avg_str:>7}"
+            f"{r['mtd_days']:>5}"
+            f"  {r['descriptor']}"
         )
+    lines.append("  (★ = water predicted today at this landmark. Typ / MTD "
+                 "in days/month at the landmark threshold.)")
     return lines
 
 
-def _seasonal_context_table_html(ctx, today=None):
-    """HTML severity table — same content as _seasonal_context_table_text
-    but as a <table>. Empty list if no data."""
+def _unified_landmark_table_html(forecast, today=None):
+    """HTML version of the unified landmark table. Returns single HTML
+    string (table + caption). Empty if no rows."""
     today = today or dt.date.today()
-    strata = (ctx or {}).get("strata") or []
-    if not strata:
-        return []
-    mtd = (ctx or {}).get("mtd") or {}
-    mtd_by_thresh = {s["threshold_ft"]: s for s in (mtd.get("strata") or [])}
-    window = (strata[0].get("window") or "").split(" (")[0]
+    rows = _unified_landmark_rows(forecast)
+    if not rows:
+        return ""
     month_name = today.strftime("%B")
-    rows = ""
-    for s in strata:
-        days_typ = s.get("avg_days", 0.0)
-        days_mtd = mtd_by_thresh.get(s["threshold_ft"], {}).get("n_flood_days", 0)
-        desc = s.get("descriptor", "")
-        rows += (
-            f'<tr><td>{s.get("landmark_label","")}</td>'
-            f'<td align="right">{_format_decimal(days_typ)}</td>'
-            f'<td align="right">{days_mtd}</td>'
-            f'<td class="note">{desc}</td></tr>'
+    ctx = forecast.get("seasonal_context") or {}
+    strata = ctx.get("strata") or []
+    window = (strata[0].get("window").split(" (")[0]
+              if strata and strata[0].get("window") else "1996-2025")
+
+    row_html = ""
+    for r in rows:
+        avg_str = _format_decimal(r["avg_days"]) if r["avg_days"] is not None else "—"
+        marker = "★ " if r["today_in"] > 0 else ""
+        role_html = f" <span class=\"role\">({r['role']})</span>" if r["role"] else ""
+        bold_open, bold_close = ("<b>", "</b>") if r["today_in"] > 0 else ("", "")
+        row_html += (
+            f"<tr>"
+            f"<td>{marker}{r['label']}{role_html}</td>"
+            f"<td>{r['elev_navd88']:.2f}</td>"
+            f"<td>{bold_open}{r['today_in']:.1f}&Prime;{bold_close}</td>"
+            f"<td>{avg_str}</td>"
+            f"<td>{r['mtd_days']}</td>"
+            f"<td class=\"note\">{r['descriptor']}</td>"
+            f"</tr>"
         )
-    return [(
-        f'<p class="context">Flood days by severity, '
-        f'<b>{month_name} typical</b> (avg over {window}) vs '
-        f'<b>month-to-date</b>:</p>'
-        f'<table class="severity-table"><thead><tr>'
-        f'<th>Landmark</th><th>typical</th><th>MTD</th><th></th>'
-        f'</tr></thead><tbody>{rows}</tbody></table>'
-    )]
+    return (
+        f'<p class="context">Today\'s prediction vs <b>{month_name} typical</b> '
+        f'(avg flood days/month over {window}) and <b>month-to-date</b>:</p>'
+        f'<table class="landmark-table">'
+        f'<thead><tr>'
+        f'<th>Landmark</th><th>NAVD88</th><th>Today</th>'
+        f'<th>Typ</th><th>MTD</th><th>Notes</th>'
+        f'</tr></thead><tbody>'
+        f'{row_html}'
+        f'</tbody></table>'
+        f'<p class="note">★ = water predicted today at this landmark. '
+        f'Typ / MTD in days/month at the landmark threshold.</p>'
+    )
 
 
 def _near_miss_text(mtd):
@@ -685,18 +752,30 @@ def _near_miss_text(mtd):
             f"{when} — below your curb but within 0.1 ft of it.")
 
 
-def _seasonal_context_lines_text(ctx, today=None):
-    """Return list of plain-text lines for the email Context section."""
+def _landmarks_footer_text(forecast, today=None):
+    """Plain-text footer lines below the unified landmark table: month
+    descriptor at the curb, peak so far this month, near-miss, SLR line.
+    Each piece independent; returns list of strings (possibly empty)."""
     today = today or dt.date.today()
-    lines = list(_seasonal_context_table_text(ctx, today))
-    mtd = (ctx or {}).get("mtd")
+    ctx = forecast.get("seasonal_context") or {}
+    strata = ctx.get("strata") or []
+    month_name = today.strftime("%B")
+    lines = []
+    curb_row = next((s for s in strata if s.get("landmark_key") == "curb"), None)
+    if curb_row:
+        desc = curb_row.get("descriptor", "")
+        if desc in ("wettest month", "quietest month"):
+            lines.append(f"{month_name} is the {desc} of the year at the curb threshold.")
+        elif desc:
+            lines.append(f"{month_name} is a {desc} month at the curb threshold.")
+    mtd = ctx.get("mtd")
     if mtd and mtd.get("peak_obs_mllw") is not None:
         lines.append(f"Peak Sandy Hook so far this month: "
                      f"{mtd['peak_obs_mllw']:.2f} ft MLLW.")
     nm = _near_miss_text(mtd)
     if nm:
         lines.append(nm)
-    if ctx and ctx.get("show_slr_line"):
+    if ctx.get("show_slr_line"):
         slr = ctx["slr_ft_since_1990"]
         peak = ctx["slr_today_peak_ft"]
         ref_year = ctx["slr_reference_year"]
@@ -708,56 +787,109 @@ def _seasonal_context_lines_text(ctx, today=None):
     return lines
 
 
-def _seasonal_context_lines_html(ctx, today=None):
-    """Return list of HTML fragments for the Context block: severity table
-    + optional peak-so-far + optional SLR-conditional line."""
+def _landmarks_footer_html(forecast, today=None):
+    """HTML version. Returns list of <p> fragments."""
+    return [f'<p class="context">{line}</p>'
+            for line in _landmarks_footer_text(forecast, today)]
+
+
+def _spot_check_block_text(forecast, today=None):
+    """Plain-text spot-check prompt with suggested observation times.
+    Always emitted (every email, including DRY); the user requested this
+    to build the calibration habit. References the landmark table above
+    rather than duplicating the ladder."""
     today = today or dt.date.today()
-    out = list(_seasonal_context_table_html(ctx, today))
-    mtd = (ctx or {}).get("mtd")
-    if mtd and mtd.get("peak_obs_mllw") is not None:
-        out.append(
-            f'<p class="context">Peak Sandy Hook so far this month: '
-            f'<b>{mtd["peak_obs_mllw"]:.2f} ft MLLW</b>.</p>'
-        )
-    nm = _near_miss_text(mtd)
-    if nm:
-        out.append(f'<p class="context">{nm}</p>')
-    if ctx and ctx.get("show_slr_line"):
-        slr = ctx["slr_ft_since_1990"]
-        peak = ctx["slr_today_peak_ft"]
-        ref_year = ctx["slr_reference_year"]
-        out.append(
-            f'<p class="context">Sea level at Sandy Hook is '
-            f'~{slr:.2f} ft higher than in {ref_year}. '
-            f"Today's high tide of {peak:.2f} ft wouldn't have crossed your "
-            f"curb in {ref_year}; today it does.</p>"
-        )
-    return out
+    all_tides = forecast.get("all_tides") or []
+    if not all_tides:
+        return []
+    peak_t = forecast.get("peak_time_local")
+    items = []
+    for t in all_tides:
+        when = t["time"][-5:]  # HH:MM
+        role = "peak" if t["time"] == peak_t else "lower high"
+        items.append(f"{when} ({role})")
+    times_str = ", ".join(items)
+    return [
+        "Spot-check (help calibrate the model):",
+        f"  Suggested observation times today: {times_str}",
+        "  Take a peek around one of those times — even 'no water at all'",
+        "  is useful. Use the landmark table above (lowest to highest) to",
+        "  describe what you saw. Report back with: time you looked,",
+        "  highest landmark with water (or 'no water'), and rough depth",
+        "  above it. Goes into data/labeled_observations.csv.",
+    ]
 
 
-def _seasonal_context_block_text(forecast):
-    """Plain-text block for the email: 'Context: ...' heading + lines, or
-    empty string if no context lines."""
-    ctx = forecast.get("seasonal_context") or {}
-    lines = _seasonal_context_lines_text(ctx)
-    if not lines:
+def _spot_check_block_html(forecast, today=None):
+    """HTML version of the spot-check prompt."""
+    today = today or dt.date.today()
+    all_tides = forecast.get("all_tides") or []
+    if not all_tides:
         return ""
-    return "Context:\n" + "\n".join("  " + line for line in lines) + "\n\n"
+    peak_t = forecast.get("peak_time_local")
+    items = []
+    for t in all_tides:
+        when = t["time"][-5:]
+        role = "peak" if t["time"] == peak_t else "lower high"
+        items.append(f"{when} ({role})")
+    times_str = ", ".join(items)
+    return (
+        '<section class="spot-check">'
+        '<h2>Spot-check (help calibrate the model)</h2>'
+        f'<p>Suggested observation times today: <b>{times_str}</b>.</p>'
+        '<p>Take a peek around one of those times — even '
+        '&ldquo;no water at all&rdquo; is useful. Use the landmark table '
+        'above (lowest to highest) to describe what you saw. Report back '
+        'with: time you looked, highest landmark with water (or '
+        '&ldquo;no water&rdquo;), and rough depth above it. '
+        'Goes into <code>data/labeled_observations.csv</code>.</p>'
+        '</section>'
+    )
 
 
-def _seasonal_context_block_html(forecast, wrapper="section"):
-    """HTML block for the email or page. Returns empty string if no lines."""
-    ctx = forecast.get("seasonal_context") or {}
-    lines = _seasonal_context_lines_html(ctx)
-    if not lines:
+def _landmarks_section_text(forecast, today=None):
+    """Combined Landmarks section: unified table + footer + spot-check."""
+    parts = []
+    table_lines = _unified_landmark_table_text(forecast, today)
+    if table_lines:
+        parts.extend(table_lines)
+    footer = _landmarks_footer_text(forecast, today)
+    if footer:
+        if parts:
+            parts.append("")  # blank line
+        parts.extend(footer)
+    spot = _spot_check_block_text(forecast, today)
+    if spot:
+        if parts:
+            parts.append("")
+        parts.extend(spot)
+    if not parts:
         return ""
-    if wrapper == "section":
-        return ('<section class="context">'
-                '<h2>Context</h2>' + "".join(lines) + "</section>")
-    # inline (for the email)
-    return ('<h3>Context</h3>'
+    return "\n".join(parts) + "\n"
+
+
+def _landmarks_section_html(forecast, today=None, wrapper="section"):
+    """Combined Landmarks section (HTML)."""
+    table_html = _unified_landmark_table_html(forecast, today)
+    footer_html = "".join(_landmarks_footer_html(forecast, today))
+    if not table_html and not footer_html:
+        body = ""
+    else:
+        body = table_html + footer_html
+    if not body:
+        landmarks_section = ""
+    elif wrapper == "section":
+        landmarks_section = (
+            '<section class="landmarks">'
+            '<h2>Landmarks today</h2>' + body + '</section>'
+        )
+    else:
+        landmarks_section = (
+            '<h3>Landmarks today</h3>'
             '<div style="background:white;padding:8px;border-radius:4px">'
-            + "".join(lines) + "</div>")
+            + body + '</div>'
+        )
+    return landmarks_section + _spot_check_block_html(forecast, today)
 
 
 # ============================================================
@@ -804,22 +936,14 @@ Worst case detail:
   72h mean temp:   {forecast['temp_avg_72h_f']:.1f} F
   Cold lockout:    {'YES (drains likely ice-locked)' if forecast['cold_lockout'] else 'no'}
 
-PREDICTED DEPTH at worst-case tide (inches above each landmark at 342 Bay Ave):
-  Lowest road corner across Bay (3.64 NAVD88):    {d['lowest_road_corner']:5.1f} in  (early-warning sentinel)
-  Gutter / curb edge at walkway (3.78):           {d['gutter_walkway']:5.1f} in  (parking caution)
-  Curb at walkway (4.16):                         {d['curb']:5.1f} in  (flood onset at property)
-  Bay Ave road middle (4.36):                     {d['road_middle']:5.1f} in
-  Intersection center (4.54):                     {d['intersection']:5.1f} in
-  Lawn / walkway step (4.58):                     {d['lawn_step']:5.1f} in
-  Front porch first step (5.08):                  {d['porch_step']:5.1f} in
-
+{_landmarks_section_text(forecast)}
 Regime: {regime}
 
-{_seasonal_context_block_text(forecast)}\
 Reference scale (Sandy Hook obs MLLW):
   < 6.06  : dry (nothing visible from window)
   6.06    : lowest road corner across Bay first wets (visible from window)
   6.20    : water at gutter / curb edge — don't park there
+  6.33    : water emerges from corner storm grate (Pathway B active)
   6.58    : water at curb top — flood onset at property
   6.78    : Bay Ave road middle covered
   6.96    : intersection center submerged
@@ -871,20 +995,9 @@ Model: v0.5. Local enhancement +0.40 ft.
 <b>72h mean temp:</b> {forecast['temp_avg_72h_f']:.1f}&deg;F
 {'(COLD LOCKOUT ACTIVE)' if forecast['cold_lockout'] else ''}</p>
 
-<h3>Depth at 342 Bay Ave landmarks (worst-case tide)</h3>
-<table border="1" cellpadding="8" style="border-collapse:collapse;background:white">
-<tr><th align="left">Location</th><th>NAVD88</th><th>Depth (in)</th><th></th></tr>
-<tr><td>Lowest road corner across Bay</td><td>3.64</td><td>{d['lowest_road_corner']:.1f}</td><td style="font-size:11px;color:#666">early-warning sentinel</td></tr>
-<tr><td>Gutter / curb edge at walkway</td><td>3.78</td><td>{d['gutter_walkway']:.1f}</td><td style="font-size:11px;color:#666">parking caution</td></tr>
-<tr><td>Curb at walkway</td><td>4.16</td><td><b>{d['curb']:.1f}</b></td><td style="font-size:11px;color:#666">flood onset</td></tr>
-<tr><td>Bay Ave road middle</td><td>4.36</td><td>{d['road_middle']:.1f}</td><td></td></tr>
-<tr><td>Intersection center</td><td>4.54</td><td>{d['intersection']:.1f}</td><td></td></tr>
-<tr><td>Lawn/walkway step</td><td>4.58</td><td>{d['lawn_step']:.1f}</td><td></td></tr>
-<tr><td>Front porch first step</td><td>5.08</td><td>{d['porch_step']:.1f}</td><td></td></tr>
-</table>
+{_landmarks_section_html(forecast, wrapper='inline')}
 
 <p><b>Regime: {regime}</b></p>
-{_seasonal_context_block_html(forecast, wrapper='inline')}
 <p style="font-size:small;color:#666">
 Model v0.5. Local enhancement +0.40 ft. Rain term saturates at 8".
 Surge persistence is a rough proxy; for active coastal storms, check NWS
@@ -969,23 +1082,7 @@ def render_html_page(forecast):
     </dl>
   </section>
 
-  <section class="landmarks">
-    <h2>Predicted depth at landmarks (worst-case tide)</h2>
-    <table class="landmark-table">
-      <thead><tr><th>Location</th><th>NAVD88</th><th>Depth</th><th>Notes</th></tr></thead>
-      <tbody>
-        <tr><td>Lowest road corner across Bay</td><td>3.64 ft</td><td>{d['lowest_road_corner']:.1f}&Prime;</td><td class="note">early-warning sentinel</td></tr>
-        <tr><td>Gutter / curb edge at walkway</td><td>3.78 ft</td><td>{d['gutter_walkway']:.1f}&Prime;</td><td class="note">parking caution</td></tr>
-        <tr><td>Curb at walkway</td><td>4.16 ft</td><td><b>{d['curb']:.1f}&Prime;</b></td><td class="note">flood onset</td></tr>
-        <tr><td>Bay Ave road middle</td><td>4.36 ft</td><td>{d['road_middle']:.1f}&Prime;</td><td></td></tr>
-        <tr><td>Intersection center</td><td>4.54 ft</td><td>{d['intersection']:.1f}&Prime;</td><td></td></tr>
-        <tr><td>Lawn / walkway step</td><td>4.58 ft</td><td>{d['lawn_step']:.1f}&Prime;</td><td></td></tr>
-        <tr><td>Front porch first step</td><td>5.08 ft</td><td>{d['porch_step']:.1f}&Prime;</td><td></td></tr>
-      </tbody>
-    </table>
-  </section>
-
-  {_seasonal_context_block_html(forecast, wrapper='section')}
+  {_landmarks_section_html(forecast, wrapper='section')}
 
   <section class="reference">
     <h2>Reference scale</h2>
@@ -994,6 +1091,7 @@ def render_html_page(forecast):
       <li>&lt; 6.06 ft — dry, nothing visible from window</li>
       <li>6.06 ft — lowest road corner across Bay first wets (sentinel)</li>
       <li>6.20 ft — water at gutter / curb edge (don't park there)</li>
+      <li>6.33 ft — water emerges from corner storm grate (Pathway B)</li>
       <li>6.58 ft — water tops curb at walkway (flood onset at property)</li>
       <li>6.78 ft — Bay Ave road middle covered</li>
       <li>6.96 ft — intersection center submerged</li>
