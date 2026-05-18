@@ -232,8 +232,13 @@ def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
         d["road_middle"]  += rain_add
         d["intersection"] += max(0.0, rain_add - 2.0)  # crown sheds some
         d["lawn_step"]    += max(0.0, rain_add - 4.0)  # lawn sheds more
-        # Porch step gets no rain term added — by the time water reaches the
-        # porch from rain, the underlying tide is already dominant.
+        # Porch step receives rain via flash-flood from up-slope (Waterwitch
+        # Ave et al.) + river backup — same mechanism as the lawn step, not
+        # vertical pooling. Calibrated to Oct 30 2025: SH 7.57 + 1.45 in/hr
+        # rain → user observed water rising to the porch first step level.
+        # Tide+surge alone would give 0.8" at porch; rain_add - 4 = ~3.2"
+        # gets total to ~4", roughly consistent with the observation.
+        d["porch_step"]   += max(0.0, rain_add - 4.0)
 
     # Regime label
     if d["curb"] >= ALERT_SEVERE:
