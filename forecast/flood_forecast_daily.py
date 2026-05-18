@@ -479,7 +479,17 @@ def send_email(subject, text_body, html_body):
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = os.environ["SMTP_FROM"]
-    msg["To"] = os.environ["SMTP_TO"]
+
+    # SMTP_TO can be comma-separated. If multiple recipients, use Bcc to
+    # keep the recipient list private. If a single recipient, keep them in
+    # the To: header (clearer, no "undisclosed recipients" weirdness).
+    recipients = [r.strip() for r in os.environ["SMTP_TO"].split(",") if r.strip()]
+    if len(recipients) <= 1:
+        msg["To"] = recipients[0] if recipients else os.environ["SMTP_FROM"]
+    else:
+        msg["To"] = "Undisclosed recipients:;"
+        msg["Bcc"] = ", ".join(recipients)
+
     msg.set_content(text_body)
     msg.add_alternative(html_body, subtype="html")
 
