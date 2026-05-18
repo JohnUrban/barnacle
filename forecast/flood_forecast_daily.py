@@ -615,6 +615,64 @@ LANDMARK_ROLES = {
     "curb":               "flood onset",
 }
 
+# Short labels for the compact per-tide table. Full labels live in LANDMARKS.
+LANDMARK_SHORT_LABELS = {
+    "lowest_road_corner": "Lowest corner",
+    "gutter_walkway":     "Gutter",
+    "corner_grate":       "Storm grate",
+    "curb":               "Curb",
+    "road_middle":        "Road middle",
+    "intersection":       "Intersection",
+    "lawn_step":          "Lawn step",
+    "porch_step":         "Porch step",
+}
+
+
+def landmark_summary(depths, sandy_hook_peak_mllw):
+    """For a given forecast peak + per-landmark depths, return a compact
+    summary for the per-tide table:
+        (short_label, inches_above_landmark, relative_to_lowest_inches)
+    where:
+      - short_label = highest landmark exceeded by water level, OR the
+        lowest landmark (Lowest road corner) if no landmark is exceeded
+      - inches_above_landmark = depth at that landmark from depths dict
+        (positive); when no exceedance, negative inches below the lowest
+        landmark (computed from tide-only water level)
+      - relative_to_lowest = depth at the lowest_road_corner from depths
+        when water exceeds it; when below the lowest, the same negative
+        value as inches_above_landmark
+    Uses rain-augmented depths so the per-tide row stays consistent with
+    the lower unified landmark table."""
+    sorted_landmarks = sorted(LANDMARKS, key=lambda x: x[2])  # ascending elev
+    lowest_key, _, lowest_elev, _ = sorted_landmarks[0]
+
+    highest_exceeded = None
+    for key, _label, _elev, _sh in sorted_landmarks:
+        if depths.get(key, 0) > 0:
+            highest_exceeded = key
+
+    if highest_exceeded:
+        short = LANDMARK_SHORT_LABELS.get(highest_exceeded, highest_exceeded)
+        inches_above = depths[highest_exceeded]
+        relative = depths.get(lowest_key, 0.0)
+    else:
+        short = LANDMARK_SHORT_LABELS.get(lowest_key, lowest_key)
+        water_navd88 = sandy_hook_peak_mllw + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+        inches_above = (water_navd88 - lowest_elev) * 12  # negative
+        relative = inches_above
+    return short, inches_above, relative
+
+
+# Regime glossary for inline annotation and the email/HTML footer.
+REGIME_GLOSSARY = {
+    "dry":          "no visible water at any landmark",
+    "street":       "water on the street at sub-curb landmarks; curb still dry",
+    "light":        "water at curb (0–4 inches)",
+    "moderate":     "water at curb (4–8 inches)",
+    "severe":       "water past lawn step / bulkhead overtopping territory",
+    "cold_lockout": "drains likely ice-locked; flooding suppressed despite high tide",
+}
+
 
 def _unified_landmark_rows(forecast):
     """Build per-landmark row dicts used by both the text and HTML renderers.
@@ -902,22 +960,39 @@ def render_email(forecast):
     peak_ft = forecast["peak_forecast_observed_mllw"]
     all_tides = forecast.get("all_tides", [])
 
+    subject_short, subject_above, _ = landmark_summary(d, peak_ft)
     subject = (f"[342 Bay] {regime.upper()}: forecast {peak_ft:.2f} ft "
-               f"at {peak_t} (curb {d['curb']:.1f}\")")
+               f"at {peak_t} ({subject_short} {subject_above:+.1f}\")")
 
-    # Format the list of all high tides in next 24h
+    # Format the list of all high tides in next 24h.
+    # Columns: time, pred, surge, peak, highest-exceeded landmark, inches
+    # above that landmark, inches relative to the lowest landmark, regime.
     tide_lines = []
+    tide_lines.append(
+        f"   {'Time':<17}{'Pred':>6}{'Surge':>8}{'Peak':>7}  "
+        f"{'Landmark':<14}{'Above':>8}{'Rel':>8}  Regime"
+    )
     for t in all_tides:
         td = t["depths_in"]
-        marker = " *" if t["time"] == peak_t else "  "
+        short, above_in, rel_in = landmark_summary(td, t["forecast_peak_mllw"])
+        marker = "★" if t["time"] == peak_t else " "
         tide_lines.append(
-            f"{marker}{t['time']}    "
-            f"pred {t['predicted_mllw']:5.2f}  "
-            f"surge {t['surge_ft']:+5.2f}  "
-            f"= {t['forecast_peak_mllw']:5.2f} ft   "
-            f"{td['regime']:10s}  curb {td['curb']:4.1f}\""
+            f" {marker} {t['time']:<17}"
+            f"{t['predicted_mllw']:>6.2f}"
+            f"{t['surge_ft']:>+8.2f}"
+            f"{t['forecast_peak_mllw']:>7.2f}  "
+            f"{short:<14}"
+            f"{above_in:>+7.1f}\""
+            f"{rel_in:>+7.1f}\""
+            f"  {td['regime']}"
         )
     tide_block = "\n".join(tide_lines)
+    tide_block += (
+        "\n  Above = inches above the highest exceeded landmark (negative "
+        "= water below the lowest landmark).\n"
+        "  Rel = inches above the lowest landmark (lowest road corner, "
+        "3.64 NAVD88) — always."
+    )
 
     text = f"""\
 Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
@@ -937,7 +1012,7 @@ Worst case detail:
   Cold lockout:    {'YES (drains likely ice-locked)' if forecast['cold_lockout'] else 'no'}
 
 {_landmarks_section_text(forecast)}
-Regime: {regime}
+Regime: {regime} — {REGIME_GLOSSARY.get(regime, '')}
 
 Reference scale (Sandy Hook obs MLLW):
   < 6.06  : dry (nothing visible from window)
@@ -951,6 +1026,14 @@ Reference scale (Sandy Hook obs MLLW):
   7.50    : water at front porch first step
   7.9+    : severe (well past porch)
 
+Regime glossary (subject-line label, based on water depth at the curb):
+  dry          : {REGIME_GLOSSARY['dry']}
+  street       : {REGIME_GLOSSARY['street']}
+  light        : {REGIME_GLOSSARY['light']}
+  moderate     : {REGIME_GLOSSARY['moderate']}
+  severe       : {REGIME_GLOSSARY['severe']}
+  cold_lockout : {REGIME_GLOSSARY['cold_lockout']}
+
 Model: v0.5. Local enhancement +0.40 ft.
 """
 
@@ -958,19 +1041,22 @@ Model: v0.5. Local enhancement +0.40 ft.
           "moderate": "#ffe0b2", "severe": "#ffcdd2",
           "cold_lockout": "#eceff1"}.get(regime, "#fff")
 
-    # Build the all-tides rows for the HTML email
+    # Build the all-tides rows for the HTML email (new column layout)
     tide_rows_html = ""
     for t in all_tides:
         td = t["depths_in"]
         is_worst = (t["time"] == peak_t)
         row_style = "background:#ffffcc" if is_worst else ""
+        short, above_in, rel_in = landmark_summary(td, t["forecast_peak_mllw"])
         tide_rows_html += (
             f'<tr style="{row_style}">'
             f'<td>{t["time"]}</td>'
             f'<td align="right">{t["predicted_mllw"]:.2f}</td>'
             f'<td align="right">{t["surge_ft"]:+.2f}</td>'
             f'<td align="right"><b>{t["forecast_peak_mllw"]:.2f}</b></td>'
-            f'<td align="right">{td["curb"]:.1f}&Prime;</td>'
+            f'<td>{short}</td>'
+            f'<td align="right">{above_in:+.1f}&Prime;</td>'
+            f'<td align="right">{rel_in:+.1f}&Prime;</td>'
             f'<td>{td["regime"]}</td>'
             f'</tr>'
         )
@@ -982,10 +1068,12 @@ Model: v0.5. Local enhancement +0.40 ft.
 
 <h3>High tides in next 24h</h3>
 <table border="1" cellpadding="8" style="border-collapse:collapse;background:white">
-<tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Curb</th><th>Regime</th></tr>
+<tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th></tr>
 {tide_rows_html}
 </table>
-<p style="font-size:small;color:#666">Highlighted row = worst-case tide, headlined below.</p>
+<p style="font-size:small;color:#666">Highlighted row = worst-case tide, headlined below.
+<b>Above</b> = inches above the highest exceeded landmark (negative when water is below the lowest landmark).
+<b>Rel</b> = inches above the lowest landmark (lowest road corner across Bay, 3.64 NAVD88).</p>
 
 <p><b>Worst case:</b> {peak_t}<br>
 <b>Forecast peak (obs):</b> {peak_ft:.2f} ft MLLW Sandy Hook
@@ -997,7 +1085,18 @@ Model: v0.5. Local enhancement +0.40 ft.
 
 {_landmarks_section_html(forecast, wrapper='inline')}
 
-<p><b>Regime: {regime}</b></p>
+<p><b>Regime: {regime}</b> &mdash; <span style="color:#666;font-size:13px">{REGIME_GLOSSARY.get(regime, '')}</span></p>
+
+<h3>Regime glossary</h3>
+<table border="1" cellpadding="6" style="border-collapse:collapse;background:white;font-size:13px">
+<tr><td><b>dry</b></td><td>{REGIME_GLOSSARY['dry']}</td></tr>
+<tr><td><b>street</b></td><td>{REGIME_GLOSSARY['street']}</td></tr>
+<tr><td><b>light</b></td><td>{REGIME_GLOSSARY['light']}</td></tr>
+<tr><td><b>moderate</b></td><td>{REGIME_GLOSSARY['moderate']}</td></tr>
+<tr><td><b>severe</b></td><td>{REGIME_GLOSSARY['severe']}</td></tr>
+<tr><td><b>cold_lockout</b></td><td>{REGIME_GLOSSARY['cold_lockout']}</td></tr>
+</table>
+
 <p style="font-size:small;color:#666">
 Model v0.5. Local enhancement +0.40 ft. Rain term saturates at 8".
 Surge persistence is a rough proxy; for active coastal storms, check NWS
@@ -1021,19 +1120,22 @@ def render_html_page(forecast):
     cold = forecast["cold_lockout"]
     all_tides = forecast.get("all_tides", [])
 
-    # Build the all-tides table rows
+    # Build the all-tides table rows (new column layout)
     tide_rows = ""
     for t in all_tides:
         td = t["depths_in"]
         is_worst = (t["time"] == peak_t)
         row_class = ' class="worst-tide"' if is_worst else ""
+        short, above_in, rel_in = landmark_summary(td, t["forecast_peak_mllw"])
         tide_rows += (
             f'<tr{row_class}>'
             f'<td>{t["time"]}</td>'
             f'<td>{t["predicted_mllw"]:.2f}</td>'
             f'<td>{t["surge_ft"]:+.2f}</td>'
             f'<td><b>{t["forecast_peak_mllw"]:.2f}</b></td>'
-            f'<td>{td["curb"]:.1f}&Prime;</td>'
+            f'<td>{short}</td>'
+            f'<td>{above_in:+.1f}&Prime;</td>'
+            f'<td>{rel_in:+.1f}&Prime;</td>'
             f'<td>{td["regime"]}</td>'
             f'</tr>'
         )
@@ -1056,16 +1158,18 @@ def render_html_page(forecast):
 
   <section class="regime regime-{regime}">
     <div class="regime-label">{regime.upper()}</div>
-    <div class="regime-summary">Worst-case peak {peak_ft:.2f} ft MLLW at {peak_t}, curb depth {d['curb']:.1f}&Prime;</div>
+    <div class="regime-summary">{REGIME_GLOSSARY.get(regime, '')}. Worst-case peak {peak_ft:.2f} ft MLLW at {peak_t}.</div>
   </section>
 
   <section class="tides">
     <h2>High tides in next 24h</h2>
     <table class="tide-table">
-      <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Curb</th><th>Regime</th></tr></thead>
+      <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th></tr></thead>
       <tbody>{tide_rows}</tbody>
     </table>
-    <p class="note">Highlighted row is the worst case headlined above. Both high tides shown for situational awareness.</p>
+    <p class="note">Highlighted row is the worst case headlined above.
+       <b>Above</b> = inches above the highest exceeded landmark (negative if water below the lowest landmark).
+       <b>Rel</b> = inches above the lowest landmark (lowest road corner, 3.64 NAVD88) — always.</p>
   </section>
 
   <section class="forecast">
@@ -1098,6 +1202,19 @@ def render_html_page(forecast):
       <li>7.00 ft — water at lawn / walkway step</li>
       <li>7.50 ft — water at front porch first step</li>
       <li>&ge; 7.9 ft — severe (well past porch)</li>
+    </ul>
+  </section>
+
+  <section class="reference">
+    <h2>Regime glossary</h2>
+    <p>The single word in the subject line (DRY / STREET / LIGHT / MODERATE / SEVERE) summarises severity based on water depth at the curb.</p>
+    <ul>
+      <li><b>dry</b> — {REGIME_GLOSSARY['dry']}</li>
+      <li><b>street</b> — {REGIME_GLOSSARY['street']}</li>
+      <li><b>light</b> — {REGIME_GLOSSARY['light']}</li>
+      <li><b>moderate</b> — {REGIME_GLOSSARY['moderate']}</li>
+      <li><b>severe</b> — {REGIME_GLOSSARY['severe']}</li>
+      <li><b>cold_lockout</b> — {REGIME_GLOSSARY['cold_lockout']}</li>
     </ul>
   </section>
 
