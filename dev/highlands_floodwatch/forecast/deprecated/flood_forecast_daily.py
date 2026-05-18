@@ -1,0 +1,388 @@
+#!/usr/bin/env python3
+"""
+Daily flood forecast for 342 Bay Ave, Highlands NJ.
+
+Pulls Sandy Hook tide forecast, current observed water level (for surge),
+NWS rainfall and temperature forecast for Highlands, applies the v0.4
+flood model, and sends an email report.
+
+Run daily (cron, GitHub Actions, etc).
+
+Environment variables required:
+    SMTP_HOST    - e.g. smtp.gmail.com
+    SMTP_PORT    - e.g. 465
+    SMTP_USER    - login username
+    SMTP_PASS    - password or app-specific password
+    SMTP_FROM    - sender email address
+    SMTP_TO      - recipient(s), comma-separated
+
+Optional:
+    USER_AGENT   - identifies your script to NWS API (their requirement)
+"""
+
+import os
+import math
+import json
+import smtplib
+import datetime as dt
+from email.message import EmailMessage
+from urllib.request import Request, urlopen
+from urllib.parse import urlencode
+
+# ============================================================
+# v0.4 model parameters - update these as the model improves
+# ============================================================
+LOCAL_ENHANCEMENT_FT = 0.40        # Sandy Hook obs -> 342 Bay water level
+
+# Landmark elevations at 342 Bay Ave (NAVD88, ft)
+CURB_TOP     = 4.16   # Bay Ave side at walkway
+ROAD_MIDDLE  = 4.36   # Bay Ave centerline at user's spot
+INTERSECTION = 4.54   # Bay+Central intersection center (local high)
+LAWN_STEP    = 4.58   # estimated walkway step
+
+MLLW_TO_NAVD88_OFFSET = -2.82  # NAVD88 = MLLW + offset
+
+COLD_LOCKOUT_F = 32            # 72h mean below this = drains ice-locked
+RAIN_SATURATION_IN = 8.0       # max inches rain can add
+
+# Notification thresholds (inches at curb)
+ALERT_LIGHT    = 1.0
+ALERT_MODERATE = 4.0
+ALERT_SEVERE   = 8.0
+
+# Location
+HIGHLANDS_LAT = 40.4015
+HIGHLANDS_LON = -73.991
+NOAA_STATION = "8531680"  # Sandy Hook
+UA = os.environ.get("USER_AGENT", "highlands-flood-forecast (contact@example.com)")
+
+
+# ============================================================
+# Data fetchers
+# ============================================================
+def _get(url, params=None, headers=None):
+    if params:
+        url = url + "?" + urlencode(params)
+    req = Request(url, headers={"User-Agent": UA, **(headers or {})})
+    with urlopen(req, timeout=30) as r:
+        return json.loads(r.read())
+
+
+def fetch_predicted_tide_24h():
+    """Hourly astronomical tide prediction for next 24h (MLLW ft)."""
+    now = dt.datetime.now(dt.timezone.utc)
+    end = now + dt.timedelta(hours=24)
+    data = _get(
+        "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+        {
+            "station": NOAA_STATION,
+            "product": "predictions",
+            "datum": "MLLW",
+            "time_zone": "lst_ldt",
+            "units": "english",
+            "interval": "h",
+            "begin_date": now.strftime("%Y%m%d %H:%M"),
+            "end_date": end.strftime("%Y%m%d %H:%M"),
+            "format": "json",
+        },
+    )
+    return [(p["t"], float(p["v"])) for p in data.get("predictions", [])]
+
+
+def fetch_observed_recent():
+    """Past 6h of observed water level. Returns list of (time, value_mllw_ft)."""
+    end = dt.datetime.now(dt.timezone.utc)
+    start = end - dt.timedelta(hours=6)
+    data = _get(
+        "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+        {
+            "station": NOAA_STATION,
+            "product": "water_level",
+            "datum": "MLLW",
+            "time_zone": "lst_ldt",
+            "units": "english",
+            "begin_date": start.strftime("%Y%m%d %H:%M"),
+            "end_date": end.strftime("%Y%m%d %H:%M"),
+            "format": "json",
+        },
+    )
+    out = []
+    for d in data.get("data", []):
+        try:
+            out.append((d["t"], float(d["v"])))
+        except (ValueError, TypeError):
+            continue
+    return out
+
+
+def fetch_current_surge():
+    """Compute current surge (observed - predicted) in ft. None if unavailable."""
+    obs = fetch_observed_recent()
+    if not obs:
+        return None
+    # Get predicted at the same hour as the latest observation
+    last_obs_time, last_obs_val = obs[-1]
+    # Pull predicted for that hour
+    data = _get(
+        "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+        {
+            "station": NOAA_STATION,
+            "product": "predictions",
+            "datum": "MLLW",
+            "time_zone": "lst_ldt",
+            "units": "english",
+            "interval": "h",
+            "begin_date": last_obs_time.replace("-", "")[:8] + " " + last_obs_time[11:16],
+            "end_date":   last_obs_time.replace("-", "")[:8] + " " + last_obs_time[11:16],
+            "format": "json",
+        },
+    )
+    preds = data.get("predictions", [])
+    if not preds:
+        return None
+    return last_obs_val - float(preds[0]["v"])
+
+
+def fetch_temperature_72h_mean():
+    """Mean air temperature past 72h at Sandy Hook (deg F)."""
+    end = dt.datetime.now(dt.timezone.utc)
+    start = end - dt.timedelta(hours=72)
+    data = _get(
+        "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+        {
+            "station": NOAA_STATION,
+            "product": "air_temperature",
+            "time_zone": "gmt",
+            "units": "english",
+            "begin_date": start.strftime("%Y%m%d %H:%M"),
+            "end_date": end.strftime("%Y%m%d %H:%M"),
+            "format": "json",
+        },
+    )
+    temps = []
+    for d in data.get("data", []):
+        try:
+            temps.append(float(d["v"]))
+        except (ValueError, TypeError):
+            continue
+    if not temps:
+        return None
+    return sum(temps) / len(temps)
+
+
+def fetch_nws_hourly_forecast():
+    """NWS hourly forecast for Highlands. Returns list of dicts with
+    startTime, temperature, probabilityOfPrecipitation, etc."""
+    pts = _get(f"https://api.weather.gov/points/{HIGHLANDS_LAT},{HIGHLANDS_LON}")
+    forecast_url = pts["properties"]["forecastHourly"]
+    fc = _get(forecast_url)
+    return fc["properties"]["periods"]
+
+
+# ============================================================
+# Model
+# ============================================================
+def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
+                            cold_lockout=False):
+    """Apply v0.4 model. Returns dict of depths (inches) at each landmark."""
+    if cold_lockout and sandy_hook_peak_mllw < 8.0:
+        return {
+            "curb": 0.0, "road_middle": 0.0,
+            "intersection": 0.0, "lawn_step": 0.0,
+            "regime": "cold_lockout",
+        }
+
+    water_navd88 = sandy_hook_peak_mllw + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+
+    d = {
+        "curb":         max(0.0, water_navd88 - CURB_TOP)     * 12,
+        "road_middle":  max(0.0, water_navd88 - ROAD_MIDDLE)  * 12,
+        "intersection": max(0.0, water_navd88 - INTERSECTION) * 12,
+        "lawn_step":    max(0.0, water_navd88 - LAWN_STEP)    * 12,
+    }
+
+    if peak_rain_rate_in_hr > 0.1:
+        rain_add = RAIN_SATURATION_IN * math.tanh(peak_rain_rate_in_hr)
+        d["curb"]         += rain_add
+        d["road_middle"]  += rain_add
+        d["intersection"] += max(0.0, rain_add - 2.0)  # crown sheds some
+        d["lawn_step"]    += max(0.0, rain_add - 4.0)  # lawn sheds more
+
+    # Regime label
+    if d["curb"] >= ALERT_SEVERE:
+        regime = "severe"
+    elif d["curb"] >= ALERT_MODERATE:
+        regime = "moderate"
+    elif d["curb"] >= ALERT_LIGHT:
+        regime = "light"
+    else:
+        regime = "dry"
+    d["regime"] = regime
+    return d
+
+
+# ============================================================
+# Glue: build today's forecast
+# ============================================================
+def parse_iso(t):
+    return dt.datetime.fromisoformat(t.replace("Z", "+00:00"))
+
+
+def build_forecast():
+    """Pull all inputs, find next high tide, apply model, return dict."""
+    predicted = fetch_predicted_tide_24h()
+    if not predicted:
+        raise RuntimeError("No predicted tide data from NOAA")
+
+    # Find next high tide peak in next 24h (local maximum)
+    peak_time, peak_pred = max(predicted, key=lambda x: x[1])
+
+    # Surge: use current observed vs predicted
+    surge = fetch_current_surge()
+    if surge is None:
+        surge = 0.0
+
+    # Forecast observed = predicted + assumed-persistent surge
+    # (rough; true forecast requires NWS Coastal Flood Statement)
+    forecast_observed_peak = peak_pred + max(0.0, surge)
+
+    # Rainfall in window around peak tide
+    forecast_periods = fetch_nws_hourly_forecast()
+    peak_dt = parse_iso(peak_time + "-04:00" if "T" not in peak_time else peak_time)
+    # NOAA returns local time; NWS returns ISO. Find NWS periods within +/- 90 min of peak.
+    window_start = peak_dt - dt.timedelta(minutes=90)
+    window_end   = peak_dt + dt.timedelta(minutes=90)
+
+    peak_rain_rate = 0.0
+    for p in forecast_periods[:48]:
+        try:
+            t = parse_iso(p["startTime"])
+        except Exception:
+            continue
+        if window_start <= t <= window_end:
+            # NWS provides probabilityOfPrecipitation, not always a rate.
+            # Use 'quantitativePrecipitation' if present, otherwise estimate.
+            qp = p.get("quantitativePrecipitation") or {}
+            val = qp.get("value")
+            if val is not None:
+                peak_rain_rate = max(peak_rain_rate, float(val))
+
+    # Cold lockout
+    temp_avg = fetch_temperature_72h_mean()
+    cold = (temp_avg is not None and temp_avg < COLD_LOCKOUT_F)
+
+    depths = predict_landmark_depths(forecast_observed_peak, peak_rain_rate, cold)
+
+    return {
+        "peak_predicted_mllw": peak_pred,
+        "peak_forecast_observed_mllw": forecast_observed_peak,
+        "peak_time_local": peak_time,
+        "current_surge_ft": surge,
+        "peak_rain_rate_in_hr": peak_rain_rate,
+        "temp_avg_72h_f": temp_avg,
+        "cold_lockout": cold,
+        "depths_in": depths,
+    }
+
+
+# ============================================================
+# Email rendering and sending
+# ============================================================
+def render_email(forecast):
+    d = forecast["depths_in"]
+    regime = d["regime"]
+    peak_t = forecast["peak_time_local"]
+    peak_ft = forecast["peak_forecast_observed_mllw"]
+
+    subject = (f"[342 Bay] {regime.upper()}: forecast {peak_ft:.2f} ft "
+               f"at {peak_t} (curb {d['curb']:.1f}\")")
+
+    text = f"""\
+Highlands NJ flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
+
+Next high tide:  {peak_t}
+Predicted tide:  {forecast['peak_predicted_mllw']:.2f} ft MLLW (Sandy Hook)
+Current surge:   {forecast['current_surge_ft']:+.2f} ft
+Forecast peak:   {peak_ft:.2f} ft MLLW
+Rain in window:  {forecast['peak_rain_rate_in_hr']:.2f} in/hr peak
+72h mean temp:   {forecast['temp_avg_72h_f']:.1f} F
+Cold lockout:    {'YES (drains likely ice-locked)' if forecast['cold_lockout'] else 'no'}
+
+PREDICTED DEPTH (inches above each landmark at 342 Bay Ave):
+  Curb at walkway (4.16 NAVD88):    {d['curb']:5.1f} in
+  Bay Ave road middle (4.36):       {d['road_middle']:5.1f} in
+  Intersection center (4.54):       {d['intersection']:5.1f} in
+  Lawn / walkway step (4.58):       {d['lawn_step']:5.1f} in
+
+Regime: {regime}
+
+Reference scale (Sandy Hook obs MLLW):
+  < 6.6   : dry
+  6.6-6.9 : light (curb wet)
+  6.9-7.3 : moderate (road covered, intersection still dry)
+  7.3-7.6 : water at lawn step
+  7.6+    : severe
+
+Model: v0.4. Local enhancement +0.40 ft.
+"""
+
+    bg = {"dry": "#e8f5e9", "light": "#fff8e1", "moderate": "#ffe0b2",
+          "severe": "#ffcdd2", "cold_lockout": "#e3f2fd"}.get(regime, "#fff")
+
+    html = f"""\
+<html><body style="font-family:sans-serif;background:{bg};padding:20px">
+<h2>Bay Ave Flood Forecast</h2>
+<p><b>{dt.date.today().isoformat()}</b></p>
+<p><b>Next high tide:</b> {peak_t}<br>
+<b>Forecast peak (obs):</b> {peak_ft:.2f} ft MLLW Sandy Hook
+({forecast['peak_predicted_mllw']:.2f} predicted {forecast['current_surge_ft']:+.2f} surge)<br>
+<b>Rainfall in window:</b> {forecast['peak_rain_rate_in_hr']:.2f} in/hr peak<br>
+<b>72h mean temp:</b> {forecast['temp_avg_72h_f']:.1f}&deg;F
+{'(COLD LOCKOUT ACTIVE)' if forecast['cold_lockout'] else ''}</p>
+
+<h3>Predicted depth at 342 Bay Ave landmarks</h3>
+<table border="1" cellpadding="8" style="border-collapse:collapse;background:white">
+<tr><th align="left">Location</th><th>NAVD88</th><th>Depth (in)</th></tr>
+<tr><td>Curb at walkway</td><td>4.16</td><td><b>{d['curb']:.1f}</b></td></tr>
+<tr><td>Bay Ave road middle</td><td>4.36</td><td>{d['road_middle']:.1f}</td></tr>
+<tr><td>Intersection center</td><td>4.54</td><td>{d['intersection']:.1f}</td></tr>
+<tr><td>Lawn/walkway step</td><td>4.58</td><td>{d['lawn_step']:.1f}</td></tr>
+</table>
+
+<p><b>Regime: {regime}</b></p>
+<p style="font-size:small;color:#666">
+Model v0.4. Local enhancement +0.40 ft. Rain term saturates at 8".
+Surge persistence is a rough proxy; for active coastal storms, check NWS
+Coastal Flood Statement directly.
+</p>
+</body></html>"""
+    return subject, text, html
+
+
+def send_email(subject, text_body, html_body):
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = os.environ["SMTP_FROM"]
+    msg["To"] = os.environ["SMTP_TO"]
+    msg.set_content(text_body)
+    msg.add_alternative(html_body, subtype="html")
+
+    host = os.environ["SMTP_HOST"]
+    port = int(os.environ.get("SMTP_PORT", 465))
+    user = os.environ["SMTP_USER"]
+    pw   = os.environ["SMTP_PASS"]
+
+    with smtplib.SMTP_SSL(host, port) as s:
+        s.login(user, pw)
+        s.send_message(msg)
+
+
+def main():
+    forecast = build_forecast()
+    subject, text, html = render_email(forecast)
+    send_email(subject, text, html)
+    print(f"Sent: {subject}")
+
+
+if __name__ == "__main__":
+    main()

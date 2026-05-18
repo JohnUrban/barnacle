@@ -1,0 +1,1 @@
+( head -n 1 meteorological/2025-09.meteorological.tidesAndCurrentsNOAA.CO-OPS_8531680_met.csv ; for f in meteorological/* ; do awk 'NR>1' $f ; echo ; done ) > meteorological.tidesAndCurrentsNOAA.CO-OPS_8531680_met.csv

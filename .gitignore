@@ -1,1 +1,118 @@
-dev
+# =============================================================================
+# Barnacle .gitignore
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Secrets - never commit
+# -----------------------------------------------------------------------------
+.env
+.env.*
+*.pem
+*.key
+*credentials*
+*secret*
+run_forecast.sh           # this is the wrapper that holds SMTP password
+forecast/run_forecast.sh
+**/run_forecast.sh
+config.local.*
+*.local
+
+# -----------------------------------------------------------------------------
+# Python
+# -----------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.python-version
+
+# -----------------------------------------------------------------------------
+# OS metadata
+# -----------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# -----------------------------------------------------------------------------
+# Editor / IDE
+# -----------------------------------------------------------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.*.un~
+*~
+.project
+.classpath
+.settings/
+.netrwhist
+
+# -----------------------------------------------------------------------------
+# Runtime output
+# -----------------------------------------------------------------------------
+log.txt
+*.log
+forecast.log
+*.tmp
+*.bak
+*.orig
+
+# Generated HTML email artifacts (if rendered to disk during testing)
+forecast/sample_email.html
+forecast/dry_run_output.*
+
+# -----------------------------------------------------------------------------
+# Local scratch / experiment dirs
+# -----------------------------------------------------------------------------
+scratch/
+sandbox/
+tmp/
+.tmp/
+/tmp_*
+
+# -----------------------------------------------------------------------------
+# Jupyter
+# -----------------------------------------------------------------------------
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# -----------------------------------------------------------------------------
+# Outputs from the historical-stats Claude Code project
+# -----------------------------------------------------------------------------
+# These will be regenerable from raw data. Keep them out of git unless they
+# stabilize and become "release" deliverables.
+history/sandy_hook_hourly_history.parquet
+history/figures/*.png
+# (override above if you do want to commit a finalized set:)
+# !history/figures/RELEASE_*.png
+
+# -----------------------------------------------------------------------------
+# Stay tracked (override): things that LOOK like they should be ignored but
+# are actually source data we want in version control
+# -----------------------------------------------------------------------------
+# (None right now. CSVs and the H2M PDF are source-of-truth and committed.)
+
+
+## Other
