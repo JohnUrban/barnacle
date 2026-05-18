@@ -215,6 +215,8 @@ barnacle/
 │   └── archive/                  # v0.1 - v0.4 specs
 ├── data/
 │   ├── labeled_events.csv        # 6 flood events used for calibration
+│   ├── labeled_observations.csv  # ongoing log of user-observed depths at landmarks (see README)
+│   ├── labeled_observations_README.md  # what to record, when to act on it
 │   ├── merged_hourly.csv         # tide + met + rain joined, ~6200 rows
 │   ├── floods_by_month{,_minor,_moderate,_major,_total}.tsv
 │   ├── top10_highest_tides.tsv
@@ -487,6 +489,15 @@ Same surge information the Borough's emergency management is looking at.
 ## 9. Future work (prioritized)
 
 ### High value, near-term
+0. **Accumulate landmark observations in `data/labeled_observations.csv`.**
+   Append-only log started 2026-05-18 for empirical "what did the user
+   actually see" data at named landmarks. Used to validate the +0.40 ft
+   local enhancement at the sentinel landmarks (lowest road corner across
+   Bay, gutter at walkway) and the porch step — none of which are
+   calibrated by the original 4 flood events. See
+   `data/labeled_observations_README.md` for column layout, when to act
+   on it, and how to fill in the NOAA-side fields. Don't make this a
+   chore; sparse honest observations beat dense fabricated ones.
 1. **Validate NWS parser against next real event.** Will happen on its
    own. When a Coastal Flood Warning/Advisory fires for Eastern Monmouth,
    run `python3 nws_surge_parser.py` and confirm it parses cleanly.
