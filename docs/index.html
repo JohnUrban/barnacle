@@ -15,16 +15,18 @@
 
   <section class="regime regime-street">
     <div class="regime-label">STREET</div>
-    <div class="regime-summary">Worst-case peak 6.19 ft MLLW at 2026-05-18 21:58, curb depth 0.0&Prime;</div>
+    <div class="regime-summary">water on the street at sub-curb landmarks; curb still dry. Worst-case peak 6.19 ft MLLW at 2026-05-18 21:58.</div>
   </section>
 
   <section class="tides">
     <h2>High tides in next 24h</h2>
     <table class="tide-table">
-      <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Curb</th><th>Regime</th></tr></thead>
-      <tbody><tr class="worst-tide"><td>2026-05-18 21:58</td><td>6.19</td><td>+0.00</td><td><b>6.19</b></td><td>0.0&Prime;</td><td>street</td></tr><tr><td>2026-05-19 10:41</td><td>4.91</td><td>+0.00</td><td><b>4.91</b></td><td>0.0&Prime;</td><td>dry</td></tr></tbody>
+      <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th></tr></thead>
+      <tbody><tr class="worst-tide"><td>2026-05-18 21:58</td><td>6.19</td><td>+0.00</td><td><b>6.19</b></td><td>Lowest corner</td><td>+1.6&Prime;</td><td>+1.6&Prime;</td><td>street</td></tr><tr><td>2026-05-19 10:41</td><td>4.91</td><td>+0.00</td><td><b>4.91</b></td><td>Lowest corner</td><td>-13.8&Prime;</td><td>-13.8&Prime;</td><td>dry</td></tr></tbody>
     </table>
-    <p class="note">Highlighted row is the worst case headlined above. Both high tides shown for situational awareness.</p>
+    <p class="note">Highlighted row is the worst case headlined above.
+       <b>Above</b> = inches above the highest exceeded landmark (negative if water below the lowest landmark).
+       <b>Rel</b> = inches above the lowest landmark (lowest road corner, 3.64 NAVD88) — always.</p>
   </section>
 
   <section class="forecast">
@@ -36,7 +38,7 @@
       <dt>Forecast peak</dt><dd>6.19 ft MLLW</dd>
       <dt>Surge source</dt><dd>surge-persistence <span class="note">(not active)</span></dd>
       <dt>Peak rainfall</dt><dd>0.00 in/hr</dd>
-      <dt>72h mean temp</dt><dd>67.8&deg;F</dd>
+      <dt>72h mean temp</dt><dd>67.9&deg;F</dd>
       <dt>Cold lockout</dt><dd>no</dd>
     </dl>
   </section>
@@ -57,6 +59,19 @@
       <li>7.00 ft — water at lawn / walkway step</li>
       <li>7.50 ft — water at front porch first step</li>
       <li>&ge; 7.9 ft — severe (well past porch)</li>
+    </ul>
+  </section>
+
+  <section class="reference">
+    <h2>Regime glossary</h2>
+    <p>The single word in the subject line (DRY / STREET / LIGHT / MODERATE / SEVERE) summarises severity based on water depth at the curb.</p>
+    <ul>
+      <li><b>dry</b> — no visible water at any landmark</li>
+      <li><b>street</b> — water on the street at sub-curb landmarks; curb still dry</li>
+      <li><b>light</b> — water at curb (0–4 inches)</li>
+      <li><b>moderate</b> — water at curb (4–8 inches)</li>
+      <li><b>severe</b> — water past lawn step / bulkhead overtopping territory</li>
+      <li><b>cold_lockout</b> — drains likely ice-locked; flooding suppressed despite high tide</li>
     </ul>
   </section>
 
