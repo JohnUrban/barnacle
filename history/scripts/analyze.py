@@ -521,6 +521,45 @@ def main():
     days_per_year = flood_hours.groupby("year")["date"].nunique()
     days_per_year.to_csv(out / "flood_days_per_year.csv", header=["flood_days"])
 
+    # Recent-window seasonality (1996-2025) for forecast-email seasonal context.
+    # The all-record monthly averages in seasonality_by_threshold.csv understate
+    # the recent-decade flood rate because they include 1910-1980 when sea level
+    # was lower. The email needs an apples-to-apples comparison vs MTD count.
+    recent = df_h[df_h["year"].between(1996, 2025)].copy()
+    n_years_recent = recent["year"].nunique()
+    events_recent = detect_events_at(recent, 6.58)
+    if not events_recent.empty:
+        events_recent["month"] = events_recent["start"].dt.month
+    rows = []
+    for m in range(1, 13):
+        # flood events in this month across all recent years / n_years -> avg per month
+        n_ev = 0 if events_recent.empty else int((events_recent["month"] == m).sum())
+        # flood days = distinct calendar days with any hour ≥ 6.58
+        flood_days_in_m = (recent[(recent["month"] == m) & (recent["observed_mllw"] >= 6.58)]
+                           .groupby("date").size().shape[0])
+        flood_hours_in_m = int(((recent["month"] == m) & (recent["observed_mllw"] >= 6.58)).sum())
+        rows.append({
+            "month": m,
+            "avg_events_per_month": n_ev / max(n_years_recent, 1),
+            "avg_flood_days_per_month": flood_days_in_m / max(n_years_recent, 1),
+            "avg_flood_hours_per_month": flood_hours_in_m / max(n_years_recent, 1),
+        })
+    rec_df = pd.DataFrame(rows)
+    # Rank-based descriptor: wettest, quietest, above-avg, below-avg
+    avg_overall = rec_df["avg_flood_days_per_month"].mean()
+    wettest_m = rec_df["avg_flood_days_per_month"].idxmax() + 1
+    quietest_m = rec_df["avg_flood_days_per_month"].idxmin() + 1
+    def desc(row):
+        if int(row["month"]) == wettest_m:
+            return "wettest month"
+        if int(row["month"]) == quietest_m:
+            return "quietest month"
+        return "above-average" if row["avg_flood_days_per_month"] >= avg_overall else "below-average"
+    rec_df["descriptor"] = rec_df.apply(desc, axis=1)
+    rec_df["threshold_ft"] = 6.58
+    rec_df["window"] = f"1996-2025 ({n_years_recent} yrs)"
+    rec_df.to_csv(out / "seasonality_recent.csv", index=False)
+
     summary = {
         "rows": int(len(df)),
         "span_min": str(df["timestamp"].min()),

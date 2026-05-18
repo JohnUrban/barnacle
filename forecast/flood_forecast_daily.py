@@ -21,6 +21,7 @@ Optional:
 """
 
 import os
+import csv
 import math
 import json
 import smtplib
@@ -228,6 +229,174 @@ def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
 
 
 # ============================================================
+# Seasonal context (sourced from history/ project outputs)
+# ============================================================
+# Resolve relative to this file so the script works regardless of CWD.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+HISTORY_DATA_DIR = os.path.abspath(os.path.join(_HERE, "..", "history", "data"))
+
+# 1990 is the reference year for "wouldn't have crossed your curb back then"
+SLR_REFERENCE_YEAR = 1990
+
+
+def load_seasonality_row(month):
+    """Return current month's row from seasonality_recent.csv (1996-2025).
+    None if file missing or row absent — caller degrades gracefully."""
+    path = os.path.join(HISTORY_DATA_DIR, "seasonality_recent.csv")
+    try:
+        with open(path) as f:
+            for row in csv.DictReader(f):
+                if int(row["month"]) == month:
+                    return {
+                        "avg_events":   float(row["avg_events_per_month"]),
+                        "avg_days":     float(row["avg_flood_days_per_month"]),
+                        "avg_hours":    float(row["avg_flood_hours_per_month"]),
+                        "descriptor":   row.get("descriptor", ""),
+                        "threshold_ft": float(row["threshold_ft"]),
+                        "window":       row.get("window", ""),
+                    }
+    except (FileNotFoundError, KeyError, ValueError):
+        return None
+    return None
+
+
+def load_slr_since(reference_year):
+    """Return ft of MSL rise from reference_year to most-recent year in
+    annual_means.csv. Uses 5-yr smoothing on each end to dampen noise.
+    None on failure."""
+    path = os.path.join(HISTORY_DATA_DIR, "annual_means.csv")
+    try:
+        years = {}
+        with open(path) as f:
+            for row in csv.DictReader(f):
+                years[int(row["year"])] = float(row["mean_mllw"])
+        if reference_year not in years:
+            return None
+        recent = max(years.keys())
+        # 5-year averages centered on reference and most-recent years
+        def avg_window(center, span=2):
+            vals = [years[y] for y in range(center - span, center + span + 1) if y in years]
+            return sum(vals) / len(vals) if vals else None
+        ref = avg_window(reference_year)
+        cur = avg_window(recent)
+        if ref is None or cur is None:
+            return None
+        return cur - ref  # ft
+    except (FileNotFoundError, KeyError, ValueError):
+        return None
+
+
+CURB_THRESHOLD_SH_MLLW = 6.58   # Sandy Hook obs at which curb at 342 Bay wets
+
+
+def fetch_mtd_flood_events(threshold=CURB_THRESHOLD_SH_MLLW):
+    """Count flood events month-to-date at the Sandy Hook curb threshold
+    (6.58 ft MLLW). Pulls NOAA water_level (preliminary 6-min, no lag) from
+    month-start to now, aggregates to hourly mean, counts contiguous runs.
+
+    Returns dict with: n_events, n_flood_days, n_hours_above, peak_obs_mllw,
+    month_start, as_of.  Returns None on fetch/parse failure.
+
+    Note: water_level is preliminary; values may shift by a few cm when later
+    verified. Adequate for a count-of-flood-events display."""
+    now = dt.datetime.now(dt.timezone.utc)
+    start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    try:
+        data = _get(
+            "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+            {
+                "station": NOAA_STATION,
+                "product": "water_level",
+                "datum": "MLLW",
+                "time_zone": "lst_ldt",
+                "units": "english",
+                "begin_date": start.strftime("%Y%m%d %H:%M"),
+                "end_date":   now.strftime("%Y%m%d %H:%M"),
+                "format": "json",
+            },
+        )
+    except Exception:
+        return None
+    rows = data.get("data") or []
+    if not rows:
+        return None
+    # Aggregate 6-min samples to hourly mean (matches historical hourly_height
+    # definition more closely than raw 6-min counts).
+    by_hour = {}
+    for d in rows:
+        try:
+            ts = d["t"]                  # "YYYY-MM-DD HH:MM"
+            v = float(d["v"])
+        except (KeyError, ValueError, TypeError):
+            continue
+        hour_key = ts[:13]               # "YYYY-MM-DD HH"
+        by_hour.setdefault(hour_key, []).append(v)
+    if not by_hour:
+        return None
+    sorted_hours = sorted(by_hour.keys())
+    hourly_vals = [(h, sum(vs) / len(vs)) for h, vs in by_hour.items()]
+    hourly_vals.sort(key=lambda x: x[0])
+
+    n_hours_above = 0
+    n_events = 0
+    in_event = False
+    peak = float("-inf")
+    flood_dates = set()
+    for h, v in hourly_vals:
+        if v > peak:
+            peak = v
+        above = v >= threshold
+        if above:
+            n_hours_above += 1
+            flood_dates.add(h[:10])
+            if not in_event:
+                n_events += 1
+                in_event = True
+        else:
+            in_event = False
+    return {
+        "n_events": n_events,
+        "n_flood_days": len(flood_dates),
+        "n_hours_above": n_hours_above,
+        "peak_obs_mllw": peak if peak > float("-inf") else None,
+        "month_start": start.strftime("%Y-%m-%d"),
+        "as_of": now.strftime("%Y-%m-%d %H:%M UTC"),
+    }
+
+
+def build_seasonal_context(forecast):
+    """Assemble dict of seasonal-context fields for injection into email/HTML.
+    Always returns a dict; missing pieces are None or empty. Render code
+    should handle absent fields gracefully."""
+    today = dt.date.today()
+    ctx = {
+        "month_name": today.strftime("%B"),
+        "season": load_seasonality_row(today.month),
+        "mtd": None,
+        "slr_ft_since_1990": load_slr_since(SLR_REFERENCE_YEAR),
+        "slr_reference_year": SLR_REFERENCE_YEAR,
+        "show_slr_line": False,
+        "slr_today_peak_ft": forecast.get("peak_forecast_observed_mllw"),
+    }
+    # MTD count is best-effort; failure shouldn't break the forecast email.
+    try:
+        ctx["mtd"] = fetch_mtd_flood_events()
+    except Exception:
+        ctx["mtd"] = None
+
+    # SLR line shows only in the "newly-wet" band: today's peak crosses 6.58
+    # but would have been below curb in 1990 (i.e., < 6.58 + slr_since_1990).
+    # Also suppress in severe regime (>= 7.5 ft) — SLR isn't the story there.
+    peak = ctx["slr_today_peak_ft"]
+    slr = ctx["slr_ft_since_1990"]
+    if peak is not None and slr is not None and slr > 0:
+        ceiling_today = 6.58 + slr
+        if 6.58 <= peak < min(ceiling_today, 7.5):
+            ctx["show_slr_line"] = True
+    return ctx
+
+
+# ============================================================
 # Glue: build today's forecast
 # ============================================================
 def parse_iso(t):
@@ -330,6 +499,9 @@ def build_forecast():
     # Identify the worst-case high tide for headline / subject line
     worst = max(all_tides, key=lambda t: t["forecast_peak_mllw"])
 
+    forecast_for_context = {"peak_forecast_observed_mllw": worst["forecast_peak_mllw"]}
+    seasonal_context = build_seasonal_context(forecast_for_context)
+
     return {
         # Headline fields (worst-case tide)
         "peak_predicted_mllw": worst["predicted_mllw"],
@@ -344,7 +516,87 @@ def build_forecast():
         "nws_status": nws_status,
         # New: full breakdown of all high tides in next 24h
         "all_tides": all_tides,
+        # Seasonal / SLR context for the email and HTML page
+        "seasonal_context": seasonal_context,
     }
+
+
+# ============================================================
+# Seasonal context line builders (shared between email and HTML)
+# ============================================================
+def _seasonal_context_lines_text(ctx, today=None):
+    """Return list of plain-text lines (zero, one, or two) for seasonal /
+    SLR context. Each piece is independent — partial failures degrade
+    cleanly to fewer lines, never an exception."""
+    today = today or dt.date.today()
+    lines = []
+    season = (ctx or {}).get("season")
+    mtd = (ctx or {}).get("mtd")
+    if season:
+        month_name = today.strftime("%B")
+        desc = season.get("descriptor", "")
+        avg_days = season.get("avg_days")
+        # Window string may already contain parens, e.g. "1996-2025 (30 yrs)".
+        # Strip them for cleaner sentence flow.
+        window = (season.get("window", "") or "").split(" (")[0]
+        if desc in ("wettest month", "quietest month"):
+            tag = f" — the {desc} of the year"
+        elif desc:
+            tag = f" — a {desc} month"
+        else:
+            tag = ""
+        lines.append(
+            f"{month_name} typically has ~{avg_days:.1f} flood days at your "
+            f"curb (avg over {window}){tag}."
+        )
+        if mtd:
+            peak_str = (f" Peak Sandy Hook so far: {mtd['peak_obs_mllw']:.2f} ft."
+                        if mtd.get("peak_obs_mllw") is not None else "")
+            lines.append(
+                f"So far this {month_name}: {mtd['n_flood_days']} flood days "
+                f"({mtd['n_events']} events).{peak_str}"
+            )
+    if ctx and ctx.get("show_slr_line"):
+        slr = ctx["slr_ft_since_1990"]
+        peak = ctx["slr_today_peak_ft"]
+        ref_year = ctx["slr_reference_year"]
+        lines.append(
+            f"Sea level at Sandy Hook is ~{slr:.2f} ft higher than in {ref_year}. "
+            f"Today's high tide of {peak:.2f} ft wouldn't have crossed your curb "
+            f"in {ref_year}; today it does."
+        )
+    return lines
+
+
+def _seasonal_context_lines_html(ctx, today=None):
+    """Return list of HTML <p> strings for seasonal context."""
+    return [f'<p class="context">{line}</p>'
+            for line in _seasonal_context_lines_text(ctx, today)]
+
+
+def _seasonal_context_block_text(forecast):
+    """Plain-text block for the email: 'Context: ...' heading + lines, or
+    empty string if no context lines."""
+    ctx = forecast.get("seasonal_context") or {}
+    lines = _seasonal_context_lines_text(ctx)
+    if not lines:
+        return ""
+    return "Context:\n" + "\n".join("  " + line for line in lines) + "\n\n"
+
+
+def _seasonal_context_block_html(forecast, wrapper="section"):
+    """HTML block for the email or page. Returns empty string if no lines."""
+    ctx = forecast.get("seasonal_context") or {}
+    lines = _seasonal_context_lines_html(ctx)
+    if not lines:
+        return ""
+    if wrapper == "section":
+        return ('<section class="context">'
+                '<h2>Context</h2>' + "".join(lines) + "</section>")
+    # inline (for the email)
+    return ('<h3>Context</h3>'
+            '<div style="background:white;padding:8px;border-radius:4px">'
+            + "".join(lines) + "</div>")
 
 
 # ============================================================
@@ -399,6 +651,7 @@ PREDICTED DEPTH at worst-case tide (inches above each landmark at 342 Bay Ave):
 
 Regime: {regime}
 
+{_seasonal_context_block_text(forecast)}\
 Reference scale (Sandy Hook obs MLLW):
   < 6.6   : dry
   6.6-6.9 : light (curb wet)
@@ -459,6 +712,7 @@ Model: v0.5. Local enhancement +0.40 ft.
 </table>
 
 <p><b>Regime: {regime}</b></p>
+{_seasonal_context_block_html(forecast, wrapper='inline')}
 <p style="font-size:small;color:#666">
 Model v0.5. Local enhancement +0.40 ft. Rain term saturates at 8".
 Surge persistence is a rough proxy; for active coastal storms, check NWS
@@ -555,6 +809,8 @@ def render_html_page(forecast):
       </tbody>
     </table>
   </section>
+
+  {_seasonal_context_block_html(forecast, wrapper='section')}
 
   <section class="reference">
     <h2>Reference scale</h2>
