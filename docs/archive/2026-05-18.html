@@ -36,28 +36,12 @@
       <dt>Forecast peak</dt><dd>6.19 ft MLLW</dd>
       <dt>Surge source</dt><dd>surge-persistence <span class="note">(not active)</span></dd>
       <dt>Peak rainfall</dt><dd>0.00 in/hr</dd>
-      <dt>72h mean temp</dt><dd>67.7&deg;F</dd>
+      <dt>72h mean temp</dt><dd>67.8&deg;F</dd>
       <dt>Cold lockout</dt><dd>no</dd>
     </dl>
   </section>
 
-  <section class="landmarks">
-    <h2>Predicted depth at landmarks (worst-case tide)</h2>
-    <table class="landmark-table">
-      <thead><tr><th>Location</th><th>NAVD88</th><th>Depth</th><th>Notes</th></tr></thead>
-      <tbody>
-        <tr><td>Lowest road corner across Bay</td><td>3.64 ft</td><td>1.6&Prime;</td><td class="note">early-warning sentinel</td></tr>
-        <tr><td>Gutter / curb edge at walkway</td><td>3.78 ft</td><td>0.0&Prime;</td><td class="note">parking caution</td></tr>
-        <tr><td>Curb at walkway</td><td>4.16 ft</td><td><b>0.0&Prime;</b></td><td class="note">flood onset</td></tr>
-        <tr><td>Bay Ave road middle</td><td>4.36 ft</td><td>0.0&Prime;</td><td></td></tr>
-        <tr><td>Intersection center</td><td>4.54 ft</td><td>0.0&Prime;</td><td></td></tr>
-        <tr><td>Lawn / walkway step</td><td>4.58 ft</td><td>0.0&Prime;</td><td></td></tr>
-        <tr><td>Front porch first step</td><td>5.08 ft</td><td>0.0&Prime;</td><td></td></tr>
-      </tbody>
-    </table>
-  </section>
-
-  <section class="context"><h2>Context</h2><p class="context">Flood days by severity, <b>May typical</b> (avg over 1996-2025) vs <b>month-to-date</b>:</p><table class="severity-table"><thead><tr><th>Landmark</th><th>typical</th><th>MTD</th><th></th></tr></thead><tbody><tr><td>Curb at walkway</td><td align="right">2.5</td><td align="right">0</td><td class="note">below-average</td></tr><tr><td>Bay Ave road middle</td><td align="right">1.6</td><td align="right">0</td><td class="note">below-average</td></tr><tr><td>Intersection center</td><td align="right">0.97</td><td align="right">0</td><td class="note">above-average</td></tr><tr><td>Lawn / walkway step</td><td align="right">0.87</td><td align="right">0</td><td class="note">above-average</td></tr><tr><td>Front porch first step</td><td align="right">0.17</td><td align="right">0</td><td class="note">below-average</td></tr></tbody></table><p class="context">Peak Sandy Hook so far this month: <b>6.55 ft MLLW</b>.</p><p class="context">Closest call: water touched 6.58 ft on the 6-min sensor for ~18 min (2026-05-15 19:24, peaked at 6.59 ft) — hourly mean stayed just under the curb threshold.</p></section>
+  <section class="landmarks"><h2>Landmarks today</h2><p class="context">Today's prediction vs <b>May typical</b> (avg flood days/month over 1996-2025) and <b>month-to-date</b>:</p><table class="landmark-table"><thead><tr><th>Landmark</th><th>NAVD88</th><th>Today</th><th>Typ</th><th>MTD</th><th>Notes</th></tr></thead><tbody><tr><td>★ Lowest road corner across Bay <span class="role">(sentinel)</span></td><td>3.64</td><td><b>1.6&Prime;</b></td><td>7.7</td><td>5</td><td class="note">above-average</td></tr><tr><td>Gutter / curb edge at walkway <span class="role">(parking)</span></td><td>3.78</td><td>0.0&Prime;</td><td>5.4</td><td>4</td><td class="note">below-average</td></tr><tr><td>Storm grate at Bay+Central <span class="role">(Pathway B)</span></td><td>3.91</td><td>0.0&Prime;</td><td>4.2</td><td>3</td><td class="note">below-average</td></tr><tr><td>Curb at walkway <span class="role">(flood onset)</span></td><td>4.16</td><td>0.0&Prime;</td><td>2.5</td><td>0</td><td class="note">below-average</td></tr><tr><td>Bay Ave road middle</td><td>4.36</td><td>0.0&Prime;</td><td>1.6</td><td>0</td><td class="note">below-average</td></tr><tr><td>Intersection center</td><td>4.54</td><td>0.0&Prime;</td><td>0.97</td><td>0</td><td class="note">above-average</td></tr><tr><td>Lawn / walkway step</td><td>4.58</td><td>0.0&Prime;</td><td>0.87</td><td>0</td><td class="note">above-average</td></tr><tr><td>Front porch first step</td><td>5.08</td><td>0.0&Prime;</td><td>0.17</td><td>0</td><td class="note">below-average</td></tr></tbody></table><p class="note">★ = water predicted today at this landmark. Typ / MTD in days/month at the landmark threshold.</p><p class="context">May is a below-average month at the curb threshold.</p><p class="context">Peak Sandy Hook so far this month: 6.55 ft MLLW.</p><p class="context">Closest call: water touched 6.58 ft on the 6-min sensor for ~18 min (2026-05-15 19:24, peaked at 6.59 ft) — hourly mean stayed just under the curb threshold.</p></section><section class="spot-check"><h2>Spot-check (help calibrate the model)</h2><p>Suggested observation times today: <b>21:58 (peak), 10:41 (lower high)</b>.</p><p>Take a peek around one of those times — even &ldquo;no water at all&rdquo; is useful. Use the landmark table above (lowest to highest) to describe what you saw. Report back with: time you looked, highest landmark with water (or &ldquo;no water&rdquo;), and rough depth above it. Goes into <code>data/labeled_observations.csv</code>.</p></section>
 
   <section class="reference">
     <h2>Reference scale</h2>
@@ -66,6 +50,7 @@
       <li>&lt; 6.06 ft — dry, nothing visible from window</li>
       <li>6.06 ft — lowest road corner across Bay first wets (sentinel)</li>
       <li>6.20 ft — water at gutter / curb edge (don't park there)</li>
+      <li>6.33 ft — water emerges from corner storm grate (Pathway B)</li>
       <li>6.58 ft — water tops curb at walkway (flood onset at property)</li>
       <li>6.78 ft — Bay Ave road middle covered</li>
       <li>6.96 ft — intersection center submerged</li>
