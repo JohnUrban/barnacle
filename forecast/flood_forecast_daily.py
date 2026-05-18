@@ -232,6 +232,173 @@ def fetch_surge_swing_6h():
     return max(surges) - min(surges)
 
 
+# Archive + accuracy-log paths resolved relative to this script. Lets the
+# daily workflow run from anywhere and still find the right files.
+_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ARCHIVE_DIR        = os.path.join(_REPO_ROOT, "docs", "archive")
+ACCURACY_CSV_PATH  = os.path.join(_REPO_ROOT, "data", "forecast_accuracy.csv")
+ACCURACY_CSV_FIELDS = [
+    "forecast_run_date",
+    "forecast_peak_predicted_mllw",
+    "forecast_peak_predicted_time",
+    "forecast_regime",
+    "actual_peak_observed_mllw",
+    "actual_peak_observed_time",
+    "mllw_error_ft",
+]
+
+
+def _fetch_actual_peak_around(time_str, window_hours=2):
+    """Pull NOAA water_level for ±window_hours around a target high-tide
+    time, return (peak_mllw, peak_time_str). (None, None) on failure."""
+    try:
+        center = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+    except (ValueError, TypeError):
+        return (None, None)
+    start = center - dt.timedelta(hours=window_hours)
+    end = center + dt.timedelta(hours=window_hours)
+    try:
+        data = _get(
+            "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+            {
+                "station": NOAA_STATION,
+                "product": "water_level",
+                "datum": "MLLW",
+                "time_zone": "lst_ldt",
+                "units": "english",
+                "begin_date": start.strftime("%Y%m%d %H:%M"),
+                "end_date":   end.strftime("%Y%m%d %H:%M"),
+                "format": "json",
+            },
+        )
+    except Exception:
+        return (None, None)
+    peak = None
+    peak_t = None
+    for d in (data.get("data") or []):
+        try:
+            v = float(d["v"])
+        except (KeyError, ValueError, TypeError):
+            continue
+        if peak is None or v > peak:
+            peak = v
+            peak_t = d.get("t")
+    return (peak, peak_t)
+
+
+def update_forecast_accuracy():
+    """Walk archived JSON forecasts, evaluate any not yet scored against
+    actual NOAA observed peaks, append new rows to data/forecast_accuracy.csv.
+    Returns a summary dict for rendering, or None when nothing has been
+    scored yet.
+
+    Behavior:
+    - First runs (no archive yet, no CSV) silently no-op and return None.
+    - Each subsequent day: 1 new row appended for yesterday's forecast,
+      typically. Idempotent: re-running on the same forecasts won't
+      double-count.
+    - Stats are computed over the last 30 scored forecasts.
+    """
+    if not os.path.isdir(ARCHIVE_DIR):
+        return None
+
+    existing_dates = set()
+    if os.path.exists(ACCURACY_CSV_PATH):
+        try:
+            with open(ACCURACY_CSV_PATH) as f:
+                for row in csv.DictReader(f):
+                    if row.get("forecast_run_date"):
+                        existing_dates.add(row["forecast_run_date"])
+        except OSError:
+            pass
+
+    new_rows = []
+    today = dt.date.today()
+    for fname in sorted(os.listdir(ARCHIVE_DIR)):
+        if not fname.endswith(".json"):
+            continue
+        date_str = fname[:-5]
+        try:
+            run_date = dt.date.fromisoformat(date_str)
+        except ValueError:
+            continue
+        # Skip today's and future-dated archives (no observed data yet)
+        if run_date >= today:
+            continue
+        if date_str in existing_dates:
+            continue
+        try:
+            with open(os.path.join(ARCHIVE_DIR, fname)) as f:
+                fc = json.load(f)
+        except Exception:
+            continue
+        pred_peak = fc.get("peak_forecast_observed_mllw")
+        pred_time = fc.get("peak_time_local")
+        pred_regime = ((fc.get("depths_in") or {}).get("regime") or "")
+        if pred_peak is None or not pred_time:
+            continue
+        actual_peak, actual_time = _fetch_actual_peak_around(pred_time)
+        if actual_peak is None:
+            continue
+        new_rows.append({
+            "forecast_run_date":            date_str,
+            "forecast_peak_predicted_mllw": pred_peak,
+            "forecast_peak_predicted_time": pred_time,
+            "forecast_regime":              pred_regime,
+            "actual_peak_observed_mllw":    actual_peak,
+            "actual_peak_observed_time":    actual_time or "",
+            "mllw_error_ft":                pred_peak - actual_peak,
+        })
+
+    if new_rows:
+        os.makedirs(os.path.dirname(ACCURACY_CSV_PATH), exist_ok=True)
+        write_header = not os.path.exists(ACCURACY_CSV_PATH)
+        with open(ACCURACY_CSV_PATH, "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=ACCURACY_CSV_FIELDS)
+            if write_header:
+                writer.writeheader()
+            for row in new_rows:
+                writer.writerow(row)
+
+    return _summarize_accuracy(last_n=30)
+
+
+def _summarize_accuracy(last_n=30):
+    """Compute summary stats over the most-recent N scored rows. Returns
+    None when no rows have been scored yet."""
+    if not os.path.exists(ACCURACY_CSV_PATH):
+        return None
+    errors = []
+    pairs = []
+    try:
+        with open(ACCURACY_CSV_PATH) as f:
+            for row in csv.DictReader(f):
+                try:
+                    e = float(row["mllw_error_ft"])
+                except (KeyError, ValueError, TypeError):
+                    continue
+                errors.append(e)
+                pairs.append({
+                    "date":   row.get("forecast_run_date", ""),
+                    "pred":   row.get("forecast_peak_predicted_mllw", ""),
+                    "actual": row.get("actual_peak_observed_mllw", ""),
+                    "err":    e,
+                })
+    except OSError:
+        return None
+    if not errors:
+        return None
+    recent = errors[-last_n:]
+    return {
+        "n_scored_total":     len(errors),
+        "n_scored_recent":    len(recent),
+        "mean_error_ft":      sum(recent) / len(recent),
+        "mean_abs_error_ft":  sum(abs(e) for e in recent) / len(recent),
+        "max_abs_error_ft":   max(abs(e) for e in recent),
+        "recent_window":      last_n,
+    }
+
+
 def fetch_recent_history(days=7):
     """Past N days of observed daily peak water level, with the highest
     landmark reached at that peak. Returns list of dicts (one per calendar
@@ -801,7 +968,8 @@ def build_forecast():
 
 def _attach_summary_and_confidence(forecast):
     """Compute plain-language summary + confidence + unusual-forecast flag
-    after the forecast dict is otherwise complete."""
+    + forecast-accuracy summary after the forecast dict is otherwise
+    complete."""
     level, reason = assess_confidence(forecast)
     forecast["confidence_level"] = level
     forecast["confidence_reason"] = reason
@@ -812,6 +980,12 @@ def _attach_summary_and_confidence(forecast):
     month = dt.date.today().month
     if peak is not None:
         forecast["peak_percentile"] = load_monthly_peak_percentile(peak, month)
+    # Accuracy log (HANDOFF 8b): score any archived forecasts not yet
+    # compared against actual observed peaks; attach summary stats.
+    try:
+        forecast["accuracy_summary"] = update_forecast_accuracy()
+    except Exception:
+        forecast["accuracy_summary"] = None
     return forecast
 
 
@@ -946,6 +1120,45 @@ def _render_rain_timing_html(forecast):
         '<table class="rain-table">'
         '<thead><tr><th>High tide</th><th>Rain near it</th></tr></thead>'
         f'<tbody>{rows}</tbody></table>'
+        '</section>'
+    )
+
+
+def _render_accuracy_text(forecast):
+    """Plain-text one-line model accuracy summary. Empty list when no
+    forecasts have been scored yet (first few days after archive starts)."""
+    a = forecast.get("accuracy_summary") or {}
+    n = a.get("n_scored_recent") or 0
+    if n == 0:
+        return []
+    return [(
+        f"Model accuracy (last {n} forecasts): "
+        f"mean error {a['mean_error_ft']:+.2f} ft, "
+        f"mean |error| {a['mean_abs_error_ft']:.2f} ft, "
+        f"worst |error| {a['max_abs_error_ft']:.2f} ft. "
+        f"Total scored: {a['n_scored_total']}."
+    )]
+
+
+def _render_accuracy_html(forecast):
+    """HTML one-line model accuracy summary, or empty string."""
+    a = forecast.get("accuracy_summary") or {}
+    n = a.get("n_scored_recent") or 0
+    if n == 0:
+        return ""
+    return (
+        '<section class="accuracy">'
+        '<h2>Model accuracy</h2>'
+        f'<p>Last {n} forecasts: mean error '
+        f'<b>{a["mean_error_ft"]:+.2f} ft</b>, '
+        f'mean |error| <b>{a["mean_abs_error_ft"]:.2f} ft</b>, '
+        f'worst |error| {a["max_abs_error_ft"]:.2f} ft. '
+        f'Total scored: {a["n_scored_total"]}.</p>'
+        '<p class="note">Positive mean error = model over-predicts on '
+        'average. Computed by comparing each archived forecast\'s '
+        'peak prediction to the actual NOAA observed peak in a '
+        '±2 h window around the predicted time. See '
+        '<code>data/forecast_accuracy.csv</code> for the raw log.</p>'
         '</section>'
     )
 
@@ -1423,11 +1636,56 @@ def _landmarks_footer_html(forecast, today=None):
             for line in _landmarks_footer_text(forecast, today)]
 
 
+def _high_value_calibration_callouts(forecast):
+    """Return list of strings flagging observation opportunities that
+    would resolve open calibration questions (HANDOFF items 10, 14).
+    Empty when nothing special is happening today. Used by both text
+    and HTML spot-check renderers so the call-outs stay consistent."""
+    callouts = []
+    cumulative_rain = forecast.get("cumulative_rain_24h_in") or 0
+    all_tides = forecast.get("all_tides") or []
+    # Pluvial-only opportunity (HANDOFF item 14): meaningful rain
+    # forecast AND no tide reaches even the lowest sentinel. One good
+    # observation could resolve "does heavy rain flood 342 Bay without
+    # any tidal contribution?"
+    rain_meaningful = cumulative_rain >= 0.25
+    any_tide_above_sentinel = any(
+        (t.get("depths_in") or {}).get("lowest_road_corner", 0) > 0
+        for t in all_tides
+    )
+    if rain_meaningful and not any_tide_above_sentinel:
+        callouts.append(
+            "  ★ PLUVIAL-ONLY OPPORTUNITY: today has notable rain "
+            f"({cumulative_rain:.2f}\" forecast over next 24 h) but no tide "
+            "is expected to reach even the lowest landmark. If you see "
+            "any water on the street during the heaviest rain hour, "
+            "that's a rare data point for whether 342 Bay can flood from "
+            "rain alone (HANDOFF item 14)."
+        )
+    # Cold-lockout calibration opportunity (HANDOFF item 10): override
+    # is active AND today's predicted peak (without override) would have
+    # crossed the curb. Did the lockout hold?
+    if forecast.get("cold_lockout"):
+        peak = forecast.get("peak_forecast_observed_mllw") or 0
+        if peak >= 6.58:
+            callouts.append(
+                "  ★ COLD-LOCKOUT CALIBRATION OPPORTUNITY: cold-weather "
+                "override is active and today's tide would have crossed "
+                f"the curb without it ({peak:.2f} ft predicted). The model "
+                "predicts no flooding; if water actually does appear at "
+                "the curb today, that breaks the override and is a "
+                "high-value data point (HANDOFF item 10)."
+            )
+    return callouts
+
+
 def _spot_check_block_text(forecast, today=None):
     """Plain-text spot-check prompt with suggested observation times.
     Always emitted (every email, including DRY); the user requested this
     to build the calibration habit. References the landmark table above
-    rather than duplicating the ladder."""
+    rather than duplicating the ladder. Includes high-value calibration
+    callouts when today's conditions are unusual (rain at low tide;
+    cold lockout above curb)."""
     today = today or dt.date.today()
     all_tides = forecast.get("all_tides") or []
     if not all_tides:
@@ -1439,15 +1697,19 @@ def _spot_check_block_text(forecast, today=None):
         role = "peak" if t["time"] == peak_t else "lower high"
         items.append(f"{when} ({role})")
     times_str = ", ".join(items)
-    return [
+    lines = [
         "Spot-check (help calibrate the model):",
         f"  Suggested observation times today: {times_str}",
+    ]
+    lines.extend(_high_value_calibration_callouts(forecast))
+    lines.extend([
         "  Take a peek around one of those times — even 'no water at all'",
         "  is useful. Use the landmark table above (lowest to highest) to",
         "  describe what you saw. Report back with: time you looked,",
         "  highest landmark with water (or 'no water'), and rough depth",
         "  above it. Goes into data/labeled_observations.csv.",
-    ]
+    ])
+    return lines
 
 
 def _spot_check_block_html(forecast, today=None):
@@ -1463,10 +1725,17 @@ def _spot_check_block_html(forecast, today=None):
         role = "peak" if t["time"] == peak_t else "lower high"
         items.append(f"{when} ({role})")
     times_str = ", ".join(items)
+    callouts = _high_value_calibration_callouts(forecast)
+    callouts_html = ""
+    for c in callouts:
+        # Strip the leading "  ★ " marker from the text version
+        text = c.strip().lstrip("★").strip()
+        callouts_html += f'<p class="spot-check-callout">★ {text}</p>'
     return (
         '<section class="spot-check">'
         '<h2>Spot-check (help calibrate the model)</h2>'
         f'<p>Suggested observation times today: <b>{times_str}</b>.</p>'
+        f'{callouts_html}'
         '<p>Take a peek around one of those times — even '
         '&ldquo;no water at all&rdquo; is useful. Use the landmark table '
         'above (lowest to highest) to describe what you saw. Report back '
@@ -1575,6 +1844,8 @@ def render_email(forecast):
     recap_block = ("\n".join(recap_lines) + "\n\n") if recap_lines else ""
     low_lines = _render_low_tides_text(forecast)
     low_block = ("\n".join(low_lines) + "\n\n") if low_lines else ""
+    accuracy_lines = _render_accuracy_text(forecast)
+    accuracy_block = ("\n".join(accuracy_lines) + "\n\n") if accuracy_lines else ""
 
     text = f"""\
 Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
@@ -1596,7 +1867,7 @@ Worst case detail:
 {rain_block}{_landmarks_section_text(forecast)}
 Regime: {regime} — {REGIME_GLOSSARY.get(regime, '')}
 
-{recap_block}{low_block}Reference scale (Sandy Hook obs MLLW):
+{recap_block}{accuracy_block}{low_block}Reference scale (Sandy Hook obs MLLW):
   < 6.06  : dry (nothing visible from window)
   6.06    : lowest road corner across Bay first wets (visible from window)
   6.20    : water at gutter / curb edge — don't park there
@@ -1647,6 +1918,7 @@ Model: v0.5. Local enhancement +0.40 ft.
     rain_html = _render_rain_timing_html(forecast)
     recap_html = _render_recent_history_html(forecast)
     low_html = _render_low_tides_html(forecast)
+    accuracy_html = _render_accuracy_html(forecast)
 
     html = f"""\
 <html><body style="font-family:sans-serif;background:{bg};padding:20px">
@@ -1687,6 +1959,7 @@ Model: v0.5. Local enhancement +0.40 ft.
 </table>
 
 {recap_html}
+{accuracy_html}
 {low_html}
 <p style="font-size:small;color:#666">
 Model v0.5. Local enhancement +0.40 ft. Rain term saturates at 8".
@@ -1784,6 +2057,8 @@ def render_html_page(forecast):
   {_landmarks_section_html(forecast, wrapper='section')}
 
   {_render_recent_history_html(forecast)}
+
+  {_render_accuracy_html(forecast)}
 
   {_render_low_tides_html(forecast)}
 

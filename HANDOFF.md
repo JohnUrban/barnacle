@@ -537,13 +537,15 @@ Same surge information the Borough's emergency management is looking at.
 8a. ~~**Plain-language one-sentence summary at the top of the email/page.**~~
     ✅ DONE (2026-05-18, commit ffb112c). Day-aware time phrasing
     ("tonight" / "tomorrow morning"), per-regime descriptors.
-8b. **Forecast accuracy log.** Auto-compare each day's forecast to the
-    next day's observed Sandy Hook peak + actual landmark depth from
-    NOAA. Append to `data/forecast_accuracy.csv`. Surface a small
-    "model accuracy: last 30 days mean error X.X ft, X.X" at landmarks"
-    line in the email. Self-validating system. Could also feed back
-    into model recalibration as data accumulates.
-    *Depends on:* #16c (JSON archive).
+8b. ~~**Forecast accuracy log.**~~ ✅ DONE (2026-05-18). Each daily run
+    walks `docs/archive/*.json`, pulls actual NOAA observed peak around
+    each archived forecast's predicted peak time (±2 h window), appends
+    a scored row to `data/forecast_accuracy.csv`, and renders a
+    one-line "Model accuracy (last N forecasts): mean error +X ft,
+    mean |error| Y ft, worst |error| Z ft" in the email/page. The
+    workflow's commit step now adds both `docs/` and `data/`. The
+    block will be empty for the first ~1 day after the JSON archive
+    starts populating; appears from day 2 onward.
 8c. ~~**Rain timing detail in the daily forecast.**~~ ✅ DONE
     (2026-05-18, commit ffb112c). Cumulative 24h rain + per-tide peak
     rate + offset relative to high tide. Block is conditional — only
@@ -555,10 +557,10 @@ Same surge information the Borough's emergency management is looking at.
    lunar phase. Becomes a function instead of a constant.
 10. **Calibrate cold-weather override threshold.** Only Feb 22–23 in the
     dataset. Several more cold-weather high-tide events would refine
-    the 72-h, 32°F trigger. **The daily spot-check prompt should
-    explicitly call this out as a high-value observation when conditions
-    match** (cold weather + high tide that would otherwise flood). See
-    also item 16 for retrospective calibration from historical data.
+    the 72-h, 32°F trigger. **Spot-check prompt now calls this out
+    when conditions match** (cold-lockout active AND predicted peak
+    would cross curb without it) — ✅ wired 2026-05-18. See also
+    item 16 for retrospective calibration from historical data.
 11. ~~**Low tide times in email.**~~ ✅ DONE (2026-05-18). New
     `fetch_tides_24h()` returns both highs and lows; a small "Low
     tides in next 24h" block in the email and on the Pages site shows
@@ -571,11 +573,11 @@ Same surge information the Borough's emergency management is looking at.
     rebuilt to design (4.20 NAVD88), all thresholds shift up ~0.04 ft
     (sub-inch).
 14. **Pluvial-only flooding test.** Does heavy rain at low tide flood
-    342 Bay? No event in the dataset confirms or denies. **The daily
-    spot-check prompt should explicitly call this out as a high-value
-    observation when conditions match** (heavy rain forecast with all
-    tides well below curb). One good observation could resolve the
-    question.
+    342 Bay? No event in the dataset confirms or denies. **Spot-check
+    prompt now calls this out when conditions match** (≥0.25" rain
+    forecast over 24 h AND no high tide reaches the lowest sentinel)
+    — ✅ wired 2026-05-18. One good observation in that regime would
+    resolve the question.
 15. **Borough drainage map.** Email Stephen Winters (Floodplain Admin,
     swinters@highlandsnj.gov) for the storm sewer map. Would clarify
     Pathway B outfall locations.
