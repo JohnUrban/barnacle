@@ -39,12 +39,15 @@ jobs:
           SMTP_TO:   ${{ secrets.SMTP_TO }}
         working-directory: forecast
         run: |
-          python3 flood_forecast_daily.py --write-html ../docs/index.html
+          python3 flood_forecast_daily.py \
+            --write-html ../docs/index.html \
+            --write-json ../docs/forecast.json
 
       - name: Archive today's forecast snapshot
         run: |
           mkdir -p docs/archive
           cp docs/index.html "docs/archive/${{ steps.date.outputs.today }}.html"
+          cp docs/forecast.json "docs/archive/${{ steps.date.outputs.today }}.json"
 
       - name: Regenerate archive index
         run: |

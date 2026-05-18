@@ -603,24 +603,25 @@ Same surge information the Borough's emergency management is looking at.
 16b. ~~**Recent-history recap (last 3-7 days) in the email.**~~ ✅ DONE
     (2026-05-18, commit ffb112c). 7-day table of observed daily peaks
     with highest landmark reached.
-16c. **JSON/CSV archive alongside the HTML.** `docs/archive/` is
-    currently HTML-only. Adding `docs/archive/YYYY-MM-DD.json` (same
-    forecast data, machine-readable) makes retrospective analysis
-    trivial — no HTML scraping, easy to feed into accuracy log
-    (item 8b) or any other downstream tool. Cheap addition to the
-    workflow: dump `forecast` dict to JSON as a second output of
-    the daily script.
+16c. ~~**JSON/CSV archive alongside the HTML.**~~ ✅ DONE (2026-05-18).
+    `flood_forecast_daily.py --write-json PATH` dumps the forecast
+    dict; workflow now writes `docs/forecast.json` and archives a
+    daily snapshot at `docs/archive/YYYY-MM-DD.json`. Prereq for the
+    forecast accuracy log (8b).
 16d. **Threshold-crossing instant alerts as a separate channel.**
     Adjacent to item 12 (severity-based notifications). Specifically:
     a one-shot SMS or push when the day's predicted peak first
     crosses LIGHT / MODERATE / SEVERE — not the daily morning email
     you'd skim, but a separate "wake up and check on the house"
     signal. Could go to a phone via Twilio, Pushover, etc.
-16e. **Highlight unusually-high forecasts.** "Today's peak (6.72 ft)
-    is in the top 10% for May (1996–2025)." Uses the historical-stats
-    data already pulled (`history/data/seasonality_recent.csv` or a
-    derived percentile lookup). Small addition to the email when the
-    forecast is anomalous; flag-only on routine days.
+16e. ~~**Highlight unusually-high forecasts.**~~ ✅ DONE (2026-05-18).
+    analyze.py now emits `history/data/monthly_peak_percentiles.csv`
+    with p25/50/75/90/95/99/max of daily peak SH MLLW per calendar
+    month (1996-2025). The forecast script labels today's peak as
+    top 1% / top 5% / top 10% / top 25% / above median / below median.
+    A note line ("Note: today's forecast peak (X ft) is in the top
+    Y% ...") appears in the email/page only when the peak is in the
+    top 25% or worse — suppresses noise on routine days.
 16f. **Real-time gauge link or embedded image in the page.** The
     daily forecast is a static morning snapshot. Adding a "live gauge
     at Sandy Hook" link (or embedded NOAA image) on

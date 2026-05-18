@@ -589,6 +589,32 @@ def main():
     rec_df = rec_df.sort_values(["month", "threshold_ft"]).reset_index(drop=True)
     rec_df.to_csv(out / "seasonality_recent.csv", index=False)
 
+    # Monthly peak percentiles for the "unusually-high forecast" flag.
+    # Daily peak SH MLLW per calendar day, per month, over 1996-2025.
+    recent_h = recent.copy()
+    recent_h["date"] = recent_h["timestamp"].dt.date
+    daily_peak = (recent_h.groupby("date")["observed_mllw"].max()
+                  .reset_index().rename(columns={"observed_mllw": "peak_mllw"}))
+    daily_peak["month"] = pd.to_datetime(daily_peak["date"]).dt.month
+    rows = []
+    for m in range(1, 13):
+        peaks = daily_peak.loc[daily_peak["month"] == m, "peak_mllw"].values
+        if len(peaks) == 0:
+            continue
+        rows.append({
+            "month": m,
+            "n_days":   int(len(peaks)),
+            "p25_mllw": float(np.percentile(peaks, 25)),
+            "p50_mllw": float(np.percentile(peaks, 50)),
+            "p75_mllw": float(np.percentile(peaks, 75)),
+            "p90_mllw": float(np.percentile(peaks, 90)),
+            "p95_mllw": float(np.percentile(peaks, 95)),
+            "p99_mllw": float(np.percentile(peaks, 99)),
+            "max_mllw": float(peaks.max()),
+            "window":   f"1996-2025 ({n_years_recent} yrs)",
+        })
+    pd.DataFrame(rows).to_csv(out / "monthly_peak_percentiles.csv", index=False)
+
     summary = {
         "rows": int(len(df)),
         "span_min": str(df["timestamp"].min()),

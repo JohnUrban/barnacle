@@ -422,6 +422,44 @@ def load_seasonality_strata(month):
     return out
 
 
+def load_monthly_peak_percentile(peak_mllw, month):
+    """Look up where peak_mllw falls in the historical daily-peak
+    distribution for the given calendar month (1996-2025). Returns
+    a percentile description ('top 1%' / 'top 5%' / 'top 10%' / 'top 25%'
+    / 'median' / 'below median') and the underlying p* threshold dict.
+    None on lookup failure (CSV missing, month absent)."""
+    path = os.path.join(HISTORY_DATA_DIR, "monthly_peak_percentiles.csv")
+    try:
+        row = None
+        with open(path) as f:
+            for r in csv.DictReader(f):
+                if int(r["month"]) == month:
+                    row = r
+                    break
+        if row is None:
+            return None
+        p = {k: float(row[k]) for k in
+             ("p25_mllw", "p50_mllw", "p75_mllw", "p90_mllw",
+              "p95_mllw", "p99_mllw", "max_mllw")}
+    except (FileNotFoundError, KeyError, ValueError):
+        return None
+    if peak_mllw >= p["p99_mllw"]:
+        label = "top 1%"
+    elif peak_mllw >= p["p95_mllw"]:
+        label = "top 5%"
+    elif peak_mllw >= p["p90_mllw"]:
+        label = "top 10%"
+    elif peak_mllw >= p["p75_mllw"]:
+        label = "top 25%"
+    elif peak_mllw >= p["p50_mllw"]:
+        label = "above median"
+    else:
+        label = "below median"
+    p["label"] = label
+    p["window"] = row.get("window", "")
+    return p
+
+
 def load_slr_since(reference_year):
     """Return ft of MSL rise from reference_year to most-recent year in
     annual_means.csv. Uses 5-yr smoothing on each end to dampen noise.
@@ -762,20 +800,41 @@ def build_forecast():
 
 
 def _attach_summary_and_confidence(forecast):
-    """Compute plain-language summary + confidence after the forecast dict
-    is otherwise complete."""
+    """Compute plain-language summary + confidence + unusual-forecast flag
+    after the forecast dict is otherwise complete."""
     level, reason = assess_confidence(forecast)
     forecast["confidence_level"] = level
     forecast["confidence_reason"] = reason
     forecast["plain_language_summary"] = plain_language_summary(forecast)
+    # Unusual-forecast flag (HANDOFF 16e): where does today's peak sit in
+    # the 1996-2025 distribution of daily peaks for this calendar month?
+    peak = forecast.get("peak_forecast_observed_mllw")
+    month = dt.date.today().month
+    if peak is not None:
+        forecast["peak_percentile"] = load_monthly_peak_percentile(peak, month)
     return forecast
 
 
 # ============================================================
 # Seasonal context line builders (shared between email and HTML)
 # ============================================================
+def _unusual_forecast_text(forecast):
+    """One-line note when today's predicted peak is unusually high for the
+    current calendar month. Returns None when forecast is median-or-below
+    (suppresses noise on routine days)."""
+    p = forecast.get("peak_percentile") or {}
+    label = p.get("label", "")
+    if label not in ("top 1%", "top 5%", "top 10%", "top 25%"):
+        return None
+    peak = forecast.get("peak_forecast_observed_mllw")
+    month_name = dt.date.today().strftime("%B")
+    return (f"Note: today's forecast peak ({peak:.2f} ft) is in the {label} "
+            f"of historical daily peaks for {month_name} (1996-2025).")
+
+
 def _render_summary_text(forecast):
-    """One-line plain-language summary, plus confidence on its own line."""
+    """One-line plain-language summary, plus confidence + unusual-forecast
+    note (when applicable) on their own lines."""
     out = []
     summary = forecast.get("plain_language_summary") or ""
     if summary:
@@ -784,15 +843,20 @@ def _render_summary_text(forecast):
     reason = forecast.get("confidence_reason") or ""
     if level:
         out.append(f"Confidence: {level.upper()} — {reason}")
+    unusual = _unusual_forecast_text(forecast)
+    if unusual:
+        out.append(unusual)
     return out
 
 
 def _render_summary_html(forecast):
-    """HTML version: summary + confidence inside a styled banner."""
+    """HTML version: summary + confidence + optional unusual-forecast note
+    inside a styled banner."""
     summary = forecast.get("plain_language_summary") or ""
     level = forecast.get("confidence_level") or ""
     reason = forecast.get("confidence_reason") or ""
-    if not summary and not level:
+    unusual = _unusual_forecast_text(forecast)
+    if not summary and not level and not unusual:
         return ""
     parts = ['<section class="tldr">']
     if summary:
@@ -803,6 +867,8 @@ def _render_summary_html(forecast):
             f'<b>Confidence: {level.upper()}</b> &mdash; '
             f'<span>{reason}</span></p>'
         )
+    if unusual:
+        parts.append(f'<p class="tldr-unusual">{unusual}</p>')
     parts.append('</section>')
     return "".join(parts)
 
@@ -1804,6 +1870,11 @@ def main():
     parser.add_argument("--write-html", metavar="PATH", default=None,
                         help="Write standalone HTML page to PATH (e.g. docs/index.html). "
                              "Independent of email sending — can combine with --dry-run.")
+    parser.add_argument("--write-json", metavar="PATH", default=None,
+                        help="Write the raw forecast dict to PATH as JSON. "
+                             "Machine-readable archive companion to --write-html. "
+                             "Datetime values are stringified; otherwise unchanged. "
+                             "Required input for the forecast accuracy log.")
     parser.add_argument("--no-send", action="store_true",
                         help="Skip email sending even if SMTP env vars are set. "
                              "Useful when only writing HTML.")
@@ -1830,6 +1901,14 @@ def main():
         with open(out_path, "w") as f:
             f.write(page_html)
         print(f"Wrote HTML: {args.write_html}")
+
+    # Write JSON archive if requested
+    if args.write_json:
+        out_path = os.path.abspath(args.write_json)
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "w") as f:
+            json.dump(forecast, f, indent=2, default=str)
+        print(f"Wrote JSON: {args.write_json}")
 
     if args.dry_run:
         print("=" * 60)
