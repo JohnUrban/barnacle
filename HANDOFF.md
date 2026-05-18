@@ -530,6 +530,25 @@ Same surge information the Borough's emergency management is looking at.
    data shows Sandy Hook 6.93 ft + 1.4 ft surge at 19:00 — above curb,
    below lawn step. If user has photos / memory of that evening, can
    add to labeled events.
+8a. **Plain-language one-sentence summary at the top of the email/page.**
+    The current subject line + regime banner is terse and table-heavy.
+    A single sentence like "Today: brief water at the lowest road
+    corner around 10 PM, nothing on the property. Tomorrow morning:
+    dry." would help skim readers and neighbors. Generate from the
+    same forecast dict; ~20 lines of code in `render_email()` and
+    `render_html_page()`. Highest-leverage small UX item.
+8b. **Forecast accuracy log.** Auto-compare each day's forecast to the
+    next day's observed Sandy Hook peak + actual landmark depth from
+    NOAA. Append to `data/forecast_accuracy.csv`. Surface a small
+    "model accuracy: last 30 days mean error X.X ft, X.X" at landmarks"
+    line in the email. Self-validating system. Could also feed back
+    into model recalibration as data accumulates.
+8c. **Rain timing detail in the daily forecast.** Currently the email
+    shows only the peak rain rate in the ±90 min window of high tide.
+    Missing: total rain expected next 24h, whether rain peaks before /
+    during / after high tide, cumulative rain through tide window. For
+    Oct 30-class compound events the timing alignment IS the story.
+    NWS hourly forecast already has the data — just need to format it.
 
 ### Medium value
 9. **Decompose the +0.40 local enhancement.** Currently a constant; with
@@ -556,6 +575,48 @@ Same surge information the Borough's emergency management is looking at.
     project didn't filter cold-snap events out. Counts are slight
     over-estimates in winter. Would need temp data joined into hourly
     dataset. Modest refinement.
+16a. **Confidence indicator in the daily email.** Today's email is
+    presented with the same visual weight regardless of how trustworthy
+    the underlying forecast actually is. Simple banner:
+    - **High**: NWS Coastal Flood product active (forecaster-vetted)
+      OR cold lockout in effect (model is just zeroing).
+    - **Medium** (default): surge persistence used; SH peak ≤ 8.0 ft
+      (within the calibration range).
+    - **Low**: SH peak > 8.0 ft (outside calibrated range), OR
+      observed surge has swung by > 0.5 ft over the past 6 h
+      (persistence assumption sketchy).
+    Helps the reader know when to trust the number vs check NWS
+    directly.
+16b. **Recent-history recap (last 3-7 days) in the email.** Mini
+    table or one-line summary of "what actually happened" recently:
+    actual Sandy Hook peak each day, whether anything notable occurred
+    at the property. Builds continuity, doubles as a quiet model-
+    validation check. Pulls from NOAA water_level (already used for
+    the MTD count).
+16c. **JSON/CSV archive alongside the HTML.** `docs/archive/` is
+    currently HTML-only. Adding `docs/archive/YYYY-MM-DD.json` (same
+    forecast data, machine-readable) makes retrospective analysis
+    trivial — no HTML scraping, easy to feed into accuracy log
+    (item 8b) or any other downstream tool. Cheap addition to the
+    workflow: dump `forecast` dict to JSON as a second output of
+    the daily script.
+16d. **Threshold-crossing instant alerts as a separate channel.**
+    Adjacent to item 12 (severity-based notifications). Specifically:
+    a one-shot SMS or push when the day's predicted peak first
+    crosses LIGHT / MODERATE / SEVERE — not the daily morning email
+    you'd skim, but a separate "wake up and check on the house"
+    signal. Could go to a phone via Twilio, Pushover, etc.
+16e. **Highlight unusually-high forecasts.** "Today's peak (6.72 ft)
+    is in the top 10% for May (1996–2025)." Uses the historical-stats
+    data already pulled (`history/data/seasonality_recent.csv` or a
+    derived percentile lookup). Small addition to the email when the
+    forecast is anomalous; flag-only on routine days.
+16f. **Real-time gauge link or embedded image in the page.** The
+    daily forecast is a static morning snapshot. Adding a "live gauge
+    at Sandy Hook" link (or embedded NOAA image) on
+    `johnurban.github.io/barnacle/` would let the user verify current
+    conditions against the morning prediction without leaving the
+    page.
 
 ### Worth retrying later
 17. **NOAA ETSS direct fetch from GitHub Actions runner.** Different IP,
@@ -583,6 +644,11 @@ Same surge information the Borough's emergency management is looking at.
 25. **Re-pull historical data periodically (e.g., yearly).** The
     chunked puller is resumable, so refreshing the dataset to include
     new years is cheap. Could be a GitHub Actions cron job.
+25a. **Lunar phase / spring-tide annotation.** Mark spring-tide days
+    (full/new moon ± 2 days) in the email and on the Pages site.
+    Useful framing — "this is a spring tide, expect higher than usual
+    tidal range." Pure annotation, no model change. Lunar phase is
+    available from `astral` or computed analytically.
 26. **Self-serve subscribe flow for neighbors.** Right now `SMTP_TO`
     is a comma-separated list in GitHub Secrets, so adding a subscriber
     means editing the secret by hand. At a small scale (≤10 subscribers
