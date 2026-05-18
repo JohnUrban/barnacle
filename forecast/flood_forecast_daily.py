@@ -369,6 +369,24 @@ def fetch_mtd_flood_events():
     hourly_vals = [(h, sum(vs) / len(vs)) for h, vs in by_hour.items()]
     hourly_vals.sort(key=lambda x: x[0])
 
+    # Also track the highest single 6-min reading + its time. The hourly
+    # mean used above can mask brief curb-grazing events (e.g., a 15-20 min
+    # tide peak that crosses 6.58 but pulls the hourly mean back below).
+    # Surfacing these as "near-miss" context avoids the user wondering
+    # whether MTD = 0 means "nothing happened" or "almost happened."
+    raw_peak_v = float("-inf")
+    raw_peak_t = None
+    raw_minutes_above_curb = 0
+    for d in rows:
+        try:
+            v = float(d["v"]); t_str = d["t"]
+        except (KeyError, ValueError, TypeError):
+            continue
+        if v > raw_peak_v:
+            raw_peak_v = v; raw_peak_t = t_str
+        if v >= 6.58:
+            raw_minutes_above_curb += 6  # 6-min sample cadence
+
     # Pass through each threshold and tally events, flood days, hours.
     peak = float("-inf")
     strata_out = []
@@ -396,10 +414,13 @@ def fetch_mtd_flood_events():
             "n_hours_above":  n_hours_above,
         })
     return {
-        "peak_obs_mllw": peak if peak > float("-inf") else None,
-        "month_start":   start.strftime("%Y-%m-%d"),
-        "as_of":         now.strftime("%Y-%m-%d %H:%M UTC"),
-        "strata":        strata_out,
+        "peak_obs_mllw":     peak if peak > float("-inf") else None,
+        "peak_6min_mllw":    raw_peak_v if raw_peak_v > float("-inf") else None,
+        "peak_6min_time":    raw_peak_t,
+        "minutes_above_curb": raw_minutes_above_curb,
+        "month_start":       start.strftime("%Y-%m-%d"),
+        "as_of":             now.strftime("%Y-%m-%d %H:%M UTC"),
+        "strata":            strata_out,
     }
 
 
@@ -628,6 +649,31 @@ def _seasonal_context_table_html(ctx, today=None):
     )]
 
 
+def _near_miss_text(mtd):
+    """One-line near-miss summary, or None if not applicable.
+    Triggers when MTD curb events = 0 but the 6-min sensor came within
+    0.1 ft of the curb threshold. Distinguishes the case where 6-min
+    actually crossed (gives a duration) from the case where it just
+    got close."""
+    if not mtd:
+        return None
+    curb_events = next((s["n_events"] for s in (mtd.get("strata") or [])
+                        if s["threshold_ft"] == 6.58), None)
+    if curb_events is None or curb_events > 0:
+        return None
+    raw = mtd.get("peak_6min_mllw")
+    if raw is None or raw < 6.58 - 0.1:
+        return None
+    when = mtd.get("peak_6min_time") or ""
+    mins = mtd.get("minutes_above_curb", 0)
+    if raw >= 6.58 and mins > 0:
+        return (f"Closest call: water touched 6.58 ft on the 6-min sensor "
+                f"for ~{mins} min ({when}, peaked at {raw:.2f} ft) — "
+                f"hourly mean stayed just under the curb threshold.")
+    return (f"Closest call: 6-min sensor peaked at {raw:.2f} ft on "
+            f"{when} — below your curb but within 0.1 ft of it.")
+
+
 def _seasonal_context_lines_text(ctx, today=None):
     """Return list of plain-text lines for the email Context section."""
     today = today or dt.date.today()
@@ -636,6 +682,9 @@ def _seasonal_context_lines_text(ctx, today=None):
     if mtd and mtd.get("peak_obs_mllw") is not None:
         lines.append(f"Peak Sandy Hook so far this month: "
                      f"{mtd['peak_obs_mllw']:.2f} ft MLLW.")
+    nm = _near_miss_text(mtd)
+    if nm:
+        lines.append(nm)
     if ctx and ctx.get("show_slr_line"):
         slr = ctx["slr_ft_since_1990"]
         peak = ctx["slr_today_peak_ft"]
@@ -659,6 +708,9 @@ def _seasonal_context_lines_html(ctx, today=None):
             f'<p class="context">Peak Sandy Hook so far this month: '
             f'<b>{mtd["peak_obs_mllw"]:.2f} ft MLLW</b>.</p>'
         )
+    nm = _near_miss_text(mtd)
+    if nm:
+        out.append(f'<p class="context">{nm}</p>')
     if ctx and ctx.get("show_slr_line"):
         slr = ctx["slr_ft_since_1990"]
         peak = ctx["slr_today_peak_ft"]
