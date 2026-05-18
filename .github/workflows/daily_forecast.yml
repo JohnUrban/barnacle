@@ -1,0 +1,98 @@
+name: Daily Flood Forecast
+
+# 09:00 UTC daily = 5 AM EDT (summer) / 4 AM EST (winter).
+# GitHub Actions cron does not adjust for DST.
+# Also runnable manually from the Actions tab via workflow_dispatch.
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write  # needed to commit docs/ updates
+
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set today's date
+        id: date
+        run: echo "today=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Run forecast (sends email + writes HTML page)
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_TO:   ${{ secrets.SMTP_TO }}
+        working-directory: forecast
+        run: |
+          python3 flood_forecast_daily.py --write-html ../docs/index.html
+
+      - name: Archive today's forecast snapshot
+        run: |
+          mkdir -p docs/archive
+          cp docs/index.html "docs/archive/${{ steps.date.outputs.today }}.html"
+
+      - name: Regenerate archive index
+        run: |
+          cd docs/archive
+          {
+            cat <<'HEAD'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width,initial-scale=1">
+          <title>Bay Ave Barnacle — Forecast Archive</title>
+          <link rel="stylesheet" href="../style.css">
+          </head>
+          <body>
+          <main>
+            <header>
+              <h1>Bay Ave Barnacle — Forecast Archive</h1>
+              <p class="subtitle"><a href="../">&larr; Back to today's forecast</a></p>
+            </header>
+            <section>
+              <h2>Past forecasts</h2>
+              <ul class="archive-list">
+          HEAD
+            for f in $(ls -r 20*.html 2>/dev/null); do
+              date_str="${f%.html}"
+              echo "      <li><a href=\"$f\">$date_str</a></li>"
+            done
+            cat <<'TAIL'
+              </ul>
+            </section>
+            <footer>
+              <p><a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a></p>
+            </footer>
+          </main>
+          </body>
+          </html>
+          TAIL
+          } > index.html
+
+      - name: Commit and push docs/ updates
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          if git diff --staged --quiet; then
+            echo "No docs/ changes to commit"
+          else
+            git commit -m "daily forecast ${{ steps.date.outputs.today }}"
+            git push
+          fi

@@ -382,12 +382,97 @@ Model: v0.5. Local enhancement +0.40 ft.
 
 <p><b>Regime: {regime}</b></p>
 <p style="font-size:small;color:#666">
-Model v0.4. Local enhancement +0.40 ft. Rain term saturates at 8".
+Model v0.5. Local enhancement +0.40 ft. Rain term saturates at 8".
 Surge persistence is a rough proxy; for active coastal storms, check NWS
 Coastal Flood Statement directly.
 </p>
 </body></html>"""
     return subject, text, html
+
+
+def render_html_page(forecast):
+    """
+    Standalone HTML page for GitHub Pages publication.
+    Like the email HTML but with proper <head>, mobile meta, and footer
+    links to source repo + archive.
+    """
+    d = forecast["depths_in"]
+    regime = d["regime"]
+    peak_t = forecast["peak_time_local"]
+    peak_ft = forecast["peak_forecast_observed_mllw"]
+    today = dt.date.today().isoformat()
+    cold = forecast["cold_lockout"]
+
+    return f"""\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bay Ave Barnacle — {today}</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Bay Ave Barnacle</h1>
+    <p class="subtitle">Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ</p>
+  </header>
+
+  <section class="regime regime-{regime}">
+    <div class="regime-label">{regime.upper()}</div>
+    <div class="regime-summary">Peak {peak_ft:.2f} ft MLLW at {peak_t}, curb depth {d['curb']:.1f}&Prime;</div>
+  </section>
+
+  <section class="forecast">
+    <h2>Forecast for {today}</h2>
+    <dl>
+      <dt>Next high tide</dt><dd>{peak_t}</dd>
+      <dt>Predicted tide</dt><dd>{forecast['peak_predicted_mllw']:.2f} ft MLLW (Sandy Hook)</dd>
+      <dt>Current surge</dt><dd>{forecast['current_surge_ft']:+.2f} ft</dd>
+      <dt>Forecast peak</dt><dd>{peak_ft:.2f} ft MLLW</dd>
+      <dt>Surge source</dt><dd>{forecast['surge_source']} <span class="note">({forecast['nws_status']})</span></dd>
+      <dt>Peak rainfall</dt><dd>{forecast['peak_rain_rate_in_hr']:.2f} in/hr</dd>
+      <dt>72h mean temp</dt><dd>{forecast['temp_avg_72h_f']:.1f}&deg;F</dd>
+      <dt>Cold lockout</dt><dd>{'<b>YES</b> (drains likely ice-locked)' if cold else 'no'}</dd>
+    </dl>
+  </section>
+
+  <section class="landmarks">
+    <h2>Predicted depth at landmarks</h2>
+    <table>
+      <thead><tr><th>Location</th><th>NAVD88</th><th>Depth</th></tr></thead>
+      <tbody>
+        <tr><td>Curb at walkway</td><td>4.16 ft</td><td><b>{d['curb']:.1f}&Prime;</b></td></tr>
+        <tr><td>Bay Ave road middle</td><td>4.36 ft</td><td>{d['road_middle']:.1f}&Prime;</td></tr>
+        <tr><td>Intersection center</td><td>4.54 ft</td><td>{d['intersection']:.1f}&Prime;</td></tr>
+        <tr><td>Lawn / walkway step</td><td>4.58 ft</td><td>{d['lawn_step']:.1f}&Prime;</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="reference">
+    <h2>Reference scale</h2>
+    <p>Sandy Hook observed water level (MLLW):</p>
+    <ul>
+      <li>&lt; 6.6 ft — dry</li>
+      <li>6.6&ndash;6.9 ft — light (curb wet)</li>
+      <li>6.9&ndash;7.3 ft — moderate (road covered, intersection still dry)</li>
+      <li>7.3&ndash;7.6 ft — water at lawn step</li>
+      <li>&ge; 7.6 ft — severe</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>Model v0.5. Local enhancement +0.40 ft. Rain term saturates at 8&Prime;.
+       Updated daily at 5 AM ET.</p>
+    <p><a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a> &middot;
+       <a href="archive/">Past forecasts</a></p>
+  </footer>
+</main>
+</body>
+</html>
+"""
 
 
 def send_email(subject, text_body, html_body):
@@ -411,13 +496,19 @@ def send_email(subject, text_body, html_body):
 def main():
     import argparse
     parser = argparse.ArgumentParser(
-        description="Daily Highlands NJ flood forecast for 342 Bay Ave.",
+        description="Bay Ave Barnacle — daily flood forecast for 342 Bay Ave, Highlands NJ.",
         epilog="Set SMTP_* environment variables to send email, or use --dry-run to print to stdout."
     )
     parser.add_argument("--dry-run", action="store_true",
                         help="Print the email to stdout instead of sending. Useful for testing.")
     parser.add_argument("--json", action="store_true",
                         help="Print the raw forecast dict as JSON (for debugging).")
+    parser.add_argument("--write-html", metavar="PATH", default=None,
+                        help="Write standalone HTML page to PATH (e.g. docs/index.html). "
+                             "Independent of email sending — can combine with --dry-run.")
+    parser.add_argument("--no-send", action="store_true",
+                        help="Skip email sending even if SMTP env vars are set. "
+                             "Useful when only writing HTML.")
     args = parser.parse_args()
 
     try:
@@ -432,6 +523,15 @@ def main():
 
     subject, text, html = render_email(forecast)
 
+    # Write standalone HTML page if requested
+    if args.write_html:
+        page_html = render_html_page(forecast)
+        out_path = os.path.abspath(args.write_html)
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "w") as f:
+            f.write(page_html)
+        print(f"Wrote HTML: {args.write_html}")
+
     if args.dry_run:
         print("=" * 60)
         print(f"SUBJECT: {subject}")
@@ -441,12 +541,16 @@ def main():
         print("(HTML body suppressed in --dry-run; use --json to see raw data)")
         return
 
+    if args.no_send:
+        print("Skipping email send (--no-send set).")
+        return
+
     # Check SMTP env vars before attempting to send
     required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM", "SMTP_TO"]
     missing = [v for v in required if v not in os.environ]
     if missing:
         print(f"ERROR: missing environment variables: {', '.join(missing)}", flush=True)
-        print("Either set them, or run with --dry-run to print to stdout instead.", flush=True)
+        print("Either set them, or run with --dry-run / --no-send.", flush=True)
         raise SystemExit(2)
 
     send_email(subject, text, html)
