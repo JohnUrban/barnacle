@@ -583,6 +583,29 @@ Same surge information the Borough's emergency management is looking at.
 25. **Re-pull historical data periodically (e.g., yearly).** The
     chunked puller is resumable, so refreshing the dataset to include
     new years is cheap. Could be a GitHub Actions cron job.
+26. **Self-serve subscribe flow for neighbors.** Right now `SMTP_TO`
+    is a comma-separated list in GitHub Secrets, so adding a subscriber
+    means editing the secret by hand. At a small scale (≤10 subscribers
+    expected) that's tolerable, but a self-serve sign-up would be nicer
+    for sharing. Options in rough order of effort:
+    - **Mailto link on the Pages site** — zero infra, "Email me to
+      subscribe" + manual add to the secret.
+    - **Google Group** (e.g., `bay-ave-barnacle@googlegroups.com`) —
+      create once, set `SMTP_TO` to the single group address, link a
+      "Subscribe" button on the Pages site to the group's join URL.
+      Google handles subscribe / unsubscribe automatically; you're out
+      of the loop. Free. Probably the best fit for this scale.
+    - **Managed newsletter (Buttondown etc.)** — free under 100
+      subscribers, swap SMTP send for POST to their API. Embeds a
+      subscribe form on the Pages site, auto-unsubscribe links,
+      analytics. ~30 lines of code change. Overkill at this scale but
+      cleanest user experience.
+
+    Bcc privacy and CAN-SPAM consideration: Bcc is already handled
+    (subscribers don't see each other's emails); CAN-SPAM is fine while
+    the system stays free + informational with a clear way to
+    unsubscribe (already automatic on Google Group / Buttondown; needs
+    a "reply to remove" note in the mailto-only flow).
 
 ---
 
