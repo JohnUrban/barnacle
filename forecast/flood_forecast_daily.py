@@ -68,8 +68,10 @@ def _get(url, params=None, headers=None):
         return json.loads(r.read())
 
 
-def fetch_predicted_tide_24h():
-    """Hourly astronomical tide prediction for next 24h (MLLW ft)."""
+def fetch_high_tides_24h():
+    """Returns list of (time_str, value_mllw_ft) for each HIGH tide in the
+    next 24h. Uses NOAA's hilo product which gives exact tide times rather
+    than hourly samples. Typically returns 2 entries (~12.5h apart)."""
     now = dt.datetime.now(dt.timezone.utc)
     end = now + dt.timedelta(hours=24)
     data = _get(
@@ -80,13 +82,17 @@ def fetch_predicted_tide_24h():
             "datum": "MLLW",
             "time_zone": "lst_ldt",
             "units": "english",
-            "interval": "h",
+            "interval": "hilo",
             "begin_date": now.strftime("%Y%m%d %H:%M"),
             "end_date": end.strftime("%Y%m%d %H:%M"),
             "format": "json",
         },
     )
-    return [(p["t"], float(p["v"])) for p in data.get("predictions", [])]
+    return [
+        (p["t"], float(p["v"]))
+        for p in data.get("predictions", [])
+        if p.get("type") == "H"
+    ]
 
 
 def fetch_observed_recent():
@@ -229,88 +235,115 @@ def parse_iso(t):
 
 
 def build_forecast():
-    """Pull all inputs, find next high tide, apply model, return dict."""
-    predicted = fetch_predicted_tide_24h()
-    if not predicted:
-        raise RuntimeError("No predicted tide data from NOAA")
+    """Pull all inputs, evaluate each high tide in the next 24h, apply model
+    to each, return forecast dict with per-tide breakdown and worst-case
+    summary."""
+    high_tides = fetch_high_tides_24h()
+    if not high_tides:
+        raise RuntimeError("No high tides returned by NOAA for the next 24h")
 
-    # Find next high tide peak in next 24h (local maximum)
-    peak_time, peak_pred = max(predicted, key=lambda x: x[1])
+    # Time-independent inputs (shared across all tides today)
+    temp_avg = fetch_temperature_72h_mean()
+    cold = (temp_avg is not None and temp_avg < COLD_LOCKOUT_F)
+    nws_hourly = fetch_nws_hourly_forecast()
 
-    # Surge: prefer NWS Coastal Flood product if active, else surge persistence
+    # NWS Coastal Flood projections (if any active event)
     nws_active = False
     nws_status = "not active"
-    forecast_observed_peak = None
-    surge = 0.0
+    nws_projections = []
     try:
         import nws_surge_parser
-        nws_active, projections, _, msg = nws_surge_parser.get_surge_forecast()
-        if nws_active and projections:
-            # Find highest tide in next 24h from NWS forecast
-            now = dt.datetime.now()
-            future_24h = [p for p in projections
-                          if now <= p["when"] <= now + dt.timedelta(hours=24)]
-            if future_24h:
-                peak_proj = max(future_24h, key=lambda p: p["total_mllw_ft"])
-                forecast_observed_peak = peak_proj["total_mllw_ft"]
-                surge = peak_proj["departure_ft"]
-                peak_time = peak_proj["when"].strftime("%Y-%m-%d %H:%M")
-                nws_status = (f"NWS Coastal Flood forecast: peak "
-                              f"{forecast_observed_peak:.2f} ft "
-                              f"at {peak_time} (cat: {peak_proj['cat']})")
-        elif nws_active:
+        nws_active, nws_projections, _, msg = nws_surge_parser.get_surge_forecast()
+        if not nws_active:
+            nws_status = "not active"
+        elif not nws_projections:
             nws_status = f"NWS event active but parser failed: {msg}"
     except ImportError:
         nws_status = "parser module not found"
     except Exception as e:
         nws_status = f"NWS fetch error: {e}"
 
-    # Fall back to surge persistence if no NWS forecast available
-    if forecast_observed_peak is None:
-        surge = fetch_current_surge() or 0.0
-        forecast_observed_peak = peak_pred + max(0.0, surge)
-        source = "surge-persistence"
-    else:
-        source = "nws-coastal-flood-product"
+    # If NWS not active, fall back to surge persistence (one value, applies to all tides today)
+    persisted_surge = None
+    if not (nws_active and nws_projections):
+        persisted_surge = fetch_current_surge() or 0.0
 
-    # Rainfall in window around peak tide
-    forecast_periods = fetch_nws_hourly_forecast()
-    peak_dt = parse_iso(peak_time + "-04:00" if "T" not in peak_time else peak_time)
-    # NOAA returns local time; NWS returns ISO. Find NWS periods within +/- 90 min of peak.
-    window_start = peak_dt - dt.timedelta(minutes=90)
-    window_end   = peak_dt + dt.timedelta(minutes=90)
-
-    peak_rain_rate = 0.0
-    for p in forecast_periods[:48]:
+    # Evaluate each high tide independently
+    all_tides = []
+    for tide_time, tide_pred in high_tides:
+        # Surge for this specific high tide
+        surge = 0.0
+        forecast_peak = None
+        source = None
         try:
-            t = parse_iso(p["startTime"])
+            peak_dt = parse_iso(tide_time + "-04:00" if "T" not in tide_time else tide_time)
         except Exception:
-            continue
-        if window_start <= t <= window_end:
-            # NWS provides probabilityOfPrecipitation, not always a rate.
-            # Use 'quantitativePrecipitation' if present, otherwise estimate.
-            qp = p.get("quantitativePrecipitation") or {}
-            val = qp.get("value")
-            if val is not None:
-                peak_rain_rate = max(peak_rain_rate, float(val))
+            peak_dt = None
 
-    # Cold lockout
-    temp_avg = fetch_temperature_72h_mean()
-    cold = (temp_avg is not None and temp_avg < COLD_LOCKOUT_F)
+        if nws_active and nws_projections and peak_dt is not None:
+            # Find NWS projection closest to this high tide (NWS rows are at exact tide times too)
+            closest = min(
+                nws_projections,
+                key=lambda p: abs((p["when"] - peak_dt.replace(tzinfo=None)).total_seconds()),
+            )
+            # Only use NWS value if it's within 2 hours of this tide
+            if abs((closest["when"] - peak_dt.replace(tzinfo=None)).total_seconds()) < 7200:
+                forecast_peak = closest["total_mllw_ft"]
+                surge = closest["departure_ft"]
+                source = "nws-coastal-flood-product"
 
-    depths = predict_landmark_depths(forecast_observed_peak, peak_rain_rate, cold)
+        if forecast_peak is None:
+            # Surge persistence fallback
+            surge = persisted_surge if persisted_surge is not None else 0.0
+            forecast_peak = tide_pred + max(0.0, surge)
+            source = "surge-persistence"
+
+        # Rain in ±90 min of THIS high tide
+        peak_rain_rate = 0.0
+        if peak_dt is not None:
+            window_start = peak_dt - dt.timedelta(minutes=90)
+            window_end   = peak_dt + dt.timedelta(minutes=90)
+            for p in nws_hourly[:48]:
+                try:
+                    t = parse_iso(p["startTime"])
+                except Exception:
+                    continue
+                if window_start <= t <= window_end:
+                    qp = p.get("quantitativePrecipitation") or {}
+                    val = qp.get("value")
+                    if val is not None:
+                        peak_rain_rate = max(peak_rain_rate, float(val))
+
+        # Depth at landmarks for this tide
+        depths = predict_landmark_depths(forecast_peak, peak_rain_rate, cold)
+
+        all_tides.append({
+            "time": tide_time,
+            "predicted_mllw": tide_pred,
+            "surge_ft": surge,
+            "forecast_peak_mllw": forecast_peak,
+            "peak_rain_in_hr": peak_rain_rate,
+            "source": source,
+            "depths_in": depths,
+        })
+
+    # Identify the worst-case high tide for headline / subject line
+    worst = max(all_tides, key=lambda t: t["forecast_peak_mllw"])
 
     return {
-        "peak_predicted_mllw": peak_pred,
-        "peak_forecast_observed_mllw": forecast_observed_peak,
-        "peak_time_local": peak_time,
-        "current_surge_ft": surge,
-        "peak_rain_rate_in_hr": peak_rain_rate,
+        # Headline fields (worst-case tide)
+        "peak_predicted_mllw": worst["predicted_mllw"],
+        "peak_forecast_observed_mllw": worst["forecast_peak_mllw"],
+        "peak_time_local": worst["time"],
+        "current_surge_ft": worst["surge_ft"],
+        "peak_rain_rate_in_hr": worst["peak_rain_in_hr"],
         "temp_avg_72h_f": temp_avg,
         "cold_lockout": cold,
-        "depths_in": depths,
-        "surge_source": source,
+        "depths_in": worst["depths_in"],
+        "surge_source": worst["source"],
         "nws_status": nws_status,
+        # New: full breakdown of all high tides in next 24h
+        "all_tides": all_tides,
     }
 
 
@@ -322,24 +355,43 @@ def render_email(forecast):
     regime = d["regime"]
     peak_t = forecast["peak_time_local"]
     peak_ft = forecast["peak_forecast_observed_mllw"]
+    all_tides = forecast.get("all_tides", [])
 
     subject = (f"[342 Bay] {regime.upper()}: forecast {peak_ft:.2f} ft "
                f"at {peak_t} (curb {d['curb']:.1f}\")")
 
+    # Format the list of all high tides in next 24h
+    tide_lines = []
+    for t in all_tides:
+        td = t["depths_in"]
+        marker = " *" if t["time"] == peak_t else "  "
+        tide_lines.append(
+            f"{marker}{t['time']}    "
+            f"pred {t['predicted_mllw']:5.2f}  "
+            f"surge {t['surge_ft']:+5.2f}  "
+            f"= {t['forecast_peak_mllw']:5.2f} ft   "
+            f"{td['regime']:10s}  curb {td['curb']:4.1f}\""
+        )
+    tide_block = "\n".join(tide_lines)
+
     text = f"""\
 Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
 
-Next high tide:  {peak_t}
-Predicted tide:  {forecast['peak_predicted_mllw']:.2f} ft MLLW (Sandy Hook)
-Current surge:   {forecast['current_surge_ft']:+.2f} ft
-Forecast peak:   {peak_ft:.2f} ft MLLW
-Surge source:    {forecast['surge_source']}
-                 ({forecast['nws_status']})
-Rain in window:  {forecast['peak_rain_rate_in_hr']:.2f} in/hr peak
-72h mean temp:   {forecast['temp_avg_72h_f']:.1f} F
-Cold lockout:    {'YES (drains likely ice-locked)' if forecast['cold_lockout'] else 'no'}
+High tides in next 24h ( * = worst case, headlined below):
+{tide_block}
 
-PREDICTED DEPTH (inches above each landmark at 342 Bay Ave):
+Worst case detail:
+  High tide time:  {peak_t}
+  Predicted tide:  {forecast['peak_predicted_mllw']:.2f} ft MLLW (Sandy Hook)
+  Surge:           {forecast['current_surge_ft']:+.2f} ft
+  Forecast peak:   {peak_ft:.2f} ft MLLW
+  Surge source:    {forecast['surge_source']}
+                   ({forecast['nws_status']})
+  Rain in window:  {forecast['peak_rain_rate_in_hr']:.2f} in/hr peak
+  72h mean temp:   {forecast['temp_avg_72h_f']:.1f} F
+  Cold lockout:    {'YES (drains likely ice-locked)' if forecast['cold_lockout'] else 'no'}
+
+PREDICTED DEPTH at worst-case tide (inches above each landmark at 342 Bay Ave):
   Curb at walkway (4.16 NAVD88):    {d['curb']:5.1f} in
   Bay Ave road middle (4.36):       {d['road_middle']:5.1f} in
   Intersection center (4.54):       {d['intersection']:5.1f} in
@@ -360,18 +412,44 @@ Model: v0.5. Local enhancement +0.40 ft.
     bg = {"dry": "#e8f5e9", "light": "#fff8e1", "moderate": "#ffe0b2",
           "severe": "#ffcdd2", "cold_lockout": "#e3f2fd"}.get(regime, "#fff")
 
+    # Build the all-tides rows for the HTML email
+    tide_rows_html = ""
+    for t in all_tides:
+        td = t["depths_in"]
+        is_worst = (t["time"] == peak_t)
+        row_style = "background:#ffffcc" if is_worst else ""
+        tide_rows_html += (
+            f'<tr style="{row_style}">'
+            f'<td>{t["time"]}</td>'
+            f'<td align="right">{t["predicted_mllw"]:.2f}</td>'
+            f'<td align="right">{t["surge_ft"]:+.2f}</td>'
+            f'<td align="right"><b>{t["forecast_peak_mllw"]:.2f}</b></td>'
+            f'<td align="right">{td["curb"]:.1f}&Prime;</td>'
+            f'<td>{td["regime"]}</td>'
+            f'</tr>'
+        )
+
     html = f"""\
 <html><body style="font-family:sans-serif;background:{bg};padding:20px">
 <h2>Bay Ave Flood Forecast</h2>
 <p><b>{dt.date.today().isoformat()}</b></p>
-<p><b>Next high tide:</b> {peak_t}<br>
+
+<h3>High tides in next 24h</h3>
+<table border="1" cellpadding="8" style="border-collapse:collapse;background:white">
+<tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Curb</th><th>Regime</th></tr>
+{tide_rows_html}
+</table>
+<p style="font-size:small;color:#666">Highlighted row = worst-case tide, headlined below.</p>
+
+<p><b>Worst case:</b> {peak_t}<br>
 <b>Forecast peak (obs):</b> {peak_ft:.2f} ft MLLW Sandy Hook
 ({forecast['peak_predicted_mllw']:.2f} predicted {forecast['current_surge_ft']:+.2f} surge)<br>
+<b>Surge source:</b> {forecast['surge_source']} ({forecast['nws_status']})<br>
 <b>Rainfall in window:</b> {forecast['peak_rain_rate_in_hr']:.2f} in/hr peak<br>
 <b>72h mean temp:</b> {forecast['temp_avg_72h_f']:.1f}&deg;F
 {'(COLD LOCKOUT ACTIVE)' if forecast['cold_lockout'] else ''}</p>
 
-<h3>Predicted depth at 342 Bay Ave landmarks</h3>
+<h3>Depth at 342 Bay Ave landmarks (worst-case tide)</h3>
 <table border="1" cellpadding="8" style="border-collapse:collapse;background:white">
 <tr><th align="left">Location</th><th>NAVD88</th><th>Depth (in)</th></tr>
 <tr><td>Curb at walkway</td><td>4.16</td><td><b>{d['curb']:.1f}</b></td></tr>
@@ -402,6 +480,24 @@ def render_html_page(forecast):
     peak_ft = forecast["peak_forecast_observed_mllw"]
     today = dt.date.today().isoformat()
     cold = forecast["cold_lockout"]
+    all_tides = forecast.get("all_tides", [])
+
+    # Build the all-tides table rows
+    tide_rows = ""
+    for t in all_tides:
+        td = t["depths_in"]
+        is_worst = (t["time"] == peak_t)
+        row_class = ' class="worst-tide"' if is_worst else ""
+        tide_rows += (
+            f'<tr{row_class}>'
+            f'<td>{t["time"]}</td>'
+            f'<td>{t["predicted_mllw"]:.2f}</td>'
+            f'<td>{t["surge_ft"]:+.2f}</td>'
+            f'<td><b>{t["forecast_peak_mllw"]:.2f}</b></td>'
+            f'<td>{td["curb"]:.1f}&Prime;</td>'
+            f'<td>{td["regime"]}</td>'
+            f'</tr>'
+        )
 
     return f"""\
 <!DOCTYPE html>
@@ -421,15 +517,24 @@ def render_html_page(forecast):
 
   <section class="regime regime-{regime}">
     <div class="regime-label">{regime.upper()}</div>
-    <div class="regime-summary">Peak {peak_ft:.2f} ft MLLW at {peak_t}, curb depth {d['curb']:.1f}&Prime;</div>
+    <div class="regime-summary">Worst-case peak {peak_ft:.2f} ft MLLW at {peak_t}, curb depth {d['curb']:.1f}&Prime;</div>
+  </section>
+
+  <section class="tides">
+    <h2>High tides in next 24h</h2>
+    <table class="tide-table">
+      <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Curb</th><th>Regime</th></tr></thead>
+      <tbody>{tide_rows}</tbody>
+    </table>
+    <p class="note">Highlighted row is the worst case headlined above. Both high tides shown for situational awareness.</p>
   </section>
 
   <section class="forecast">
-    <h2>Forecast for {today}</h2>
+    <h2>Worst-case detail</h2>
     <dl>
-      <dt>Next high tide</dt><dd>{peak_t}</dd>
+      <dt>High tide time</dt><dd>{peak_t}</dd>
       <dt>Predicted tide</dt><dd>{forecast['peak_predicted_mllw']:.2f} ft MLLW (Sandy Hook)</dd>
-      <dt>Current surge</dt><dd>{forecast['current_surge_ft']:+.2f} ft</dd>
+      <dt>Surge</dt><dd>{forecast['current_surge_ft']:+.2f} ft</dd>
       <dt>Forecast peak</dt><dd>{peak_ft:.2f} ft MLLW</dd>
       <dt>Surge source</dt><dd>{forecast['surge_source']} <span class="note">({forecast['nws_status']})</span></dd>
       <dt>Peak rainfall</dt><dd>{forecast['peak_rain_rate_in_hr']:.2f} in/hr</dd>
@@ -439,7 +544,7 @@ def render_html_page(forecast):
   </section>
 
   <section class="landmarks">
-    <h2>Predicted depth at landmarks</h2>
+    <h2>Predicted depth at landmarks (worst-case tide)</h2>
     <table>
       <thead><tr><th>Location</th><th>NAVD88</th><th>Depth</th></tr></thead>
       <tbody>
