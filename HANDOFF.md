@@ -255,9 +255,8 @@ barnacle/
 │   │   └── sandy_hook_hourly_history.parquet  # gitignored — 15 MB, regenerable
 │   ├── figures/                  # PNG plots (return periods, decadal, etc.)
 │   └── pull.log
-├── deploy/
-│   └── HANDOFF.md                # superseded by section 4 above
 └── attic/                        # archived dead-ends + old structure
+    └── superseded_handoffs/      # done task specs and deploy/HANDOFF.md
     ├── etss_fetcher.py
     └── dev_pre_v0.5_reorg_20260518/   # original dev/ tree
 ```
@@ -799,5 +798,45 @@ For when you come back to a fresh chat with this document:
 - **Sandy 2012 is 13.31 ft instantaneous / 12.03 ft hourly_height.**
   Don't conflate these. Forecasts on hourly products that hit 12.0+
   IS Sandy-class.
+
+---
+
+### Upkeep rules (added 2026-05-18)
+
+These four documents live in lockstep with the project and should be
+updated in the same commit as the change that necessitated them:
+
+1. **`HANDOFF.md` (this file)** — update whenever:
+   - A section 9 future-work item is implemented (mark ~~done~~ ✅
+     with date + commit ref, leave the item body for context)
+   - A new future-work item is added
+   - Section 4 (files inventory) or section 5 (repo layout) changes
+   - The model itself changes (sections 3, 5, 6, the elevations table)
+   - The deployment infrastructure changes (section 8)
+
+2. **`model/v0.5.md` (or its successor)** — update whenever:
+   - LANDMARKS, LOCAL_ENHANCEMENT, MLLW_TO_NAVD88, or any constant
+     changes
+   - The formula or pathway structure changes
+   - Labeled events table changes
+   - **Versioning convention:** *real* model changes warrant a version
+     bump (`v0.6.md`, `v0.7.md`, …), not inline sub-revisions. Reserve
+     same-version edits for typo/wording corrections, not new
+     landmarks or formula changes. v0.5.1 and v0.5.2 in the current
+     file are retroactively due for a v0.6 promotion — left for next
+     session per user request.
+
+3. **`data/labeled_observations.csv`** — append a row whenever the user
+   reports an observation. See
+   `data/labeled_observations_README.md` for column format. Don't
+   rewrite past rows; the log is append-only.
+
+4. **Annual analytics refresh** — once a year (e.g., January) re-run
+   `history/scripts/analyze.py` to regenerate the seasonality /
+   percentile / event CSVs with the most-recent window. Also a good
+   time to re-run `history/scripts/pull_sandy_hook_history.py` to
+   pull the new year's data and rebuild the parquet. Update
+   `history/reports/flood_history_report.md` numbers if doing a
+   thorough refresh.
 
 End of handoff.

@@ -1,2 +1,18 @@
-# barnacle
-Bay Ave Barnacle — a hyperlocal flood watcher
+# Bay Ave Barnacle
+
+A hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ. A daily
+email + a public page at
+[johnurban.github.io/barnacle](https://johnurban.github.io/barnacle/)
+predict water depth at 8 named landmarks at the property — from the
+lowest road corner across Bay (early-warning sentinel) up through the
+front porch first step — using NOAA Sandy Hook tide + surge data, NWS
+rainfall + temperature forecasts, and a v0.5 model calibrated against
+firsthand flood observations.
+
+The system is in production. GitHub Actions runs the forecast each
+morning, delivers an email via SMTP, publishes an HTML snapshot to
+GitHub Pages, and archives both HTML + JSON copies under `docs/archive/`.
+
+**For state-of-the-project / model spec / future work, start with
+[HANDOFF.md](HANDOFF.md).** It's the authoritative document; this
+README is just a pointer.
