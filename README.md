@@ -16,3 +16,10 @@ GitHub Pages, and archives both HTML + JSON copies under `docs/archive/`.
 **For state-of-the-project / model spec / future work, start with
 [HANDOFF.md](HANDOFF.md).** It's the authoritative document; this
 README is just a pointer.
+
+
+## To install on your iPhone after you push + the Action runs:
+- Open johnurban.github.io/barnacle in Safari (must be Safari, not Chrome — only Safari can install PWAs on iOS)
+- Tap the Share button (square with up arrow)
+- Scroll down → "Add to Home Screen"
+- Title defaults to "Barnacle" — keep or rename, tap Add
