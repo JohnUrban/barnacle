@@ -52,10 +52,11 @@ across four labeled flood events the user observed firsthand.
 | Forecast archive (every day kept forever) | ✅ docs/archive/YYYY-MM-DD.html |
 | Bcc privacy for multi-recipient | ✅ Built into send_email |
 | Repo reorganization | ✅ Clean structure, old work archived in `attic/` |
-| Historical statistics project (Claude Code) | ⏳ In progress |
+| Historical statistics project (Claude Code) | ✅ Complete (2026-05-18). Report + CSVs in `history/` |
+| Dashboard threshold correction | ✅ Corrected to 6.70 ft (was wrongly documented as 7.20 ft) |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
-| Seasonal context line in email | ⏸ Designed, not yet built |
+| Seasonal context line in email | ⏸ Designed, data ready, not yet built (next priority) |
 | Stevens NYHOPS surge fallback | ⏸ Not investigated further |
 | ETSS direct fetch | ❌ Abandoned — network blocked from user's ISP |
 | Node.js 20 deprecation in workflow | ⏸ Bump action versions before June 2 2026 |
@@ -102,6 +103,12 @@ if temp_72h < 32°F and SH_peak < 8.0:  depth = 0
 
 Datum constants: `NAVD88 = MLLW − 2.82` at Sandy Hook (NOAA-published).
 
+**Hurricane Sandy reference:** 13.31 ft MLLW on NOAA 6-min product
+(instantaneous peak), 12.03 ft on hourly_height (centered-hour average).
+The 6-min number is what historical accounts cite. A forecast hitting
+12.0 ft on hourly products IS a Sandy-class event — don't anchor
+expectations on the 13.31 number when comparing to hourly products.
+
 **Reference depths from labeled events:**
 
 | Event | Sandy Hook obs MLLW | Observed depth | Model predicted |
@@ -111,6 +118,7 @@ Datum constants: `NAVD88 = MLLW − 2.82` at Sandy Hook (NOAA-published).
 | Dec 19 2025 | 6.83 + 0.44"/hr rain | ~7–9" | ~6" (under-predicts rain term) |
 | Oct 30 2025 | 7.57 + 1.45"/hr rain | ~12" severe | ~14" |
 | Feb 22–23 2026 | 7.19 + cold | **No flood** | 0 (cold lockout) |
+| Aug 21 2025 | 6.93 + surge 1.4 ft (per historical pull) | unknown (user not home/didn't log?) | ~4–5" predicted |
 
 ---
 
@@ -206,16 +214,11 @@ barnacle/
 │   ├── HLND2303-Road-Reconstruction-Supplement-Set-2024.05.06.pdf
 │   └── archive/                  # v0.1 - v0.4 specs
 ├── data/
-│   ├── labeled_events.csv        # 5 flood events used for calibration
+│   ├── labeled_events.csv        # 6 flood events used for calibration
 │   ├── merged_hourly.csv         # tide + met + rain joined, ~6200 rows
-│   ├── monthly_flood_averages.csv
 │   ├── floods_by_month{,_minor,_moderate,_major,_total}.tsv
 │   ├── top10_highest_tides.tsv
 │   └── raw/                      # source pulls before merging
-│       ├── sandyhook_water_levels.csv
-│       ├── sandyhook_met.csv
-│       ├── njdep_rainfall_2026_05_17.csv
-│       └── met_monthly/          # monthly chunks
 ├── analysis/
 │   ├── cross_ref.py              # calibration cross-reference
 │   ├── rain_analysis.py
@@ -226,14 +229,42 @@ barnacle/
 │   └── archive/
 │       ├── index.html            # auto-regenerated list
 │       └── YYYY-MM-DD.html       # one per day, forever
-├── history/                      # Claude Code's project area
-│   └── HANDOFF.md
+├── history/                      # historical-stats project (Claude Code)
+│   ├── HANDOFF.md                # original task spec (with dashboard correction)
+│   ├── RESULTS_HANDOFF.md        # ★ peer summary of what was done & found
+│   ├── reports/
+│   │   └── flood_history_report.md  # ★ primary report
+│   ├── scripts/
+│   │   ├── pull_sandy_hook_history.py   # NOAA puller (resumable)
+│   │   ├── build_dataset.py             # raw chunks → hourly parquet
+│   │   └── analyze.py                   # all derived analytics
+│   ├── data/
+│   │   ├── summary_stats.json           # ★ headline numbers
+│   │   ├── calibration_check.csv        # ★ 4-event validation
+│   │   ├── seasonality_by_threshold.csv # ★ for seasonal-context email line
+│   │   ├── slr_trend_by_window.csv      # SLR by 4 windows
+│   │   ├── return_periods.csv           # GEV return levels
+│   │   ├── flood_days_per_year.csv
+│   │   ├── decadal_threshold_crossings.csv
+│   │   ├── annual_means.csv
+│   │   ├── 342_bay_flood_events.csv
+│   │   ├── (and others)
+│   │   ├── raw_chunks/                  # gitignored — 1,400 monthly pulls
+│   │   └── sandy_hook_hourly_history.parquet  # gitignored — 15 MB, regenerable
+│   ├── figures/                  # PNG plots (return periods, decadal, etc.)
+│   └── pull.log
 ├── deploy/
 │   └── HANDOFF.md                # superseded by section 4 above
 └── attic/                        # archived dead-ends + old structure
     ├── etss_fetcher.py
     └── dev_pre_v0.5_reorg_20260518/   # original dev/ tree
 ```
+
+**On `history/data/`:** the top-level CSVs and JSON are small, referenced
+by the report, and tracked in git. The raw chunks (~1,400 monthly parquet
+files) and the 15 MB combined hourly parquet are gitignored — they can
+be regenerated by re-running `history/scripts/pull_sandy_hook_history.py`
+(resumable, ~30 min wall-clock).
 
 ---
 
@@ -271,10 +302,17 @@ These are the model corrections that actually moved the needle:
    Hypothesis: ice at storm drain outfalls blocks bay→street pathway.
    In the model as an override.
 
-7. **NWS Mt Holly's coastal flood Minor threshold (6.7 ft MLLW) is**
-   exactly the user's empirical flood onset (~6.6 ft). Independent
-   validation: NWS thinks "minor coastal flooding" happens at the same
-   water level the user sees water at the curb.
+7. **Three independent sources converge on "minor flooding starts at
+   ~6.6 ft Sandy Hook MLLW":**
+   - User's empirical curb onset (4 events): **6.58 ft**
+   - NWS Mt Holly Minor Coastal Flooding: **6.70 ft**
+   - Sandy Hook Tidal Dashboard "Minor" (UI + count reproduction): **6.70 ft**
+   All within 0.12 ft (~1.4 inches). Hyperlocal empirical agrees with
+   regional NWS standards. Earlier versions of this HANDOFF documented
+   the dashboard's threshold as 7.20 ft — that was wrong (likely from
+   misreading static HTML fallback values rather than live JS-rendered
+   values). Correcting it makes the cross-validation story *stronger*,
+   not weaker.
 
 8. **v0.4 had arithmetic errors in three threshold values** that v0.5
    corrected (road middle, intersection, lawn step). Python code was
@@ -288,6 +326,65 @@ These are the model corrections that actually moved the needle:
    that affects daily planning. First real-world example: 6.19 ft
    evening vs 4.91 ft morning = 1.28 ft spread, completely hidden in
    v1 reporting.
+
+10. **Historical-stats project confirms model self-consistency and
+    reveals trend context.** Independent NOAA pull 1910–2026 (1.02M
+    hourly rows) reproduced all 4 labeled events exactly, found SLR
+    rate of 4.29 mm/yr (NOAA published: 4.05 — agreement within 6%),
+    and confirmed Aug 21 2025 was a real elevated event (6.93 ft +
+    1.4 ft surge) above the user's curb threshold. See section 7
+    below for the headline findings.
+
+---
+
+## 6b. Historical-stats project — key findings (2026-05-18)
+
+Claude Code's analysis of NOAA Sandy Hook hourly data 1910–2026.
+Full report in `history/reports/flood_history_report.md`; peer summary
+in `history/RESULTS_HANDOFF.md`.
+
+**Headlines:**
+
+- **Calibration**: All 4 labeled v0.5 events match historical pull values
+  exactly (Apr 17: 6.76, Apr 18: 7.32, Oct 30: 7.57 + surge 2.90,
+  Dec 19: 6.83). No recalibration implied.
+- **SLR validation**: 4.29 mm/yr (1932–2024) vs NOAA's published 4.05
+  mm/yr — agreement within 6%, validates the gauge data and processing
+  chain.
+- **Recent SLR acceleration**: 5.45 mm/yr post-1980 (1.35× long-term
+  rate). Forward-projecting: ~0.5 ft more rise by 2055 — at that point
+  today's routine 6.6 ft high tides will wet the lawn step, not just
+  the curb.
+- **Flood-day frequency at curb (6.58 ft) recent decades**: 38 (2010s),
+  44 (2020s). Up ~15× from the 1950s baseline. (The 1910s baseline is
+  too thin to use — only 7 years of usable data.)
+- **100-year return level**: 10.57 ft MLLW (95% CI 9.5–11.8). At the
+  curb that's ~48 inches of water from tide alone, before rain.
+- **Hurricane Sandy**: 13.31 ft on 6-min product (instantaneous, the
+  famous number) / 12.03 ft on hourly_height (centered average). GEV
+  fit classifies as ~5000-year event — that's the fit's verdict, not a
+  probability statement; treat as "black swan even by EVT standards."
+- **Aug 21 2025**: Confirmed real elevated event — Sandy Hook 6.93 ft
+  + 1.4 ft surge at 19:00. Above user's curb (6.58) but below lawn-step
+  (7.00). User almost certainly had road water that evening if home.
+
+**Is the flood-rate increase real or methodological?** Audited; the
+trend is mostly real, with caveats:
+- Gauge methodology / sampling-rate changes can't explain the trend
+  (modern averaging biases peaks *lower*, not higher).
+- Datum reference shifts (NTDE updates) are handled correctly by NOAA
+  and produce no artifact.
+- The SLR cross-validation (matching NOAA's published 4.05 mm/yr)
+  confirms data and processing are sound.
+- Physics works out: ~1.3 ft mean rise since 1910 makes ~10× more
+  high tides cross the curb threshold.
+- One genuine uncertainty: the 1980s→1990s step (6/yr → 14/yr) is
+  sharper than smooth trend predicts. Could be early-acceleration,
+  storm clustering (the 1993 "Storm of the Century" era), or unknown
+  factor. Worth a follow-up check of `annual_means.csv` for a smooth
+  vs stepped MSL trajectory.
+- **Recommended framing**: cite "15× since the 1950s" (firm) rather
+  than "9× since the 1910s" (thin baseline).
 
 ---
 
@@ -394,31 +491,34 @@ Same surge information the Borough's emergency management is looking at.
    own. When a Coastal Flood Warning/Advisory fires for Eastern Monmouth,
    run `python3 nws_surge_parser.py` and confirm it parses cleanly.
    Tighten regex if needed.
-2. **Historical statistics project** (`history/HANDOFF.md`, in progress
-   with Claude Code). Pulls all NOAA Sandy Hook hourly data and computes
-   hyperlocal flood-event statistics at *user's* 6.58 ft threshold,
-   not the dashboard's 7.20 ft. Outputs return periods, sea-level-rise
-   trend, monthly frequency.
+2. **Add seasonal context line to email and HTML page.** Use
+   `history/data/seasonality_by_threshold.csv` to add e.g.
+   "October averages 4 flood days at your curb. You've had 3 so far this
+   October." Could also pull SLR context from
+   `history/data/slr_trend_by_window.csv` for a "today's routine 6.6 ft
+   tide wouldn't have wet the curb in 1990" line. Small change to
+   `render_email()` and `render_html_page()` in the daily forecast script.
+   **This is the highest-leverage item now that historical data exists.**
 3. **Switch SMTP_USER to `bayavebarnacle@gmail.com`** once the account
    ages enough to support app passwords. Update three GitHub secrets;
    no code change. Keeps forecast emails out of personal Sent folder.
-4. **Investigate Aug 21 2025 NWS Moderate Coastal Flood Warning.** The
-   search that gave us the parser sample was a real event — Sandy Hook
-   forecast 8.0 ft at 7 PM Aug 21, surge +2.4 ft. User has no logged
-   flood for that date. Worth checking whether they were away or the
-   forecast didn't fully materialize.
-5. **Field-measure the lawn/walkway step elevation.** Current 4.58 NAVD88
+4. **Field-measure the lawn/walkway step elevation.** Current 4.58 NAVD88
    is the midpoint of an inferred 4.54–4.63 range. A precise reading
    tightens the moderate-flood threshold.
-6. **Add seasonal context line to email.** Use `data/monthly_flood_averages.csv`
-   to add e.g. "May avg: 1.2 flood events/month at Sandy Hook. You've
-   had 0 so far this May." Small change to `render_email`.
-7. **Day-name labeling in tide times.** Currently shows
+5. **Day-name labeling in tide times.** Currently shows
    "2026-05-18 22:14" — accurate but a mouthful. Could format as
    "Mon 10:14 PM" for readability. Easy strftime change.
-8. **Update GitHub Actions versions before June 2 2026.** Node.js 20
+6. **Update GitHub Actions versions before June 2 2026.** Node.js 20
    deprecation in `actions/checkout@v4` and `actions/setup-python@v5`.
    One-line PR each when new majors land.
+7. **Confirm or refute the 1990s discontinuity in flood-frequency data.**
+   Quick check: open `history/data/annual_means.csv`, look for an MSL
+   step around 1995-1996. Smooth trajectory = real SLR / storm
+   clustering. Step = methodology break (worth investigating).
+8. **Check if Aug 21 2025 really did flood at 342 Bay.** Historical
+   data shows Sandy Hook 6.93 ft + 1.4 ft surge at 19:00 — above curb,
+   below lawn step. If user has photos / memory of that evening, can
+   add to labeled events.
 
 ### Medium value
 9. **Decompose the +0.40 local enhancement.** Currently a constant; with
@@ -441,44 +541,65 @@ Same surge information the Borough's emergency management is looking at.
 15. **Borough drainage map.** Email Stephen Winters (Floodplain Admin,
     swinters@highlandsnj.gov) for the storm sewer map. Would clarify
     Pathway B outfall locations.
+16. **Cold-weather suppression in historical counts.** Historical-stats
+    project didn't filter cold-snap events out. Counts are slight
+    over-estimates in winter. Would need temp data joined into hourly
+    dataset. Modest refinement.
 
 ### Worth retrying later
-16. **NOAA ETSS direct fetch from GitHub Actions runner.** Different IP,
+17. **NOAA ETSS direct fetch from GitHub Actions runner.** Different IP,
     different routing. If successful, gives always-on numeric surge
     forecast — complementary to NWS products (event-only).
-17. **Stevens NYHOPS API inspection.** Focused attempt to find the
+18. **Stevens NYHOPS API inspection.** Focused attempt to find the
     JSON endpoint behind their SFAS visualization.
-18. **Iowa Mesonet historical NWS products.** Right URL pattern would
+19. **Iowa Mesonet historical NWS products.** Right URL pattern would
     let us pull e.g. the Oct 30 2025 Mt Holly CFW text for parser
     hardening before relying on a live event.
 
 ### Speculative / nice-to-have
-19. **Probabilistic ETSS (P-ETSS) ensemble.** 21 GEFS members → spread.
+20. **Probabilistic ETSS (P-ETSS) ensemble.** 21 GEFS members → spread.
     Once ETSS works, gives probability of flooding directly.
-20. **Bayesian seasonality update.** Use monthly priors to flag unusual
+21. **Bayesian seasonality update.** Use monthly priors to flag unusual
     forecasts.
-21. **USGS Total Water Level Forecast API.** Mentioned but not
+22. **USGS Total Water Level Forecast API.** Mentioned but not
     explored. Serves coastal forecasts including Sandy Hook.
-22. **Multi-location expansion.** Same model architecture, different
+23. **Multi-location expansion.** Same model architecture, different
     anchors, for neighbors. "Atlantic Highlands Barnacle." Repo named
     generically for this.
-23. **NJ LiDAR DEM extraction.** Currently use surveyed plan elevations.
+24. **NJ LiDAR DEM extraction.** Currently use surveyed plan elevations.
     LiDAR would let us see full neighborhood microtopography and produce
     flood-extent maps for any Sandy Hook level.
+25. **Re-pull historical data periodically (e.g., yearly).** The
+    chunked puller is resumable, so refreshing the dataset to include
+    new years is cheap. Could be a GitHub Actions cron job.
 
 ---
 
 ## 10. Outstanding open questions
 
-- Was the Aug 21 2025 NWS-forecast Moderate flood actually a flood at
-  342 Bay, or did the forecast over-shoot?
-- Why is the +0.40 ft local enhancement so consistent across 4 events
-  with very different wind/pressure conditions? Suggests structural
-  factor (drain backflow geometry) more than meteorological.
-- Does the rain term saturate at 8 inches as `tanh` assumes? Only
+- **Did Aug 21 2025 actually flood at 342 Bay?** Historical data confirms
+  Sandy Hook reached 6.93 ft + 1.4 ft surge at 19:00 — above the curb
+  threshold (6.58), below the lawn step (7.00). User likely had road
+  water if home. Worth confirming from memory or photos.
+- **Is the +0.40 ft local enhancement truly constant across conditions?**
+  Fits 4 events to ±0.05 ft, but those events are similar (moderate
+  surge, similar wind). Historical pull can't probe this; would need
+  weather data joined to surge-residual analysis. Probable ±0.05 ft
+  scatter based on visible event spread.
+- **Does the rain term saturate at 8 inches as `tanh` assumes?** Only
   Oct 30 and Dec 19 sample the rain regime meaningfully.
-- Does cold-weather override apply to a single overnight freeze or
-  only sustained below-freezing periods? Only one observation.
+- **Does cold-weather override apply to a single overnight freeze or
+  only sustained below-freezing periods?** Only one observation.
+- **The 1980s→1990s flood-frequency step (6/yr → 14/yr) — real or
+  methodological?** Sharper than smooth trend predicts. Could be SLR
+  acceleration onset, storm clustering, or unidentified data factor.
+  Quick check: `history/data/annual_means.csv` for MSL step at the
+  same time.
+- **Does the Hurricane Sandy hourly_height of 12.03 ft mean the GEV
+  fit's "5000-year event" classification is wrong?** The 13.31 ft
+  instantaneous value would push the fit higher. Worth a re-fit using
+  6-min product maxima if you ever want a more defensible return-period
+  statement.
 
 ---
 
@@ -500,9 +621,16 @@ System is in production. Nothing is blocking. Suggested cadence:
 5. **Monthly-ish**: review prediction accuracy against any actual
    observations. If predictions consistently miss in one direction,
    that's information for refining the +0.40 enhancement or rain term.
-6. **When Claude Code's historical-statistics project completes**:
-   review outputs. Compare to existing labeled events. Consider
-   integrating long-term stats into the daily email (point #6 above).
+6. **Now, before the seasonal-context build**: commit the historical-stats
+   project outputs (`history/scripts/`, `history/reports/`, `history/data/*.csv`,
+   `history/data/*.json`, `history/figures/`, `history/RESULTS_HANDOFF.md`,
+   `history/pull.log`). Don't commit `history/data/raw_chunks/` or
+   `history/data/sandy_hook_hourly_history.parquet` — both regeneratable
+   and bulky. Update `.gitignore` accordingly.
+7. **Build the seasonal-context feature** — pull from
+   `history/data/seasonality_by_threshold.csv` and
+   `history/data/slr_trend_by_window.csv`; small change to
+   `render_email()` and `render_html_page()`.
 
 ---
 
@@ -532,5 +660,19 @@ For when you come back to a fresh chat with this document:
 - **The bot commits daily.** Always pull-rebase before pushing local
   changes. User has `git config pull.rebase true` set; safe to use
   bare `git pull`.
+- **Sandy Hook dashboard uses 6.70 ft Minor, not 7.20 ft.** The 7.20
+  number was a mistake in earlier docs from misreading static HTML
+  fallback values. Live dashboard UI and underlying flood-count
+  computation both use 6.70 ft (matching NWS standards).
+- **The historical-stats project is complete** (`history/` in repo).
+  Headline outputs in `history/reports/flood_history_report.md` and
+  `history/RESULTS_HANDOFF.md`. Headline numbers in
+  `history/data/summary_stats.json`. SLR is real (~4 mm/yr long-term,
+  ~5.45 mm/yr post-1980); flood-frequency increase is mostly real
+  (15× since 1950s on firm ground; "9× since 1910s" rests on thin
+  baseline data).
+- **Sandy 2012 is 13.31 ft instantaneous / 12.03 ft hourly_height.**
+  Don't conflate these. Forecasts on hourly products that hit 12.0+
+  IS Sandy-class.
 
 End of handoff.

@@ -1,5 +1,20 @@
 # Handoff: Historical Flood Statistics at 342 Bay Ave, Highlands NJ
 
+> **STATUS (updated 2026-05-18): PROJECT COMPLETE.** Claude Code executed this
+> spec successfully. See `RESULTS_HANDOFF.md` (peer summary) and
+> `reports/flood_history_report.md` (full report) for outputs.
+>
+> **Correction note:** This spec originally referenced the Sandy Hook
+> Tidal Dashboard's Minor threshold as 7.20 ft. **That was wrong** — the
+> actual operative threshold is 6.70 ft (NWS standard). The error came
+> from misreading static HTML fallback values rather than the live
+> JS-rendered dashboard UI. Claude Code's empirical reproduction
+> caught this: dashboard monthly counts reproduce within 2% at 6.70 ft
+> but not at 7.20 ft. References below that mention "7.20 ft" should
+> be read as 6.70 ft. The cross-validation story is *stronger* with
+> the correction — three sources (user empirical 6.58, NWS Minor 6.70,
+> dashboard 6.70) converge within 0.12 ft.
+
 ## Context
 
 This is a multi-day data project for Claude Code. The goal is to pull
@@ -102,14 +117,14 @@ Produce a Markdown report with these sections:
 #### 3a. Monthly seasonality (the real version)
 
 The user has a CSV from the Sandy Hook dashboard showing average floods
-per month, but it uses the dashboard's 7.20 ft Minor threshold — too
-high for my house. Recompute using *my* threshold (Sandy Hook obs ≥
-6.58 ft, i.e., water at my curb).
+per month. The dashboard uses a 6.70 ft Minor threshold (NWS standard) —
+slightly higher than my 6.58 ft curb threshold. Recompute using *my*
+threshold (Sandy Hook obs ≥ 6.58 ft, i.e., water at my curb).
 
 For comparison, also compute at:
 - 6.58 ft (my house flood onset)
+- 6.70 ft (NWS Minor / Sandy Hook dashboard — sanity check)
 - 7.00 ft (water on my lawn)
-- 7.20 ft (the dashboard's Minor — for sanity check against their stats)
 - 7.70 ft (NWS Moderate)
 - 8.70 ft (NWS Major)
 
@@ -197,11 +212,12 @@ In addition to the Markdown report:
 
 ## Why this matters
 
-The published Sandy Hook flood statistics use a 7.20 ft threshold
-(NWS Minor). At my house I flood at 6.58 ft. So every published
-"floods per year" number understates my actual exposure by something
-like 2-3x. This project produces the version of those statistics that
-is actually accurate for my specific address.
+The published Sandy Hook flood statistics use a 6.70 ft threshold
+(NWS Minor). At my house I flood at 6.58 ft — about 1.4 inches lower.
+That doesn't sound like much, but in the long-tail distribution of
+high tides it means I experience ~20% more flood events per year
+than the dashboard counts. This project produces the version of those
+statistics that is actually accurate for my specific address.
 
 That accuracy matters for:
 - Insurance decisions (what's my real expected loss?)
