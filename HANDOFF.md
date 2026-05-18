@@ -502,14 +502,11 @@ Same surge information the Borough's emergency management is looking at.
    own. When a Coastal Flood Warning/Advisory fires for Eastern Monmouth,
    run `python3 nws_surge_parser.py` and confirm it parses cleanly.
    Tighten regex if needed.
-2. **Add seasonal context line to email and HTML page.** Use
-   `history/data/seasonality_by_threshold.csv` to add e.g.
-   "October averages 4 flood days at your curb. You've had 3 so far this
-   October." Could also pull SLR context from
-   `history/data/slr_trend_by_window.csv` for a "today's routine 6.6 ft
-   tide wouldn't have wet the curb in 1990" line. Small change to
-   `render_email()` and `render_html_page()` in the daily forecast script.
-   **This is the highest-leverage item now that historical data exists.**
+2. ~~**Add seasonal context line to email and HTML page.**~~ ✅ DONE
+   (2026-05-18, multiple commits culminating in the unified landmark
+   table). Stratified by 8 landmarks; recent-window (1996-2025) typical
+   counts; MTD column from live NOAA pull; near-miss line; SLR-
+   conditional line. See current `forecast/flood_forecast_daily.py`.
 3. **Switch SMTP_USER to `bayavebarnacle@gmail.com`** once the account
    ages enough to support app passwords. Update three GitHub secrets;
    no code change. Keeps forecast emails out of personal Sent folder.
@@ -528,27 +525,25 @@ Same surge information the Borough's emergency management is looking at.
    clustering. Step = methodology break (worth investigating).
 8. **Check if Aug 21 2025 really did flood at 342 Bay.** Historical
    data shows Sandy Hook 6.93 ft + 1.4 ft surge at 19:00 — above curb,
-   below lawn step. If user has photos / memory of that evening, can
-   add to labeled events.
-8a. **Plain-language one-sentence summary at the top of the email/page.**
-    The current subject line + regime banner is terse and table-heavy.
-    A single sentence like "Today: brief water at the lowest road
-    corner around 10 PM, nothing on the property. Tomorrow morning:
-    dry." would help skim readers and neighbors. Generate from the
-    same forecast dict; ~20 lines of code in `render_email()` and
-    `render_html_page()`. Highest-leverage small UX item.
+   below lawn step. **Tentative yes (2026-05-18):** user inspected the
+   rental in August and observed swirly mud stains on the sidewalks
+   around 342 Bay, consistent with a recent flood. Worth confirming
+   precise depth or whether multiple events left the staining; could
+   then upgrade `data/labeled_events.csv` from tentative to confirmed.
+8a. ~~**Plain-language one-sentence summary at the top of the email/page.**~~
+    ✅ DONE (2026-05-18, commit ffb112c). Day-aware time phrasing
+    ("tonight" / "tomorrow morning"), per-regime descriptors.
 8b. **Forecast accuracy log.** Auto-compare each day's forecast to the
     next day's observed Sandy Hook peak + actual landmark depth from
     NOAA. Append to `data/forecast_accuracy.csv`. Surface a small
     "model accuracy: last 30 days mean error X.X ft, X.X" at landmarks"
     line in the email. Self-validating system. Could also feed back
     into model recalibration as data accumulates.
-8c. **Rain timing detail in the daily forecast.** Currently the email
-    shows only the peak rain rate in the ±90 min window of high tide.
-    Missing: total rain expected next 24h, whether rain peaks before /
-    during / after high tide, cumulative rain through tide window. For
-    Oct 30-class compound events the timing alignment IS the story.
-    NWS hourly forecast already has the data — just need to format it.
+    *Depends on:* #16c (JSON archive).
+8c. ~~**Rain timing detail in the daily forecast.**~~ ✅ DONE
+    (2026-05-18, commit ffb112c). Cumulative 24h rain + per-tide peak
+    rate + offset relative to high tide. Block is conditional — only
+    shown when ≥ 0.05" of rain is expected.
 
 ### Medium value
 9. **Decompose the +0.40 local enhancement.** Currently a constant; with
@@ -556,10 +551,18 @@ Same surge information the Borough's emergency management is looking at.
    lunar phase. Becomes a function instead of a constant.
 10. **Calibrate cold-weather override threshold.** Only Feb 22–23 in the
     dataset. Several more cold-weather high-tide events would refine
-    the 72-h, 32°F trigger.
-11. **Low tide times in email for "all-clear" indicators.** Users might
-    want to know when it's safe to leave (low tide windows). Fetcher
-    already supports returning both highs and lows from hilo product.
+    the 72-h, 32°F trigger. **The daily spot-check prompt should
+    explicitly call this out as a high-value observation when conditions
+    match** (cold weather + high tide that would otherwise flood). See
+    also item 16 for retrospective calibration from historical data.
+11. **Low tide times in email.** Users might want to know when the
+    tide is at its lowest (parking returns safely, when sub-curb water
+    might drain, etc.). Fetcher already supports returning both highs
+    and lows from the hilo product. Add a small "Low tides in next
+    24h" block.
+    Also see: item 26b (Atlantic Highlands Marina Barnacle spin-off)
+    — the low-tide data is critical for boat-launch decisions and
+    might justify a separate marina-targeted email/page eventually.
 12. **Severity-based notifications.** Currently emails daily regardless.
     Could suppress emails for DRY days and use a separate channel (SMS,
     push) for SEVERE days. Reduces noise.
@@ -567,32 +570,38 @@ Same surge information the Borough's emergency management is looking at.
     rebuilt to design (4.20 NAVD88), all thresholds shift up ~0.04 ft
     (sub-inch).
 14. **Pluvial-only flooding test.** Does heavy rain at low tide flood
-    342 Bay? No event in the dataset confirms or denies.
+    342 Bay? No event in the dataset confirms or denies. **The daily
+    spot-check prompt should explicitly call this out as a high-value
+    observation when conditions match** (heavy rain forecast with all
+    tides well below curb). One good observation could resolve the
+    question.
 15. **Borough drainage map.** Email Stephen Winters (Floodplain Admin,
     swinters@highlandsnj.gov) for the storm sewer map. Would clarify
     Pathway B outfall locations.
-16. **Cold-weather suppression in historical counts.** Historical-stats
-    project didn't filter cold-snap events out. Counts are slight
-    over-estimates in winter. Would need temp data joined into hourly
-    dataset. Modest refinement.
-16a. **Confidence indicator in the daily email.** Today's email is
-    presented with the same visual weight regardless of how trustworthy
-    the underlying forecast actually is. Simple banner:
-    - **High**: NWS Coastal Flood product active (forecaster-vetted)
-      OR cold lockout in effect (model is just zeroing).
-    - **Medium** (default): surge persistence used; SH peak ≤ 8.0 ft
-      (within the calibration range).
-    - **Low**: SH peak > 8.0 ft (outside calibrated range), OR
-      observed surge has swung by > 0.5 ft over the past 6 h
-      (persistence assumption sketchy).
-    Helps the reader know when to trust the number vs check NWS
-    directly.
-16b. **Recent-history recap (last 3-7 days) in the email.** Mini
-    table or one-line summary of "what actually happened" recently:
-    actual Sandy Hook peak each day, whether anything notable occurred
-    at the property. Builds continuity, doubles as a quiet model-
-    validation check. Pulls from NOAA water_level (already used for
-    the MTD count).
+16. **Cold-weather override calibration from historical data.** Two
+    related ideas:
+    (a) Use historical air-temperature data (NOAA `air_temperature`
+        product at Sandy Hook) joined to hourly water-level data to
+        find past events where the cold-weather override SHOULD have
+        applied — i.e., 72-h mean temp < 32°F AND Sandy Hook peak
+        > 6.58 ft (would have crossed the curb without the override).
+        Check newspaper / borough archives or rain/met records to see
+        if flooding actually occurred. If most such past events also
+        produced no flooding, that's strong retrospective validation
+        of the cold-weather override without waiting for new events.
+        (Original Feb 22 2026 observation gives one data point.)
+    (b) Filter cold-snap events out of the historical seasonality CSVs.
+        Counts are slight over-estimates in winter. Not currently
+        advocated for filtering — but the (a) calibration would
+        require building this temperature-joined dataset, which
+        would also support filtering if desired.
+16a. ~~**Confidence indicator in the daily email.**~~ ✅ DONE
+    (2026-05-18, commit ffb112c). Color-coded banner with high/medium/
+    low + reason line; auto-detects NWS active, cold lockout, peak >
+    8 ft, surge swing > 0.5 ft in 6 h.
+16b. ~~**Recent-history recap (last 3-7 days) in the email.**~~ ✅ DONE
+    (2026-05-18, commit ffb112c). 7-day table of observed daily peaks
+    with highest landmark reached.
 16c. **JSON/CSV archive alongside the HTML.** `docs/archive/` is
     currently HTML-only. Adding `docs/archive/YYYY-MM-DD.json` (same
     forecast data, machine-readable) makes retrospective analysis
@@ -638,6 +647,18 @@ Same surge information the Borough's emergency management is looking at.
 23. **Multi-location expansion.** Same model architecture, different
     anchors, for neighbors. "Atlantic Highlands Barnacle." Repo named
     generically for this.
+23a. **Atlantic Highlands Marina Barnacle (spin-off project).** Adjacent
+    use case at the same gauge: low-tide conditions at Atlantic
+    Highlands Marina determine whether boats can launch or return to
+    land. If the tide drops below some threshold (TBD by boat-ramp
+    geometry), launches/retrievals are blocked. Same NOAA hilo
+    product, different threshold logic, different audience. Could be:
+    (a) a section appended to the existing Bay Ave email,
+    (b) a separate email per subscriber group, or
+    (c) a separate site/repo entirely ("ah-marina-barnacle"). Option
+    (b) or (c) likely cleanest as the audiences diverge. The mailing-
+    list infrastructure (item 26) supports both — Google Group lets
+    subscribers self-select.
 24. **NJ LiDAR DEM extraction.** Currently use surveyed plan elevations.
     LiDAR would let us see full neighborhood microtopography and produce
     flood-extent maps for any Sandy Hook level.
