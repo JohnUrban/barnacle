@@ -179,6 +179,114 @@ def fetch_current_surge():
     return last_obs_val - float(preds[0]["v"])
 
 
+def fetch_surge_swing_6h():
+    """Return (max - min) of hourly surge over the past 6h in feet. None on
+    failure. Used by the confidence indicator — large swing means surge
+    persistence is unreliable as a forecast for the next high tide."""
+    end = dt.datetime.now(dt.timezone.utc)
+    start = end - dt.timedelta(hours=6)
+    obs_rows = fetch_observed_recent()
+    if not obs_rows:
+        return None
+    try:
+        data = _get(
+            "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+            {
+                "station": NOAA_STATION,
+                "product": "predictions",
+                "datum": "MLLW",
+                "time_zone": "lst_ldt",
+                "units": "english",
+                "interval": "h",
+                "begin_date": start.strftime("%Y%m%d %H:%M"),
+                "end_date":   end.strftime("%Y%m%d %H:%M"),
+                "format": "json",
+            },
+        )
+    except Exception:
+        return None
+    preds = data.get("predictions", []) or []
+    if not preds:
+        return None
+    pred_by_hour = {}
+    for p in preds:
+        try:
+            pred_by_hour[p["t"][:13]] = float(p["v"])
+        except (KeyError, ValueError, TypeError):
+            continue
+    obs_by_hour = {}
+    for t, v in obs_rows:
+        obs_by_hour.setdefault(t[:13], []).append(v)
+    surges = []
+    for hour_key, vals in obs_by_hour.items():
+        if hour_key in pred_by_hour:
+            surges.append((sum(vals) / len(vals)) - pred_by_hour[hour_key])
+    if len(surges) < 2:
+        return None
+    return max(surges) - min(surges)
+
+
+def fetch_recent_history(days=7):
+    """Past N days of observed daily peak water level, with the highest
+    landmark reached at that peak. Returns list of dicts (one per calendar
+    day), sorted chronologically. Empty list on failure."""
+    end = dt.datetime.now(dt.timezone.utc)
+    start = end - dt.timedelta(days=days)
+    try:
+        data = _get(
+            "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+            {
+                "station": NOAA_STATION,
+                "product": "water_level",
+                "datum": "MLLW",
+                "time_zone": "lst_ldt",
+                "units": "english",
+                "begin_date": start.strftime("%Y%m%d %H:%M"),
+                "end_date":   end.strftime("%Y%m%d %H:%M"),
+                "format": "json",
+            },
+        )
+    except Exception:
+        return []
+    rows = data.get("data") or []
+    if not rows:
+        return []
+    # Track max per day with timestamp
+    by_day = {}
+    for d in rows:
+        try:
+            t = d["t"]; v = float(d["v"])
+        except (KeyError, ValueError, TypeError):
+            continue
+        day = t[:10]
+        if day not in by_day or v > by_day[day][1]:
+            by_day[day] = (t, v)
+    # Classify by highest landmark reached
+    sorted_lm = sorted(LANDMARKS, key=lambda x: x[2])
+    out = []
+    for day in sorted(by_day.keys()):
+        t, peak = by_day[day]
+        water_navd88 = peak + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+        highest_key = None
+        for key, _label, elev, _sh in sorted_lm:
+            if water_navd88 >= elev:
+                highest_key = key
+        if highest_key:
+            short = LANDMARK_SHORT_LABELS.get(highest_key, highest_key)
+            highest_elev = next(elev for key, _l, elev, _s in sorted_lm if key == highest_key)
+            inches = (water_navd88 - highest_elev) * 12
+            classification = f"{short} +{inches:.1f}\""
+        else:
+            classification = "dry"
+        out.append({
+            "date":             day,
+            "peak_time":        t,
+            "peak_mllw":        peak,
+            "highest_landmark": classification,
+        })
+    return out
+
+
 def fetch_temperature_72h_mean():
     """Mean air temperature past 72h at Sandy Hook (deg F)."""
     end = dt.datetime.now(dt.timezone.utc)
@@ -541,21 +649,33 @@ def build_forecast():
             forecast_peak = tide_pred + max(0.0, surge)
             source = "surge-persistence"
 
-        # Rain in ±90 min of THIS high tide
+        # Rain in ±90 min of THIS high tide (used by the v0.5 model)
+        # plus a wider ±3h hourly profile for the email's rain-timing block.
         peak_rain_rate = 0.0
+        rain_window = []  # list of (hours_offset_from_high_tide, rain_rate_in_hr)
+        peak_rain_offset_h = None
         if peak_dt is not None:
             window_start = peak_dt - dt.timedelta(minutes=90)
             window_end   = peak_dt + dt.timedelta(minutes=90)
-            for p in nws_hourly[:48]:
+            wider_start  = peak_dt - dt.timedelta(hours=3)
+            wider_end    = peak_dt + dt.timedelta(hours=3)
+            for p in nws_hourly[:96]:
                 try:
-                    t = parse_iso(p["startTime"])
+                    tt = parse_iso(p["startTime"])
                 except Exception:
                     continue
-                if window_start <= t <= window_end:
-                    qp = p.get("quantitativePrecipitation") or {}
-                    val = qp.get("value")
-                    if val is not None:
-                        peak_rain_rate = max(peak_rain_rate, float(val))
+                qp = p.get("quantitativePrecipitation") or {}
+                val = qp.get("value")
+                if val is None:
+                    continue
+                rate = float(val)
+                if window_start <= tt <= window_end:
+                    if rate > peak_rain_rate:
+                        peak_rain_rate = rate
+                        peak_rain_offset_h = (tt - peak_dt).total_seconds() / 3600.0
+                if wider_start <= tt <= wider_end:
+                    off_h = (tt - peak_dt).total_seconds() / 3600.0
+                    rain_window.append((off_h, rate))
 
         # Depth at landmarks for this tide
         depths = predict_landmark_depths(forecast_peak, peak_rain_rate, cold)
@@ -566,6 +686,8 @@ def build_forecast():
             "surge_ft": surge,
             "forecast_peak_mllw": forecast_peak,
             "peak_rain_in_hr": peak_rain_rate,
+            "peak_rain_offset_h": peak_rain_offset_h,
+            "rain_window_3h": sorted(rain_window),  # (offset_h, in/hr) pairs
             "source": source,
             "depths_in": depths,
         })
@@ -575,6 +697,31 @@ def build_forecast():
 
     forecast_for_context = {"peak_forecast_observed_mllw": worst["forecast_peak_mllw"]}
     seasonal_context = build_seasonal_context(forecast_for_context)
+
+    # Cumulative rain over the next 24h (from NWS hourly forecast). Used in
+    # the rain-timing block.
+    cumulative_rain_24h = 0.0
+    now_utc = dt.datetime.now(dt.timezone.utc)
+    cutoff = now_utc + dt.timedelta(hours=24)
+    for p in nws_hourly[:48]:
+        try:
+            tt = parse_iso(p["startTime"])
+        except Exception:
+            continue
+        if tt < now_utc or tt > cutoff:
+            continue
+        qp = p.get("quantitativePrecipitation") or {}
+        val = qp.get("value")
+        if val is not None:
+            cumulative_rain_24h += float(val)
+
+    # Confidence indicator inputs
+    surge_swing = fetch_surge_swing_6h()
+    # Recent-history recap (last 7 days of observed daily peaks)
+    try:
+        recent_history = fetch_recent_history(days=7)
+    except Exception:
+        recent_history = []
 
     return {
         # Headline fields (worst-case tide)
@@ -592,12 +739,195 @@ def build_forecast():
         "all_tides": all_tides,
         # Seasonal / SLR context for the email and HTML page
         "seasonal_context": seasonal_context,
+        # Rain summary across next 24h
+        "cumulative_rain_24h_in": cumulative_rain_24h,
+        # Confidence indicator inputs (level computed below after assembly)
+        "surge_swing_6h_ft": surge_swing,
+        # Recent observed peaks for the recap block
+        "recent_history_7d": recent_history,
     }
+
+
+def _attach_summary_and_confidence(forecast):
+    """Compute plain-language summary + confidence after the forecast dict
+    is otherwise complete."""
+    level, reason = assess_confidence(forecast)
+    forecast["confidence_level"] = level
+    forecast["confidence_reason"] = reason
+    forecast["plain_language_summary"] = plain_language_summary(forecast)
+    return forecast
 
 
 # ============================================================
 # Seasonal context line builders (shared between email and HTML)
 # ============================================================
+def _render_summary_text(forecast):
+    """One-line plain-language summary, plus confidence on its own line."""
+    out = []
+    summary = forecast.get("plain_language_summary") or ""
+    if summary:
+        out.append(summary)
+    level = forecast.get("confidence_level")
+    reason = forecast.get("confidence_reason") or ""
+    if level:
+        out.append(f"Confidence: {level.upper()} — {reason}")
+    return out
+
+
+def _render_summary_html(forecast):
+    """HTML version: summary + confidence inside a styled banner."""
+    summary = forecast.get("plain_language_summary") or ""
+    level = forecast.get("confidence_level") or ""
+    reason = forecast.get("confidence_reason") or ""
+    if not summary and not level:
+        return ""
+    parts = ['<section class="tldr">']
+    if summary:
+        parts.append(f'<p class="tldr-summary">{summary}</p>')
+    if level:
+        parts.append(
+            f'<p class="tldr-confidence confidence-{level}">'
+            f'<b>Confidence: {level.upper()}</b> &mdash; '
+            f'<span>{reason}</span></p>'
+        )
+    parts.append('</section>')
+    return "".join(parts)
+
+
+def _rain_is_notable(forecast):
+    """True if there's enough rain in the next 24 h to warrant a rain block.
+    Threshold deliberately low (0.05 in cumulative) so even minor wet weather
+    surfaces — these are the events where timing relative to tide matters."""
+    return (forecast.get("cumulative_rain_24h_in") or 0) >= 0.05 or any(
+        (t.get("peak_rain_in_hr") or 0) >= 0.05
+        for t in (forecast.get("all_tides") or [])
+    )
+
+
+def _render_rain_timing_text(forecast):
+    """Plain-text rain timing block. Empty list when no rain is expected."""
+    if not _rain_is_notable(forecast):
+        return []
+    cum = forecast.get("cumulative_rain_24h_in") or 0
+    lines = ["Rain & tide timing:"]
+    lines.append(f"  Cumulative next 24 h: {cum:.2f}\"")
+    peak_t = forecast.get("peak_time_local")
+    for t in (forecast.get("all_tides") or []):
+        peak_rain = t.get("peak_rain_in_hr") or 0
+        offset = t.get("peak_rain_offset_h")
+        label = "★ peak tide" if t["time"] == peak_t else "lower high"
+        when = t["time"][-5:]
+        if peak_rain <= 0.005:
+            lines.append(f"  {when} ({label}): no rain in ±90 min window")
+            continue
+        if offset is None:
+            timing = "during the window"
+        elif abs(offset) < 0.25:
+            timing = "at the high tide"
+        elif offset < 0:
+            timing = f"{abs(offset):.0f} h before high tide"
+        else:
+            timing = f"{offset:.0f} h after high tide"
+        lines.append(f"  {when} ({label}): peak {peak_rain:.2f} in/hr {timing}")
+    return lines
+
+
+def _render_rain_timing_html(forecast):
+    """HTML version of the rain-timing block."""
+    if not _rain_is_notable(forecast):
+        return ""
+    cum = forecast.get("cumulative_rain_24h_in") or 0
+    peak_t = forecast.get("peak_time_local")
+    rows = ""
+    for t in (forecast.get("all_tides") or []):
+        peak_rain = t.get("peak_rain_in_hr") or 0
+        offset = t.get("peak_rain_offset_h")
+        label = "★ peak tide" if t["time"] == peak_t else "lower high"
+        when = t["time"][-5:]
+        if peak_rain <= 0.005:
+            timing_desc = "no rain in ±90 min window"
+        else:
+            if offset is None:
+                timing_desc = "during the window"
+            elif abs(offset) < 0.25:
+                timing_desc = "at high tide"
+            elif offset < 0:
+                timing_desc = f"{abs(offset):.0f} h before high tide"
+            else:
+                timing_desc = f"{offset:.0f} h after high tide"
+            timing_desc = f"peak {peak_rain:.2f} in/hr, {timing_desc}"
+        rows += (
+            f'<tr><td>{when} ({label})</td>'
+            f'<td>{timing_desc}</td></tr>'
+        )
+    return (
+        '<section class="rain-timing">'
+        '<h2>Rain &amp; tide timing</h2>'
+        f'<p>Cumulative rain next 24 h: <b>{cum:.2f}&Prime;</b></p>'
+        '<table class="rain-table">'
+        '<thead><tr><th>High tide</th><th>Rain near it</th></tr></thead>'
+        f'<tbody>{rows}</tbody></table>'
+        '</section>'
+    )
+
+
+def _render_recent_history_text(forecast):
+    """Recent-history recap block (last 7 days). Empty when no data."""
+    history = forecast.get("recent_history_7d") or []
+    if not history:
+        return []
+    lines = ["Recent observed peaks (last 7 days):"]
+    lines.append(f"  {'Date':<10}{'Peak (ft MLLW)':>16}  {'Time':<8}  Highest landmark reached")
+    for h in history:
+        date_str = h["date"]
+        try:
+            dow = dt.date.fromisoformat(date_str).strftime("%a")
+        except ValueError:
+            dow = ""
+        peak_t = (h.get("peak_time") or "")[-5:]
+        lines.append(
+            f"  {dow} {date_str[5:]:<7}"
+            f"{h['peak_mllw']:>15.2f}   "
+            f"{peak_t:<8}  "
+            f"{h['highest_landmark']}"
+        )
+    return lines
+
+
+def _render_recent_history_html(forecast):
+    """HTML recap block."""
+    history = forecast.get("recent_history_7d") or []
+    if not history:
+        return ""
+    rows = ""
+    for h in history:
+        date_str = h["date"]
+        try:
+            dow = dt.date.fromisoformat(date_str).strftime("%a")
+        except ValueError:
+            dow = ""
+        peak_t = (h.get("peak_time") or "")[-5:]
+        rows += (
+            f'<tr>'
+            f'<td>{dow} {date_str[5:]}</td>'
+            f'<td>{h["peak_mllw"]:.2f}</td>'
+            f'<td>{peak_t}</td>'
+            f'<td>{h["highest_landmark"]}</td>'
+            f'</tr>'
+        )
+    return (
+        '<section class="recent-history">'
+        '<h2>Recent observed peaks (last 7 days)</h2>'
+        '<table class="history-table">'
+        '<thead><tr><th>Date</th><th>Peak (ft MLLW)</th><th>Time</th><th>Highest landmark</th></tr></thead>'
+        f'<tbody>{rows}</tbody></table>'
+        '<p class="note">From NOAA Sandy Hook water_level (6-min product, '
+        'preliminary). "Highest landmark" applies the +0.40 ft local '
+        'enhancement to the observed peak.</p>'
+        '</section>'
+    )
+
+
 def _format_decimal(v):
     """Show <1.0 numbers with two decimals, otherwise one. Keeps narrow values
     readable in the table without losing precision at the rare end."""
@@ -661,6 +991,89 @@ def landmark_summary(depths, sandy_hook_peak_mllw):
         inches_above = (water_navd88 - lowest_elev) * 12  # negative
         relative = inches_above
     return short, inches_above, relative
+
+
+def assess_confidence(forecast):
+    """Return (level, reason) for the daily forecast confidence indicator.
+    Levels: 'high' / 'medium' / 'low'. Reason is a one-liner human
+    explanation safe to drop into the email."""
+    if forecast.get("cold_lockout"):
+        return ("high",
+                "cold lockout active — model is correctly zeroing predictions")
+    surge_source = forecast.get("surge_source", "")
+    if surge_source == "nws-coastal-flood-product":
+        return ("high",
+                "NWS Coastal Flood product active — forecaster-vetted projection")
+    peak = forecast.get("peak_forecast_observed_mllw") or 0
+    if peak > 8.0:
+        return ("low",
+                f"forecast peak {peak:.2f} ft is above the model's "
+                f"calibrated range (events fit ≤ 7.6 ft)")
+    swing = forecast.get("surge_swing_6h_ft")
+    if swing is not None and swing > 0.5:
+        return ("low",
+                f"observed surge has swung {swing:.2f} ft in the past 6 h — "
+                f"persistence assumption is unreliable")
+    return ("medium",
+            "surge persistence applied; forecast within calibrated range")
+
+
+def plain_language_summary(forecast):
+    """Return a one-line plain-language summary of the next 24 h. Skim-friendly
+    framing for the top of the email and Pages site."""
+    tides = forecast.get("all_tides") or []
+    if not tides:
+        return ""
+    tides_sorted = sorted(tides, key=lambda t: t["time"])
+    today = dt.date.today()
+
+    def time_phrase(t):
+        time_str = t["time"]
+        hm = time_str[-5:]
+        try:
+            tide_date = dt.date.fromisoformat(time_str[:10])
+        except ValueError:
+            return hm
+        hour = int(hm[:2])
+        if tide_date == today:
+            if hour < 12:
+                period = "this morning"
+            elif hour < 17:
+                period = "this afternoon"
+            elif hour < 21:
+                period = "this evening"
+            else:
+                period = "tonight"
+            return f"{hm} {period}"
+        # tomorrow (or later)
+        prefix = "tomorrow" if tide_date == today + dt.timedelta(days=1) else time_str[:10]
+        if hour < 12:
+            return f"{hm} {prefix} morning"
+        if hour < 17:
+            return f"{hm} {prefix} afternoon"
+        if hour < 21:
+            return f"{hm} {prefix} evening"
+        return f"{hm} {prefix} night"
+
+    def phrase_for_tide(t):
+        regime = t["depths_in"]["regime"]
+        short, above, _ = landmark_summary(t["depths_in"], t["forecast_peak_mllw"])
+        if regime == "cold_lockout":
+            return "cold lockout — no flooding predicted despite high tide"
+        if regime == "dry":
+            return "dry"
+        if regime == "street":
+            return f"brief water at the {short.lower()}, nothing at the curb"
+        if regime == "light":
+            return f"curb wet (~{above:.1f}\" above {short.lower()})"
+        if regime == "moderate":
+            return f"moderate flooding — water past curb (~{above:.1f}\" above {short.lower()})"
+        if regime == "severe":
+            return f"SEVERE flooding — water past {short.lower()} (~{above:.1f}\")"
+        return regime
+
+    parts = [f"{time_phrase(t)} — {phrase_for_tide(t)}" for t in tides_sorted]
+    return "Next 24 h: " + "; ".join(parts) + "."
 
 
 # Regime glossary for inline annotation and the email/HTML footer.
@@ -994,10 +1407,17 @@ def render_email(forecast):
         "3.64 NAVD88) — always."
     )
 
+    summary_lines = _render_summary_text(forecast)
+    summary_block = ("\n".join(summary_lines) + "\n\n") if summary_lines else ""
+    rain_lines = _render_rain_timing_text(forecast)
+    rain_block = ("\n".join(rain_lines) + "\n\n") if rain_lines else ""
+    recap_lines = _render_recent_history_text(forecast)
+    recap_block = ("\n".join(recap_lines) + "\n\n") if recap_lines else ""
+
     text = f"""\
 Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
 
-High tides in next 24h ( * = worst case, headlined below):
+{summary_block}High tides in next 24h ( * = worst case, headlined below):
 {tide_block}
 
 Worst case detail:
@@ -1011,10 +1431,10 @@ Worst case detail:
   72h mean temp:   {forecast['temp_avg_72h_f']:.1f} F
   Cold lockout:    {'YES (drains likely ice-locked)' if forecast['cold_lockout'] else 'no'}
 
-{_landmarks_section_text(forecast)}
+{rain_block}{_landmarks_section_text(forecast)}
 Regime: {regime} — {REGIME_GLOSSARY.get(regime, '')}
 
-Reference scale (Sandy Hook obs MLLW):
+{recap_block}Reference scale (Sandy Hook obs MLLW):
   < 6.06  : dry (nothing visible from window)
   6.06    : lowest road corner across Bay first wets (visible from window)
   6.20    : water at gutter / curb edge — don't park there
@@ -1061,11 +1481,16 @@ Model: v0.5. Local enhancement +0.40 ft.
             f'</tr>'
         )
 
+    summary_html = _render_summary_html(forecast)
+    rain_html = _render_rain_timing_html(forecast)
+    recap_html = _render_recent_history_html(forecast)
+
     html = f"""\
 <html><body style="font-family:sans-serif;background:{bg};padding:20px">
 <h2>Bay Ave Flood Forecast</h2>
 <p><b>{dt.date.today().isoformat()}</b></p>
 
+{summary_html}
 <h3>High tides in next 24h</h3>
 <table border="1" cellpadding="8" style="border-collapse:collapse;background:white">
 <tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th></tr>
@@ -1083,6 +1508,7 @@ Model: v0.5. Local enhancement +0.40 ft.
 <b>72h mean temp:</b> {forecast['temp_avg_72h_f']:.1f}&deg;F
 {'(COLD LOCKOUT ACTIVE)' if forecast['cold_lockout'] else ''}</p>
 
+{rain_html}
 {_landmarks_section_html(forecast, wrapper='inline')}
 
 <p><b>Regime: {regime}</b> &mdash; <span style="color:#666;font-size:13px">{REGIME_GLOSSARY.get(regime, '')}</span></p>
@@ -1097,6 +1523,7 @@ Model: v0.5. Local enhancement +0.40 ft.
 <tr><td><b>cold_lockout</b></td><td>{REGIME_GLOSSARY['cold_lockout']}</td></tr>
 </table>
 
+{recap_html}
 <p style="font-size:small;color:#666">
 Model v0.5. Local enhancement +0.40 ft. Rain term saturates at 8".
 Surge persistence is a rough proxy; for active coastal storms, check NWS
@@ -1156,6 +1583,8 @@ def render_html_page(forecast):
     <p class="subtitle">Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ</p>
   </header>
 
+  {_render_summary_html(forecast)}
+
   <section class="regime regime-{regime}">
     <div class="regime-label">{regime.upper()}</div>
     <div class="regime-summary">{REGIME_GLOSSARY.get(regime, '')}. Worst-case peak {peak_ft:.2f} ft MLLW at {peak_t}.</div>
@@ -1186,7 +1615,11 @@ def render_html_page(forecast):
     </dl>
   </section>
 
+  {_render_rain_timing_html(forecast)}
+
   {_landmarks_section_html(forecast, wrapper='section')}
+
+  {_render_recent_history_html(forecast)}
 
   <section class="reference">
     <h2>Reference scale</h2>
@@ -1278,6 +1711,7 @@ def main():
 
     try:
         forecast = build_forecast()
+        _attach_summary_and_confidence(forecast)
     except Exception as e:
         print(f"ERROR fetching forecast: {e}", flush=True)
         raise
