@@ -2009,9 +2009,19 @@ def render_html_page(forecast):
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Bay Ave Barnacle — {today}</title>
 <link rel="stylesheet" href="style.css">
+<!-- PWA / iOS home-screen install (HANDOFF item 27, Stage 1) -->
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Barnacle">
+<meta name="theme-color" content="#0f4064">
+<meta name="description" content="Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ — daily prediction at 8 named landmarks.">
 </head>
 <body>
 <main>

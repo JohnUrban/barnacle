@@ -712,6 +712,51 @@ Same surge information the Borough's emergency management is looking at.
     the system stays free + informational with a clear way to
     unsubscribe (already automatic on Google Group / Buttondown; needs
     a "reply to remove" note in the mailto-only flow).
+27. **iOS app (multi-stage plan).** Long-term goal: a proper iPhone
+    app, ideally App Store distributed. Stage by stage:
+
+    **Stage 1 — Web Clip "Add to Home Screen" (done 2026-05-18 in
+    same session as this HANDOFF entry).** PWA polish: manifest.json,
+    apple-touch-icon, viewport / theme-color meta tags. User adds
+    the page to home screen via Safari; gets a real-looking app
+    icon launcher. Zero infra, no developer account. Already
+    sufficient for personal use.
+
+    **Stage 2 — Scriptable widget (~30 min).** Free Scriptable app
+    from App Store; JS pulls `docs/forecast.json` and renders a
+    home-screen widget showing today's regime + peak + landmark
+    depths. Glanceable without opening anything. Refreshes every
+    ~15-30 min. Zero developer account.
+
+    **Stage 3 — PWA push notifications (1-2 hours).** iOS 16.4+
+    supports push for installed-to-home-screen PWAs. Add service
+    worker (`docs/sw.js`), Web Push API integration, small backend
+    on GitHub Actions or Vercel/Cloudflare free tier to send
+    notifications on regime crossings. Could replace or supplement
+    the daily email. User must install-to-home-screen first; not
+    just bookmark.
+
+    **Stage 4 — Native iOS app (multiple sessions).** SwiftUI app
+    that hits `forecast.json`. Push notifications via APNS, home
+    widget via WidgetKit, fully native look. Requires Apple
+    Developer Program ($99/yr, free 7-day side-load via Xcode is
+    also possible). Target App Store distribution so neighbors can
+    install.
+
+    The user's vision: app starts by mirroring the existing Pages
+    site, then evolves with:
+    - User-customizable notification settings (toggle email vs SMS
+      vs push, set threshold levels per channel)
+    - Interactive charts (tide curve with predicted vs observed, rain
+      timeline overlay, recent-history scrollback)
+    - Per-user landmark customization (so a neighbor with different
+      elevations can use the same app with their own thresholds)
+    - Tie-in with future spin-offs (Atlantic Highlands Marina
+      Barnacle as a separate tab or related app)
+
+    Key prereqs already in place: the JSON archive (16c) gives any
+    client direct access to the structured forecast data, so iOS
+    development can begin without backend changes.
 
 ---
 
