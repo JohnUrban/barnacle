@@ -13,6 +13,8 @@
     <p class="subtitle">Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ</p>
   </header>
 
+  <section class="tldr"><p class="tldr-summary">Next 24 h: 21:58 tonight — brief water at the lowest corner, nothing at the curb; 10:41 tomorrow morning — dry.</p><p class="tldr-confidence confidence-medium"><b>Confidence: MEDIUM</b> &mdash; <span>surge persistence applied; forecast within calibrated range</span></p></section>
+
   <section class="regime regime-street">
     <div class="regime-label">STREET</div>
     <div class="regime-summary">water on the street at sub-curb landmarks; curb still dry. Worst-case peak 6.19 ft MLLW at 2026-05-18 21:58.</div>
@@ -38,12 +40,16 @@
       <dt>Forecast peak</dt><dd>6.19 ft MLLW</dd>
       <dt>Surge source</dt><dd>surge-persistence <span class="note">(not active)</span></dd>
       <dt>Peak rainfall</dt><dd>0.00 in/hr</dd>
-      <dt>72h mean temp</dt><dd>67.9&deg;F</dd>
+      <dt>72h mean temp</dt><dd>68.0&deg;F</dd>
       <dt>Cold lockout</dt><dd>no</dd>
     </dl>
   </section>
 
+  
+
   <section class="landmarks"><h2>Landmarks today</h2><p class="context">Today's prediction vs <b>May typical</b> (avg flood days/month over 1996-2025) and <b>month-to-date</b>:</p><table class="landmark-table"><thead><tr><th>Landmark</th><th>NAVD88</th><th>Today</th><th>Typ</th><th>MTD</th><th>Notes</th></tr></thead><tbody><tr><td>★ Lowest road corner across Bay <span class="role">(sentinel)</span></td><td>3.64</td><td><b>1.6&Prime;</b></td><td>7.7</td><td>5</td><td class="note">above-average</td></tr><tr><td>Gutter / curb edge at walkway <span class="role">(parking)</span></td><td>3.78</td><td>0.0&Prime;</td><td>5.4</td><td>4</td><td class="note">below-average</td></tr><tr><td>Storm grate at Bay+Central <span class="role">(Pathway B)</span></td><td>3.91</td><td>0.0&Prime;</td><td>4.2</td><td>3</td><td class="note">below-average</td></tr><tr><td>Curb at walkway <span class="role">(flood onset)</span></td><td>4.16</td><td>0.0&Prime;</td><td>2.5</td><td>0</td><td class="note">below-average</td></tr><tr><td>Bay Ave road middle</td><td>4.36</td><td>0.0&Prime;</td><td>1.6</td><td>0</td><td class="note">below-average</td></tr><tr><td>Intersection center</td><td>4.54</td><td>0.0&Prime;</td><td>0.97</td><td>0</td><td class="note">above-average</td></tr><tr><td>Lawn / walkway step</td><td>4.58</td><td>0.0&Prime;</td><td>0.87</td><td>0</td><td class="note">above-average</td></tr><tr><td>Front porch first step</td><td>5.08</td><td>0.0&Prime;</td><td>0.17</td><td>0</td><td class="note">below-average</td></tr></tbody></table><p class="note">★ = water predicted today at this landmark. Typ / MTD in days/month at the landmark threshold.</p><p class="context">May is a below-average month at the curb threshold.</p><p class="context">Peak Sandy Hook so far this month: 6.55 ft MLLW.</p><p class="context">Closest call: water touched 6.58 ft on the 6-min sensor for ~18 min (2026-05-15 19:24, peaked at 6.59 ft) — hourly mean stayed just under the curb threshold.</p></section><section class="spot-check"><h2>Spot-check (help calibrate the model)</h2><p>Suggested observation times today: <b>21:58 (peak), 10:41 (lower high)</b>.</p><p>Take a peek around one of those times — even &ldquo;no water at all&rdquo; is useful. Use the landmark table above (lowest to highest) to describe what you saw. Report back with: time you looked, highest landmark with water (or &ldquo;no water&rdquo;), and rough depth above it. Goes into <code>data/labeled_observations.csv</code>.</p></section>
+
+  <section class="recent-history"><h2>Recent observed peaks (last 7 days)</h2><table class="history-table"><thead><tr><th>Date</th><th>Peak (ft MLLW)</th><th>Time</th><th>Highest landmark</th></tr></thead><tbody><tr><td>Mon 05-11</td><td>1.58</td><td>23:54</td><td>dry</td></tr><tr><td>Tue 05-12</td><td>4.97</td><td>17:06</td><td>dry</td></tr><tr><td>Wed 05-13</td><td>5.44</td><td>17:48</td><td>dry</td></tr><tr><td>Thu 05-14</td><td>6.28</td><td>18:30</td><td>Gutter +0.9"</td></tr><tr><td>Fri 05-15</td><td>6.59</td><td>19:24</td><td>Curb +0.1"</td></tr><tr><td>Sat 05-16</td><td>6.46</td><td>20:00</td><td>Storm grate +1.5"</td></tr><tr><td>Sun 05-17</td><td>6.50</td><td>21:12</td><td>Storm grate +2.0"</td></tr><tr><td>Mon 05-18</td><td>5.23</td><td>09:30</td><td>dry</td></tr></tbody></table><p class="note">From NOAA Sandy Hook water_level (6-min product, preliminary). "Highest landmark" applies the +0.40 ft local enhancement to the observed peak.</p></section>
 
   <section class="reference">
     <h2>Reference scale</h2>
