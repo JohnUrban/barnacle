@@ -98,10 +98,11 @@ def _get(url, params=None, headers=None):
         return json.loads(r.read())
 
 
-def fetch_high_tides_24h():
-    """Returns list of (time_str, value_mllw_ft) for each HIGH tide in the
-    next 24h. Uses NOAA's hilo product which gives exact tide times rather
-    than hourly samples. Typically returns 2 entries (~12.5h apart)."""
+def fetch_tides_24h():
+    """Returns dict with 'high' and 'low' lists of (time_str, value_mllw_ft)
+    for each tide in the next 24h. Uses NOAA's hilo product which gives
+    exact tide times rather than hourly samples. Typically returns ~2
+    entries in each list (~12.5h apart)."""
     now = dt.datetime.now(dt.timezone.utc)
     end = now + dt.timedelta(hours=24)
     data = _get(
@@ -118,11 +119,16 @@ def fetch_high_tides_24h():
             "format": "json",
         },
     )
-    return [
-        (p["t"], float(p["v"]))
-        for p in data.get("predictions", [])
-        if p.get("type") == "H"
-    ]
+    preds = data.get("predictions", []) or []
+    return {
+        "high": [(p["t"], float(p["v"])) for p in preds if p.get("type") == "H"],
+        "low":  [(p["t"], float(p["v"])) for p in preds if p.get("type") == "L"],
+    }
+
+
+def fetch_high_tides_24h():
+    """Backwards-compatible wrapper returning only high tides as a list."""
+    return fetch_tides_24h()["high"]
 
 
 def fetch_observed_recent():
@@ -261,12 +267,14 @@ def fetch_recent_history(days=7):
         day = t[:10]
         if day not in by_day or v > by_day[day][1]:
             by_day[day] = (t, v)
-    # Classify by highest landmark reached
+    # Classify by highest landmark reached + always report relative-to-lowest
     sorted_lm = sorted(LANDMARKS, key=lambda x: x[2])
+    lowest_elev = sorted_lm[0][2]  # LOWEST_ROAD_CORNER (3.64 NAVD88)
     out = []
     for day in sorted(by_day.keys()):
         t, peak = by_day[day]
         water_navd88 = peak + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+        relative_in = (water_navd88 - lowest_elev) * 12  # always: positive or negative
         highest_key = None
         for key, _label, elev, _sh in sorted_lm:
             if water_navd88 >= elev:
@@ -282,6 +290,7 @@ def fetch_recent_history(days=7):
             "date":             day,
             "peak_time":        t,
             "peak_mllw":        peak,
+            "rel_in":           relative_in,
             "highest_landmark": classification,
         })
     return out
@@ -589,7 +598,9 @@ def build_forecast():
     """Pull all inputs, evaluate each high tide in the next 24h, apply model
     to each, return forecast dict with per-tide breakdown and worst-case
     summary."""
-    high_tides = fetch_high_tides_24h()
+    tides = fetch_tides_24h()
+    high_tides = tides["high"]
+    low_tides = tides["low"]
     if not high_tides:
         raise RuntimeError("No high tides returned by NOAA for the next 24h")
 
@@ -737,6 +748,8 @@ def build_forecast():
         "nws_status": nws_status,
         # New: full breakdown of all high tides in next 24h
         "all_tides": all_tides,
+        # Low tides in next 24h: list of {time, value_mllw}
+        "low_tides": [{"time": t, "value_mllw": v} for t, v in low_tides],
         # Seasonal / SLR context for the email and HTML page
         "seasonal_context": seasonal_context,
         # Rain summary across next 24h
@@ -871,24 +884,66 @@ def _render_rain_timing_html(forecast):
     )
 
 
+def _render_low_tides_text(forecast):
+    """Plain-text block listing low tides in the next 24h. Useful for
+    knowing when sub-curb water might drain back out, parking returns,
+    etc. (See also: future Atlantic Highlands Marina Barnacle spin-off,
+    where this block is the headline rather than a footnote.)"""
+    lows = forecast.get("low_tides") or []
+    if not lows:
+        return []
+    lines = ["Low tides in next 24h:"]
+    for lt in lows:
+        when = format_time_full(lt["time"])
+        lines.append(f"  {when}  —  {lt['value_mllw']:.2f} ft MLLW")
+    return lines
+
+
+def _render_low_tides_html(forecast):
+    """HTML version of the low-tides block."""
+    lows = forecast.get("low_tides") or []
+    if not lows:
+        return ""
+    rows = ""
+    for lt in lows:
+        rows += (
+            f'<tr>'
+            f'<td>{format_time_full(lt["time"])}</td>'
+            f'<td>{lt["value_mllw"]:.2f}</td>'
+            f'</tr>'
+        )
+    return (
+        '<section class="low-tides">'
+        '<h2>Low tides in next 24h</h2>'
+        '<table class="history-table">'
+        '<thead><tr><th>Time</th><th>Level (ft MLLW)</th></tr></thead>'
+        f'<tbody>{rows}</tbody></table>'
+        '<p class="note">Astronomical low-tide predictions for situational '
+        'awareness — useful for parking returns, sub-curb drainage, and '
+        '(eventually) boat-ramp viability at Atlantic Highlands Marina.</p>'
+        '</section>'
+    )
+
+
 def _render_recent_history_text(forecast):
     """Recent-history recap block (last 7 days). Empty when no data."""
     history = forecast.get("recent_history_7d") or []
     if not history:
         return []
     lines = ["Recent observed peaks (last 7 days):"]
-    lines.append(f"  {'Date':<10}{'Peak (ft MLLW)':>16}  {'Time':<8}  Highest landmark reached")
+    lines.append(
+        f"  {'Date':<14}{'Peak (MLLW)':>13}  "
+        f"{'Peak time':<14}{'Rel':>8}  Highest landmark reached"
+    )
     for h in history:
-        date_str = h["date"]
-        try:
-            dow = dt.date.fromisoformat(date_str).strftime("%a")
-        except ValueError:
-            dow = ""
-        peak_t = (h.get("peak_time") or "")[-5:]
+        date_label = format_date_short(h["date"])
+        peak_t = format_time_short(h.get("peak_time") or "")
+        rel_str = f"{h['rel_in']:+.1f}\""
         lines.append(
-            f"  {dow} {date_str[5:]:<7}"
-            f"{h['peak_mllw']:>15.2f}   "
-            f"{peak_t:<8}  "
+            f"  {date_label:<14}"
+            f"{h['peak_mllw']:>12.2f}   "
+            f"{peak_t:<14}"
+            f"{rel_str:>8}  "
             f"{h['highest_landmark']}"
         )
     return lines
@@ -901,17 +956,15 @@ def _render_recent_history_html(forecast):
         return ""
     rows = ""
     for h in history:
-        date_str = h["date"]
-        try:
-            dow = dt.date.fromisoformat(date_str).strftime("%a")
-        except ValueError:
-            dow = ""
-        peak_t = (h.get("peak_time") or "")[-5:]
+        date_label = format_date_short(h["date"])
+        peak_t = format_time_short(h.get("peak_time") or "")
+        rel_str = f"{h['rel_in']:+.1f}&Prime;"
         rows += (
             f'<tr>'
-            f'<td>{dow} {date_str[5:]}</td>'
+            f'<td>{date_label}</td>'
             f'<td>{h["peak_mllw"]:.2f}</td>'
             f'<td>{peak_t}</td>'
+            f'<td>{rel_str}</td>'
             f'<td>{h["highest_landmark"]}</td>'
             f'</tr>'
         )
@@ -919,11 +972,14 @@ def _render_recent_history_html(forecast):
         '<section class="recent-history">'
         '<h2>Recent observed peaks (last 7 days)</h2>'
         '<table class="history-table">'
-        '<thead><tr><th>Date</th><th>Peak (ft MLLW)</th><th>Time</th><th>Highest landmark</th></tr></thead>'
+        '<thead><tr><th>Date</th><th>Peak (ft MLLW)</th><th>Peak time</th>'
+        '<th>Rel</th><th>Highest landmark</th></tr></thead>'
         f'<tbody>{rows}</tbody></table>'
         '<p class="note">From NOAA Sandy Hook water_level (6-min product, '
-        'preliminary). "Highest landmark" applies the +0.40 ft local '
-        'enhancement to the observed peak.</p>'
+        'preliminary). <b>Rel</b> = inches above the lowest landmark '
+        '(lowest road corner, 3.64 NAVD88), always positive or negative. '
+        '"Highest landmark" applies the +0.40 ft local enhancement to the '
+        'observed peak.</p>'
         '</section>'
     )
 
@@ -1029,12 +1085,14 @@ def plain_language_summary(forecast):
 
     def time_phrase(t):
         time_str = t["time"]
-        hm = time_str[-5:]
         try:
-            tide_date = dt.date.fromisoformat(time_str[:10])
-        except ValueError:
-            return hm
-        hour = int(hm[:2])
+            tide_dt = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+        except (ValueError, TypeError):
+            return time_str
+        tide_date = tide_dt.date()
+        hour = tide_dt.hour
+        # 12-hour AM/PM time for the user-facing summary
+        ampm = tide_dt.strftime("%-I:%M %p")
         if tide_date == today:
             if hour < 12:
                 period = "this morning"
@@ -1044,16 +1102,19 @@ def plain_language_summary(forecast):
                 period = "this evening"
             else:
                 period = "tonight"
-            return f"{hm} {period}"
+            return f"{ampm} {period}"
         # tomorrow (or later)
-        prefix = "tomorrow" if tide_date == today + dt.timedelta(days=1) else time_str[:10]
+        if tide_date == today + dt.timedelta(days=1):
+            prefix = "tomorrow"
+        else:
+            prefix = tide_dt.strftime("%a %b %-d")
         if hour < 12:
-            return f"{hm} {prefix} morning"
+            return f"{ampm} {prefix} morning"
         if hour < 17:
-            return f"{hm} {prefix} afternoon"
+            return f"{ampm} {prefix} afternoon"
         if hour < 21:
-            return f"{hm} {prefix} evening"
-        return f"{hm} {prefix} night"
+            return f"{ampm} {prefix} evening"
+        return f"{ampm} {prefix} night"
 
     def phrase_for_tide(t):
         regime = t["depths_in"]["regime"]
@@ -1074,6 +1135,38 @@ def plain_language_summary(forecast):
 
     parts = [f"{time_phrase(t)} — {phrase_for_tide(t)}" for t in tides_sorted]
     return "Next 24 h: " + "; ".join(parts) + "."
+
+
+def format_time_full(time_str):
+    """Convert NOAA-style '2026-05-18 22:14' to 'May 18, 2026: Mon 10:14 PM'.
+    Pass-through on parse failure."""
+    try:
+        d = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+    except (ValueError, TypeError):
+        return time_str
+    # %-d / %-I work on Linux + macOS (the only environments this runs on).
+    date_part = d.strftime("%b %-d, %Y")
+    time_part = d.strftime("%a %-I:%M %p")
+    return f"{date_part}: {time_part}"
+
+
+def format_time_short(time_str):
+    """Convert '2026-05-18 22:14' to 'Mon 10:14 PM' for tight contexts
+    (subject line, tide table rows, spot-check times)."""
+    try:
+        d = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+    except (ValueError, TypeError):
+        return time_str
+    return d.strftime("%a %-I:%M %p")
+
+
+def format_date_short(date_str):
+    """Convert 'YYYY-MM-DD' to 'Mon, May 18' for recent-history rows."""
+    try:
+        d = dt.date.fromisoformat(date_str)
+    except (ValueError, TypeError):
+        return date_str
+    return d.strftime("%a, %b %-d")
 
 
 # Regime glossary for inline annotation and the email/HTML footer.
@@ -1213,7 +1306,7 @@ def _near_miss_text(mtd):
     raw = mtd.get("peak_6min_mllw")
     if raw is None or raw < 6.58 - 0.1:
         return None
-    when = mtd.get("peak_6min_time") or ""
+    when = format_time_full(mtd.get("peak_6min_time") or "")
     mins = mtd.get("minutes_above_curb", 0)
     if raw >= 6.58 and mins > 0:
         return (f"Closest call: water touched 6.58 ft on the 6-min sensor "
@@ -1276,7 +1369,7 @@ def _spot_check_block_text(forecast, today=None):
     peak_t = forecast.get("peak_time_local")
     items = []
     for t in all_tides:
-        when = t["time"][-5:]  # HH:MM
+        when = format_time_short(t["time"])
         role = "peak" if t["time"] == peak_t else "lower high"
         items.append(f"{when} ({role})")
     times_str = ", ".join(items)
@@ -1300,7 +1393,7 @@ def _spot_check_block_html(forecast, today=None):
     peak_t = forecast.get("peak_time_local")
     items = []
     for t in all_tides:
-        when = t["time"][-5:]
+        when = format_time_short(t["time"])
         role = "peak" if t["time"] == peak_t else "lower high"
         items.append(f"{when} ({role})")
     times_str = ", ".join(items)
@@ -1375,14 +1468,15 @@ def render_email(forecast):
 
     subject_short, subject_above, _ = landmark_summary(d, peak_ft)
     subject = (f"[342 Bay] {regime.upper()}: forecast {peak_ft:.2f} ft "
-               f"at {peak_t} ({subject_short} {subject_above:+.1f}\")")
+               f"at {format_time_short(peak_t)} "
+               f"({subject_short} {subject_above:+.1f}\")")
 
     # Format the list of all high tides in next 24h.
     # Columns: time, pred, surge, peak, highest-exceeded landmark, inches
     # above that landmark, inches relative to the lowest landmark, regime.
     tide_lines = []
     tide_lines.append(
-        f"   {'Time':<17}{'Pred':>6}{'Surge':>8}{'Peak':>7}  "
+        f"   {'Time':<16}{'Pred':>6}{'Surge':>8}{'Peak':>7}  "
         f"{'Landmark':<14}{'Above':>8}{'Rel':>8}  Regime"
     )
     for t in all_tides:
@@ -1390,7 +1484,7 @@ def render_email(forecast):
         short, above_in, rel_in = landmark_summary(td, t["forecast_peak_mllw"])
         marker = "★" if t["time"] == peak_t else " "
         tide_lines.append(
-            f" {marker} {t['time']:<17}"
+            f" {marker} {format_time_short(t['time']):<16}"
             f"{t['predicted_mllw']:>6.2f}"
             f"{t['surge_ft']:>+8.2f}"
             f"{t['forecast_peak_mllw']:>7.2f}  "
@@ -1413,6 +1507,8 @@ def render_email(forecast):
     rain_block = ("\n".join(rain_lines) + "\n\n") if rain_lines else ""
     recap_lines = _render_recent_history_text(forecast)
     recap_block = ("\n".join(recap_lines) + "\n\n") if recap_lines else ""
+    low_lines = _render_low_tides_text(forecast)
+    low_block = ("\n".join(low_lines) + "\n\n") if low_lines else ""
 
     text = f"""\
 Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
@@ -1421,7 +1517,7 @@ Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
 {tide_block}
 
 Worst case detail:
-  High tide time:  {peak_t}
+  High tide time:  {format_time_full(peak_t)}
   Predicted tide:  {forecast['peak_predicted_mllw']:.2f} ft MLLW (Sandy Hook)
   Surge:           {forecast['current_surge_ft']:+.2f} ft
   Forecast peak:   {peak_ft:.2f} ft MLLW
@@ -1434,7 +1530,7 @@ Worst case detail:
 {rain_block}{_landmarks_section_text(forecast)}
 Regime: {regime} — {REGIME_GLOSSARY.get(regime, '')}
 
-{recap_block}Reference scale (Sandy Hook obs MLLW):
+{recap_block}{low_block}Reference scale (Sandy Hook obs MLLW):
   < 6.06  : dry (nothing visible from window)
   6.06    : lowest road corner across Bay first wets (visible from window)
   6.20    : water at gutter / curb edge — don't park there
@@ -1470,7 +1566,7 @@ Model: v0.5. Local enhancement +0.40 ft.
         short, above_in, rel_in = landmark_summary(td, t["forecast_peak_mllw"])
         tide_rows_html += (
             f'<tr style="{row_style}">'
-            f'<td>{t["time"]}</td>'
+            f'<td>{format_time_full(t["time"])}</td>'
             f'<td align="right">{t["predicted_mllw"]:.2f}</td>'
             f'<td align="right">{t["surge_ft"]:+.2f}</td>'
             f'<td align="right"><b>{t["forecast_peak_mllw"]:.2f}</b></td>'
@@ -1484,6 +1580,7 @@ Model: v0.5. Local enhancement +0.40 ft.
     summary_html = _render_summary_html(forecast)
     rain_html = _render_rain_timing_html(forecast)
     recap_html = _render_recent_history_html(forecast)
+    low_html = _render_low_tides_html(forecast)
 
     html = f"""\
 <html><body style="font-family:sans-serif;background:{bg};padding:20px">
@@ -1500,7 +1597,7 @@ Model: v0.5. Local enhancement +0.40 ft.
 <b>Above</b> = inches above the highest exceeded landmark (negative when water is below the lowest landmark).
 <b>Rel</b> = inches above the lowest landmark (lowest road corner across Bay, 3.64 NAVD88).</p>
 
-<p><b>Worst case:</b> {peak_t}<br>
+<p><b>Worst case:</b> {format_time_full(peak_t)}<br>
 <b>Forecast peak (obs):</b> {peak_ft:.2f} ft MLLW Sandy Hook
 ({forecast['peak_predicted_mllw']:.2f} predicted {forecast['current_surge_ft']:+.2f} surge)<br>
 <b>Surge source:</b> {forecast['surge_source']} ({forecast['nws_status']})<br>
@@ -1524,6 +1621,7 @@ Model: v0.5. Local enhancement +0.40 ft.
 </table>
 
 {recap_html}
+{low_html}
 <p style="font-size:small;color:#666">
 Model v0.5. Local enhancement +0.40 ft. Rain term saturates at 8".
 Surge persistence is a rough proxy; for active coastal storms, check NWS
@@ -1556,7 +1654,7 @@ def render_html_page(forecast):
         short, above_in, rel_in = landmark_summary(td, t["forecast_peak_mllw"])
         tide_rows += (
             f'<tr{row_class}>'
-            f'<td>{t["time"]}</td>'
+            f'<td>{format_time_full(t["time"])}</td>'
             f'<td>{t["predicted_mllw"]:.2f}</td>'
             f'<td>{t["surge_ft"]:+.2f}</td>'
             f'<td><b>{t["forecast_peak_mllw"]:.2f}</b></td>'
@@ -1587,7 +1685,7 @@ def render_html_page(forecast):
 
   <section class="regime regime-{regime}">
     <div class="regime-label">{regime.upper()}</div>
-    <div class="regime-summary">{REGIME_GLOSSARY.get(regime, '')}. Worst-case peak {peak_ft:.2f} ft MLLW at {peak_t}.</div>
+    <div class="regime-summary">{REGIME_GLOSSARY.get(regime, '')}. Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}.</div>
   </section>
 
   <section class="tides">
@@ -1620,6 +1718,8 @@ def render_html_page(forecast):
   {_landmarks_section_html(forecast, wrapper='section')}
 
   {_render_recent_history_html(forecast)}
+
+  {_render_low_tides_html(forecast)}
 
   <section class="reference">
     <h2>Reference scale</h2>

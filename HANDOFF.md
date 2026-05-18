@@ -513,9 +513,13 @@ Same surge information the Borough's emergency management is looking at.
 4. **Field-measure the lawn/walkway step elevation.** Current 4.58 NAVD88
    is the midpoint of an inferred 4.54–4.63 range. A precise reading
    tightens the moderate-flood threshold.
-5. **Day-name labeling in tide times.** Currently shows
-   "2026-05-18 22:14" — accurate but a mouthful. Could format as
-   "Mon 10:14 PM" for readability. Easy strftime change.
+5. ~~**Day-name labeling in tide times.**~~ ✅ DONE (2026-05-18).
+   Format helpers `format_time_full` ("May 18, 2026: Mon 9:58 PM") and
+   `format_time_short` ("Mon 9:58 PM") applied across email + HTML
+   page. Full form used in worst-case detail, recent-history rows,
+   GitHub Pages tide table, near-miss line; short form used in subject
+   line, email tide table, spot-check times. Plain-language summary
+   uses 12-hour AM/PM with relative-day phrasing ("9:58 PM tonight").
 6. **Update GitHub Actions versions before June 2 2026.** Node.js 20
    deprecation in `actions/checkout@v4` and `actions/setup-python@v5`.
    One-line PR each when new majors land.
@@ -555,14 +559,11 @@ Same surge information the Borough's emergency management is looking at.
     explicitly call this out as a high-value observation when conditions
     match** (cold weather + high tide that would otherwise flood). See
     also item 16 for retrospective calibration from historical data.
-11. **Low tide times in email.** Users might want to know when the
-    tide is at its lowest (parking returns safely, when sub-curb water
-    might drain, etc.). Fetcher already supports returning both highs
-    and lows from the hilo product. Add a small "Low tides in next
-    24h" block.
-    Also see: item 26b (Atlantic Highlands Marina Barnacle spin-off)
-    — the low-tide data is critical for boat-launch decisions and
-    might justify a separate marina-targeted email/page eventually.
+11. ~~**Low tide times in email.**~~ ✅ DONE (2026-05-18). New
+    `fetch_tides_24h()` returns both highs and lows; a small "Low
+    tides in next 24h" block in the email and on the Pages site shows
+    time + level (ft MLLW). For boat-launch context see item 23a
+    (Atlantic Highlands Marina Barnacle spin-off).
 12. **Severity-based notifications.** Currently emails daily regardless.
     Could suppress emails for DRY days and use a separate channel (SMS,
     push) for SEVERE days. Reduces noise.
