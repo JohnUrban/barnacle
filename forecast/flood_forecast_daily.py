@@ -2106,7 +2106,8 @@ def render_html_page(forecast):
     <p>Model v0.5. Local enhancement +0.40 ft. Rain term saturates at 8&Prime;.
        Updated daily at 5 AM ET.</p>
     <p><a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a> &middot;
-       <a href="archive/">Past forecasts</a></p>
+       <a href="archive/">Past forecasts</a> &middot;
+       <a href="barnacle-widget.js">iOS widget script (Scriptable)</a></p>
   </footer>
 </main>
 </body>

@@ -67,6 +67,10 @@ across four labeled flood events the user observed firsthand.
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
 | v0.6 model-spec promotion (4 new landmarks since v0.5) | ⏸ Deferred to next session |
 | SMS/push alerts for moderate/severe (Twilio/Pushover) | ⏸ Next-turn item |
+| iOS Stage-1 Web Clip (Add to Home Screen) | ✅ Live (2026-05-18). manifest.json + apple-touch-icon + meta tags |
+| iOS Stage-2 Scriptable widget | ✅ Live (2026-05-18). Script at docs/barnacle-widget.js |
+| iOS Stage-3 PWA push notifications | ⏸ Next-turn item |
+| iOS Stage-4 native iOS app | ⏸ Multi-session, requires Apple Developer Program |
 | Live NOAA gauge link/embed on Pages site | ⏸ Next-turn item |
 | Stevens NYHOPS surge fallback | ⏸ Not investigated further |
 | ETSS direct fetch | ❌ Abandoned — network blocked from user's ISP |
@@ -722,11 +726,16 @@ Same surge information the Borough's emergency management is looking at.
     icon launcher. Zero infra, no developer account. Already
     sufficient for personal use.
 
-    **Stage 2 — Scriptable widget (~30 min).** Free Scriptable app
-    from App Store; JS pulls `docs/forecast.json` and renders a
-    home-screen widget showing today's regime + peak + landmark
-    depths. Glanceable without opening anything. Refreshes every
-    ~15-30 min. Zero developer account.
+    **Stage 2 — Scriptable widget** ✅ DONE (2026-05-18). Script at
+    `docs/barnacle-widget.js` (served as
+    `johnurban.github.io/barnacle/barnacle-widget.js`). Free
+    Scriptable app from App Store; user copy-pastes the script,
+    pins as a home-screen widget. Small (2x2) shows regime label,
+    peak ft + time, highest exceeded landmark + depth; medium (4x2)
+    adds the plain-language summary and confidence indicator.
+    Widget is tappable → opens the live Pages site. Refreshes every
+    ~15 min. Zero developer account. Install instructions are in
+    the script header AND linked from the Pages site footer.
 
     **Stage 3 — PWA push notifications (1-2 hours).** iOS 16.4+
     supports push for installed-to-home-screen PWAs. Add service
