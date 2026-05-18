@@ -35,11 +35,28 @@ from urllib.parse import urlencode
 # ============================================================
 LOCAL_ENHANCEMENT_FT = 0.40        # Sandy Hook obs -> 342 Bay water level
 
-# Landmark elevations at 342 Bay Ave (NAVD88, ft)
-CURB_TOP     = 4.16   # Bay Ave side at walkway
-ROAD_MIDDLE  = 4.36   # Bay Ave centerline at user's spot
-INTERSECTION = 4.54   # Bay+Central intersection center (local high)
-LAWN_STEP    = 4.58   # estimated walkway step
+# Landmark elevations at 342 Bay Ave (NAVD88, ft).
+# Sandy Hook MLLW threshold for each = landmark + 2.42
+# (= +2.82 datum offset − 0.40 local enhancement).
+CURB_TOP        = 4.16   # Bay Ave side at walkway              (SH 6.58)
+ROAD_MIDDLE     = 4.36   # Bay Ave centerline at user's spot    (SH 6.78)
+INTERSECTION    = 4.54   # Bay+Central intersection (local high) (SH 6.96)
+LAWN_STEP       = 4.58   # estimated walkway step               (SH 7.00)
+FRONT_PORCH_STEP = 5.08  # ~6" above lawn step, est. first step (SH 7.50)
+# At and above the porch step we're firmly in direct-inundation territory
+# (well above curb), so the +0.40 ft local enhancement — fit primarily from
+# drain-backflow-era events at street level — is an extrapolation. The
+# offset still holds at the gauge-to-bay level, but the user may want to
+# revisit if more extreme-event data accumulates.
+
+# Stratified landmarks for the seasonal context table (ascending severity).
+LANDMARKS = [
+    ("curb",         "Curb at walkway",         CURB_TOP,         6.58),
+    ("road_middle",  "Bay Ave road middle",     ROAD_MIDDLE,      6.78),
+    ("intersection", "Intersection center",     INTERSECTION,     6.96),
+    ("lawn_step",    "Lawn / walkway step",     LAWN_STEP,        7.00),
+    ("porch_step",   "Front porch first step",  FRONT_PORCH_STEP, 7.50),
+]
 
 MLLW_TO_NAVD88_OFFSET = -2.82  # NAVD88 = MLLW + offset
 
@@ -191,21 +208,22 @@ def fetch_nws_hourly_forecast():
 # ============================================================
 def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
                             cold_lockout=False):
-    """Apply v0.4 model. Returns dict of depths (inches) at each landmark."""
+    """Apply v0.5 model. Returns dict of depths (inches) at each landmark."""
     if cold_lockout and sandy_hook_peak_mllw < 8.0:
         return {
             "curb": 0.0, "road_middle": 0.0,
-            "intersection": 0.0, "lawn_step": 0.0,
+            "intersection": 0.0, "lawn_step": 0.0, "porch_step": 0.0,
             "regime": "cold_lockout",
         }
 
     water_navd88 = sandy_hook_peak_mllw + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
 
     d = {
-        "curb":         max(0.0, water_navd88 - CURB_TOP)     * 12,
-        "road_middle":  max(0.0, water_navd88 - ROAD_MIDDLE)  * 12,
-        "intersection": max(0.0, water_navd88 - INTERSECTION) * 12,
-        "lawn_step":    max(0.0, water_navd88 - LAWN_STEP)    * 12,
+        "curb":         max(0.0, water_navd88 - CURB_TOP)         * 12,
+        "road_middle":  max(0.0, water_navd88 - ROAD_MIDDLE)      * 12,
+        "intersection": max(0.0, water_navd88 - INTERSECTION)     * 12,
+        "lawn_step":    max(0.0, water_navd88 - LAWN_STEP)        * 12,
+        "porch_step":   max(0.0, water_navd88 - FRONT_PORCH_STEP) * 12,
     }
 
     if peak_rain_rate_in_hr > 0.1:
@@ -214,6 +232,8 @@ def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
         d["road_middle"]  += rain_add
         d["intersection"] += max(0.0, rain_add - 2.0)  # crown sheds some
         d["lawn_step"]    += max(0.0, rain_add - 4.0)  # lawn sheds more
+        # Porch step gets no rain term added — by the time water reaches the
+        # porch from rain, the underlying tide is already dominant.
 
     # Regime label
     if d["curb"] >= ALERT_SEVERE:
@@ -239,25 +259,31 @@ HISTORY_DATA_DIR = os.path.abspath(os.path.join(_HERE, "..", "history", "data"))
 SLR_REFERENCE_YEAR = 1990
 
 
-def load_seasonality_row(month):
-    """Return current month's row from seasonality_recent.csv (1996-2025).
-    None if file missing or row absent — caller degrades gracefully."""
+def load_seasonality_strata(month):
+    """Return list of seasonality rows for the given calendar month, one
+    per stratum (ascending threshold). Empty list on failure — caller
+    degrades gracefully."""
     path = os.path.join(HISTORY_DATA_DIR, "seasonality_recent.csv")
+    out = []
     try:
         with open(path) as f:
             for row in csv.DictReader(f):
-                if int(row["month"]) == month:
-                    return {
-                        "avg_events":   float(row["avg_events_per_month"]),
-                        "avg_days":     float(row["avg_flood_days_per_month"]),
-                        "avg_hours":    float(row["avg_flood_hours_per_month"]),
-                        "descriptor":   row.get("descriptor", ""),
-                        "threshold_ft": float(row["threshold_ft"]),
-                        "window":       row.get("window", ""),
-                    }
+                if int(row["month"]) != month:
+                    continue
+                out.append({
+                    "landmark_key":   row.get("landmark_key", ""),
+                    "landmark_label": row.get("landmark_label", ""),
+                    "threshold_ft":   float(row["threshold_ft"]),
+                    "avg_events":     float(row["avg_events_per_month"]),
+                    "avg_days":       float(row["avg_flood_days_per_month"]),
+                    "avg_hours":      float(row["avg_flood_hours_per_month"]),
+                    "descriptor":     row.get("descriptor", ""),
+                    "window":         row.get("window", ""),
+                })
     except (FileNotFoundError, KeyError, ValueError):
-        return None
-    return None
+        return []
+    out.sort(key=lambda r: r["threshold_ft"])
+    return out
 
 
 def load_slr_since(reference_year):
@@ -286,19 +312,20 @@ def load_slr_since(reference_year):
         return None
 
 
-CURB_THRESHOLD_SH_MLLW = 6.58   # Sandy Hook obs at which curb at 342 Bay wets
+def fetch_mtd_flood_events():
+    """Pull NOAA water_level month-to-date and return flood counts at each
+    of the 5 landmark thresholds.
 
-
-def fetch_mtd_flood_events(threshold=CURB_THRESHOLD_SH_MLLW):
-    """Count flood events month-to-date at the Sandy Hook curb threshold
-    (6.58 ft MLLW). Pulls NOAA water_level (preliminary 6-min, no lag) from
-    month-start to now, aggregates to hourly mean, counts contiguous runs.
-
-    Returns dict with: n_events, n_flood_days, n_hours_above, peak_obs_mllw,
-    month_start, as_of.  Returns None on fetch/parse failure.
+    Returns dict with:
+        peak_obs_mllw : float
+        month_start, as_of : str
+        strata : list of {threshold_ft, n_events, n_flood_days, n_hours_above},
+                 sorted ascending by threshold.
+    Returns None on fetch/parse failure.
 
     Note: water_level is preliminary; values may shift by a few cm when later
-    verified. Adequate for a count-of-flood-events display."""
+    verified. Adequate for a count display."""
+    thresholds = [t for _k, _l, _e, t in LANDMARKS]
     now = dt.datetime.now(dt.timezone.utc)
     start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     try:
@@ -337,30 +364,37 @@ def fetch_mtd_flood_events(threshold=CURB_THRESHOLD_SH_MLLW):
     hourly_vals = [(h, sum(vs) / len(vs)) for h, vs in by_hour.items()]
     hourly_vals.sort(key=lambda x: x[0])
 
-    n_hours_above = 0
-    n_events = 0
-    in_event = False
+    # Pass through each threshold and tally events, flood days, hours.
     peak = float("-inf")
-    flood_dates = set()
-    for h, v in hourly_vals:
-        if v > peak:
-            peak = v
-        above = v >= threshold
-        if above:
-            n_hours_above += 1
-            flood_dates.add(h[:10])
-            if not in_event:
-                n_events += 1
-                in_event = True
-        else:
-            in_event = False
+    strata_out = []
+    for t in thresholds:
+        n_hours_above = 0
+        n_events = 0
+        in_event = False
+        flood_dates = set()
+        for h, v in hourly_vals:
+            if v > peak:
+                peak = v
+            above = v >= t
+            if above:
+                n_hours_above += 1
+                flood_dates.add(h[:10])
+                if not in_event:
+                    n_events += 1
+                    in_event = True
+            else:
+                in_event = False
+        strata_out.append({
+            "threshold_ft":   t,
+            "n_events":       n_events,
+            "n_flood_days":   len(flood_dates),
+            "n_hours_above":  n_hours_above,
+        })
     return {
-        "n_events": n_events,
-        "n_flood_days": len(flood_dates),
-        "n_hours_above": n_hours_above,
         "peak_obs_mllw": peak if peak > float("-inf") else None,
-        "month_start": start.strftime("%Y-%m-%d"),
-        "as_of": now.strftime("%Y-%m-%d %H:%M UTC"),
+        "month_start":   start.strftime("%Y-%m-%d"),
+        "as_of":         now.strftime("%Y-%m-%d %H:%M UTC"),
+        "strata":        strata_out,
     }
 
 
@@ -371,7 +405,7 @@ def build_seasonal_context(forecast):
     today = dt.date.today()
     ctx = {
         "month_name": today.strftime("%B"),
-        "season": load_seasonality_row(today.month),
+        "strata": load_seasonality_strata(today.month),  # list, possibly empty
         "mtd": None,
         "slr_ft_since_1990": load_slr_since(SLR_REFERENCE_YEAR),
         "slr_reference_year": SLR_REFERENCE_YEAR,
@@ -524,38 +558,79 @@ def build_forecast():
 # ============================================================
 # Seasonal context line builders (shared between email and HTML)
 # ============================================================
-def _seasonal_context_lines_text(ctx, today=None):
-    """Return list of plain-text lines (zero, one, or two) for seasonal /
-    SLR context. Each piece is independent — partial failures degrade
-    cleanly to fewer lines, never an exception."""
+def _format_decimal(v):
+    """Show <1.0 numbers with two decimals, otherwise one. Keeps narrow values
+    readable in the table without losing precision at the rare end."""
+    if v is None:
+        return "—"
+    return f"{v:.2f}" if v < 1.0 else f"{v:.1f}"
+
+
+def _seasonal_context_table_text(ctx, today=None):
+    """Plain-text severity table: 5 strata × (typical days / MTD days).
+    Returns list of strings (the table rows + caption); empty if no data."""
     today = today or dt.date.today()
-    lines = []
-    season = (ctx or {}).get("season")
-    mtd = (ctx or {}).get("mtd")
-    if season:
-        month_name = today.strftime("%B")
-        desc = season.get("descriptor", "")
-        avg_days = season.get("avg_days")
-        # Window string may already contain parens, e.g. "1996-2025 (30 yrs)".
-        # Strip them for cleaner sentence flow.
-        window = (season.get("window", "") or "").split(" (")[0]
-        if desc in ("wettest month", "quietest month"):
-            tag = f" — the {desc} of the year"
-        elif desc:
-            tag = f" — a {desc} month"
-        else:
-            tag = ""
+    strata = (ctx or {}).get("strata") or []
+    if not strata:
+        return []
+    mtd = (ctx or {}).get("mtd") or {}
+    mtd_by_thresh = {s["threshold_ft"]: s for s in (mtd.get("strata") or [])}
+    window = (strata[0].get("window") or "").split(" (")[0]
+    month_name = today.strftime("%B")
+    lines = [f"Flood days by severity, {month_name} typical (avg over {window}) "
+             f"vs month-to-date:"]
+    # Header
+    lines.append(f"  {'Landmark':<26}{'typical':>10}{'MTD':>8}")
+    for s in strata:
+        days_typ = s.get("avg_days", 0.0)
+        days_mtd = mtd_by_thresh.get(s["threshold_ft"], {}).get("n_flood_days", 0)
         lines.append(
-            f"{month_name} typically has ~{avg_days:.1f} flood days at your "
-            f"curb (avg over {window}){tag}."
+            f"  {s.get('landmark_label','')[:26]:<26}"
+            f"{_format_decimal(days_typ):>10}{days_mtd:>8}"
         )
-        if mtd:
-            peak_str = (f" Peak Sandy Hook so far: {mtd['peak_obs_mllw']:.2f} ft."
-                        if mtd.get("peak_obs_mllw") is not None else "")
-            lines.append(
-                f"So far this {month_name}: {mtd['n_flood_days']} flood days "
-                f"({mtd['n_events']} events).{peak_str}"
-            )
+    return lines
+
+
+def _seasonal_context_table_html(ctx, today=None):
+    """HTML severity table — same content as _seasonal_context_table_text
+    but as a <table>. Empty list if no data."""
+    today = today or dt.date.today()
+    strata = (ctx or {}).get("strata") or []
+    if not strata:
+        return []
+    mtd = (ctx or {}).get("mtd") or {}
+    mtd_by_thresh = {s["threshold_ft"]: s for s in (mtd.get("strata") or [])}
+    window = (strata[0].get("window") or "").split(" (")[0]
+    month_name = today.strftime("%B")
+    rows = ""
+    for s in strata:
+        days_typ = s.get("avg_days", 0.0)
+        days_mtd = mtd_by_thresh.get(s["threshold_ft"], {}).get("n_flood_days", 0)
+        desc = s.get("descriptor", "")
+        rows += (
+            f'<tr><td>{s.get("landmark_label","")}</td>'
+            f'<td align="right">{_format_decimal(days_typ)}</td>'
+            f'<td align="right">{days_mtd}</td>'
+            f'<td class="note">{desc}</td></tr>'
+        )
+    return [(
+        f'<p class="context">Flood days by severity, '
+        f'<b>{month_name} typical</b> (avg over {window}) vs '
+        f'<b>month-to-date</b>:</p>'
+        f'<table class="severity-table"><thead><tr>'
+        f'<th>Landmark</th><th>typical</th><th>MTD</th><th></th>'
+        f'</tr></thead><tbody>{rows}</tbody></table>'
+    )]
+
+
+def _seasonal_context_lines_text(ctx, today=None):
+    """Return list of plain-text lines for the email Context section."""
+    today = today or dt.date.today()
+    lines = list(_seasonal_context_table_text(ctx, today))
+    mtd = (ctx or {}).get("mtd")
+    if mtd and mtd.get("peak_obs_mllw") is not None:
+        lines.append(f"Peak Sandy Hook so far this month: "
+                     f"{mtd['peak_obs_mllw']:.2f} ft MLLW.")
     if ctx and ctx.get("show_slr_line"):
         slr = ctx["slr_ft_since_1990"]
         peak = ctx["slr_today_peak_ft"]
@@ -569,9 +644,27 @@ def _seasonal_context_lines_text(ctx, today=None):
 
 
 def _seasonal_context_lines_html(ctx, today=None):
-    """Return list of HTML <p> strings for seasonal context."""
-    return [f'<p class="context">{line}</p>'
-            for line in _seasonal_context_lines_text(ctx, today)]
+    """Return list of HTML fragments for the Context block: severity table
+    + optional peak-so-far + optional SLR-conditional line."""
+    today = today or dt.date.today()
+    out = list(_seasonal_context_table_html(ctx, today))
+    mtd = (ctx or {}).get("mtd")
+    if mtd and mtd.get("peak_obs_mllw") is not None:
+        out.append(
+            f'<p class="context">Peak Sandy Hook so far this month: '
+            f'<b>{mtd["peak_obs_mllw"]:.2f} ft MLLW</b>.</p>'
+        )
+    if ctx and ctx.get("show_slr_line"):
+        slr = ctx["slr_ft_since_1990"]
+        peak = ctx["slr_today_peak_ft"]
+        ref_year = ctx["slr_reference_year"]
+        out.append(
+            f'<p class="context">Sea level at Sandy Hook is '
+            f'~{slr:.2f} ft higher than in {ref_year}. '
+            f"Today's high tide of {peak:.2f} ft wouldn't have crossed your "
+            f"curb in {ref_year}; today it does.</p>"
+        )
+    return out
 
 
 def _seasonal_context_block_text(forecast):
@@ -648,16 +741,18 @@ PREDICTED DEPTH at worst-case tide (inches above each landmark at 342 Bay Ave):
   Bay Ave road middle (4.36):       {d['road_middle']:5.1f} in
   Intersection center (4.54):       {d['intersection']:5.1f} in
   Lawn / walkway step (4.58):       {d['lawn_step']:5.1f} in
+  Front porch first step (5.08):    {d['porch_step']:5.1f} in
 
 Regime: {regime}
 
 {_seasonal_context_block_text(forecast)}\
 Reference scale (Sandy Hook obs MLLW):
   < 6.6   : dry
-  6.6-6.9 : light (curb wet)
-  6.9-7.3 : moderate (road covered, intersection still dry)
-  7.3-7.6 : water at lawn step
-  7.6+    : severe
+  6.6-6.8 : curb wet
+  6.8-7.0 : road middle + intersection wet
+  7.0-7.5 : water at lawn step
+  7.5-7.9 : water at front porch first step
+  7.9+    : severe (well past porch)
 
 Model: v0.5. Local enhancement +0.40 ft.
 """
@@ -709,6 +804,7 @@ Model: v0.5. Local enhancement +0.40 ft.
 <tr><td>Bay Ave road middle</td><td>4.36</td><td>{d['road_middle']:.1f}</td></tr>
 <tr><td>Intersection center</td><td>4.54</td><td>{d['intersection']:.1f}</td></tr>
 <tr><td>Lawn/walkway step</td><td>4.58</td><td>{d['lawn_step']:.1f}</td></tr>
+<tr><td>Front porch first step</td><td>5.08</td><td>{d['porch_step']:.1f}</td></tr>
 </table>
 
 <p><b>Regime: {regime}</b></p>
@@ -806,6 +902,7 @@ def render_html_page(forecast):
         <tr><td>Bay Ave road middle</td><td>4.36 ft</td><td>{d['road_middle']:.1f}&Prime;</td></tr>
         <tr><td>Intersection center</td><td>4.54 ft</td><td>{d['intersection']:.1f}&Prime;</td></tr>
         <tr><td>Lawn / walkway step</td><td>4.58 ft</td><td>{d['lawn_step']:.1f}&Prime;</td></tr>
+        <tr><td>Front porch first step</td><td>5.08 ft</td><td>{d['porch_step']:.1f}&Prime;</td></tr>
       </tbody>
     </table>
   </section>
@@ -817,10 +914,11 @@ def render_html_page(forecast):
     <p>Sandy Hook observed water level (MLLW):</p>
     <ul>
       <li>&lt; 6.6 ft — dry</li>
-      <li>6.6&ndash;6.9 ft — light (curb wet)</li>
-      <li>6.9&ndash;7.3 ft — moderate (road covered, intersection still dry)</li>
-      <li>7.3&ndash;7.6 ft — water at lawn step</li>
-      <li>&ge; 7.6 ft — severe</li>
+      <li>6.6&ndash;6.8 ft — curb wet</li>
+      <li>6.8&ndash;7.0 ft — road middle + intersection wet</li>
+      <li>7.0&ndash;7.5 ft — water at lawn step</li>
+      <li>7.5&ndash;7.9 ft — water at front porch first step</li>
+      <li>&ge; 7.9 ft — severe (well past porch)</li>
     </ul>
   </section>
 

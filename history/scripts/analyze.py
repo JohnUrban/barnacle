@@ -521,43 +521,69 @@ def main():
     days_per_year = flood_hours.groupby("year")["date"].nunique()
     days_per_year.to_csv(out / "flood_days_per_year.csv", header=["flood_days"])
 
-    # Recent-window seasonality (1996-2025) for forecast-email seasonal context.
-    # The all-record monthly averages in seasonality_by_threshold.csv understate
-    # the recent-decade flood rate because they include 1910-1980 when sea level
-    # was lower. The email needs an apples-to-apples comparison vs MTD count.
+    # Recent-window stratified seasonality (1996-2025) for forecast-email
+    # context. Five strata so the user can see severity, not just a single
+    # "flood day" count that conflates barely-overflowing curb with porch
+    # underwater. Thresholds correspond to 342 Bay landmarks.
     recent = df_h[df_h["year"].between(1996, 2025)].copy()
     n_years_recent = recent["year"].nunique()
-    events_recent = detect_events_at(recent, 6.58)
-    if not events_recent.empty:
-        events_recent["month"] = events_recent["start"].dt.month
+
+    # Stratification thresholds and landmark labels (in ascending order
+    # of severity). Sandy Hook MLLW = landmark NAVD88 + 2.42 ft.
+    strata = [
+        ("curb",          "Curb at walkway",          6.58),
+        ("road_middle",   "Bay Ave road middle",      6.78),
+        ("intersection",  "Intersection center",      6.96),
+        ("lawn_step",     "Lawn / walkway step",      7.00),
+        ("porch_step",    "Front porch first step",   7.50),
+    ]
     rows = []
-    for m in range(1, 13):
-        # flood events in this month across all recent years / n_years -> avg per month
-        n_ev = 0 if events_recent.empty else int((events_recent["month"] == m).sum())
-        # flood days = distinct calendar days with any hour ≥ 6.58
-        flood_days_in_m = (recent[(recent["month"] == m) & (recent["observed_mllw"] >= 6.58)]
-                           .groupby("date").size().shape[0])
-        flood_hours_in_m = int(((recent["month"] == m) & (recent["observed_mllw"] >= 6.58)).sum())
-        rows.append({
-            "month": m,
-            "avg_events_per_month": n_ev / max(n_years_recent, 1),
-            "avg_flood_days_per_month": flood_days_in_m / max(n_years_recent, 1),
-            "avg_flood_hours_per_month": flood_hours_in_m / max(n_years_recent, 1),
-        })
+    for key, label, thresh in strata:
+        events_t = detect_events_at(recent, thresh)
+        if not events_t.empty:
+            events_t["month"] = events_t["start"].dt.month
+        for m in range(1, 13):
+            n_ev = 0 if events_t.empty else int((events_t["month"] == m).sum())
+            mask = (recent["month"] == m) & (recent["observed_mllw"] >= thresh)
+            flood_days_in_m = recent[mask].groupby("date").size().shape[0]
+            flood_hours_in_m = int(mask.sum())
+            rows.append({
+                "landmark_key": key,
+                "landmark_label": label,
+                "threshold_ft": thresh,
+                "month": m,
+                "avg_events_per_month": n_ev / max(n_years_recent, 1),
+                "avg_flood_days_per_month": flood_days_in_m / max(n_years_recent, 1),
+                "avg_flood_hours_per_month": flood_hours_in_m / max(n_years_recent, 1),
+            })
     rec_df = pd.DataFrame(rows)
-    # Rank-based descriptor: wettest, quietest, above-avg, below-avg
-    avg_overall = rec_df["avg_flood_days_per_month"].mean()
-    wettest_m = rec_df["avg_flood_days_per_month"].idxmax() + 1
-    quietest_m = rec_df["avg_flood_days_per_month"].idxmin() + 1
-    def desc(row):
-        if int(row["month"]) == wettest_m:
-            return "wettest month"
-        if int(row["month"]) == quietest_m:
-            return "quietest month"
-        return "above-average" if row["avg_flood_days_per_month"] >= avg_overall else "below-average"
-    rec_df["descriptor"] = rec_df.apply(desc, axis=1)
-    rec_df["threshold_ft"] = 6.58
+    # Per-stratum descriptor: wettest, quietest, above-avg, below-avg
+    # If all months tie at 0 (extreme threshold barely ever hit in some
+    # strata), descriptors are empty strings.
+    descriptors = []
+    for key, label, thresh in strata:
+        sub = rec_df[rec_df["threshold_ft"] == thresh].sort_values("month")
+        days = sub["avg_flood_days_per_month"].values
+        if days.max() == 0:
+            descriptors.extend([""] * 12)
+            continue
+        mean_v = days.mean()
+        wettest_m = int(sub.iloc[int(days.argmax())]["month"])
+        quietest_m = int(sub.iloc[int(days.argmin())]["month"])
+        for _, r in sub.iterrows():
+            m = int(r["month"])
+            if m == wettest_m:
+                descriptors.append("wettest month")
+            elif m == quietest_m and r["avg_flood_days_per_month"] < mean_v:
+                descriptors.append("quietest month")
+            elif r["avg_flood_days_per_month"] >= mean_v:
+                descriptors.append("above-average")
+            else:
+                descriptors.append("below-average")
+    rec_df["descriptor"] = descriptors
     rec_df["window"] = f"1996-2025 ({n_years_recent} yrs)"
+    # Sort: month ascending, then by severity ascending
+    rec_df = rec_df.sort_values(["month", "threshold_ft"]).reset_index(drop=True)
     rec_df.to_csv(out / "seasonality_recent.csv", index=False)
 
     summary = {

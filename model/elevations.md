@@ -113,6 +113,7 @@ Using `water_at_342_Bay_MLLW = Sandy_Hook_obs_MLLW + 0.40` (local enhancement, e
 | 6.96 | 4.54 | Intersection center submerged (local high point) |
 | 7.00 | 4.58 | Water at lawn / walkway step |
 | 7.12 | 4.70 | Middle of road near driveway |
+| **7.50** | **5.08** | **Water reaches front porch first step** (v0.5.1, est. ~6" above lawn step) |
 | 7.58 | 5.16 | ~1 ft above curb (Apr 18 2026 class event) |
 | 8.0+ | 5.58+ | Severe; approaching bulkhead overtopping |
 | 13.0+ | 10.58+ | Hurricane Sandy-class (Borough table: ~7 ft on Bay Ave) |
