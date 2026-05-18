@@ -49,14 +49,25 @@ across four labeled flood events the user observed firsthand.
 | GitHub Actions workflow | ✅ Scheduled daily 09:00 UTC (5 AM EDT / 4 AM EST) |
 | Email delivery (Gmail SMTP) | ✅ Working from personal Gmail |
 | GitHub Pages site | ✅ Live at johnurban.github.io/barnacle/ |
-| Forecast archive (every day kept forever) | ✅ docs/archive/YYYY-MM-DD.html |
+| Forecast archive (every day kept forever) | ✅ docs/archive/YYYY-MM-DD.html + .json |
+| Machine-readable JSON archive (HANDOFF 16c) | ✅ Live since 2026-05-18 |
 | Bcc privacy for multi-recipient | ✅ Built into send_email |
 | Repo reorganization | ✅ Clean structure, old work archived in `attic/` |
 | Historical statistics project (Claude Code) | ✅ Complete (2026-05-18). Report + CSVs in `history/` |
 | Dashboard threshold correction | ✅ Corrected to 6.70 ft (was wrongly documented as 7.20 ft) |
+| Stratified landmark table (8 strata, depth + history + MTD) | ✅ Live (2026-05-18) |
+| Plain-language summary + confidence indicator | ✅ Live (2026-05-18, HANDOFF 8a + 16a) |
+| Rain timing detail, recent-history recap | ✅ Live (2026-05-18, HANDOFF 8c + 16b) |
+| Low-tide times in email | ✅ Live (2026-05-18, HANDOFF 11) |
+| Day-name / AM-PM time labels everywhere | ✅ Live (2026-05-18, HANDOFF 5) |
+| Unusual-forecast highlight (top-N% framing) | ✅ Live (2026-05-18, HANDOFF 16e) |
+| Forecast accuracy log (`data/forecast_accuracy.csv`) | ✅ Live (2026-05-18, HANDOFF 8b). Populates from day 2. |
+| Spot-check calibration callouts (pluvial-only, cold-lockout) | ✅ Live (2026-05-18, HANDOFF 10/14) |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
-| Seasonal context line in email | ⏸ Designed, data ready, not yet built (next priority) |
+| v0.6 model-spec promotion (4 new landmarks since v0.5) | ⏸ Deferred to next session |
+| SMS/push alerts for moderate/severe (Twilio/Pushover) | ⏸ Next-turn item |
+| Live NOAA gauge link/embed on Pages site | ⏸ Next-turn item |
 | Stevens NYHOPS surge fallback | ⏸ Not investigated further |
 | ETSS direct fetch | ❌ Abandoned — network blocked from user's ISP |
 | Node.js 20 deprecation in workflow | ⏸ Bump action versions before June 2 2026 |
@@ -217,7 +228,8 @@ barnacle/
 │   ├── labeled_events.csv        # 6 flood events used for calibration
 │   ├── labeled_observations.csv  # ongoing log of user-observed depths at landmarks (see README)
 │   ├── labeled_observations_README.md  # what to record, when to act on it
-│   ├── merged_hourly.csv         # tide + met + rain joined, ~6200 rows
+│   ├── forecast_accuracy.csv     # auto-appended: predicted vs actual peak (HANDOFF 8b)
+│   ├── merged_hourly.csv         # tide + met + rain joined, Sep 2025–May 2026 snapshot
 │   ├── floods_by_month{,_minor,_moderate,_major,_total}.tsv
 │   ├── top10_highest_tides.tsv
 │   └── raw/                      # source pulls before merging
@@ -227,10 +239,12 @@ barnacle/
 │   └── how-rain-adds.md          # rain mechanism notes
 ├── docs/                         # GitHub Pages site
 │   ├── index.html                # today's forecast (auto-replaced)
+│   ├── forecast.json             # machine-readable today's forecast (auto-replaced)
 │   ├── style.css
 │   └── archive/
 │       ├── index.html            # auto-regenerated list
-│       └── YYYY-MM-DD.html       # one per day, forever
+│       ├── YYYY-MM-DD.html       # one per day, forever
+│       └── YYYY-MM-DD.json       # JSON twin per day, for accuracy log + downstream
 ├── history/                      # historical-stats project (Claude Code)
 │   ├── HANDOFF.md                # original task spec (with dashboard correction)
 │   ├── RESULTS_HANDOFF.md        # ★ peer summary of what was done & found
@@ -243,7 +257,9 @@ barnacle/
 │   ├── data/
 │   │   ├── summary_stats.json           # ★ headline numbers
 │   │   ├── calibration_check.csv        # ★ 4-event validation
-│   │   ├── seasonality_by_threshold.csv # ★ for seasonal-context email line
+│   │   ├── seasonality_recent.csv       # ★ 1996-2025 8-stratum table, used by daily email
+│   │   ├── seasonality_by_threshold.csv # full-record version (1910-2025)
+│   │   ├── monthly_peak_percentiles.csv # ★ p25/50/75/90/95/99/max per month for #16e
 │   │   ├── slr_trend_by_window.csv      # SLR by 4 windows
 │   │   ├── return_periods.csv           # GEV return levels
 │   │   ├── flood_days_per_year.csv
@@ -256,9 +272,9 @@ barnacle/
 │   ├── figures/                  # PNG plots (return periods, decadal, etc.)
 │   └── pull.log
 └── attic/                        # archived dead-ends + old structure
-    └── superseded_handoffs/      # done task specs and deploy/HANDOFF.md
     ├── etss_fetcher.py
-    └── dev_pre_v0.5_reorg_20260518/   # original dev/ tree
+    ├── dev_pre_v0.5_reorg_20260518/   # original dev/ tree
+    └── superseded_handoffs/      # SEASONAL_CONTEXT_TASK.md, deploy_HANDOFF.md
 ```
 
 **On `history/data/`:** the top-level CSVs and JSON are small, referenced
@@ -729,32 +745,55 @@ Same surge information the Borough's emergency management is looking at.
 
 ## 11. Practical immediate next steps
 
-System is in production. Nothing is blocking. Suggested cadence:
+System is in production. Nothing is blocking. The big features added
+2026-05-18 (unified landmark table, plain-language summary, confidence
+indicator, rain timing, recent recap, low tides, JSON archive,
+accuracy log, unusual-forecast flag, spot-check callouts) are all
+live. Suggested cadence:
 
 1. **Each morning**: glance at the email. Triage by subject line; only
-   open if regime is anything other than DRY.
-2. **When a coastal flood event happens**: run
+   open if regime is anything other than DRY. Watch the new "Confidence"
+   line — when it's LOW, also peek at NWS directly.
+2. **When the spot-check section flags a CALIBRATION OPPORTUNITY**
+   (pluvial-only or cold-lockout), actually go look. Those days are
+   the high-information-value days for the model.
+3. **When a coastal flood event happens**: run
    `forecast/nws_surge_parser.py` once during the event to verify it
    parses the live NWS product cleanly. Paste output if it fails.
-3. **In ~24-48 hours**: retry generating an app password from
+4. **In ~24-48 hours**: retry generating an app password from
    `bayavebarnacle@gmail.com`. When successful, update three GitHub
    secrets to move email sending off personal account.
-4. **Weekly-ish**: check
+5. **Weekly-ish**: check
    [johnurban.github.io/barnacle/archive/](https://johnurban.github.io/barnacle/archive/)
    to confirm daily runs are accumulating archive entries cleanly.
-5. **Monthly-ish**: review prediction accuracy against any actual
-   observations. If predictions consistently miss in one direction,
-   that's information for refining the +0.40 enhancement or rain term.
-6. **Now, before the seasonal-context build**: commit the historical-stats
-   project outputs (`history/scripts/`, `history/reports/`, `history/data/*.csv`,
-   `history/data/*.json`, `history/figures/`, `history/RESULTS_HANDOFF.md`,
-   `history/pull.log`). Don't commit `history/data/raw_chunks/` or
-   `history/data/sandy_hook_hourly_history.parquet` — both regeneratable
-   and bulky. Update `.gitignore` accordingly.
-7. **Build the seasonal-context feature** — pull from
-   `history/data/seasonality_by_threshold.csv` and
-   `history/data/slr_trend_by_window.csv`; small change to
-   `render_email()` and `render_html_page()`.
+   The accuracy line should start appearing in emails ~2 days after
+   the first JSON archive (2026-05-19+).
+6. **Monthly-ish**: review the accuracy log
+   (`data/forecast_accuracy.csv`) for any systematic bias. Mean error
+   consistently positive = model over-predicts; negative = under-predicts.
+   Worth investigating if either drifts beyond ±0.1 ft over many rows.
+
+### Next-session feature picks (in priority order)
+
+The four high-value items most worth picking up in the next session:
+
+a. **v0.6 model spec promotion** (HANDOFF upkeep rule). Move the
+   v0.5.1 + v0.5.2 in-place additions to a new `model/v0.6.md` since
+   they added 4 new landmarks. Archive `model/v0.5.md` to
+   `model/archive/`. Update HANDOFF section 3 + spec cross-references.
+b. **HANDOFF item 16d — SMS/push alerts.** Twilio (text messaging
+   API, ~$0.0075 per SMS, requires phone number provisioning) or
+   Pushover (one-time $5 app, free API, sends to your phone) for
+   moderate/severe-only events. Twilio is general-purpose; Pushover
+   is hobbyist-friendly. Pushover probably the simpler choice.
+c. **HANDOFF item 16f — live NOAA gauge embed on Pages site.** NOAA
+   has direct image URLs for the Sandy Hook gauge plot. Drop one
+   `<img>` tag in `render_html_page()`.
+d. **HANDOFF item 16 (cold-weather retrospective).** Pull historical
+   air-temperature data, join to hourly water-level, find past
+   high-tide events that would have crossed the curb but had
+   72-h mean temp < 32°F. Check whether flooding was reported / not
+   reported. Builds calibration without waiting for new events.
 
 ---
 
