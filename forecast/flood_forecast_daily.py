@@ -237,14 +237,41 @@ def build_forecast():
     # Find next high tide peak in next 24h (local maximum)
     peak_time, peak_pred = max(predicted, key=lambda x: x[1])
 
-    # Surge: use current observed vs predicted
-    surge = fetch_current_surge()
-    if surge is None:
-        surge = 0.0
+    # Surge: prefer NWS Coastal Flood product if active, else surge persistence
+    nws_active = False
+    nws_status = "not active"
+    forecast_observed_peak = None
+    surge = 0.0
+    try:
+        import nws_surge_parser
+        nws_active, projections, _, msg = nws_surge_parser.get_surge_forecast()
+        if nws_active and projections:
+            # Find highest tide in next 24h from NWS forecast
+            now = dt.datetime.now()
+            future_24h = [p for p in projections
+                          if now <= p["when"] <= now + dt.timedelta(hours=24)]
+            if future_24h:
+                peak_proj = max(future_24h, key=lambda p: p["total_mllw_ft"])
+                forecast_observed_peak = peak_proj["total_mllw_ft"]
+                surge = peak_proj["departure_ft"]
+                peak_time = peak_proj["when"].strftime("%Y-%m-%d %H:%M")
+                nws_status = (f"NWS Coastal Flood forecast: peak "
+                              f"{forecast_observed_peak:.2f} ft "
+                              f"at {peak_time} (cat: {peak_proj['cat']})")
+        elif nws_active:
+            nws_status = f"NWS event active but parser failed: {msg}"
+    except ImportError:
+        nws_status = "parser module not found"
+    except Exception as e:
+        nws_status = f"NWS fetch error: {e}"
 
-    # Forecast observed = predicted + assumed-persistent surge
-    # (rough; true forecast requires NWS Coastal Flood Statement)
-    forecast_observed_peak = peak_pred + max(0.0, surge)
+    # Fall back to surge persistence if no NWS forecast available
+    if forecast_observed_peak is None:
+        surge = fetch_current_surge() or 0.0
+        forecast_observed_peak = peak_pred + max(0.0, surge)
+        source = "surge-persistence"
+    else:
+        source = "nws-coastal-flood-product"
 
     # Rainfall in window around peak tide
     forecast_periods = fetch_nws_hourly_forecast()
@@ -282,6 +309,8 @@ def build_forecast():
         "temp_avg_72h_f": temp_avg,
         "cold_lockout": cold,
         "depths_in": depths,
+        "surge_source": source,
+        "nws_status": nws_status,
     }
 
 
@@ -298,12 +327,14 @@ def render_email(forecast):
                f"at {peak_t} (curb {d['curb']:.1f}\")")
 
     text = f"""\
-Highlands NJ flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
+Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
 
 Next high tide:  {peak_t}
 Predicted tide:  {forecast['peak_predicted_mllw']:.2f} ft MLLW (Sandy Hook)
 Current surge:   {forecast['current_surge_ft']:+.2f} ft
 Forecast peak:   {peak_ft:.2f} ft MLLW
+Surge source:    {forecast['surge_source']}
+                 ({forecast['nws_status']})
 Rain in window:  {forecast['peak_rain_rate_in_hr']:.2f} in/hr peak
 72h mean temp:   {forecast['temp_avg_72h_f']:.1f} F
 Cold lockout:    {'YES (drains likely ice-locked)' if forecast['cold_lockout'] else 'no'}
@@ -323,7 +354,7 @@ Reference scale (Sandy Hook obs MLLW):
   7.3-7.6 : water at lawn step
   7.6+    : severe
 
-Model: v0.4. Local enhancement +0.40 ft.
+Model: v0.5. Local enhancement +0.40 ft.
 """
 
     bg = {"dry": "#e8f5e9", "light": "#fff8e1", "moderate": "#ffe0b2",
