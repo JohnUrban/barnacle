@@ -107,7 +107,7 @@ Using `water_at_342_Bay_MLLW = Sandy_Hook_obs_MLLW + 0.40` (local enhancement, e
 | < 6.06 | < 3.64 | All dry |
 | 6.06 | 3.64 | Lowest corner across Bay first gets wet (early-warning sentinel) |
 | 6.20 | 3.78 | Gutter line at user's walkway begins filling |
-| 6.33 | 3.91 | Lowest storm inlet grate submerged (Pathway B activates) |
+| 6.33 | 3.91 | Lowest storm inlet grate submerged per H2M plans (Pathway B activates). Confirmed by field check 2026-05-18: the grate at the Bay+Central corner sits slightly above the street-curb interface at the walkway (3.78), so water emerges from the grate at SH ~6.33 then flows downhill to pool at the gutter line (3.78) — which is why the gutter, not the grate, is the practical "water on the street" threshold. |
 | **6.58** | **4.16** | **Water tops curb at walkway — flood onset at 342 Bay** |
 | 6.78 | 4.36 | Middle of Bay Ave at user's spot covered |
 | 6.96 | 4.54 | Intersection center submerged (local high point) |

@@ -38,25 +38,35 @@ LOCAL_ENHANCEMENT_FT = 0.40        # Sandy Hook obs -> 342 Bay water level
 # Landmark elevations at 342 Bay Ave (NAVD88, ft).
 # Sandy Hook MLLW threshold for each = landmark + 2.42
 # (= +2.82 datum offset − 0.40 local enhancement).
-CURB_TOP        = 4.16   # Bay Ave side at walkway              (SH 6.58)
-ROAD_MIDDLE     = 4.36   # Bay Ave centerline at user's spot    (SH 6.78)
-INTERSECTION    = 4.54   # Bay+Central intersection (local high) (SH 6.96)
-LAWN_STEP       = 4.58   # estimated walkway step               (SH 7.00)
-FRONT_PORCH_STEP = 5.08  # ~6" above lawn step, est. first step (SH 7.50)
+LOWEST_ROAD_CORNER = 3.64   # corner across Bay (early-warning sentinel) (SH 6.06)
+GUTTER_WALKWAY     = 3.78   # street-curb interface at walkway          (SH 6.20)
+CURB_TOP           = 4.16   # Bay Ave side at walkway                   (SH 6.58)
+ROAD_MIDDLE        = 4.36   # Bay Ave centerline at user's spot         (SH 6.78)
+INTERSECTION       = 4.54   # Bay+Central intersection (local high)     (SH 6.96)
+LAWN_STEP          = 4.58   # estimated walkway step                    (SH 7.00)
+FRONT_PORCH_STEP   = 5.08   # ~6" above lawn step, est. first step      (SH 7.50)
 # At and above the porch step we're firmly in direct-inundation territory
 # (well above curb), so the +0.40 ft local enhancement — fit primarily from
 # drain-backflow-era events at street level — is an extrapolation. The
 # offset still holds at the gauge-to-bay level, but the user may want to
 # revisit if more extreme-event data accumulates.
 
-# Stratified landmarks for the seasonal context table (ascending severity).
+# Stratified landmarks (ascending severity). First two are sub-curb sentinels
+# the user uses for early-warning visual check + parking decisions.
 LANDMARKS = [
-    ("curb",         "Curb at walkway",         CURB_TOP,         6.58),
-    ("road_middle",  "Bay Ave road middle",     ROAD_MIDDLE,      6.78),
-    ("intersection", "Intersection center",     INTERSECTION,     6.96),
-    ("lawn_step",    "Lawn / walkway step",     LAWN_STEP,        7.00),
-    ("porch_step",   "Front porch first step",  FRONT_PORCH_STEP, 7.50),
+    ("lowest_road_corner", "Lowest road corner across Bay", LOWEST_ROAD_CORNER, 6.06),
+    ("gutter_walkway",     "Gutter / curb edge at walkway", GUTTER_WALKWAY,     6.20),
+    ("curb",               "Curb at walkway",               CURB_TOP,           6.58),
+    ("road_middle",        "Bay Ave road middle",           ROAD_MIDDLE,        6.78),
+    ("intersection",       "Intersection center",           INTERSECTION,       6.96),
+    ("lawn_step",          "Lawn / walkway step",           LAWN_STEP,          7.00),
+    ("porch_step",         "Front porch first step",        FRONT_PORCH_STEP,   7.50),
 ]
+# Subset used for the "seasonality typical vs MTD" table — curb-and-up only.
+# Sub-curb landmarks would dominate the table (counts of 8-12 days/month
+# in recent decades); they're shown in the daily depth table instead.
+SEASONALITY_LANDMARK_KEYS = {"curb", "road_middle", "intersection",
+                             "lawn_step", "porch_step"}
 
 MLLW_TO_NAVD88_OFFSET = -2.82  # NAVD88 = MLLW + offset
 
@@ -209,44 +219,45 @@ def fetch_nws_hourly_forecast():
 def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
                             cold_lockout=False):
     """Apply v0.5 model. Returns dict of depths (inches) at each landmark."""
+    zero_dict = {key: 0.0 for key, *_ in LANDMARKS}
     if cold_lockout and sandy_hook_peak_mllw < 8.0:
-        return {
-            "curb": 0.0, "road_middle": 0.0,
-            "intersection": 0.0, "lawn_step": 0.0, "porch_step": 0.0,
-            "regime": "cold_lockout",
-        }
+        return {**zero_dict, "regime": "cold_lockout"}
 
     water_navd88 = sandy_hook_peak_mllw + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
 
-    d = {
-        "curb":         max(0.0, water_navd88 - CURB_TOP)         * 12,
-        "road_middle":  max(0.0, water_navd88 - ROAD_MIDDLE)      * 12,
-        "intersection": max(0.0, water_navd88 - INTERSECTION)     * 12,
-        "lawn_step":    max(0.0, water_navd88 - LAWN_STEP)        * 12,
-        "porch_step":   max(0.0, water_navd88 - FRONT_PORCH_STEP) * 12,
-    }
+    d = {key: max(0.0, water_navd88 - elev) * 12
+         for key, _label, elev, _sh in LANDMARKS}
 
     if peak_rain_rate_in_hr > 0.1:
         rain_add = RAIN_SATURATION_IN * math.tanh(peak_rain_rate_in_hr)
-        d["curb"]         += rain_add
-        d["road_middle"]  += rain_add
-        d["intersection"] += max(0.0, rain_add - 2.0)  # crown sheds some
-        d["lawn_step"]    += max(0.0, rain_add - 4.0)  # lawn sheds more
-        # Porch step receives rain via flash-flood from up-slope (Waterwitch
-        # Ave et al.) + river backup — same mechanism as the lawn step, not
-        # vertical pooling. Calibrated to Oct 30 2025: SH 7.57 + 1.45 in/hr
-        # rain → user observed water rising to the porch first step level.
-        # Tide+surge alone would give 0.8" at porch; rain_add - 4 = ~3.2"
-        # gets total to ~4", roughly consistent with the observation.
-        d["porch_step"]   += max(0.0, rain_add - 4.0)
+        # Sub-curb landmarks: full rain add. Water collects on the street
+        # from sheet-flow off Waterwitch + river backup, then pools to
+        # gutter level. Same physics as at the curb.
+        d["lowest_road_corner"] += rain_add
+        d["gutter_walkway"]     += rain_add
+        d["curb"]               += rain_add
+        d["road_middle"]        += rain_add
+        d["intersection"]       += max(0.0, rain_add - 2.0)  # crown sheds some
+        d["lawn_step"]          += max(0.0, rain_add - 4.0)  # lawn sheds more
+        # Porch step receives rain via flash-flood from up-slope
+        # (Waterwitch Ave et al.) + river backup — same mechanism as the
+        # lawn step. Calibrated to Oct 30 2025: SH 7.57 + 1.45 in/hr rain →
+        # user observed water rising to the porch first step.
+        d["porch_step"]         += max(0.0, rain_add - 4.0)
 
-    # Regime label
+    # Regime label (subject-line summary). Order matters: severe is most
+    # alarming. STREET sits between DRY and LIGHT — sub-curb water present
+    # (parking-relevant, but not at your property's curb top).
     if d["curb"] >= ALERT_SEVERE:
         regime = "severe"
     elif d["curb"] >= ALERT_MODERATE:
         regime = "moderate"
     elif d["curb"] >= ALERT_LIGHT:
         regime = "light"
+    elif d["curb"] > 0:
+        regime = "light"  # any curb-top water is light, don't underreport
+    elif d["gutter_walkway"] > 0 or d["lowest_road_corner"] > 0:
+        regime = "street"  # sub-curb water — early warning / parking caution
     else:
         regime = "dry"
     d["regime"] = regime
@@ -794,28 +805,34 @@ Worst case detail:
   Cold lockout:    {'YES (drains likely ice-locked)' if forecast['cold_lockout'] else 'no'}
 
 PREDICTED DEPTH at worst-case tide (inches above each landmark at 342 Bay Ave):
-  Curb at walkway (4.16 NAVD88):    {d['curb']:5.1f} in
-  Bay Ave road middle (4.36):       {d['road_middle']:5.1f} in
-  Intersection center (4.54):       {d['intersection']:5.1f} in
-  Lawn / walkway step (4.58):       {d['lawn_step']:5.1f} in
-  Front porch first step (5.08):    {d['porch_step']:5.1f} in
+  Lowest road corner across Bay (3.64 NAVD88):    {d['lowest_road_corner']:5.1f} in  (early-warning sentinel)
+  Gutter / curb edge at walkway (3.78):           {d['gutter_walkway']:5.1f} in  (parking caution)
+  Curb at walkway (4.16):                         {d['curb']:5.1f} in  (flood onset at property)
+  Bay Ave road middle (4.36):                     {d['road_middle']:5.1f} in
+  Intersection center (4.54):                     {d['intersection']:5.1f} in
+  Lawn / walkway step (4.58):                     {d['lawn_step']:5.1f} in
+  Front porch first step (5.08):                  {d['porch_step']:5.1f} in
 
 Regime: {regime}
 
 {_seasonal_context_block_text(forecast)}\
 Reference scale (Sandy Hook obs MLLW):
-  < 6.6   : dry
-  6.6-6.8 : curb wet
-  6.8-7.0 : road middle + intersection wet
-  7.0-7.5 : water at lawn step
-  7.5-7.9 : water at front porch first step
+  < 6.06  : dry (nothing visible from window)
+  6.06    : lowest road corner across Bay first wets (visible from window)
+  6.20    : water at gutter / curb edge — don't park there
+  6.58    : water at curb top — flood onset at property
+  6.78    : Bay Ave road middle covered
+  6.96    : intersection center submerged
+  7.00    : water at lawn / walkway step
+  7.50    : water at front porch first step
   7.9+    : severe (well past porch)
 
 Model: v0.5. Local enhancement +0.40 ft.
 """
 
-    bg = {"dry": "#e8f5e9", "light": "#fff8e1", "moderate": "#ffe0b2",
-          "severe": "#ffcdd2", "cold_lockout": "#e3f2fd"}.get(regime, "#fff")
+    bg = {"dry": "#e8f5e9", "street": "#e3f2fd", "light": "#fff8e1",
+          "moderate": "#ffe0b2", "severe": "#ffcdd2",
+          "cold_lockout": "#eceff1"}.get(regime, "#fff")
 
     # Build the all-tides rows for the HTML email
     tide_rows_html = ""
@@ -856,12 +873,14 @@ Model: v0.5. Local enhancement +0.40 ft.
 
 <h3>Depth at 342 Bay Ave landmarks (worst-case tide)</h3>
 <table border="1" cellpadding="8" style="border-collapse:collapse;background:white">
-<tr><th align="left">Location</th><th>NAVD88</th><th>Depth (in)</th></tr>
-<tr><td>Curb at walkway</td><td>4.16</td><td><b>{d['curb']:.1f}</b></td></tr>
-<tr><td>Bay Ave road middle</td><td>4.36</td><td>{d['road_middle']:.1f}</td></tr>
-<tr><td>Intersection center</td><td>4.54</td><td>{d['intersection']:.1f}</td></tr>
-<tr><td>Lawn/walkway step</td><td>4.58</td><td>{d['lawn_step']:.1f}</td></tr>
-<tr><td>Front porch first step</td><td>5.08</td><td>{d['porch_step']:.1f}</td></tr>
+<tr><th align="left">Location</th><th>NAVD88</th><th>Depth (in)</th><th></th></tr>
+<tr><td>Lowest road corner across Bay</td><td>3.64</td><td>{d['lowest_road_corner']:.1f}</td><td style="font-size:11px;color:#666">early-warning sentinel</td></tr>
+<tr><td>Gutter / curb edge at walkway</td><td>3.78</td><td>{d['gutter_walkway']:.1f}</td><td style="font-size:11px;color:#666">parking caution</td></tr>
+<tr><td>Curb at walkway</td><td>4.16</td><td><b>{d['curb']:.1f}</b></td><td style="font-size:11px;color:#666">flood onset</td></tr>
+<tr><td>Bay Ave road middle</td><td>4.36</td><td>{d['road_middle']:.1f}</td><td></td></tr>
+<tr><td>Intersection center</td><td>4.54</td><td>{d['intersection']:.1f}</td><td></td></tr>
+<tr><td>Lawn/walkway step</td><td>4.58</td><td>{d['lawn_step']:.1f}</td><td></td></tr>
+<tr><td>Front porch first step</td><td>5.08</td><td>{d['porch_step']:.1f}</td><td></td></tr>
 </table>
 
 <p><b>Regime: {regime}</b></p>
@@ -952,14 +971,16 @@ def render_html_page(forecast):
 
   <section class="landmarks">
     <h2>Predicted depth at landmarks (worst-case tide)</h2>
-    <table>
-      <thead><tr><th>Location</th><th>NAVD88</th><th>Depth</th></tr></thead>
+    <table class="landmark-table">
+      <thead><tr><th>Location</th><th>NAVD88</th><th>Depth</th><th>Notes</th></tr></thead>
       <tbody>
-        <tr><td>Curb at walkway</td><td>4.16 ft</td><td><b>{d['curb']:.1f}&Prime;</b></td></tr>
-        <tr><td>Bay Ave road middle</td><td>4.36 ft</td><td>{d['road_middle']:.1f}&Prime;</td></tr>
-        <tr><td>Intersection center</td><td>4.54 ft</td><td>{d['intersection']:.1f}&Prime;</td></tr>
-        <tr><td>Lawn / walkway step</td><td>4.58 ft</td><td>{d['lawn_step']:.1f}&Prime;</td></tr>
-        <tr><td>Front porch first step</td><td>5.08 ft</td><td>{d['porch_step']:.1f}&Prime;</td></tr>
+        <tr><td>Lowest road corner across Bay</td><td>3.64 ft</td><td>{d['lowest_road_corner']:.1f}&Prime;</td><td class="note">early-warning sentinel</td></tr>
+        <tr><td>Gutter / curb edge at walkway</td><td>3.78 ft</td><td>{d['gutter_walkway']:.1f}&Prime;</td><td class="note">parking caution</td></tr>
+        <tr><td>Curb at walkway</td><td>4.16 ft</td><td><b>{d['curb']:.1f}&Prime;</b></td><td class="note">flood onset</td></tr>
+        <tr><td>Bay Ave road middle</td><td>4.36 ft</td><td>{d['road_middle']:.1f}&Prime;</td><td></td></tr>
+        <tr><td>Intersection center</td><td>4.54 ft</td><td>{d['intersection']:.1f}&Prime;</td><td></td></tr>
+        <tr><td>Lawn / walkway step</td><td>4.58 ft</td><td>{d['lawn_step']:.1f}&Prime;</td><td></td></tr>
+        <tr><td>Front porch first step</td><td>5.08 ft</td><td>{d['porch_step']:.1f}&Prime;</td><td></td></tr>
       </tbody>
     </table>
   </section>
@@ -970,11 +991,14 @@ def render_html_page(forecast):
     <h2>Reference scale</h2>
     <p>Sandy Hook observed water level (MLLW):</p>
     <ul>
-      <li>&lt; 6.6 ft — dry</li>
-      <li>6.6&ndash;6.8 ft — curb wet</li>
-      <li>6.8&ndash;7.0 ft — road middle + intersection wet</li>
-      <li>7.0&ndash;7.5 ft — water at lawn step</li>
-      <li>7.5&ndash;7.9 ft — water at front porch first step</li>
+      <li>&lt; 6.06 ft — dry, nothing visible from window</li>
+      <li>6.06 ft — lowest road corner across Bay first wets (sentinel)</li>
+      <li>6.20 ft — water at gutter / curb edge (don't park there)</li>
+      <li>6.58 ft — water tops curb at walkway (flood onset at property)</li>
+      <li>6.78 ft — Bay Ave road middle covered</li>
+      <li>6.96 ft — intersection center submerged</li>
+      <li>7.00 ft — water at lawn / walkway step</li>
+      <li>7.50 ft — water at front porch first step</li>
       <li>&ge; 7.9 ft — severe (well past porch)</li>
     </ul>
   </section>
