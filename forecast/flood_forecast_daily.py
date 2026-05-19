@@ -1670,6 +1670,167 @@ def _load_outcome_depth_rows():
 FLOODED_THRESHOLD_SH_MLLW = 6.02
 
 
+# Observed-peak cache so the lead-time accuracy view doesn't hit NOAA
+# once per past tide on every hourly workflow run. Grows monotonically;
+# old entries never expire.
+OBSERVED_PEAKS_CACHE_PATH = os.path.join(
+    _REPO_ROOT, "data", "observed_peaks_cache.csv"
+)
+
+
+def _load_observed_peaks_cache():
+    if not os.path.exists(OBSERVED_PEAKS_CACHE_PATH):
+        return {}
+    out = {}
+    try:
+        with open(OBSERVED_PEAKS_CACHE_PATH) as f:
+            for r in csv.DictReader(f):
+                try:
+                    out[r["target_tide_time"]] = float(r["observed_peak_mllw"])
+                except (TypeError, ValueError, KeyError):
+                    continue
+    except OSError:
+        return {}
+    return out
+
+
+def _save_observed_peaks_cache(cache):
+    fields = ["target_tide_time", "observed_peak_mllw"]
+    try:
+        os.makedirs(os.path.dirname(OBSERVED_PEAKS_CACHE_PATH), exist_ok=True)
+        with open(OBSERVED_PEAKS_CACHE_PATH, "w", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=fields)
+            w.writeheader()
+            for target, peak in sorted(cache.items()):
+                w.writerow({
+                    "target_tide_time": target,
+                    "observed_peak_mllw": f"{peak:.3f}",
+                })
+    except OSError as e:
+        print(f"WARNING: observed peaks cache write failed: {e}", flush=True)
+
+
+# Lead-time accuracy buckets — how many hours BEFORE the peak the
+# prediction was made. Smaller numbers = closer to the event.
+LEADTIME_BUCKETS = [
+    (0,   3,   "0-3 h before peak"),
+    (3,   6,   "3-6 h"),
+    (6,   12,  "6-12 h"),
+    (12,  24,  "12-24 h"),
+    (24,  48,  "24-48 h"),
+    (48,  120, "48-120 h"),
+]
+
+
+def _compute_leadtime_accuracy(max_age_days=14):
+    """Walk data/predictions_log.csv and group prediction errors by how
+    far in advance they were made (lead time). Tells you whether the
+    model converges as the tide approaches.
+
+    For each past target_tide_time within `max_age_days` of now, fetch
+    the observed peak (cached on disk) and bucket each prediction's
+    `predicted - observed` error by the row's hours_until_peak.
+
+    Returns dict with `buckets` (list of per-bucket stats) + `n_total`
+    + `n_tides`, or None when no usable data yet.
+
+    HANDOFF 9b.8 lead-time axis.
+    """
+    if not os.path.exists(PREDICTIONS_LOG_PATH):
+        return None
+
+    now_utc = dt.datetime.now(dt.timezone.utc)
+    cutoff_min = now_utc - dt.timedelta(days=max_age_days)
+    cutoff_max = now_utc - dt.timedelta(hours=2)  # tide has "ended"
+
+    # Group rows by target_tide_time, only past tides within window.
+    by_target = {}
+    try:
+        with open(PREDICTIONS_LOG_PATH) as f:
+            for r in csv.DictReader(f):
+                target_str = r.get("target_tide_time", "") or ""
+                try:
+                    target_dt = dt.datetime.strptime(
+                        target_str, "%Y-%m-%d %H:%M"
+                    )
+                    # Approximate UTC (EDT = UTC-4). Good enough for
+                    # the cutoff bucket — precision doesn't matter.
+                    target_utc = (target_dt + dt.timedelta(hours=4)).replace(
+                        tzinfo=dt.timezone.utc
+                    )
+                except (ValueError, TypeError):
+                    continue
+                if target_utc > cutoff_max:
+                    continue  # tide not yet past
+                if target_utc < cutoff_min:
+                    continue  # too old
+                try:
+                    pred_mllw = float(r["sh_peak_mllw_predicted"])
+                    hu = float(r["hours_until_peak"])
+                except (TypeError, ValueError, KeyError):
+                    continue
+                by_target.setdefault(target_str, []).append({
+                    "pred":              pred_mllw,
+                    "hours_until_peak":  hu,
+                })
+    except OSError:
+        return None
+
+    if not by_target:
+        return None
+
+    # Look up observed peaks (use cache, fetch any missing)
+    cache = _load_observed_peaks_cache()
+    fetched_new = False
+    for target_str in by_target:
+        if target_str in cache:
+            continue
+        peak, _ = _fetch_actual_peak_around(target_str)
+        if peak is not None:
+            cache[target_str] = peak
+            fetched_new = True
+    if fetched_new:
+        _save_observed_peaks_cache(cache)
+
+    # Bucket errors by lead time
+    bucket_errs = {label: [] for _, _, label in LEADTIME_BUCKETS}
+    n_total = 0
+    n_tides = 0
+    for target_str, rows in by_target.items():
+        obs = cache.get(target_str)
+        if obs is None:
+            continue
+        n_tides += 1
+        for row in rows:
+            hu = row["hours_until_peak"]
+            err = row["pred"] - obs
+            for lo, hi, label in LEADTIME_BUCKETS:
+                if lo <= hu < hi:
+                    bucket_errs[label].append(err)
+                    n_total += 1
+                    break
+
+    if n_total == 0:
+        return None
+    buckets_out = []
+    for _, _, label in LEADTIME_BUCKETS:
+        errs = bucket_errs[label]
+        if not errs:
+            continue
+        n = len(errs)
+        buckets_out.append({
+            "label":           label,
+            "n":               n,
+            "mean_err_ft":     sum(errs) / n,
+            "mean_abs_err_ft": sum(abs(e) for e in errs) / n,
+        })
+    return {
+        "buckets":  buckets_out,
+        "n_total":  n_total,
+        "n_tides":  n_tides,
+    }
+
+
 def _compute_classifier_metrics():
     """Binary flood-classifier confusion matrix from forecast_accuracy.csv.
     HANDOFF 9b.8 mode 3.
@@ -1793,6 +1954,45 @@ def _render_accuracy_html(forecast):
             f'</div>'
         )
 
+    # Lead-time accuracy (HANDOFF 9b.8 lead-time axis): does the model
+    # converge as the tide approaches? Built from predictions_log.csv
+    # (HANDOFF 9b.3) joined to NOAA observed peaks (cached on disk).
+    leadtime = _compute_leadtime_accuracy()
+    leadtime_html = ""
+    if leadtime and leadtime["buckets"]:
+        rows_html = ""
+        for b in leadtime["buckets"]:
+            err = b["mean_err_ft"]
+            sign_cls = "err-over" if err > 0 else ("err-under" if err < 0 else "")
+            rows_html += (
+                f'<tr>'
+                f'<td>{b["label"]}</td>'
+                f'<td>{b["n"]}</td>'
+                f'<td class="{sign_cls}">{err:+.2f} ft</td>'
+                f'<td>{b["mean_abs_err_ft"]:.2f} ft</td>'
+                f'</tr>'
+            )
+        leadtime_html = (
+            f'<div class="leadtime-block">'
+            f'<h3 style="margin:12px 0 4px 0;font-size:15px">'
+            f'Accuracy by lead time (predictions log)</h3>'
+            f'<p style="font-size:13px;margin:4px 0">'
+            f'{leadtime["n_total"]} predictions across '
+            f'{leadtime["n_tides"]} past tides. Each row groups '
+            f'predictions by how many hours BEFORE the tide they were '
+            f'made — closer to peak should mean smaller error.</p>'
+            f'<table class="outcome-table">'
+            f'<thead><tr><th>Lead time</th><th>N predictions</th>'
+            f'<th>Mean error (signed)</th><th>Mean |error|</th></tr></thead>'
+            f'<tbody>{rows_html}</tbody></table>'
+            f'<p class="note">From '
+            f'<code>data/predictions_log.csv</code> joined to NOAA '
+            f'observed peaks (cached at '
+            f'<code>data/observed_peaks_cache.csv</code>). Populated '
+            f'over time as hourly predictions accumulate.</p>'
+            f'</div>'
+        )
+
     # Binary classifier metrics (HANDOFF 9b.8 mode 3)
     cm = _compute_classifier_metrics()
     classifier_html = ""
@@ -1832,12 +2032,13 @@ def _render_accuracy_html(forecast):
     rows = _load_accuracy_rows()
     if len(rows) < 2:
         # Not enough data for a scatter chart yet — text summary +
-        # (optional) outcome-depth + binary classifier blocks
+        # (optional) outcome-depth + lead-time + binary classifier blocks
         return (
             '<section class="accuracy">'
             '<h2>Model accuracy</h2>'
             f'{summary_html}'
             f'{outcome_html}'
+            f'{leadtime_html}'
             f'{classifier_html}'
             f'{note_html}'
             '</section>'
@@ -1857,6 +2058,7 @@ def _render_accuracy_html(forecast):
   <h2>Model accuracy — predicted vs observed peaks</h2>
   {summary_html}
   {outcome_html}
+  {leadtime_html}
   {classifier_html}
   <canvas id="accuracy-chart" width="800" height="380"
           style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
