@@ -435,6 +435,14 @@ def main():
                          "(YYYY-MM-DD; default: 2010-01-01).")
     ap.add_argument("--end", default=None,
                     help="End date (YYYY-MM-DD; default: yesterday).")
+    ap.add_argument("--write-report", action="store_true",
+                    help="Overwrite history/reports/cold_weather_retrospective.md "
+                         "with the auto-generated table. Off by default — the "
+                         "report is curated by hand (web-evidence section, "
+                         "augmented analysis, decisions) and a naive rerun "
+                         "would clobber those additions. The CSV at "
+                         "history/data/cold_weather_candidates.csv is "
+                         "ALWAYS overwritten — it's a pure derived view.")
     args = ap.parse_args()
     begin = dt.date.fromisoformat(args.begin)
     end = (dt.date.fromisoformat(args.end) if args.end
@@ -475,11 +483,16 @@ def main():
     events.to_csv(CANDIDATES_CSV, index=False)
     print(f"  → {CANDIDATES_CSV.relative_to(REPO_ROOT)}")
 
-    print("Step 5: write summary report…")
-    report = render_report(events, since=begin)
-    REPORT_MD.parent.mkdir(parents=True, exist_ok=True)
-    REPORT_MD.write_text(report)
-    print(f"  → {REPORT_MD.relative_to(REPO_ROOT)}")
+    if args.write_report:
+        print("Step 5: write summary report (--write-report set)…")
+        report = render_report(events, since=begin)
+        REPORT_MD.parent.mkdir(parents=True, exist_ok=True)
+        REPORT_MD.write_text(report)
+        print(f"  → {REPORT_MD.relative_to(REPO_ROOT)}")
+    else:
+        print("Step 5: skipped — report is curated by hand; pass "
+              "--write-report to overwrite with the auto-generated "
+              "template.")
     print("done.")
 
 
