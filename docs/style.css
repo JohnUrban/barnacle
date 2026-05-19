@@ -327,6 +327,41 @@ section.scrubber-section { margin: 12px 0; }
     margin-right: 4px;
 }
 
+/* Interactive depth slider on the home-page heat-map (Batch 2 idea #1
+   follow-up — client-side render, no PNG storage). */
+.depth-slider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 14px 0;
+    font-size: 14px;
+    flex-wrap: wrap;
+}
+.depth-slider label {
+    font-weight: 600;
+    color: #485a73;
+}
+.depth-slider input[type="range"] {
+    flex: 1;
+    min-width: 200px;
+}
+.depth-slider #depth-slider-value {
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+    color: #485a73;
+    min-width: 11em;
+}
+.depth-slider button {
+    padding: 4px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    background: #1f6feb;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+.depth-slider button:hover { background: #144fa8; }
+
 /* Per-tide log-status block (CC) — small muted note above the heat-map */
 section.log-status {
     margin: 8px 0 4px 0;

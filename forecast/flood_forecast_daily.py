@@ -3447,7 +3447,8 @@ def _load_map_points_for_js():
 
 
 def _client_map_section_html(forecast, container_class="heatmap", level=2,
-                              base_map_url="icons/map_raw.png"):
+                              base_map_url="icons/map_raw.png",
+                              show_depth_slider=False):
     """Render an HTML section that displays the heat-map via client-side
     rendering (HANDOFF 9b.10) — replaces the prior <img> embed.
 
@@ -3558,18 +3559,67 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
       })();
 """
 
+    # Depth slider — interactive "what would the map look like at any
+    # water level" control (Batch 2 idea #1, user follow-up 2026-05-19).
+    # Renders client-side via BarnacleMap.render() on each input change.
+    # No pre-rendered PNGs.
+    slider_html = ""
+    slider_script = ""
+    if show_depth_slider:
+        slider_html = f"""
+    <div class="depth-slider">
+      <label for="depth-slider-input">Explore at depth:</label>
+      <input type="range" id="depth-slider-input"
+             min="3.0" max="7.5" step="0.05"
+             value="{water_with_rain:.2f}"
+             data-current="{water_with_rain:.4f}">
+      <span id="depth-slider-value">{water_with_rain:.2f} ft NAVD88</span>
+      <button type="button" id="depth-slider-reset">Snap to current forecast</button>
+    </div>
+"""
+        slider_script = f"""
+      (function() {{
+        var slider = document.getElementById('depth-slider-input');
+        var label = document.getElementById('depth-slider-value');
+        var btn = document.getElementById('depth-slider-reset');
+        var canvas = document.getElementById('heatmap-canvas');
+        if (!slider || !canvas) return;
+        var defaultWater = parseFloat(slider.getAttribute('data-current'));
+        function rerender(w) {{
+          label.textContent = w.toFixed(2) + ' ft NAVD88'
+            + (Math.abs(w - defaultWater) < 0.005 ? ' (current forecast)' : '');
+          BarnacleMap.render({{
+            canvas: canvas,
+            points: window.barnaclePoints,
+            waterNavd88: w,
+            baseMapUrl: {json.dumps(base_map_url)},
+            title: 'Predicted water level — ' + w.toFixed(2) + ' ft NAVD88'
+              + (Math.abs(w - defaultWater) < 0.005 ? '' : '  (exploration)')
+          }});
+        }}
+        slider.addEventListener('input', function() {{
+          rerender(parseFloat(slider.value));
+        }});
+        btn.addEventListener('click', function() {{
+          slider.value = String(defaultWater);
+          rerender(defaultWater);
+        }});
+      }})();
+"""
+
     return f"""
   <section class="{container_class}">
     <{hh}>Predicted water depth (worst tide)</{hh}>
     {intro_note}{toggle_html}
     <canvas id="heatmap-canvas" style="{canvas_styles}"></canvas>{second_canvas_html}
+    {slider_html}
     <script>
       window.barnaclePoints = {points_json};
     </script>
     <script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6"></script>
     <script src="{_relpath_to_map_render_js(base_map_url)}"></script>
     <script>
-      {script_render}{toggle_script}
+      {script_render}{toggle_script}{slider_script}
     </script>
   </section>
 """
@@ -4163,12 +4213,14 @@ def render_html_page(forecast):
     cold = forecast["cold_lockout"]
     all_tides = forecast.get("all_tides", [])
 
-    # Heat-map section: client-side render (HANDOFF 9b.10).
+    # Heat-map section: client-side render (HANDOFF 9b.10) + interactive
+    # depth slider (Batch 2 idea #1 follow-up, 2026-05-19).
     map_section = _client_map_section_html(
         forecast,
         container_class="heatmap",
         level=2,
         base_map_url="icons/map_raw.png",
+        show_depth_slider=True,
     )
 
     # Build the all-tides table rows (new column layout). Each row carries:

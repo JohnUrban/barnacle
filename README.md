@@ -31,3 +31,16 @@ README is just a pointer.
 - Open Scriptable → tap + (top right) → paste the code → tap the script name and rename to "Barnacle" → tap Done
 - Go to your home screen, long-press an empty spot → + (top left) → search "Scriptable" → pick widget size (small 2x2 or medium 4x2) → Add Widget
 - Tap the new widget → set Script: Barnacle → tap outside
+
+## To **update** an existing widget after a refresh of `barnacle-widget.js`:
+- Open Scriptable on your iPhone
+- Tap the existing "Barnacle" script
+- Select all the old code → delete
+- Visit https://johnurban.github.io/barnacle/barnacle-widget.js in Safari → Select All → Copy
+- Paste into the empty Scriptable script → Done
+- The widget on your home screen will pick up the new code on its next refresh (or long-press → Edit Widget → Done to force one)
+
+Recent refresh (2026-05-19) added: hours-to-peak, confidence ±,
+"next watch" date from the look-ahead table, and a cold-conditions
+hint. See widget header comments for the up-to-date list of fields
+shown.
