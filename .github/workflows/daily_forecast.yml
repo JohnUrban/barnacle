@@ -25,11 +25,14 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install heat-map dependencies (matplotlib + numpy)
+        run: pip install matplotlib numpy
+
       - name: Set today's date
         id: date
         run: echo "today=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
-      - name: Run forecast (sends email + writes HTML page)
+      - name: Run forecast (sends email + writes HTML page + heat-map)
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
@@ -41,13 +44,19 @@ jobs:
         run: |
           python3 flood_forecast_daily.py \
             --write-html ../docs/index.html \
-            --write-json ../docs/forecast.json
+            --write-json ../docs/forecast.json \
+            --write-map  ../docs/icons/map_today.png
 
       - name: Archive today's forecast snapshot
         run: |
           mkdir -p docs/archive
           cp docs/index.html "docs/archive/${{ steps.date.outputs.today }}.html"
           cp docs/forecast.json "docs/archive/${{ steps.date.outputs.today }}.json"
+          # Heat-map only exists on flooding-eligible days (cold lockout or
+          # no data skips it). Archive it when present.
+          if [ -f docs/icons/map_today.png ]; then
+            cp docs/icons/map_today.png "docs/archive/${{ steps.date.outputs.today }}-map.png"
+          fi
 
       - name: Regenerate archive index
         run: |

@@ -1978,11 +1978,14 @@ Coastal Flood Statement directly.
     return subject, text, html
 
 
-def render_html_page(forecast):
+def render_html_page(forecast, map_url=None):
     """
     Standalone HTML page for GitHub Pages publication.
     Like the email HTML but with proper <head>, mobile meta, and footer
     links to source repo + archive.
+
+    If `map_url` is provided, embeds a heat-map image (blue overlay
+    showing predicted water depth across nearby topography).
     """
     d = forecast["depths_in"]
     regime = d["regime"]
@@ -1991,6 +1994,21 @@ def render_html_page(forecast):
     today = dt.date.today().isoformat()
     cold = forecast["cold_lockout"]
     all_tides = forecast.get("all_tides", [])
+
+    # Heat-map section (only if a map was rendered today)
+    map_section = ""
+    if map_url:
+        map_section = (
+            '\n  <section class="heatmap">\n'
+            '    <h2>Predicted water depth (worst tide)</h2>\n'
+            '    <p class="note">Blue overlay shows predicted tidal water '
+            'depth across nearby topography. Darker blue = deeper. '
+            'Surveyed point elevations are labeled in feet NAVD88. '
+            'Rain bonus is NOT included in this overlay (it is per-landmark).</p>\n'
+            f'    <img src="{map_url}" alt="Predicted water depth heat-map" '
+            'style="max-width:100%;height:auto;display:block;margin:0 auto;">\n'
+            '  </section>\n'
+        )
 
     # Build the all-tides table rows (new column layout)
     tide_rows = ""
@@ -2069,7 +2087,7 @@ def render_html_page(forecast):
       <dt>Cold lockout</dt><dd>{'<b>YES</b> (drains likely ice-locked)' if cold else 'no'}</dd>
     </dl>
   </section>
-
+{map_section}
   {_render_rain_timing_html(forecast)}
 
   {_landmarks_section_html(forecast, wrapper='section')}
@@ -2152,6 +2170,42 @@ def send_email(subject, text_body, html_body):
         s.send_message(msg)
 
 
+def _compute_map_water_level(forecast):
+    """NAVD88 water level (ft) for the worst tide today, for heat-map
+    rendering. Returns None when no overlay should be drawn (cold lockout
+    suppressing flooding, or peak below all map points).
+
+    This is BARE tidal water level — does not include the rain term.
+    The rain bonus is a per-landmark adjustment (lawn/intersection shed
+    more, others receive more) and can't be expressed as a single water
+    level surface."""
+    peak_mllw = forecast.get("peak_forecast_observed_mllw")
+    cold = forecast.get("cold_lockout", False)
+    if peak_mllw is None:
+        return None
+    if cold and peak_mllw < 8.0:
+        return None
+    return peak_mllw + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+
+
+def _render_heatmap(out_path, water_navd88, title):
+    """Invoke assets/render_map.py as a subprocess to write the heat-map
+    PNG. Subprocess keeps matplotlib out of this script's import path
+    (it's only needed when --write-map is set)."""
+    import subprocess, sys
+    here = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.dirname(here)
+    script = os.path.join(repo_root, "assets", "render_map.py")
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    cmd = [
+        sys.executable, script,
+        "--water-level", f"{water_navd88:.2f}",
+        "--out", out_path,
+        "--title", title,
+    ]
+    subprocess.run(cmd, check=True)
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(
@@ -2170,6 +2224,10 @@ def main():
                              "Machine-readable archive companion to --write-html. "
                              "Datetime values are stringified; otherwise unchanged. "
                              "Required input for the forecast accuracy log.")
+    parser.add_argument("--write-map", metavar="PATH", default=None,
+                        help="Write a heat-map PNG of predicted water depth "
+                             "(blue overlay) to PATH. Calls assets/render_map.py "
+                             "as a subprocess; requires matplotlib+numpy.")
     parser.add_argument("--no-send", action="store_true",
                         help="Skip email sending even if SMTP env vars are set. "
                              "Useful when only writing HTML.")
@@ -2186,11 +2244,40 @@ def main():
         print(json.dumps(forecast, indent=2, default=str))
         return
 
+    # Render heat-map PNG (before HTML so the page knows the map exists).
+    map_url = None
+    if args.write_map:
+        water_navd88 = _compute_map_water_level(forecast)
+        if water_navd88 is None:
+            print("Skipping heat-map: cold lockout suppressing flooding "
+                  "or no peak data.")
+        else:
+            peak_t = forecast.get("peak_time_local", "")
+            peak_mllw = forecast["peak_forecast_observed_mllw"]
+            title = (
+                f"Predicted peak depth — water at {water_navd88:.2f} ft NAVD88 "
+                f"(SH {peak_mllw:.2f} ft MLLW @ {peak_t})"
+            )
+            out_path = os.path.abspath(args.write_map)
+            try:
+                _render_heatmap(out_path, water_navd88, title)
+                print(f"Wrote heat-map: {args.write_map}")
+                # Compute a URL for HTML embedding: if both --write-html
+                # and --write-map were given and the map lives under the
+                # HTML's docs/ tree, we can use a relative path.
+                if args.write_html:
+                    html_dir = os.path.dirname(os.path.abspath(args.write_html))
+                    map_url = os.path.relpath(out_path, html_dir)
+                else:
+                    map_url = out_path
+            except Exception as e:
+                print(f"WARNING: heat-map render failed: {e}", flush=True)
+
     subject, text, html = render_email(forecast)
 
     # Write standalone HTML page if requested
     if args.write_html:
-        page_html = render_html_page(forecast)
+        page_html = render_html_page(forecast, map_url=map_url)
         out_path = os.path.abspath(args.write_html)
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path, "w") as f:

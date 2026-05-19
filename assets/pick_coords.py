@@ -29,6 +29,11 @@ import sys
 from pathlib import Path
 
 import matplotlib
+# Force TkAgg backend on macOS. The default `macosx` backend hides the figure
+# window when its process loses focus (e.g., cmd+tab to a PDF reader), which
+# breaks the picker workflow. TkAgg renders the window as a normal OS window
+# that persists in the background and z-orders normally with other apps.
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.patheffects as PathEffects
@@ -196,7 +201,10 @@ def main():
     print("U to undo, ESC (or close window) to quit. CSV saves after every action.\n")
 
     while not state["closed"]:
-        plt.pause(0.05)
+        # Use canvas.start_event_loop instead of plt.pause: plt.pause calls
+        # show(block=False) every iteration, which on macOS re-raises the
+        # window to the front and blocks cmd+tab to a reference PDF.
+        fig.canvas.start_event_loop(0.05)
 
         action = state["pending"]
         if action is None:
