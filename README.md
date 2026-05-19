@@ -23,3 +23,11 @@ README is just a pointer.
 - Tap the Share button (square with up arrow)
 - Scroll down → "Add to Home Screen"
 - Title defaults to "Barnacle" — keep or rename, tap Add
+
+## To install the widget on your iPhone (after you push + the Action runs):
+- Install Scriptable from the App Store (free)
+- In Safari on your iPhone, visit: https://johnurban.github.io/barnacle/barnacle-widget.js (also linked from the Pages site footer once tomorrow's run lands)
+- Long-press the page, Select All → Copy
+- Open Scriptable → tap + (top right) → paste the code → tap the script name and rename to "Barnacle" → tap Done
+- Go to your home screen, long-press an empty spot → + (top left) → search "Scriptable" → pick widget size (small 2x2 or medium 4x2) → Add Widget
+- Tap the new widget → set Script: Barnacle → tap outside
