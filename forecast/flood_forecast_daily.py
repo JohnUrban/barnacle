@@ -3780,6 +3780,98 @@ def write_per_tide_pages(forecast, docs_root):
     if n_written:
         print(f"Wrote {n_written} per-tide page(s) under {tides_root}")
 
+    # Tides archive index — lists all past + upcoming per-tide pages so
+    # they're discoverable from the home page. User asked 2026-05-19:
+    # "Do we have retrospective plots for per-tides pages too? i.e.
+    # pages with plots from previous days?" Pages persist on disk
+    # forever; this index makes them browseable.
+    try:
+        _write_tides_archive_index(tides_root)
+    except Exception as e:
+        print(f"WARNING: tides archive index write failed: {e}", flush=True)
+
+
+def _write_tides_archive_index(tides_root):
+    """Walk docs/tides/, build a chronological index of all per-tide
+    pages, write to docs/tides/index.html. Grows monotonically as
+    tides pass — old pages keep their content (heat-map for that tide's
+    prediction + the per-tide evolution.csv + the convergence chart)."""
+    if not os.path.isdir(tides_root):
+        return
+    entries = []
+    for name in sorted(os.listdir(tides_root)):
+        full = os.path.join(tides_root, name)
+        if not os.path.isdir(full):
+            continue
+        fc_path = os.path.join(full, "forecast.json")
+        if not os.path.exists(fc_path):
+            continue
+        try:
+            with open(fc_path) as f:
+                tide_fc = json.load(f)
+        except Exception:
+            continue
+        entries.append({
+            "slug":   name,
+            "time":   tide_fc.get("time", name),
+            "peak":   tide_fc.get("forecast_peak_mllw"),
+            "regime": ((tide_fc.get("depths_in") or {}).get("regime") or ""),
+        })
+    if not entries:
+        return
+    # Most recent first
+    entries.sort(key=lambda e: e["time"], reverse=True)
+    now_local_str = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+    rows = ""
+    for e in entries:
+        peak_str = (f"{e['peak']:.2f}" if e["peak"] is not None else "—")
+        time_pretty = format_time_full(e["time"]) if e.get("time") else e["slug"]
+        rows += (
+            f'<tr class="tide-row regime-{e["regime"]}">'
+            f'<td><a href="{e["slug"]}/">{time_pretty}</a></td>'
+            f'<td>{peak_str}</td>'
+            f'<td>{e["regime"]}</td>'
+            f'</tr>'
+        )
+    html = f"""\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Per-tide archive — Bay Ave Barnacle</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Per-tide archive</h1>
+    <p class="subtitle"><a href="../">&larr; Back to today's forecast</a></p>
+    <p class="note">Every high tide the workflow has generated a page
+       for. Old pages persist forever; their content (tide-specific
+       heat-map + prediction-evolution slider + convergence chart) is
+       a retrospective of how the forecast for that tide evolved.
+       Latest at the top. Index regenerated each workflow run; last
+       built {now_local_str} local.</p>
+  </header>
+  <section class="tides">
+    <table class="tide-table">
+      <thead><tr><th>Tide time</th><th>Forecast peak (ft MLLW)</th><th>Regime</th></tr></thead>
+      <tbody>{rows}</tbody>
+    </table>
+  </section>
+  <footer>
+    <p><a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a></p>
+  </footer>
+</main>
+</body>
+</html>
+"""
+    out_path = os.path.join(tides_root, "index.html")
+    with open(out_path, "w") as f:
+        f.write(html)
+    print(f"Wrote per-tide archive index → {out_path} ({len(entries)} tides)")
+
 
 def render_per_tide_page(tide, forecast,
                           prev_slug=None, prev_time=None,
@@ -4375,10 +4467,14 @@ def render_html_page(forecast):
       <tbody>{tide_rows}</tbody>
     </table>
     <p class="note">Highlighted row is the worst case headlined above.
-       <b>Above</b> = inches above the highest exceeded landmark (negative if water below the lowest landmark).
-       <b>Rel</b> = inches above the lowest landmark (lowest road corner, 3.64 NAVD88) — always.
-       Surge persistence is increasingly unreliable for tides beyond ~24h out
-       — use the longer windows for planning, not for trust.</p>
+       <b>Click any time in the first column</b> to open that tide's detail
+       page (per-tide heat-map, prediction-evolution replay, convergence
+       chart, full landmark table). <b>Above</b> = inches above the highest
+       exceeded landmark (negative if water below the lowest landmark).
+       <b>Rel</b> = inches above the lowest landmark (lowest road corner,
+       3.64 NAVD88) — always. Surge persistence is increasingly unreliable
+       for tides beyond ~24h out — use the longer windows for planning,
+       not for trust.</p>
     <script>
       (function() {{
         var radios = document.querySelectorAll('input[name="duration"]');
@@ -4401,7 +4497,9 @@ def render_html_page(forecast):
   </section>
 
   <section class="forecast">
-    <h2>Worst-case detail</h2>
+    <h2>Worst-case detail
+      <a class="detail-link" href="tides/{_tide_slug(peak_t)}/">View this tide's full detail page →</a>
+    </h2>
     <dl>
       <dt>High tide time</dt><dd>{peak_t}</dd>
       <dt>Predicted tide</dt><dd>{forecast['peak_predicted_mllw']:.2f} ft MLLW (Sandy Hook)</dd>
@@ -4412,6 +4510,12 @@ def render_html_page(forecast):
       <dt>72h mean temp</dt><dd>{forecast['temp_avg_72h_f']:.1f}&deg;F</dd>
       <dt>Cold conditions</dt><dd>{'<b>YES</b> — ice-lock hypothesis met; <i>no longer actively applied</i> (see <a href="https://github.com/JohnUrban/barnacle/blob/main/history/reports/cold_weather_retrospective.md">retrospective</a>)' if cold else 'no'}</dd>
     </dl>
+    <p class="note">Per-tide detail pages live under <code>tides/&lt;date&gt;T&lt;HH-MM&gt;/</code>
+       (one per upcoming high tide; click any time in the rollup table above
+       to open one). They contain a tide-specific heat-map, a slider that
+       replays the prediction history (drag through past predictions, see
+       the heat-map redraw), and a convergence chart showing how the peak
+       forecast for that tide evolved.</p>
   </section>
 {_render_cold_advisory_html(forecast)}
 {_render_live_gauge_section(forecast)}
@@ -4464,7 +4568,8 @@ def render_html_page(forecast):
     <p>Model v0.6. Local enhancement +0.40 ft. Rain term saturates at 8&Prime;.
        Updated daily at 5 AM ET.</p>
     <p><a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a> &middot;
-       <a href="archive/">Past forecasts</a> &middot;
+       <a href="archive/">Past daily archives</a> &middot;
+       <a href="tides/">Per-tide archive</a> &middot;
        <a href="barnacle-widget.js">iOS widget script (Scriptable)</a></p>
   </footer>
 </main>

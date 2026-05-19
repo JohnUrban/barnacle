@@ -1525,34 +1525,90 @@ updated in the same commit as the change that necessitated them:
 
 ---
 
-## 13. Cold-start pointer — last work was 2026-05-19
+## 13. Cold-start pointer — last work was 2026-05-19 (long session)
 
 If you're a fresh Claude coming in after compaction: the
 **web platform pivot** (section 9b) shipped in one long session on
-2026-05-19. Most of 9b is now DONE:
-✅ 9b.1 (hourly cadence) — workflow cron `'0 * * * *'`, daily run
-   at 09 UTC sends email + archive snapshot; hourly runs are
-   text-only updates to JSON + HTML + predictions log.
-✅ 9b.2 part 1 (severity rows + per-tide deep-link pages) and
-   part 2 (24h → 72h rollup window + JS duration toggle).
-✅ 9b.3 (master predictions log at `data/predictions_log.csv`,
-   accumulating since 2026-05-19 ~16:26 UTC).
-✅ 9b.4 (a) convergence plot, (b) oscillation plot, (c) map scrubber.
-✅ 9b.5 (rain in heat-map — uniform water-level addition + toggle).
-✅ 9b.6 (confidence semantics — badge + reason + regime band).
-✅ 9b.7 (1-2 month astronomical look-ahead).
-✅ 9b.8 modes 1 + 3 (peak-magnitude scatter + binary classifier
-   matrix). Mode 2 (outcome-depth) still queued.
-✅ 9b.10 (client-side map rendering via d3-delaunay; no PNG storage).
+2026-05-19. Plus several follow-up rounds based on user feedback.
+**All of section 9b is now shipped or queued explicitly.** Site at
+[johnurban.github.io/barnacle](https://johnurban.github.io/barnacle/)
+should be visibly transformed from the morning's version.
+
+### What shipped 2026-05-19
+
+**Section 9b — Web platform pivot** (all DONE):
+- 9b.1 — Hourly cadence (`'0 * * * *'`). Daily 09 UTC = full run
+  (email + map + archive). Other hours = text-only.
+- 9b.2 — Severity-colored rollup rows + per-tide deep-link pages
+  + 24h/48h/72h duration toggle.
+- 9b.3 — Master predictions log at `data/predictions_log.csv`
+  (append-only; one row per prediction event per tide).
+- 9b.4 — Three interactive features: (a) convergence chart per
+  tide, (b) oscillation chart on home, (c) map scrubber on
+  per-tide pages.
+- 9b.5 — Rain in heat-map via uniform water-level addition +
+  tide-only toggle.
+- 9b.6 — Confidence semantics — pair badge with what+why line +
+  regime band; self-calibrating from accuracy log when ≥3 rows.
+- 9b.7 — 1-2 month astronomical look-ahead with spring-tide marker.
+- 9b.8 — All three modes (peak-magnitude scatter, outcome-depth
+  table, binary classifier matrix) + lead-time accuracy axis.
+- 9b.9 — Cross-references v0.7 model refactor (see section 9c).
+- 9b.10 — Client-side map render via d3-delaunay; no PNG storage.
+
+**Cleanup + UX polish** (also 2026-05-19):
+- R: removed dead `map_url` params from `render_html_page`.
+- S: v0.7 FIX-IN-v0.7 comment on per-landmark rain shedding.
+- P: HANDOFF lockstep — all 9b items marked DONE with commit refs.
+- T: Per-tide page prev/next navigation.
+- V: Last-updated indicator + amber when >2h stale.
+- W: Open Graph meta tags for link previews.
+- X: `history/scripts/cold_weather_retrospective.py` written +
+  the user ran it. 19 candidate events identified.
+- Y: Live NOAA gauge sparkline on home page (24h).
+- Z: Lunar phase / spring-tide annotation in look-ahead.
+- M, N (mode 2 + self-calibration above).
+- FF: scrubber and convergence chart linked on per-tide pages.
+- CC: per-tide log status block.
+- DD: workflow-health banner (>3h amber, >24h red).
+- EE: heat-map boundary smoothing (phantom NAVD88=6.0 points) +
+  256-entry color lookup table.
+- Widget refresh: hours-to-peak, confidence ±, next-watch date,
+  cold-conditions hint (`docs/barnacle-widget.js`).
+- **Oscillation chart axis fix**: now plots actual SH MLLW
+  observation, not model-inferred 342 NAVD88.
+- **Interactive depth slider** on the home page heat-map:
+  3.0-7.5 ft, ~0.6" step, "Snap to current forecast" button.
+  Renders client-side via `BarnacleMap.render()` on each input.
+- **Per-tide page discoverability**: rollup-table time-column
+  links now obviously clickable (blue + arrow); worst-case
+  detail section gains "View this tide's full detail page →".
+
+**Big model decision** (2026-05-19, commit 88d1f54):
+**Cold-lockout demoted from active override to advisory.** The
+v0.6 rule that forced predicted depths to zero when 72-h mean
+temp < 32°F + SH peak in [6.58, 8.0] is no longer applied. The
+19-event historical retrospective + web cross-check on the 5
+named-storm candidates (Hercules 2014, Jonas 2016, Stella 2017,
+Grayson 2018, Orlena 2021) showed ~3 of 5 likely flooded
+despite conditions being met. Single Feb 22-23 2026 calibration
+point may be an outlier. A yellow advisory banner now appears
+when cold conditions are met, with a link to
+`history/reports/cold_weather_retrospective.md`. v0.7 will either
+add a wind-direction condition or drop the rule entirely.
 
 Read these for context if needed:
 - `assets/observations/2026-05-18/README.md` — first spot-check
   event surfaced the **storm-surge enhancement hypothesis**: the
   +0.40 ft enhancement is probably a storm-surge propagation effect,
   not a constant. Validation gates v0.7 (see 9c.3).
-- `dev/ideas/20260519.txt` — user's brainstorm that anchored the
-  9b pivot.
+- `history/reports/cold_weather_retrospective.md` — full
+  19-candidate analysis, web evidence, decision, and the
+  wind-direction refinement hypothesis (NNE/N onshore winds
+  correlate with the candidates that likely flooded).
 - `data/predictions_log_README.md` — schema of the master log.
+- `dev/ideas/20260519.txt` — user's brainstorm (Batch 1 + 2)
+  that anchored everything in this session.
 
 **Known v0.6 bugs deferred to v0.7 (DO NOT START v0.7 YET):**
 - `corner_grate` elevation: 3.91 → 3.80 (survey-confirmed).
@@ -1560,18 +1616,61 @@ Read these for context if needed:
   (intersection -2", lawn/porch -4") disagrees with the
   client-side heat-map's uniform additive. See FIX-IN-v0.7 comment
   in the function. v0.7 9c.4 picks water-is-level for both.
+- Cold-lockout rule: possibly add wind-direction condition OR
+  drop entirely. Currently demoted to advisory only.
 
-Next likely sessions:
-1. **Mode 2 of the accuracy story** (9b.8 outcome-depth) once
-   `data/labeled_observations.csv` has accumulated more rows.
-2. **Self-calibrated confidence ± uncertainty** (refine 9b.6 with
-   real data from `data/predictions_log.csv` once it accumulates).
-3. **Next storm event with meaningful surge** — test the storm-
-   surge enhancement hypothesis (9c.3). Validation gates the v0.7
-   model promotion.
-4. **v0.7 model promotion** when the surge hypothesis lands —
-   section **9c** consolidates everything in one place. **DO NOT
-   START YET.**
+### Two important workflow gotchas
+
+1. **The hourly workflow appends to `data/predictions_log.csv`
+   between checkout and commit.** Local commits that touch the
+   log will conflict with the bot's appends. Always:
+   `git pull --rebase --autostash` (or stash → rebase → unstash)
+   before pushing local commits.
+2. **The cold-weather retrospective script's `--write-report`
+   flag is OFF by default** so reruns don't clobber the curated
+   report. The CSV at `history/data/cold_weather_candidates.csv`
+   IS always overwritten — it's a pure derived view.
+
+### Where to look on the live site
+
+- **Home page**: `https://johnurban.github.io/barnacle/`
+  - Top: last-updated indicator, workflow-health banner when stale
+  - Plain-language summary + confidence + regime band
+  - Live NOAA gauge sparkline (past 24h)
+  - Heat-map + depth slider (3.0-7.5 ft NAVD88) + "Snap to
+    current" button + rain-toggle (when rain forecast)
+  - Oscillation chart (SH peak over time + landmark thresholds)
+  - 72h rollup table with severity colors + duration toggle +
+    clickable per-tide deep-links
+  - Worst-case detail with "View detail page →" link
+  - Accuracy section (peak-magnitude scatter + outcome-depth
+    table + lead-time bucket table + binary classifier matrix)
+  - 1-2 month look-ahead with spring-tide markers
+- **Per-tide pages**: `docs/tides/<YYYY-MM-DDTHH-MM>/`
+  - Linked from each row of the home-page rollup table
+  - Tide-specific heat-map
+  - Time scrubber (slider replaying past predictions)
+  - Convergence chart (LOESS over prediction history)
+  - Landmark depth table
+  - Evolution CSV + log-status block
+  - Prev/next tide navigation in header
+
+### Next likely sessions
+
+1. **Mode 2 + lead-time accuracy fill in** once predictions_log
+   accumulates a few days of past-tide data (mode 2 needs
+   labeled_observations rows; lead-time needs past tides).
+2. **Self-calibrated confidence ± uncertainty** activates once
+   the accuracy log has ≥3 rows per confidence band.
+3. **Next storm event with meaningful surge** — test the
+   storm-surge enhancement hypothesis (9c.3). Validation gates
+   the v0.7 model promotion.
+4. **Cold-conditions data collection**: every cold-conditions-met
+   event observed at 342 Bay going forward becomes a new
+   validation data point for the cold-lockout hypothesis.
+5. **v0.7 model promotion** when the surge hypothesis lands —
+   section **9c** consolidates everything in one place. **DO
+   NOT START YET.**
 
 v0.7 is queued but not started. Don't start it yet.
 

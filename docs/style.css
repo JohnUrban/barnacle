@@ -327,6 +327,20 @@ section.scrubber-section { margin: 12px 0; }
     margin-right: 4px;
 }
 
+/* Inline "→ detail page" link in section headings (Worst-case section) */
+h2 .detail-link {
+    font-size: 14px;
+    font-weight: normal;
+    color: #1f6feb;
+    text-decoration: none;
+    margin-left: 12px;
+    padding: 3px 10px;
+    background: #f0f4fa;
+    border-radius: 4px;
+    vertical-align: middle;
+}
+h2 .detail-link:hover { background: #d8e3f3; }
+
 /* Interactive depth slider on the home-page heat-map (Batch 2 idea #1
    follow-up — client-side render, no PNG storage). */
 .depth-slider {
@@ -579,14 +593,21 @@ section.low-tides h2 {
     color: #d97706;
 }
 
-/* Per-tide deep links from the rollup table */
+/* Per-tide deep links from the rollup table — make them obviously
+   clickable so the per-tide pages are discoverable. */
 .tide-table .tide-row a {
-    color: inherit;
-    text-decoration: none;
-    border-bottom: 1px dotted rgba(0,0,0,0.25);
+    color: #1f6feb;
+    text-decoration: underline;
+    text-decoration-color: rgba(31, 111, 235, 0.5);
+    text-underline-offset: 2px;
 }
 .tide-table .tide-row a:hover {
-    border-bottom-style: solid;
+    text-decoration-color: rgba(31, 111, 235, 1);
+}
+.tide-table .tide-row a::after {
+    content: " →";
+    color: rgba(31, 111, 235, 0.6);
+    font-size: 0.9em;
 }
 
 /* Per-tide page (docs/tides/<slug>/index.html) — wet landmark rows */
