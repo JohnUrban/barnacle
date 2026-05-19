@@ -71,6 +71,17 @@ LANDMARKS = [
 # in recent decades); they're shown in the daily depth table instead.
 SEASONALITY_LANDMARK_KEYS = {"curb", "road_middle", "intersection",
                              "lawn_step", "porch_step"}
+# Curated landmarks for the oscillation chart on the home page (9b.4(b)).
+# Six entries — fewer than the full 9 — so labels don't crowd each other
+# on the chart's y-axis. Selected by user 2026-05-19.
+OSCILLATION_LANDMARK_KEYS = {
+    "lowest_sentinel_grate",  # 3.60 — lowest grate
+    "gutter_walkway",         # 3.78 — gutter / curb edge
+    "corner_grate",           # 3.91 — Bay+Central storm grate
+    "curb",                   # 4.16 — curb at walkway
+    "lawn_step",              # 4.58 — lawn / walkway step
+    "porch_step",             # 5.08 — front porch first step
+}
 
 MLLW_TO_NAVD88_OFFSET = -2.82  # NAVD88 = MLLW + offset
 
@@ -2554,10 +2565,17 @@ def _oscillation_chart_data(forecast):
             "sh_peak_mllw": float(peak),
         })
 
-    # Landmark threshold lines — use the model's LANDMARKS list
+    # Landmark threshold lines — a curated subset of LANDMARKS to keep
+    # the chart readable. Per user 2026-05-19: include lowest grate,
+    # gutter/curb, Bay+Central storm grate, curb at walkway, lawn step,
+    # porch step. Excluded: lowest_road_corner (3.64 — crowds the
+    # gutter line at 3.78), road_middle (4.36 — crowds curb at 4.16),
+    # intersection (4.54 — crowds lawn_step at 4.58).
+    keep_keys = OSCILLATION_LANDMARK_KEYS
     landmark_lines = [
         {"label": label, "navd88": float(elev)}
-        for _key, label, elev, _sh in LANDMARKS
+        for key, label, elev, _sh in LANDMARKS
+        if key in keep_keys
     ]
 
     return {"points": points, "landmarks": landmark_lines}
