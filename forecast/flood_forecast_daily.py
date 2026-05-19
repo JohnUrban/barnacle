@@ -512,6 +512,116 @@ def _summarize_accuracy(last_n=30):
     }
 
 
+# Look-ahead window for the "dates to watch" section (HANDOFF 9b.7).
+# 45 days is well past NOAA tide_predictions reliability and gives the user
+# ~6 weeks of planning visibility. Astronomical only — surge isn't forecast
+# this far out.
+LOOKAHEAD_DAYS = 45
+
+# Thresholds for flagging an upcoming high tide. Each entry is
+# (sh_mllw_threshold, label_for_user, css_severity_class). Sorted high to
+# low; the FIRST threshold a tide crosses defines its row's styling.
+LOOKAHEAD_THRESHOLDS = [
+    (7.00, "would cross lawn step (no surge needed)",       "watch-severe"),
+    (6.58, "would cross curb (no surge needed)",             "watch-moderate"),
+    (6.20, "would reach gutter (no surge needed)",           "watch-light"),
+    (6.00, "elevated tide — flooding likely with any surge", "watch-minor"),
+]
+
+
+def fetch_high_tides_lookahead(days=LOOKAHEAD_DAYS):
+    """Pull NOAA `predictions` hilo for the next `days` days. Returns list of
+    (time_str, mllw_ft) for high tides only. Astronomical only — no surge.
+    Larger window than fetch_tides_24h; used for HANDOFF 9b.7."""
+    now = dt.datetime.now(dt.timezone.utc)
+    end = now + dt.timedelta(days=days)
+    try:
+        data = _get(
+            "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+            {
+                "station": NOAA_STATION,
+                "product": "predictions",
+                "datum": "MLLW",
+                "time_zone": "lst_ldt",
+                "units": "english",
+                "interval": "hilo",
+                "begin_date": now.strftime("%Y%m%d %H:%M"),
+                "end_date":   end.strftime("%Y%m%d %H:%M"),
+                "format": "json",
+            },
+        )
+    except Exception:
+        return []
+    preds = data.get("predictions") or []
+    out = []
+    for p in preds:
+        if p.get("type") != "H":
+            continue
+        try:
+            out.append((p["t"], float(p["v"])))
+        except (KeyError, ValueError, TypeError):
+            continue
+    return out
+
+
+def build_lookahead_watch_dates(high_tides, skip_first_hours=24):
+    """Filter upcoming high tides to the "dates to watch" rows for the
+    look-ahead section.
+
+    Rules:
+    - Skip tides within `skip_first_hours` of now (those are already
+      shown in the next-24h rollup).
+    - For each day, keep only the *highest* tide (one row per date max).
+    - Drop tides below the lowest threshold (6.00 ft MLLW).
+    - Tag each row with the highest threshold it crosses.
+
+    Returns list of dicts:
+        {time, time_dt, mllw, threshold_mllw, label, severity_class}
+    sorted by time.
+    """
+    now_utc = dt.datetime.now(dt.timezone.utc)
+    cutoff = now_utc + dt.timedelta(hours=skip_first_hours)
+    lowest_threshold = min(t[0] for t in LOOKAHEAD_THRESHOLDS)
+
+    per_day_best = {}  # date_str -> (time_str, mllw, datetime)
+    for time_str, mllw in high_tides:
+        if mllw < lowest_threshold:
+            continue
+        try:
+            tide_dt = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+            # NOAA times are lst_ldt (EDT = UTC-4 in summer); rough UTC
+            # conversion is good enough for the "skip the next 24h"
+            # boundary, which doesn't need second-precision.
+            tide_utc = (tide_dt + dt.timedelta(hours=4)).replace(
+                tzinfo=dt.timezone.utc
+            )
+        except (ValueError, TypeError):
+            continue
+        if tide_utc < cutoff:
+            continue
+        date_str = tide_dt.date().isoformat()
+        prior = per_day_best.get(date_str)
+        if prior is None or mllw > prior[1]:
+            per_day_best[date_str] = (time_str, mllw, tide_dt)
+
+    rows = []
+    for date_str, (time_str, mllw, tide_dt) in per_day_best.items():
+        # Find the highest threshold this tide crosses
+        for threshold, label, css_class in LOOKAHEAD_THRESHOLDS:
+            if mllw >= threshold:
+                rows.append({
+                    "time":           time_str,
+                    "time_dt":        tide_dt,
+                    "mllw":           mllw,
+                    "threshold_mllw": threshold,
+                    "label":          label,
+                    "severity_class": css_class,
+                })
+                break
+    rows.sort(key=lambda r: r["time_dt"])
+    return rows
+
+
 def fetch_recent_history(days=7):
     """Past N days of observed daily peak water level, with the highest
     landmark reached at that peak. Returns list of dicts (one per calendar
@@ -1054,6 +1164,13 @@ def build_forecast():
     except Exception:
         recent_history = []
 
+    # Look-ahead "dates to watch" — astronomical only, 45 days out (9b.7)
+    try:
+        lookahead_highs = fetch_high_tides_lookahead(LOOKAHEAD_DAYS)
+        lookahead_watch = build_lookahead_watch_dates(lookahead_highs)
+    except Exception:
+        lookahead_watch = []
+
     return {
         # Headline fields (worst-case tide)
         "peak_predicted_mllw": worst["predicted_mllw"],
@@ -1078,6 +1195,8 @@ def build_forecast():
         "surge_swing_6h_ft": surge_swing,
         # Recent observed peaks for the recap block
         "recent_history_7d": recent_history,
+        # Look-ahead "dates to watch" — astronomical only (HANDOFF 9b.7)
+        "lookahead_watch": lookahead_watch,
     }
 
 
@@ -1404,6 +1523,57 @@ def _render_low_tides_html(forecast):
         '<p class="note">Astronomical low-tide predictions for situational '
         'awareness — useful for parking returns, sub-curb drainage, and '
         '(eventually) boat-ramp viability at Atlantic Highlands Marina.</p>'
+        '</section>'
+    )
+
+
+def _render_lookahead_text(forecast):
+    """Plain-text "dates to watch" block — 1-2 month astronomical look-ahead.
+    HANDOFF 9b.7. Empty when no upcoming tides cross the lowest threshold."""
+    rows = forecast.get("lookahead_watch") or []
+    if not rows:
+        return []
+    lines = [
+        f"Dates to watch (next {LOOKAHEAD_DAYS} days, astronomical only):",
+    ]
+    for r in rows:
+        when_full = format_time_full(r["time"])
+        lines.append(
+            f"  {when_full}  —  {r['mllw']:.2f} ft MLLW  ({r['label']})"
+        )
+    lines.append(
+        "  These are baseline astronomical tides — surge isn't forecast "
+        "this far out. An event of significance also needs surge or rain."
+    )
+    return lines
+
+
+def _render_lookahead_html(forecast):
+    """HTML version of the look-ahead block. HANDOFF 9b.7."""
+    rows = forecast.get("lookahead_watch") or []
+    if not rows:
+        return ""
+    body = ""
+    for r in rows:
+        body += (
+            f'<tr class="{r["severity_class"]}">'
+            f'<td>{format_time_full(r["time"])}</td>'
+            f'<td>{r["mllw"]:.2f}</td>'
+            f'<td>{r["label"]}</td>'
+            f'</tr>'
+        )
+    return (
+        '<section class="lookahead">'
+        f'<h2>Dates to watch — next {LOOKAHEAD_DAYS} days</h2>'
+        '<table class="history-table">'
+        '<thead><tr><th>Date / time</th><th>Peak (ft MLLW)</th>'
+        '<th>Significance</th></tr></thead>'
+        f'<tbody>{body}</tbody></table>'
+        '<p class="note">Astronomical-only predictions — surge isn\'t '
+        'forecast this far out. An event of real significance also needs '
+        'surge or rain, neither of which is in this table. Use as a '
+        'planning aid (which dates have elevated baseline tides) rather '
+        'than as a flood forecast.</p>'
         '</section>'
     )
 
@@ -2053,6 +2223,8 @@ def render_email(forecast):
     low_block = ("\n".join(low_lines) + "\n\n") if low_lines else ""
     accuracy_lines = _render_accuracy_text(forecast)
     accuracy_block = ("\n".join(accuracy_lines) + "\n\n") if accuracy_lines else ""
+    lookahead_lines = _render_lookahead_text(forecast)
+    lookahead_block = ("\n".join(lookahead_lines) + "\n\n") if lookahead_lines else ""
 
     text = f"""\
 Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
@@ -2074,7 +2246,7 @@ Worst case detail:
 {rain_block}{_landmarks_section_text(forecast)}
 Regime: {regime} — {REGIME_GLOSSARY.get(regime, '')}
 
-{recap_block}{accuracy_block}{low_block}Reference scale (Sandy Hook obs MLLW):
+{recap_block}{accuracy_block}{low_block}{lookahead_block}Reference scale (Sandy Hook obs MLLW):
   < 6.02  : dry (nothing visible)
   6.02    : water emerges from lowest storm grate (Central Ave south)
   6.06    : lowest road corner across Bay first wets (visible from window)
@@ -2127,6 +2299,7 @@ Model: v0.6. Local enhancement +0.40 ft.
     recap_html = _render_recent_history_html(forecast)
     low_html = _render_low_tides_html(forecast)
     accuracy_html = _render_accuracy_html(forecast)
+    lookahead_html = _render_lookahead_html(forecast)
 
     html = f"""\
 <html><body style="font-family:sans-serif;background:{bg};padding:20px">
@@ -2169,6 +2342,7 @@ Model: v0.6. Local enhancement +0.40 ft.
 {recap_html}
 {accuracy_html}
 {low_html}
+{lookahead_html}
 <p style="font-size:small;color:#666">
 Model v0.6. Local enhancement +0.40 ft. Rain term saturates at 8".
 Surge persistence is a rough proxy; for active coastal storms, check NWS
@@ -2297,6 +2471,8 @@ def render_html_page(forecast, map_url=None):
   {_render_accuracy_html(forecast)}
 
   {_render_low_tides_html(forecast)}
+
+  {_render_lookahead_html(forecast)}
 
   <section class="reference">
     <h2>Reference scale</h2>
