@@ -46,11 +46,7 @@ jobs:
           echo "is_daily=$is_daily" >> "$GITHUB_OUTPUT"
           echo "Run type: is_daily=$is_daily (hour=$hour UTC, event=${{ github.event_name }})"
 
-      - name: Install heat-map dependencies (daily only)
-        if: steps.when.outputs.is_daily == 'true'
-        run: pip install matplotlib numpy
-
-      - name: Run forecast — DAILY (HTML + JSON + map + email)
+      - name: Run forecast — DAILY (HTML + JSON + email)
         if: steps.when.outputs.is_daily == 'true'
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
@@ -63,10 +59,9 @@ jobs:
         run: |
           python3 flood_forecast_daily.py \
             --write-html ../docs/index.html \
-            --write-json ../docs/forecast.json \
-            --write-map  ../docs/icons/map_today.png
+            --write-json ../docs/forecast.json
 
-      - name: Run forecast — HOURLY (HTML + JSON only, no email/map)
+      - name: Run forecast — HOURLY (HTML + JSON only, no email)
         if: steps.when.outputs.is_daily == 'false'
         working-directory: forecast
         run: |
@@ -81,11 +76,7 @@ jobs:
           mkdir -p docs/archive
           cp docs/index.html  "docs/archive/${{ steps.when.outputs.today }}.html"
           cp docs/forecast.json "docs/archive/${{ steps.when.outputs.today }}.json"
-          # Heat-map only exists on flooding-eligible days (cold lockout or
-          # no data skips it). Archive it when present.
-          if [ -f docs/icons/map_today.png ]; then
-            cp docs/icons/map_today.png "docs/archive/${{ steps.when.outputs.today }}-map.png"
-          fi
+          # No heat-map PNG to archive — map renders client-side (9b.10).
 
       - name: Regenerate archive index (daily only)
         if: steps.when.outputs.is_daily == 'true'

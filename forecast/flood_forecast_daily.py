@@ -2724,6 +2724,172 @@ def _render_oscillation_section(forecast):
 """
 
 
+def _load_map_points_for_js():
+    """Load assets/map_points.csv into a list of {x, y, navd88} dicts for
+    inlining as JSON in HTML pages. Used by the client-side heat-map
+    renderer (HANDOFF 9b.10). Skips rows with missing or non-numeric
+    x/y/value."""
+    csv_path = os.path.join(_REPO_ROOT, "assets", "map_points.csv")
+    if not os.path.exists(csv_path):
+        return []
+    out = []
+    with open(csv_path) as f:
+        for row in csv.DictReader(f):
+            try:
+                x = float(row["x"])
+                y = float(row["y"])
+                v = float(row["value"])
+            except (TypeError, ValueError, KeyError):
+                continue
+            out.append({"x": x, "y": y, "navd88": v})
+    return out
+
+
+def _client_map_section_html(forecast, container_class="heatmap", level=2,
+                              base_map_url="icons/map_raw.png"):
+    """Render an HTML section that displays the heat-map via client-side
+    rendering (HANDOFF 9b.10) — replaces the prior <img> embed.
+
+    Caller specifies `base_map_url` relative to the HTML page's location.
+    For docs/index.html this is "icons/map_raw.png"; for per-tide pages
+    at docs/tides/<slug>/index.html it's "../../icons/map_raw.png".
+
+    Renders TWO canvases when rain is meaningful (tide+rain default
+    visible, tide-only togglable) so the user can compare. When rain is
+    not meaningful, a single canvas.
+
+    Reading order in the page:
+      (1) <canvas> elements with IDs and data-water-navd88 attrs
+      (2) optional radio toggle for rain
+      (3) inline JSON points + d3-delaunay + map-render.js + invocation
+    """
+    water_with_rain = _compute_map_water_level(forecast, include_rain=True)
+    if water_with_rain is None:
+        return ""
+
+    rain_bonus_in = _rain_bonus_inches(forecast)
+    rain_meaningful = rain_bonus_in > 0.0
+    water_no_rain = (
+        _compute_map_water_level(forecast, include_rain=False)
+        if rain_meaningful else None
+    )
+
+    points = _load_map_points_for_js()
+    if len(points) < 3:
+        return ""
+
+    peak_t = forecast.get("peak_time_local", "")
+    peak_mllw = forecast.get("peak_forecast_observed_mllw") or 0.0
+    title_with = (
+        f"Predicted water level — {water_with_rain:.2f} ft NAVD88 "
+        + (f"(SH {peak_mllw:.2f} + rain {rain_bonus_in:.1f}\")"
+           if rain_meaningful
+           else f"(SH {peak_mllw:.2f} ft MLLW @ {peak_t})")
+    )
+    title_no_rain = (
+        f"Predicted water level — {water_no_rain:.2f} ft NAVD88 "
+        f"— TIDE ONLY (no rain bonus)"
+    ) if water_no_rain is not None else ""
+
+    points_json = json.dumps(points)
+    hh = "h" + str(level)
+    canvas_styles = (
+        "max-width:100%;height:auto;display:block;margin:8px auto;"
+        "background:#fff;"
+    )
+
+    toggle_html = ""
+    second_canvas_html = ""
+    script_render = (
+        "BarnacleMap.render({{ canvas: document.getElementById('heatmap-canvas'), "
+        f"points: window.barnaclePoints, waterNavd88: {water_with_rain:.4f}, "
+        f"baseMapUrl: '{base_map_url}', title: {json.dumps(title_with)} }});"
+    ).replace("{{", "{").replace("}}", "}")
+    intro_note = (
+        '<p class="note">Blue overlay shows predicted tidal water depth across '
+        'nearby topography. Darker blue = deeper. No meaningful rain forecast — '
+        'overlay is tide-only.</p>'
+    )
+
+    if water_no_rain is not None:
+        toggle_html = (
+            '\n    <div class="heatmap-toggle">\n'
+            '      <label><input type="radio" name="heatmap-mode" '
+            'value="with-rain" checked> Tide + rain</label>\n'
+            '      <label><input type="radio" name="heatmap-mode" '
+            'value="no-rain"> Tide only</label>\n'
+            '    </div>'
+        )
+        second_canvas_html = (
+            f'\n    <canvas id="heatmap-canvas-no-rain" style="{canvas_styles}'
+            f'display:none"></canvas>'
+        )
+        # Render both canvases on load; the toggle just flips display.
+        no_rain_render = (
+            f"\n      BarnacleMap.render({{ canvas: "
+            f"document.getElementById('heatmap-canvas-no-rain'), "
+            f"points: window.barnaclePoints, "
+            f"waterNavd88: {water_no_rain:.4f}, "
+            f"baseMapUrl: {json.dumps(base_map_url)}, "
+            f"title: {json.dumps(title_no_rain)} }});"
+        )
+        script_render += no_rain_render
+        intro_note = (
+            '<p class="note">Blue overlay shows predicted water depth across '
+            'nearby topography. Darker blue = deeper. Toggle between '
+            'including the forecast rain bonus or tide-only (HANDOFF 9b.5).</p>'
+        )
+
+    toggle_script = ""
+    if water_no_rain is not None:
+        toggle_script = """
+      (function() {
+        var radios = document.querySelectorAll('input[name="heatmap-mode"]');
+        var withRain = document.getElementById('heatmap-canvas');
+        var noRain   = document.getElementById('heatmap-canvas-no-rain');
+        radios.forEach(function(r) {
+          r.addEventListener('change', function() {
+            var show = r.value;
+            withRain.style.display = (show === 'with-rain') ? 'block' : 'none';
+            noRain.style.display   = (show === 'no-rain')   ? 'block' : 'none';
+          });
+        });
+      })();
+"""
+
+    return f"""
+  <section class="{container_class}">
+    <{hh}>Predicted water depth (worst tide)</{hh}>
+    {intro_note}{toggle_html}
+    <canvas id="heatmap-canvas" style="{canvas_styles}"></canvas>{second_canvas_html}
+    <script>
+      window.barnaclePoints = {points_json};
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6"></script>
+    <script src="{_relpath_to_map_render_js(base_map_url)}"></script>
+    <script>
+      {script_render}{toggle_script}
+    </script>
+  </section>
+"""
+
+
+def _relpath_to_map_render_js(base_map_url):
+    """Where does docs/map-render.js live relative to the page?
+
+    We use the same relative depth as base_map_url: if the page links to
+    'icons/map_raw.png' the page is at docs/, so map-render.js is
+    'map-render.js'. If the page links to '../../icons/map_raw.png',
+    the page is at docs/tides/<slug>/, so map-render.js is
+    '../../map-render.js'.
+    """
+    if base_map_url.startswith("../../"):
+        return "../../map-render.js"
+    if base_map_url.startswith("../"):
+        return "../map-render.js"
+    return "map-render.js"
+
+
 def _tide_slug(tide_time_str):
     """Convert a NOAA tide time string ('YYYY-MM-DD HH:MM') to a
     filesystem-safe slug ('YYYY-MM-DDTHH-MM') for per-tide page paths.
@@ -2823,6 +2989,22 @@ def render_per_tide_page(tide, forecast):
     time_str = tide["time"]
     short, above_in, rel_in = landmark_summary(td, tide["forecast_peak_mllw"])
 
+    # Per-tide heat-map: build a fake "forecast" with this tide as the
+    # worst-case so _client_map_section_html renders for THIS tide's
+    # water level (not the home page's worst-case). HANDOFF 9b.10.
+    tide_as_forecast = {
+        "peak_forecast_observed_mllw": tide["forecast_peak_mllw"],
+        "cold_lockout": forecast.get("cold_lockout", False),
+        "peak_rain_rate_in_hr": tide.get("peak_rain_in_hr") or 0.0,
+        "peak_time_local": tide["time"],
+    }
+    tide_heatmap_section = _client_map_section_html(
+        tide_as_forecast,
+        container_class="heatmap",
+        level=2,
+        base_map_url="../../icons/map_raw.png",
+    )
+
     # Landmark rows
     rows = ""
     for key, label, elev, sh in LANDMARKS:
@@ -2873,6 +3055,7 @@ def render_per_tide_page(tide, forecast):
     </dl>
   </section>
 
+{tide_heatmap_section}
   <section class="landmarks">
     <h2>Predicted depths at landmarks</h2>
     <table class="landmark-table">
@@ -3008,16 +3191,12 @@ def render_html_page(forecast, map_url=None, map_url_no_rain=None):
     Like the email HTML but with proper <head>, mobile meta, and footer
     links to source repo + archive.
 
-    If `map_url` is provided, embeds a heat-map image (blue overlay
-    showing predicted water depth across nearby topography).
-
-    If `map_url_no_rain` is also provided, the page additionally embeds
-    a TIDE-ONLY map (rain bonus stripped) and offers a radio toggle to
-    switch between the two — HANDOFF 9b.5 lets the user see what
-    portion of predicted flooding is from rain vs tide. The toggle is
-    rendered server-side as two stacked <img>s plus a tiny inline
-    script that flips their visibility.
+    The heat-map is rendered CLIENT-SIDE (HANDOFF 9b.10) from the static
+    map_points.csv data and the current water level. The legacy
+    map_url / map_url_no_rain parameters are kept for backwards-compat
+    but unused; the client-side render replaces them.
     """
+    _ = map_url, map_url_no_rain  # legacy parameters, kept for compat
     d = forecast["depths_in"]
     regime = d["regime"]
     peak_t = forecast["peak_time_local"]
@@ -3026,55 +3205,13 @@ def render_html_page(forecast, map_url=None, map_url_no_rain=None):
     cold = forecast["cold_lockout"]
     all_tides = forecast.get("all_tides", [])
 
-    # Heat-map section (only if a map was rendered today)
-    map_section = ""
-    if map_url and map_url_no_rain:
-        # Two-map mode: rain-included (default visible) + tide-only.
-        map_section = f"""
-  <section class="heatmap">
-    <h2>Predicted water depth (worst tide)</h2>
-    <p class="note">Blue overlay shows predicted water depth across nearby topography.
-       Darker blue = deeper. Toggle between including the forecast rain bonus or
-       tide-only (HANDOFF 9b.5).</p>
-    <div class="heatmap-toggle">
-      <label><input type="radio" name="heatmap-mode" value="with-rain" checked> Tide + rain</label>
-      <label><input type="radio" name="heatmap-mode" value="no-rain"> Tide only</label>
-    </div>
-    <img id="heatmap-with-rain" class="heatmap-img" src="{map_url}"
-         alt="Predicted water depth (tide + rain)"
-         style="max-width:100%;height:auto;display:block;margin:0 auto;">
-    <img id="heatmap-no-rain"   class="heatmap-img" src="{map_url_no_rain}"
-         alt="Predicted water depth (tide only)"
-         style="max-width:100%;height:auto;display:none;margin:0 auto;">
-    <script>
-      (function() {{
-        var radios = document.querySelectorAll('input[name="heatmap-mode"]');
-        var withRain = document.getElementById('heatmap-with-rain');
-        var noRain   = document.getElementById('heatmap-no-rain');
-        radios.forEach(function(r) {{
-          r.addEventListener('change', function() {{
-            var show = r.value;
-            withRain.style.display = (show === 'with-rain') ? 'block' : 'none';
-            noRain.style.display   = (show === 'no-rain')   ? 'block' : 'none';
-          }});
-        }});
-      }})();
-    </script>
-  </section>
-"""
-    elif map_url:
-        # Single-map mode (no rain forecast, or no comparison map written)
-        map_section = (
-            '\n  <section class="heatmap">\n'
-            '    <h2>Predicted water depth (worst tide)</h2>\n'
-            '    <p class="note">Blue overlay shows predicted tidal water '
-            'depth across nearby topography. Darker blue = deeper. '
-            'No meaningful rain forecast — overlay is tide-only.</p>\n'
-            f'    <img class="heatmap-img" src="{map_url}" '
-            'alt="Predicted water depth heat-map" '
-            'style="max-width:100%;height:auto;display:block;margin:0 auto;">\n'
-            '  </section>\n'
-        )
+    # Heat-map section: client-side render (HANDOFF 9b.10).
+    map_section = _client_map_section_html(
+        forecast,
+        container_class="heatmap",
+        level=2,
+        base_map_url="icons/map_raw.png",
+    )
 
     # Build the all-tides table rows (new column layout). Each row carries:
     #  - regime class for severity-colored backgrounds (HANDOFF 9b.2)
