@@ -32,6 +32,139 @@
     </dl>
   </section>
 
+
+  <section class="heatmap">
+    <h2>Predicted water depth (worst tide)</h2>
+    <p class="note">Blue overlay shows predicted tidal water depth across nearby topography. Darker blue = deeper. No meaningful rain forecast — overlay is tide-only.</p>
+    <canvas id="heatmap-canvas" style="max-width:100%;height:auto;display:block;margin:8px auto;background:#fff;"></canvas>
+    <script>
+      window.barnaclePoints = [{"x": 1010.69, "y": 950.62, "navd88": 3.5}, {"x": 913.41, "y": 957.26, "navd88": 3.55}, {"x": 1001.85, "y": 1001.47, "navd88": 3.6}, {"x": 1077.02, "y": 899.77, "navd88": 3.64}, {"x": 962.05, "y": 848.92, "navd88": 3.64}, {"x": 1455.08, "y": 986.0, "navd88": 3.76}, {"x": 1267.15, "y": 888.72, "navd88": 3.78}, {"x": 1136.71, "y": 817.97, "navd88": 3.8}, {"x": 1019.53, "y": 747.22, "navd88": 3.8}, {"x": 1132.29, "y": 784.81, "navd88": 3.91}, {"x": 1010.69, "y": 716.27, "navd88": 3.91}, {"x": 1278.21, "y": 855.55, "navd88": 4.16}, {"x": 1247.25, "y": 926.3, "navd88": 4.36}, {"x": 1077.02, "y": 833.45, "navd88": 4.54}, {"x": 1300.31, "y": 813.55, "navd88": 4.58}, {"x": 1322.42, "y": 784.81, "navd88": 5.08}, {"x": 1225.14, "y": 970.52, "navd88": 3.75}, {"x": 1214.09, "y": 990.42, "navd88": 4.15}, {"x": 1147.76, "y": 873.24, "navd88": 4.32}, {"x": 1035.01, "y": 815.76, "navd88": 4.51}, {"x": 928.89, "y": 764.91, "navd88": 4.34}, {"x": 873.61, "y": 937.36, "navd88": 4.1}, {"x": 1023.95, "y": 1010.32, "navd88": 4.12}, {"x": 953.21, "y": 981.57, "navd88": 3.91}, {"x": 1088.07, "y": 740.59, "navd88": 4.37}, {"x": 1127.87, "y": 674.26, "navd88": 4.44}, {"x": 1249.46, "y": 442.12, "navd88": 4.7}, {"x": 1399.8, "y": 163.55, "navd88": 5.0}, {"x": 1165.45, "y": 691.95, "navd88": 3.87}, {"x": 1183.14, "y": 698.58, "navd88": 4.2}, {"x": 1287.05, "y": 464.23, "navd88": 4.08}, {"x": 1306.95, "y": 475.28, "navd88": 4.41}, {"x": 1344.53, "y": 364.74, "navd88": 4.19}, {"x": 1368.85, "y": 375.79, "navd88": 4.52}, {"x": 1441.81, "y": 183.45, "navd88": 4.32}, {"x": 1461.71, "y": 196.71, "navd88": 4.65}, {"x": 1083.65, "y": 647.73, "navd88": 4.05}, {"x": 1059.33, "y": 627.83, "navd88": 4.38}, {"x": 1143.34, "y": 521.71, "navd88": 4.15}, {"x": 1211.88, "y": 411.17, "navd88": 4.25}, {"x": 1183.14, "y": 389.06, "navd88": 4.75}, {"x": 1342.32, "y": 161.34, "navd88": 4.47}, {"x": 1318.0, "y": 148.07, "navd88": 4.97}, {"x": 807.29, "y": 696.37, "navd88": 4.3}, {"x": 836.03, "y": 762.7, "navd88": 3.85}, {"x": 820.55, "y": 773.75, "navd88": 4.19}, {"x": 862.56, "y": 663.21, "navd88": 3.91}, {"x": 871.4, "y": 641.1, "navd88": 4.49}, {"x": 513.24, "y": 477.49, "navd88": 4.03}, {"x": 522.08, "y": 448.75, "navd88": 4.64}, {"x": 592.83, "y": 661.0, "navd88": 4.52}];
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6"></script>
+    <script src="../../map-render.js"></script>
+    <script>
+      BarnacleMap.render({ canvas: document.getElementById('heatmap-canvas'), points: window.barnaclePoints, waterNavd88: 3.5070, baseMapUrl: '../../icons/map_raw.png', title: "Predicted water level \u2014 3.51 ft NAVD88 (SH 5.93 ft MLLW @ 2026-05-19 22:56)" });
+    </script>
+  </section>
+
+  <section class="scrubber-section">
+    <h2>Replay forecast evolution</h2>
+    <p class="note">Scrub through past predictions for this tide and see
+       how the heat-map (above) would have looked at each point. Loads
+       <a href="evolution.csv">evolution.csv</a> — HANDOFF 9b.4(c).</p>
+    <div class="scrubber-controls">
+      <button type="button" id="scrubber-play" aria-label="Play / pause">▶︎ Play</button>
+      <input type="range" id="scrubber-range" min="0" max="0" value="0" step="1" disabled>
+      <span id="scrubber-label" class="scrubber-label">Loading…</span>
+    </div>
+    <script>
+      (function() {
+        var btn = document.getElementById('scrubber-play');
+        var range = document.getElementById('scrubber-range');
+        var label = document.getElementById('scrubber-label');
+        var canvas = document.getElementById('heatmap-canvas');
+        if (!canvas) {
+          label.textContent = '(no heat-map to scrub)';
+          return;
+        }
+        var rows = [];
+        var playing = false;
+        var playTimer = null;
+        function fmtTime(iso) {
+          // iso like "2026-05-19T16:26:29Z"
+          var d = new Date(iso);
+          if (isNaN(d.getTime())) return iso;
+          return d.toLocaleString(undefined, {
+            month: 'numeric', day: 'numeric',
+            hour: 'numeric', minute: '2-digit'
+          });
+        }
+        function showStep(i) {
+          var r = rows[i];
+          if (!r) return;
+          var hu = parseFloat(r.hours_until_peak);
+          var huTxt = isNaN(hu) ? '' : (
+            ' (' + Math.abs(hu).toFixed(1) + ' h '
+            + (hu >= 0 ? 'before' : 'after') + ' peak)'
+          );
+          label.textContent = 'Predicted at ' + fmtTime(r.prediction_made_at) +
+            huTxt + ' — water ' +
+            parseFloat(r.water_navd88_predicted).toFixed(2) + ' ft NAVD88';
+          if (typeof BarnacleMap !== 'undefined') {
+            BarnacleMap.render({
+              canvas: canvas,
+              points: window.barnaclePoints,
+              waterNavd88: parseFloat(r.water_navd88_predicted),
+              baseMapUrl: '../../icons/map_raw.png',
+              title: 'As predicted at ' + fmtTime(r.prediction_made_at),
+            });
+          }
+        }
+        function setPlaying(p) {
+          playing = p;
+          btn.textContent = playing ? '⏸ Pause' : '▶︎ Play';
+          if (playing) {
+            playTimer = setInterval(function() {
+              var next = parseInt(range.value, 10) + 1;
+              if (next > parseInt(range.max, 10)) next = 0;
+              range.value = next;
+              showStep(next);
+            }, 800);
+          } else if (playTimer) {
+            clearInterval(playTimer);
+            playTimer = null;
+          }
+        }
+        btn.addEventListener('click', function() {
+          if (rows.length < 2) return;
+          setPlaying(!playing);
+        });
+        range.addEventListener('input', function() {
+          if (playing) setPlaying(false);
+          showStep(parseInt(range.value, 10));
+        });
+        fetch('evolution.csv').then(function(r) {
+          if (!r.ok) throw new Error('no evolution.csv yet');
+          return r.text();
+        }).then(function(text) {
+          var lines = text.trim().split('\n');
+          if (lines.length < 2) {
+            label.textContent = 'No prediction history yet. Fills in '
+              + 'as the hourly workflow logs predictions.';
+            return;
+          }
+          var headers = lines[0].split(',');
+          var idx = {};
+          headers.forEach(function(h, i) { idx[h] = i; });
+          for (var i = 1; i < lines.length; i++) {
+            var cols = lines[i].split(',');
+            rows.push({
+              prediction_made_at: cols[idx['prediction_made_at']],
+              target_tide_time:   cols[idx['target_tide_time']],
+              hours_until_peak:   cols[idx['hours_until_peak']],
+              sh_peak_mllw_predicted:
+                cols[idx['sh_peak_mllw_predicted']],
+              water_navd88_predicted:
+                cols[idx['water_navd88_predicted']],
+            });
+          }
+          if (rows.length < 2) {
+            label.textContent = 'Only one prediction logged so far. '
+              + 'Slider unlocks at ≥2 predictions.';
+            return;
+          }
+          range.disabled = false;
+          range.min = '0';
+          range.max = String(rows.length - 1);
+          range.value = String(rows.length - 1);  // start at the latest
+          showStep(rows.length - 1);
+        }).catch(function(e) {
+          label.textContent = 'No evolution data yet (' + e.message + ').';
+        });
+      })();
+    </script>
+  </section>
+
   <section class="landmarks">
     <h2>Predicted depths at landmarks</h2>
     <table class="landmark-table">
