@@ -2352,6 +2352,186 @@ Coastal Flood Statement directly.
     return subject, text, html
 
 
+def _tide_slug(tide_time_str):
+    """Convert a NOAA tide time string ('YYYY-MM-DD HH:MM') to a
+    filesystem-safe slug ('YYYY-MM-DDTHH-MM') for per-tide page paths.
+    Returns empty string for unparseable input.
+
+    HANDOFF 9b.2 — each upcoming high tide gets a deep-link page at
+    `docs/tides/<slug>/`."""
+    if not tide_time_str:
+        return ""
+    try:
+        # Normalize whitespace; drop seconds if present.
+        s = tide_time_str.strip()[:16]
+        # Expected shape: "YYYY-MM-DD HH:MM"
+        if " " in s:
+            date_part, time_part = s.split(" ", 1)
+        elif "T" in s:
+            date_part, time_part = s.split("T", 1)
+        else:
+            return ""
+        return f"{date_part}T{time_part.replace(':', '-')}"
+    except Exception:
+        return ""
+
+
+def write_per_tide_pages(forecast, docs_root):
+    """Write per-tide deep-link pages for each upcoming high tide.
+
+    For each tide in forecast["all_tides"] generates:
+      docs/tides/<slug>/index.html      static snapshot
+      docs/tides/<slug>/forecast.json   the tide's prediction object
+      docs/tides/<slug>/evolution.csv   slice of data/predictions_log.csv
+
+    HANDOFF 9b.2. Per-tide pages are generated eagerly for upcoming
+    tides (lazy generation can come later if maintenance burden grows).
+    """
+    tides_root = os.path.join(docs_root, "tides")
+    os.makedirs(tides_root, exist_ok=True)
+    n_written = 0
+    for tide in forecast.get("all_tides") or []:
+        slug = _tide_slug(tide.get("time", ""))
+        if not slug:
+            continue
+        tide_dir = os.path.join(tides_root, slug)
+        os.makedirs(tide_dir, exist_ok=True)
+
+        # forecast.json — this tide's prediction object
+        with open(os.path.join(tide_dir, "forecast.json"), "w") as f:
+            json.dump(tide, f, indent=2, default=str)
+
+        # evolution.csv — filter predictions_log.csv to this tide's
+        # target_tide_time. Append-only-of-a-derived-view: we overwrite
+        # this file on each run since predictions_log.csv is the source.
+        evo_path = os.path.join(tide_dir, "evolution.csv")
+        if os.path.exists(PREDICTIONS_LOG_PATH):
+            try:
+                target_time = tide.get("time", "")
+                rows = []
+                with open(PREDICTIONS_LOG_PATH) as src:
+                    reader = csv.DictReader(src)
+                    for row in reader:
+                        if row.get("target_tide_time") == target_time:
+                            rows.append(row)
+                if rows:
+                    with open(evo_path, "w", newline="") as out:
+                        writer = csv.DictWriter(out,
+                            fieldnames=PREDICTIONS_LOG_FIELDS)
+                        writer.writeheader()
+                        for row in rows:
+                            writer.writerow(row)
+                elif os.path.exists(evo_path):
+                    # No matching rows yet; leave existing file alone
+                    pass
+            except Exception as e:
+                print(f"WARNING: evolution.csv write failed for {slug}: {e}",
+                      flush=True)
+
+        # index.html — static per-tide snapshot
+        with open(os.path.join(tide_dir, "index.html"), "w") as f:
+            f.write(render_per_tide_page(tide, forecast))
+        n_written += 1
+
+    if n_written:
+        print(f"Wrote {n_written} per-tide page(s) under {tides_root}")
+
+
+def render_per_tide_page(tide, forecast):
+    """Render a single per-tide deep-link HTML page. Focuses on ONE tide:
+    its predicted peak, surge breakdown, depths at landmarks, link to
+    evolution.csv (the per-tide slice of the master predictions log).
+
+    The page is at docs/tides/<slug>/index.html so it's two levels deep
+    from the repo root — all asset paths get a "../../" prefix.
+
+    HANDOFF 9b.2."""
+    td = tide["depths_in"]
+    regime = td["regime"]
+    time_str = tide["time"]
+    short, above_in, rel_in = landmark_summary(td, tide["forecast_peak_mllw"])
+
+    # Landmark rows
+    rows = ""
+    for key, label, elev, sh in LANDMARKS:
+        depth = td.get(key, 0.0) or 0.0
+        wet = depth > 0
+        row_cls = ' class="wet"' if wet else ""
+        rows += (
+            f'<tr{row_cls}>'
+            f'<td>{label}</td>'
+            f'<td>{elev:.2f}</td>'
+            f'<td>{sh:.2f}</td>'
+            f'<td>{depth:+.1f}&Prime;</td>'
+            f'</tr>'
+        )
+
+    return f"""\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tide {time_str} — Bay Ave Barnacle</title>
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>High tide @ {format_time_full(time_str)}</h1>
+    <p class="subtitle"><a href="../../">&larr; Back to today's forecast</a></p>
+  </header>
+
+  <section class="regime regime-{regime}">
+    <div class="regime-label">{regime.upper()}</div>
+    <div class="regime-summary">{REGIME_GLOSSARY.get(regime, '')}.
+       Peak forecast: <b>{tide['forecast_peak_mllw']:.2f} ft MLLW</b> Sandy Hook.</div>
+  </section>
+
+  <section class="forecast">
+    <h2>This tide</h2>
+    <dl>
+      <dt>High tide time</dt><dd>{format_time_full(time_str)}</dd>
+      <dt>Predicted tide (astronomical)</dt><dd>{tide['predicted_mllw']:.2f} ft MLLW</dd>
+      <dt>Surge</dt><dd>{tide['surge_ft']:+.2f} ft</dd>
+      <dt>Forecast peak (tide + surge)</dt><dd>{tide['forecast_peak_mllw']:.2f} ft MLLW</dd>
+      <dt>Surge source</dt><dd>{tide.get('source', '')}</dd>
+      <dt>Peak rainfall in ±90 min window</dt><dd>{(tide.get('peak_rain_in_hr') or 0):.2f} in/hr</dd>
+      <dt>Highest landmark reached</dt><dd>{short} ({above_in:+.1f}&Prime; above; {rel_in:+.1f}&Prime; rel to lowest landmark)</dd>
+    </dl>
+  </section>
+
+  <section class="landmarks">
+    <h2>Predicted depths at landmarks</h2>
+    <table class="landmark-table">
+      <thead><tr><th>Landmark</th><th>NAVD88</th><th>SH threshold (MLLW)</th><th>Predicted depth</th></tr></thead>
+      <tbody>{rows}</tbody>
+    </table>
+    <p class="note">Depth is the height of water above each landmark
+       elevation, in inches. Negative = water below this landmark.</p>
+  </section>
+
+  <section class="evolution">
+    <h2>Prediction evolution</h2>
+    <p>How the forecast for this tide has evolved over time:
+       <a href="evolution.csv">evolution.csv</a> — a slice of the
+       <a href="https://github.com/JohnUrban/barnacle/blob/main/data/predictions_log.csv">master
+       predictions log</a> filtered to this tide's target time. HANDOFF 9b.4(a)
+       will eventually render this as a per-tide convergence plot.</p>
+  </section>
+
+  <footer>
+    <p><a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a></p>
+    <p style="font-size:11px;color:#888">Per-tide page generated by the
+       daily/hourly workflow. Snapshot of one forecast event; the full
+       picture lives on the <a href="../../">home page</a>.</p>
+  </footer>
+</main>
+</body>
+</html>
+"""
+
+
 def render_html_page(forecast, map_url=None):
     """
     Standalone HTML page for GitHub Pages publication.
@@ -2384,16 +2564,28 @@ def render_html_page(forecast, map_url=None):
             '  </section>\n'
         )
 
-    # Build the all-tides table rows (new column layout)
+    # Build the all-tides table rows (new column layout). Each row carries:
+    #  - regime class for severity-colored backgrounds (HANDOFF 9b.2)
+    #  - worst-tide class on the headlined row
+    #  - link to per-tide deep page (docs/tides/<slug>/) — HANDOFF 9b.2
     tide_rows = ""
     for t in all_tides:
         td = t["depths_in"]
         is_worst = (t["time"] == peak_t)
-        row_class = ' class="worst-tide"' if is_worst else ""
+        regime_class = f"regime-{td['regime']}"
+        classes = ["tide-row", regime_class]
+        if is_worst:
+            classes.append("worst-tide")
+        row_class = f' class="{" ".join(classes)}"'
         short, above_in, rel_in = landmark_summary(td, t["forecast_peak_mllw"])
+        slug = _tide_slug(t["time"])
+        time_cell = (
+            f'<a href="tides/{slug}/">{format_time_full(t["time"])}</a>'
+            if slug else format_time_full(t["time"])
+        )
         tide_rows += (
             f'<tr{row_class}>'
-            f'<td>{format_time_full(t["time"])}</td>'
+            f'<td>{time_cell}</td>'
             f'<td>{t["predicted_mllw"]:.2f}</td>'
             f'<td>{t["surge_ft"]:+.2f}</td>'
             f'<td><b>{t["forecast_peak_mllw"]:.2f}</b></td>'
@@ -2678,6 +2870,15 @@ def main():
         with open(out_path, "w") as f:
             f.write(page_html)
         print(f"Wrote HTML: {args.write_html}")
+
+        # Generate per-tide deep-link pages (HANDOFF 9b.2). Each upcoming
+        # tide gets docs/tides/<slug>/{index.html,forecast.json,evolution.csv}.
+        # Wrapped: a per-tide-page failure must not break the daily run.
+        try:
+            docs_root = os.path.dirname(out_path)
+            write_per_tide_pages(forecast, docs_root)
+        except Exception as e:
+            print(f"WARNING: write_per_tide_pages failed: {e}", flush=True)
 
     # Write JSON archive if requested
     if args.write_json:

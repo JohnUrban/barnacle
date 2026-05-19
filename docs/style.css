@@ -335,14 +335,41 @@ section.low-tides h2 {
     color: #485a73;
 }
 
-/* Highlight the worst-case tide row in the all-tides table */
+/* Tide-table row severity bands by regime (HANDOFF 9b.2).
+   The .regime-* classes are also used by the regime banner — same colors
+   so the rollup table reads as a preview of the regime banner. */
+.tide-table tr.tide-row.regime-dry          { background: #f1f8f4; }
+.tide-table tr.tide-row.regime-street       { background: #eaf3fb; }
+.tide-table tr.tide-row.regime-light        { background: #fff8e1; }
+.tide-table tr.tide-row.regime-moderate     { background: #ffe0b2; }
+.tide-table tr.tide-row.regime-severe       { background: #ffcdd2; font-weight: 600; }
+.tide-table tr.tide-row.regime-cold_lockout { background: #eceff1; }
+
+/* Highlight the worst-case tide row — stronger emphasis on top of the
+   regime band, so reader's eye lands here first. */
 .tide-table .worst-tide {
-    background: #fff7d6;
-    font-weight: 500;
+    box-shadow: inset 3px 0 0 #d97706;
+    font-weight: 600;
 }
 .tide-table .worst-tide td:first-child::before {
     content: "★ ";
     color: #d97706;
+}
+
+/* Per-tide deep links from the rollup table */
+.tide-table .tide-row a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dotted rgba(0,0,0,0.25);
+}
+.tide-table .tide-row a:hover {
+    border-bottom-style: solid;
+}
+
+/* Per-tide page (docs/tides/<slug>/index.html) — wet landmark rows */
+.landmark-table tr.wet {
+    background: #fde7e7;
+    font-weight: 500;
 }
 
 .archive-list {
