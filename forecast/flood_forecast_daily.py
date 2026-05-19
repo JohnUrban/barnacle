@@ -3056,6 +3056,124 @@ def render_per_tide_page(tide, forecast):
   </section>
 
 {tide_heatmap_section}
+  <section class="scrubber-section">
+    <h2>Replay forecast evolution</h2>
+    <p class="note">Scrub through past predictions for this tide and see
+       how the heat-map (above) would have looked at each point. Loads
+       <a href="evolution.csv">evolution.csv</a> — HANDOFF 9b.4(c).</p>
+    <div class="scrubber-controls">
+      <button type="button" id="scrubber-play" aria-label="Play / pause">▶︎ Play</button>
+      <input type="range" id="scrubber-range" min="0" max="0" value="0" step="1" disabled>
+      <span id="scrubber-label" class="scrubber-label">Loading…</span>
+    </div>
+    <script>
+      (function() {{
+        var btn = document.getElementById('scrubber-play');
+        var range = document.getElementById('scrubber-range');
+        var label = document.getElementById('scrubber-label');
+        var canvas = document.getElementById('heatmap-canvas');
+        if (!canvas) {{
+          label.textContent = '(no heat-map to scrub)';
+          return;
+        }}
+        var rows = [];
+        var playing = false;
+        var playTimer = null;
+        function fmtTime(iso) {{
+          // iso like "2026-05-19T16:26:29Z"
+          var d = new Date(iso);
+          if (isNaN(d.getTime())) return iso;
+          return d.toLocaleString(undefined, {{
+            month: 'numeric', day: 'numeric',
+            hour: 'numeric', minute: '2-digit'
+          }});
+        }}
+        function showStep(i) {{
+          var r = rows[i];
+          if (!r) return;
+          var hu = parseFloat(r.hours_until_peak);
+          var huTxt = isNaN(hu) ? '' : (
+            ' (' + Math.abs(hu).toFixed(1) + ' h '
+            + (hu >= 0 ? 'before' : 'after') + ' peak)'
+          );
+          label.textContent = 'Predicted at ' + fmtTime(r.prediction_made_at) +
+            huTxt + ' — water ' +
+            parseFloat(r.water_navd88_predicted).toFixed(2) + ' ft NAVD88';
+          if (typeof BarnacleMap !== 'undefined') {{
+            BarnacleMap.render({{
+              canvas: canvas,
+              points: window.barnaclePoints,
+              waterNavd88: parseFloat(r.water_navd88_predicted),
+              baseMapUrl: '../../icons/map_raw.png',
+              title: 'As predicted at ' + fmtTime(r.prediction_made_at),
+            }});
+          }}
+        }}
+        function setPlaying(p) {{
+          playing = p;
+          btn.textContent = playing ? '⏸ Pause' : '▶︎ Play';
+          if (playing) {{
+            playTimer = setInterval(function() {{
+              var next = parseInt(range.value, 10) + 1;
+              if (next > parseInt(range.max, 10)) next = 0;
+              range.value = next;
+              showStep(next);
+            }}, 800);
+          }} else if (playTimer) {{
+            clearInterval(playTimer);
+            playTimer = null;
+          }}
+        }}
+        btn.addEventListener('click', function() {{
+          if (rows.length < 2) return;
+          setPlaying(!playing);
+        }});
+        range.addEventListener('input', function() {{
+          if (playing) setPlaying(false);
+          showStep(parseInt(range.value, 10));
+        }});
+        fetch('evolution.csv').then(function(r) {{
+          if (!r.ok) throw new Error('no evolution.csv yet');
+          return r.text();
+        }}).then(function(text) {{
+          var lines = text.trim().split('\\n');
+          if (lines.length < 2) {{
+            label.textContent = 'No prediction history yet. Fills in '
+              + 'as the hourly workflow logs predictions.';
+            return;
+          }}
+          var headers = lines[0].split(',');
+          var idx = {{}};
+          headers.forEach(function(h, i) {{ idx[h] = i; }});
+          for (var i = 1; i < lines.length; i++) {{
+            var cols = lines[i].split(',');
+            rows.push({{
+              prediction_made_at: cols[idx['prediction_made_at']],
+              target_tide_time:   cols[idx['target_tide_time']],
+              hours_until_peak:   cols[idx['hours_until_peak']],
+              sh_peak_mllw_predicted:
+                cols[idx['sh_peak_mllw_predicted']],
+              water_navd88_predicted:
+                cols[idx['water_navd88_predicted']],
+            }});
+          }}
+          if (rows.length < 2) {{
+            label.textContent = 'Only one prediction logged so far. '
+              + 'Slider unlocks at ≥2 predictions.';
+            return;
+          }}
+          range.disabled = false;
+          range.min = '0';
+          range.max = String(rows.length - 1);
+          range.value = String(rows.length - 1);  // start at the latest
+          showStep(rows.length - 1);
+        }}).catch(function(e) {{
+          label.textContent = 'No evolution data yet (' + e.message + ').';
+        }});
+      }})();
+    </script>
+  </section>
+
   <section class="landmarks">
     <h2>Predicted depths at landmarks</h2>
     <table class="landmark-table">
