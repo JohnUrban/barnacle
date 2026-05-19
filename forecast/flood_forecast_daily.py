@@ -100,13 +100,22 @@ def _get(url, params=None, headers=None):
         return json.loads(r.read())
 
 
+# Rollup window: how far into the future to include high tides in the
+# main "upcoming tides" rollup table. Increased from 24h → 72h (HANDOFF
+# 9b.2 part 2). The home page renders all rows; a JS toggle filters by
+# lead-time band (24/48/72h).
+ROLLUP_WINDOW_HOURS = 72
+
+
 def fetch_tides_24h():
     """Returns dict with 'high' and 'low' lists of (time_str, value_mllw_ft)
-    for each tide in the next 24h. Uses NOAA's hilo product which gives
-    exact tide times rather than hourly samples. Typically returns ~2
-    entries in each list (~12.5h apart)."""
+    for tides in the next ROLLUP_WINDOW_HOURS (currently 72h). The "24h"
+    in the name is retained for backwards-compat with the rest of the
+    code; the function now fetches a 72h window so the rollup table can
+    show 2-3 days ahead with a JS toggle (HANDOFF 9b.2 part 2). Uses
+    NOAA's hilo product for exact tide times."""
     now = dt.datetime.now(dt.timezone.utc)
-    end = now + dt.timedelta(hours=24)
+    end = now + dt.timedelta(hours=ROLLUP_WINDOW_HOURS)
     data = _get(
         "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
         {
@@ -1121,6 +1130,19 @@ def build_forecast():
         # Depth at landmarks for this tide
         depths = predict_landmark_depths(forecast_peak, peak_rain_rate, cold)
 
+        # Hours from "now" to this tide's peak (positive = future, negative
+        # = already passed). Used by the JS duration toggle (HANDOFF 9b.2
+        # part 2) to hide rows past the user-selected window.
+        hours_from_now = None
+        if peak_dt is not None:
+            now_utc = dt.datetime.now(dt.timezone.utc)
+            try:
+                hours_from_now = (
+                    peak_dt - now_utc.replace(tzinfo=peak_dt.tzinfo)
+                ).total_seconds() / 3600.0
+            except Exception:
+                hours_from_now = None
+
         all_tides.append({
             "time": tide_time,
             "predicted_mllw": tide_pred,
@@ -1131,6 +1153,7 @@ def build_forecast():
             "rain_window_3h": sorted(rain_window),  # (offset_h, in/hr) pairs
             "source": source,
             "depths_in": depths,
+            "hours_from_now": hours_from_now,
         })
 
     # Identify the worst-case high tide for headline / subject line
@@ -3039,6 +3062,8 @@ def render_html_page(forecast, map_url=None, map_url_no_rain=None):
     #  - regime class for severity-colored backgrounds (HANDOFF 9b.2)
     #  - worst-tide class on the headlined row
     #  - link to per-tide deep page (docs/tides/<slug>/) — HANDOFF 9b.2
+    #  - data-hours-from-now attribute for the JS duration toggle
+    #    (HANDOFF 9b.2 part 2)
     tide_rows = ""
     for t in all_tides:
         td = t["depths_in"]
@@ -3048,6 +3073,8 @@ def render_html_page(forecast, map_url=None, map_url_no_rain=None):
         if is_worst:
             classes.append("worst-tide")
         row_class = f' class="{" ".join(classes)}"'
+        hours = t.get("hours_from_now")
+        data_attr = f' data-hours-from-now="{hours:.2f}"' if hours is not None else ""
         short, above_in, rel_in = landmark_summary(td, t["forecast_peak_mllw"])
         slug = _tide_slug(t["time"])
         time_cell = (
@@ -3055,7 +3082,7 @@ def render_html_page(forecast, map_url=None, map_url_no_rain=None):
             if slug else format_time_full(t["time"])
         )
         tide_rows += (
-            f'<tr{row_class}>'
+            f'<tr{row_class}{data_attr}>'
             f'<td>{time_cell}</td>'
             f'<td>{t["predicted_mllw"]:.2f}</td>'
             f'<td>{t["surge_ft"]:+.2f}</td>'
@@ -3101,14 +3128,41 @@ def render_html_page(forecast, map_url=None, map_url_no_rain=None):
   </section>
 
   <section class="tides">
-    <h2>High tides in next 24h</h2>
+    <h2>Upcoming high tides</h2>
+    <div class="duration-toggle">
+      Show:
+      <label><input type="radio" name="duration" value="24"> 24h</label>
+      <label><input type="radio" name="duration" value="48"> 48h</label>
+      <label><input type="radio" name="duration" value="72" checked> 72h</label>
+    </div>
     <table class="tide-table">
       <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th></tr></thead>
       <tbody>{tide_rows}</tbody>
     </table>
     <p class="note">Highlighted row is the worst case headlined above.
        <b>Above</b> = inches above the highest exceeded landmark (negative if water below the lowest landmark).
-       <b>Rel</b> = inches above the lowest landmark (lowest road corner, 3.64 NAVD88) — always.</p>
+       <b>Rel</b> = inches above the lowest landmark (lowest road corner, 3.64 NAVD88) — always.
+       Surge persistence is increasingly unreliable for tides beyond ~24h out
+       — use the longer windows for planning, not for trust.</p>
+    <script>
+      (function() {{
+        var radios = document.querySelectorAll('input[name="duration"]');
+        function applyFilter(hours) {{
+          var rows = document.querySelectorAll('.tide-table tbody tr.tide-row');
+          rows.forEach(function(tr) {{
+            var h = parseFloat(tr.getAttribute('data-hours-from-now'));
+            tr.style.display = (isNaN(h) || h <= hours) ? '' : 'none';
+          }});
+        }}
+        radios.forEach(function(r) {{
+          r.addEventListener('change', function() {{
+            applyFilter(parseFloat(r.value));
+          }});
+        }});
+        // Apply the default (72) on load
+        applyFilter(72);
+      }})();
+    </script>
   </section>
 
   <section class="forecast">
