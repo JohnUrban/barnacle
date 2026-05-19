@@ -191,11 +191,19 @@ water can only reach the pocket *after* it has overflowed the grate.
 So the pocket is a **post-overflow retention indicator**, not a
 sub-3.60 sentinel for water arrival.
 
-**Retention duration is long.** User confirmed 2026-05-19 09:33 (≥11
-hours after the 22:12 peak the night before) that water was still
-present in the pocket, with no rain and minimal solar drying through
-the early morning. Likely persists 12+ hours from an evening tide.
-This matters because:
+**Retention duration is long.** Three data points the morning after:
+
+| Time (EDT) | Type | NOAA SH (MLLW) | Pocket state |
+|---|---|---:|---|
+| 07:51:50 | photo (`pocket-SE-retention/2026-05-19/barnacle_20250519 - 1.jpeg`) | 2.85 | water clearly present |
+| 08:09:12 | photo (`barnacle_20250519 - 2.jpeg`) — pocket + SE grate in one frame | 3.22 | water present; grate visibly sub-flush (textbook disambiguation example) |
+| 09:33     | visual (drive-by) | 4.81 | "healthy amount" of water still present |
+
+All three timestamps are still 1-3 ft below the grate_SE threshold
+(SH 6.02 MLLW), so pocket water is purely residual from the prior
+22:12 peak — not from the (still-rising) morning tide. **≥11.4 h
+retention with no rain and only modest solar drying.** Likely
+persists 12+ hours from an evening tide. This matters because:
 
 > **Spot-check methodology implication:** leftover pocket water
 > from a *prior* tide can mislead an observer arriving for a
