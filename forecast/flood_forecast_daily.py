@@ -3169,10 +3169,16 @@ def write_per_tide_pages(forecast, docs_root):
     tides_root = os.path.join(docs_root, "tides")
     os.makedirs(tides_root, exist_ok=True)
     n_written = 0
-    for tide in forecast.get("all_tides") or []:
-        slug = _tide_slug(tide.get("time", ""))
-        if not slug:
-            continue
+    # Build (slug, time) for every tide first so we can pass prev/next
+    # context into the renderer (HANDOFF 9b.2 — per-tide nav, "T").
+    all_tides_in_order = forecast.get("all_tides") or []
+    slugs = [(t, _tide_slug(t.get("time", ""))) for t in all_tides_in_order]
+    slugs = [(t, s) for (t, s) in slugs if s]
+    for i, (tide, slug) in enumerate(slugs):
+        prev_slug = slugs[i - 1][1] if i > 0 else None
+        next_slug = slugs[i + 1][1] if i < len(slugs) - 1 else None
+        prev_time = slugs[i - 1][0]["time"] if i > 0 else None
+        next_time = slugs[i + 1][0]["time"] if i < len(slugs) - 1 else None
         tide_dir = os.path.join(tides_root, slug)
         os.makedirs(tide_dir, exist_ok=True)
 
@@ -3209,17 +3215,28 @@ def write_per_tide_pages(forecast, docs_root):
 
         # index.html — static per-tide snapshot
         with open(os.path.join(tide_dir, "index.html"), "w") as f:
-            f.write(render_per_tide_page(tide, forecast))
+            f.write(render_per_tide_page(
+                tide, forecast,
+                prev_slug=prev_slug, prev_time=prev_time,
+                next_slug=next_slug, next_time=next_time,
+            ))
         n_written += 1
 
     if n_written:
         print(f"Wrote {n_written} per-tide page(s) under {tides_root}")
 
 
-def render_per_tide_page(tide, forecast):
+def render_per_tide_page(tide, forecast,
+                          prev_slug=None, prev_time=None,
+                          next_slug=None, next_time=None):
     """Render a single per-tide deep-link HTML page. Focuses on ONE tide:
     its predicted peak, surge breakdown, depths at landmarks, link to
     evolution.csv (the per-tide slice of the master predictions log).
+
+    `prev_slug` / `next_slug` (with `prev_time` / `next_time` for the
+    link labels) wire up "← prev tide / next tide →" navigation in the
+    page header so users can walk through upcoming tides without going
+    back to the home page (HANDOFF 9b.2 — "T" in the solo-work backlog).
 
     The page is at docs/tides/<slug>/index.html so it's two levels deep
     from the repo root — all asset paths get a "../../" prefix.
@@ -3229,6 +3246,16 @@ def render_per_tide_page(tide, forecast):
     regime = td["regime"]
     time_str = tide["time"]
     short, above_in, rel_in = landmark_summary(td, tide["forecast_peak_mllw"])
+
+    # Prev / next tide navigation (HANDOFF 9b.2 — "T" in solo backlog).
+    prev_link = (
+        f'<a href="../{prev_slug}/">&larr; {format_time_full(prev_time)}</a>'
+        if prev_slug and prev_time else '<span class="nav-disabled">&larr; —</span>'
+    )
+    next_link = (
+        f'<a href="../{next_slug}/">{format_time_full(next_time)} &rarr;</a>'
+        if next_slug and next_time else '<span class="nav-disabled">— &rarr;</span>'
+    )
 
     # Per-tide heat-map: build a fake "forecast" with this tide as the
     # worst-case so _client_map_section_html renders for THIS tide's
@@ -3275,6 +3302,10 @@ def render_per_tide_page(tide, forecast):
   <header>
     <h1>High tide @ {format_time_full(time_str)}</h1>
     <p class="subtitle"><a href="../../">&larr; Back to today's forecast</a></p>
+    <nav class="tide-nav">
+      <span class="tide-nav-prev">{prev_link}</span>
+      <span class="tide-nav-next">{next_link}</span>
+    </nav>
   </header>
 
   <section class="regime regime-{regime}">
