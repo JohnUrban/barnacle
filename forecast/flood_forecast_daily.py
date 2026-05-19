@@ -1081,6 +1081,47 @@ def build_forecast():
     }
 
 
+def _confidence_uncertainty_ft(level):
+    """Estimated ±uncertainty in SH peak MLLW (ft) for each confidence
+    level. Rough heuristic — should eventually be data-driven from
+    `data/predictions_log.csv` joined to observed peaks (9b.8).
+
+    Used by 9b.6 confidence refinement to translate the abstract
+    "LOW confidence" badge into a concrete "peak ± X ft" range that
+    can be propagated to a regime band.
+    """
+    return {
+        "high":   0.10,
+        "medium": 0.30,
+        "low":    0.50,
+    }.get(level, 0.30)
+
+
+def _compute_regime_band(forecast, uncertainty_ft):
+    """Given the worst-tide forecast and a ±uncertainty in SH peak MLLW,
+    return (lo_regime, hi_regime) — the regime range that results when
+    the peak slides within ±uncertainty.
+
+    Returns None when both bounds resolve to the same regime (no
+    useful band to display).
+    """
+    peak = forecast.get("peak_forecast_observed_mllw")
+    if peak is None or uncertainty_ft <= 0:
+        return None
+    cold = bool(forecast.get("cold_lockout", False))
+    rain = forecast.get("peak_rain_rate_in_hr", 0.0) or 0.0
+    lo_peak = max(0.0, peak - uncertainty_ft)
+    hi_peak = peak + uncertainty_ft
+    try:
+        lo_regime = predict_landmark_depths(lo_peak, rain, cold).get("regime")
+        hi_regime = predict_landmark_depths(hi_peak, rain, cold).get("regime")
+    except Exception:
+        return None
+    if not lo_regime or not hi_regime or lo_regime == hi_regime:
+        return None
+    return (lo_regime, hi_regime)
+
+
 def _attach_summary_and_confidence(forecast):
     """Compute plain-language summary + confidence + unusual-forecast flag
     + forecast-accuracy summary after the forecast dict is otherwise
@@ -1088,6 +1129,10 @@ def _attach_summary_and_confidence(forecast):
     level, reason = assess_confidence(forecast)
     forecast["confidence_level"] = level
     forecast["confidence_reason"] = reason
+    forecast["confidence_uncertainty_ft"] = _confidence_uncertainty_ft(level)
+    forecast["confidence_regime_band"] = _compute_regime_band(
+        forecast, forecast["confidence_uncertainty_ft"]
+    )
     forecast["plain_language_summary"] = plain_language_summary(forecast)
     # Unusual-forecast flag (HANDOFF 16e): where does today's peak sit in
     # the 1996-2025 distribution of daily peaks for this calendar month?
@@ -1121,6 +1166,40 @@ def _unusual_forecast_text(forecast):
             f"of historical daily peaks for {month_name} (1996-2025).")
 
 
+def _confidence_qualifier_sentences(forecast):
+    """Build the second-and-third clauses for the confidence line:
+    (1) what the confidence is *about* (peak magnitude, ± uncertainty)
+    (2) the regime range that uncertainty implies, when non-trivial.
+
+    Returns a list of plain strings (no markup). Empty list when there's
+    nothing meaningful to add (high confidence, or cold lockout, or
+    insufficient data).
+
+    Addresses HANDOFF 9b.6 — the user pointed out that "Confidence: LOW"
+    on a DRY day is ambiguous without spelling out *what* is uncertain.
+    """
+    level = forecast.get("confidence_level") or ""
+    if level == "high":
+        return []
+    peak = forecast.get("peak_forecast_observed_mllw")
+    unc = forecast.get("confidence_uncertainty_ft")
+    if peak is None or not unc:
+        return []
+    out = [
+        f"This is uncertainty about the peak Sandy Hook level "
+        f"({peak:.2f} ft MLLW), which could land within roughly "
+        f"±{unc:.1f} ft of the forecast."
+    ]
+    band = forecast.get("confidence_regime_band")
+    if band:
+        lo, hi = band
+        out.append(
+            f"Depending on which way it resolves, the regime could be "
+            f"anywhere from {lo.upper()} to {hi.upper()}."
+        )
+    return out
+
+
 def _render_summary_text(forecast):
     """One-line plain-language summary, plus confidence + unusual-forecast
     note (when applicable) on their own lines."""
@@ -1131,7 +1210,11 @@ def _render_summary_text(forecast):
     level = forecast.get("confidence_level")
     reason = forecast.get("confidence_reason") or ""
     if level:
+        # Primary line: badge + reason
         out.append(f"Confidence: {level.upper()} — {reason}")
+        # Augment lines for non-high confidence (HANDOFF 9b.6)
+        for extra in _confidence_qualifier_sentences(forecast):
+            out.append(f"  {extra}")
     unusual = _unusual_forecast_text(forecast)
     if unusual:
         out.append(unusual)
@@ -1151,11 +1234,17 @@ def _render_summary_html(forecast):
     if summary:
         parts.append(f'<p class="tldr-summary">{summary}</p>')
     if level:
-        parts.append(
+        # Primary confidence line: badge + reason
+        confidence_html = (
             f'<p class="tldr-confidence confidence-{level}">'
             f'<b>Confidence: {level.upper()}</b> &mdash; '
-            f'<span>{reason}</span></p>'
+            f'<span>{reason}</span>'
         )
+        # Augment with qualifier sentences for non-high confidence (9b.6)
+        for extra in _confidence_qualifier_sentences(forecast):
+            confidence_html += f'<br><span class="confidence-qualifier">{extra}</span>'
+        confidence_html += "</p>"
+        parts.append(confidence_html)
     if unusual:
         parts.append(f'<p class="tldr-unusual">{unusual}</p>')
     parts.append('</section>')
