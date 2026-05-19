@@ -1463,27 +1463,157 @@ def _render_accuracy_text(forecast):
     )]
 
 
+def _load_accuracy_rows():
+    """Load all rows from data/forecast_accuracy.csv with parsed numeric
+    values. Used by the accuracy chart on the home page (HANDOFF 9b.8)."""
+    if not os.path.exists(ACCURACY_CSV_PATH):
+        return []
+    rows = []
+    try:
+        with open(ACCURACY_CSV_PATH) as f:
+            for r in csv.DictReader(f):
+                try:
+                    rows.append({
+                        "date":      r.get("forecast_run_date", ""),
+                        "predicted": float(r["forecast_peak_predicted_mllw"]),
+                        "observed":  float(r["actual_peak_observed_mllw"]),
+                        "error":     float(r["mllw_error_ft"]),
+                        "regime":    r.get("forecast_regime", ""),
+                    })
+                except (TypeError, ValueError, KeyError):
+                    continue
+    except OSError:
+        return []
+    return rows
+
+
 def _render_accuracy_html(forecast):
-    """HTML one-line model accuracy summary, or empty string."""
+    """HTML accuracy section: text summary + scatter chart of
+    predicted vs observed SH peaks (HANDOFF 9b.8 mode 1 — peak-magnitude
+    accuracy). Empty string when no scored forecasts yet."""
     a = forecast.get("accuracy_summary") or {}
     n = a.get("n_scored_recent") or 0
     if n == 0:
         return ""
-    return (
-        '<section class="accuracy">'
-        '<h2>Model accuracy</h2>'
+
+    summary_html = (
         f'<p>Last {n} forecasts: mean error '
         f'<b>{a["mean_error_ft"]:+.2f} ft</b>, '
         f'mean |error| <b>{a["mean_abs_error_ft"]:.2f} ft</b>, '
         f'worst |error| {a["max_abs_error_ft"]:.2f} ft. '
         f'Total scored: {a["n_scored_total"]}.</p>'
-        '<p class="note">Positive mean error = model over-predicts on '
-        'average. Computed by comparing each archived forecast\'s '
-        'peak prediction to the actual NOAA observed peak in a '
-        '±2 h window around the predicted time. See '
-        '<code>data/forecast_accuracy.csv</code> for the raw log.</p>'
-        '</section>'
     )
+    note_html = (
+        '<p class="note">Positive mean error = model over-predicts on '
+        'average. Each point is one archived daily forecast (since the '
+        'JSON archive started). x = predicted Sandy Hook peak, y = '
+        'actual NOAA observed peak. The dashed diagonal is perfect '
+        'prediction (y=x); points above the line = model under-predicted, '
+        'below = over-predicted. Raw data: '
+        '<code>data/forecast_accuracy.csv</code>.</p>'
+    )
+
+    rows = _load_accuracy_rows()
+    if len(rows) < 2:
+        # Not enough data for a chart yet — just the text summary
+        return (
+            '<section class="accuracy">'
+            '<h2>Model accuracy</h2>'
+            f'{summary_html}'
+            f'{note_html}'
+            '</section>'
+        )
+
+    # Bounds for the chart axes — include the y=x line range
+    all_vals = []
+    for r in rows:
+        all_vals.append(r["predicted"])
+        all_vals.append(r["observed"])
+    lo = min(all_vals) - 0.1
+    hi = max(all_vals) + 0.1
+
+    rows_json = json.dumps(rows)
+    return f"""
+<section class="accuracy">
+  <h2>Model accuracy — predicted vs observed peaks</h2>
+  {summary_html}
+  <canvas id="accuracy-chart" width="800" height="380"
+          style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <script>
+    (function() {{
+      var rows = {rows_json};
+      var lo = {lo:.2f};
+      var hi = {hi:.2f};
+      var data = rows.map(function(r) {{
+        return {{ x: r.predicted, y: r.observed, date: r.date,
+                  error: r.error, regime: r.regime }};
+      }});
+      var ctx = document.getElementById('accuracy-chart').getContext('2d');
+      new Chart(ctx, {{
+        type: 'scatter',
+        data: {{
+          datasets: [{{
+            label: 'Daily forecast vs actual',
+            data: data,
+            backgroundColor: 'rgba(31, 111, 235, 0.55)',
+            borderColor: 'rgba(31, 111, 235, 0.85)',
+            pointRadius: 5,
+            pointHoverRadius: 7,
+          }}]
+        }},
+        options: {{
+          responsive: true,
+          plugins: {{
+            annotation: {{
+              annotations: {{
+                yEqualsX: {{
+                  type: 'line',
+                  xMin: lo, xMax: hi, yMin: lo, yMax: hi,
+                  borderColor: 'rgba(150,150,150,0.7)',
+                  borderWidth: 1, borderDash: [6, 4],
+                  label: {{ display: true, content: 'y = x (perfect)',
+                            position: 'end',
+                            backgroundColor: 'rgba(255,255,255,0.85)',
+                            color: '#666',
+                            font: {{ size: 11 }} }}
+                }}
+              }}
+            }},
+            tooltip: {{
+              callbacks: {{
+                label: function(ctx) {{
+                  var r = ctx.raw;
+                  return [
+                    r.date,
+                    'Predicted: ' + r.x.toFixed(2) + ' ft MLLW',
+                    'Observed:  ' + r.y.toFixed(2) + ' ft MLLW',
+                    'Error:     ' + r.error.toFixed(2) + ' ft '
+                      + (r.error > 0 ? '(over-pred)' : '(under-pred)'),
+                  ];
+                }}
+              }}
+            }},
+            legend: {{ display: false }}
+          }},
+          scales: {{
+            x: {{ title: {{ display: true,
+                            text: 'Predicted SH peak (ft MLLW)' }},
+                  suggestedMin: lo, suggestedMax: hi,
+                  grid: {{ color: 'rgba(0,0,0,0.05)' }} }},
+            y: {{ title: {{ display: true,
+                            text: 'Observed SH peak (ft MLLW)' }},
+                  suggestedMin: lo, suggestedMax: hi,
+                  grid: {{ color: 'rgba(0,0,0,0.05)' }} }}
+          }}
+        }}
+      }});
+    }})();
+  </script>
+  {note_html}
+</section>
+"""
 
 
 def _render_low_tides_text(forecast):
