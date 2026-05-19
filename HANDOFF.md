@@ -241,6 +241,11 @@ barnacle/
 │   ├── cross_ref.py              # calibration cross-reference
 │   ├── rain_analysis.py
 │   └── how-rain-adds.md          # rain mechanism notes
+├── assets/                       # editable sources for committed binaries
+│   ├── README.md                 # ★ map-annotation workflow
+│   ├── map_points.csv            # 9 landmarks + extras: label/value/category/x/y
+│   ├── pick_coords.py            # interactive coordinate picker (matplotlib)
+│   └── render_map.py             # CSV + map_raw.png → docs/icons/map_annotated.png
 ├── docs/                         # GitHub Pages site
 │   ├── index.html                # today's forecast (auto-replaced)
 │   ├── forecast.json             # machine-readable today's forecast (auto-replaced)
@@ -775,20 +780,28 @@ Same surge information the Borough's emergency management is looking at.
     the JS, pin as home-screen widget. Small + medium sizes, color-coded
     by regime, tappable to open the live page.
 27c. **Map-based depth heat map.** The user provided a Google Maps
-    screenshot at `docs/icons/map_raw.png` and an annotated version at
-    `docs/icons/map_annotated.png` showing all 9 landmark elevations
-    around 342 Bay Ave. Long-term direction: render a depth-tinted
-    overlay on the map showing predicted water depth at each landmark
-    today, possibly with smooth interpolation if more topography
-    points are added. Two implementation paths:
+    screenshot at `docs/icons/map_raw.png`. Annotation workflow now
+    data-driven via `assets/map_points.csv` (see `assets/README.md`)
+    — landmarks + extras with x/y pixel coords; renders to
+    `docs/icons/map_annotated.png` via `assets/render_map.py`. The
+    same CSV is the natural input for a depth heat-map overlay.
+
+    Long-term direction: render a depth-tinted overlay on the map
+    showing predicted water depth at each landmark today, possibly
+    with smooth interpolation across the topography points. Two
+    implementation paths:
     - Server-side (PIL/matplotlib) emits `docs/map.png` daily as part
-      of the forecast workflow. Static daily image. Simpler.
+      of the forecast workflow. Static daily image. Simpler — reuses
+      the existing `render_map.py` infrastructure.
     - Client-side: `docs/map.html` page with SVG/canvas overlays
       computed from forecast.json. More interactive (could animate
       across all_tides), more code.
-    Prerequisite: user wants to add more topography height values
-    around the property (currently 9 data points; smooth surface
-    would benefit from 20-30).
+
+    Prerequisite for smooth heat-map: user wants to add more
+    topography height values around the property (currently 9
+    canonical landmarks; smooth surface would benefit from 20-30).
+    The new picker + CSV workflow makes adding these easy:
+    `python assets/pick_coords.py` → click + label + value, repeat.
 
 ---
 
