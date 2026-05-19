@@ -108,14 +108,66 @@
       var imageData = ctx.getImageData(0, 0, w, h);
       var data = imageData.data;
 
-      // Build Delaunay over (x, y) — d3-delaunay wants flat array.
-      var coords = new Float64Array(points.length * 2);
+      // EE — perf. Pre-compute a 256-entry (r, g, b, alpha) lookup
+      // table for depth fractions in [0, 1]. The hot inner loop now
+      // does one table lookup per pixel instead of two function calls.
+      var LUT_SIZE = 256;
+      var lutR = new Uint8Array(LUT_SIZE);
+      var lutG = new Uint8Array(LUT_SIZE);
+      var lutB = new Uint8Array(LUT_SIZE);
+      var lutA = new Float32Array(LUT_SIZE);
+      for (var ii = 0; ii < LUT_SIZE; ii++) {
+        var tt = ii / (LUT_SIZE - 1);
+        var rgb_i = depthToRGB(tt);
+        lutR[ii] = rgb_i[0];
+        lutG[ii] = rgb_i[1];
+        lutB[ii] = rgb_i[2];
+        lutA[ii] = depthToAlpha(tt);
+      }
+
+      // EE — boundary smoothing. Add 8 "phantom" high-elevation points
+      // around the bbox of the real points so the Delaunay extends past
+      // the input set. The phantom elevation (6.0 NAVD88) is above any
+      // realistic forecast water level, so these points contribute no
+      // depth and never make the overlay where they alone are involved —
+      // BUT the triangles they form with real points soften the chunky
+      // straight-line convex hull that was previously the visible
+      // boundary of the overlay. The zero-depth contour smooths out.
+      var minX0 = Infinity, maxX0 = -Infinity, minY0 = Infinity, maxY0 = -Infinity;
       for (var i = 0; i < points.length; i++) {
-        coords[i * 2]     = points[i].x;
-        coords[i * 2 + 1] = points[i].y;
+        if (points[i].x < minX0) minX0 = points[i].x;
+        if (points[i].x > maxX0) maxX0 = points[i].x;
+        if (points[i].y < minY0) minY0 = points[i].y;
+        if (points[i].y > maxY0) maxY0 = points[i].y;
+      }
+      var bboxW = maxX0 - minX0;
+      var bboxH = maxY0 - minY0;
+      var pad = 0.15;  // 15% of bbox dimension
+      var px0 = minX0 - bboxW * pad;
+      var px1 = maxX0 + bboxW * pad;
+      var py0 = minY0 - bboxH * pad;
+      var py1 = maxY0 + bboxH * pad;
+      var phantomElev = 6.0;  // well above any realistic water level
+      var allPoints = points.slice();
+      [
+        [px0, py0], [(px0 + px1) / 2, py0], [px1, py0],
+        [px1, (py0 + py1) / 2],
+        [px1, py1], [(px0 + px1) / 2, py1], [px0, py1],
+        [px0, (py0 + py1) / 2]
+      ].forEach(function(pt) {
+        allPoints.push({ x: pt[0], y: pt[1], navd88: phantomElev });
+      });
+
+      // Build Delaunay over (x, y) — d3-delaunay wants flat array.
+      var coords = new Float64Array(allPoints.length * 2);
+      for (var i = 0; i < allPoints.length; i++) {
+        coords[i * 2]     = allPoints[i].x;
+        coords[i * 2 + 1] = allPoints[i].y;
       }
       var delaunay = new d3.Delaunay(coords);
       var triangles = delaunay.triangles;  // Int32Array
+      // Use the augmented point set for the rest of the algorithm
+      points = allPoints;
 
       for (var ti = 0; ti < triangles.length; ti += 3) {
         var i0 = triangles[ti], i1 = triangles[ti + 1], i2 = triangles[ti + 2];
@@ -145,13 +197,15 @@
             var depthFt = waterNavd88 - elev;
             if (depthFt <= 0) continue;
 
-            var t = Math.min(depthFt / MAX_DEPTH_FT, 1.0);
-            var rgb = depthToRGB(t);
-            var alpha = depthToAlpha(t);
+            var t = depthFt / MAX_DEPTH_FT;
+            if (t > 1) t = 1;
+            var li = (t * (LUT_SIZE - 1)) | 0;  // bitwise OR for fast trunc
+            var alpha = lutA[li];
+            var inv = 1 - alpha;
             var idx = (y * w + x) * 4;
-            data[idx]     = data[idx]     * (1 - alpha) + rgb[0] * alpha;
-            data[idx + 1] = data[idx + 1] * (1 - alpha) + rgb[1] * alpha;
-            data[idx + 2] = data[idx + 2] * (1 - alpha) + rgb[2] * alpha;
+            data[idx]     = data[idx]     * inv + lutR[li] * alpha;
+            data[idx + 1] = data[idx + 1] * inv + lutG[li] * alpha;
+            data[idx + 2] = data[idx + 2] * inv + lutB[li] * alpha;
           }
         }
       }
