@@ -249,6 +249,27 @@ ACCURACY_CSV_FIELDS = [
     "mllw_error_ft",
 ]
 
+# Master predictions log — one row per (prediction_made_at, target_tide_time)
+# pair. Append-only. HANDOFF 9b.3. From a row's water_navd88_predicted plus
+# the static assets/map_points.csv, every landmark depth + regime + map
+# visual can be reconstructed.
+PREDICTIONS_LOG_PATH = os.path.join(_REPO_ROOT, "data", "predictions_log.csv")
+PREDICTIONS_LOG_FIELDS = [
+    "prediction_made_at",        # ISO UTC, when this prediction was generated
+    "target_tide_time",          # ISO local (NOAA's lst_ldt), the high tide this predicts
+    "hours_until_peak",          # signed; negative once peak has passed
+    "predicted_mllw_astronomical",  # NOAA hilo astronomical-only prediction
+    "surge_ft_predicted",        # signed; ft above/below astronomical
+    "surge_source",              # "nws-coastal-flood-product" | "surge-persistence"
+    "sh_peak_mllw_predicted",    # astronomical + surge (NOT cold-lockout aware)
+    "peak_rain_in_hr_predicted",
+    "water_navd88_predicted",    # = sh_peak_mllw + 0.40 + (-2.82); empty if cold lockout
+    "regime_predicted",
+    "cold_lockout",              # "true" | "false"
+    "confidence_level",          # "high" | "medium" | "low" | ""
+    "model_version",             # current model spec version (currently v0.6)
+]
+
 
 def _fetch_actual_peak_around(time_str, window_hours=2):
     """Pull NOAA water_level for ±window_hours around a target high-tide
@@ -363,6 +384,96 @@ def update_forecast_accuracy():
                 writer.writerow(row)
 
     return _summarize_accuracy(last_n=30)
+
+
+CURRENT_MODEL_VERSION = "v0.6"
+
+
+def append_predictions_log(forecast):
+    """Append one row per upcoming high tide in `forecast` to the master
+    predictions log. Append-only — never rewrites or sorts existing rows.
+
+    HANDOFF 9b.3. Stable column set; we add columns over time but don't
+    remove or rename them. From a row's water_navd88_predicted plus the
+    static assets/map_points.csv, every landmark depth + regime + map
+    visual is reconstructible.
+
+    Called once per forecast run (daily today; hourly when 9b.1 ships).
+    Safe to call multiple times — each call appends rows, no dedup; if
+    we ever want dedup, do it in a consumer rather than the writer.
+    """
+    now_utc = dt.datetime.now(dt.timezone.utc)
+    now_iso = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+    cold = bool(forecast.get("cold_lockout", False))
+    confidence_level = forecast.get("confidence_level", "") or ""
+
+    rows_to_write = []
+    for t in forecast.get("all_tides", []) or []:
+        target_time = t.get("time") or ""
+        sh_peak = t.get("forecast_peak_mllw")
+        # Hours until peak (signed). Tide times are local lst_ldt
+        # ("YYYY-MM-DD HH:MM"); attach EDT (-04:00) for parsing.
+        hours_until_peak = ""
+        if target_time:
+            try:
+                target_dt = dt.datetime.strptime(target_time, "%Y-%m-%d %H:%M")
+                # Treat as US East tz-naive; convert to UTC for comparison.
+                # During EDT this is UTC-4. (Workflow ignores DST nuance —
+                # close enough for "hours until peak" granularity.)
+                target_utc = target_dt + dt.timedelta(hours=4)
+                hours_until_peak = (
+                    target_utc.replace(tzinfo=dt.timezone.utc) - now_utc
+                ).total_seconds() / 3600.0
+                hours_until_peak = f"{hours_until_peak:+.2f}"
+            except (ValueError, TypeError):
+                pass
+
+        # Water level (NAVD88) — empty when cold lockout suppresses flooding.
+        water_navd88 = ""
+        if sh_peak is not None and not (cold and sh_peak < 8.0):
+            water_navd88 = (
+                sh_peak + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+            )
+            water_navd88 = f"{water_navd88:.3f}"
+
+        regime = ""
+        depths = t.get("depths_in")
+        if isinstance(depths, dict):
+            regime = depths.get("regime", "")
+
+        rows_to_write.append({
+            "prediction_made_at":         now_iso,
+            "target_tide_time":           target_time,
+            "hours_until_peak":           hours_until_peak,
+            "predicted_mllw_astronomical":
+                f"{t.get('predicted_mllw'):.3f}" if t.get("predicted_mllw") is not None else "",
+            "surge_ft_predicted":
+                f"{t.get('surge_ft'):+.3f}" if t.get("surge_ft") is not None else "",
+            "surge_source":               t.get("source", "") or "",
+            "sh_peak_mllw_predicted":
+                f"{sh_peak:.3f}" if sh_peak is not None else "",
+            "peak_rain_in_hr_predicted":
+                f"{t.get('peak_rain_in_hr'):.3f}" if t.get("peak_rain_in_hr") is not None else "",
+            "water_navd88_predicted":     water_navd88,
+            "regime_predicted":           regime,
+            "cold_lockout":               "true" if cold else "false",
+            "confidence_level":           confidence_level,
+            "model_version":              CURRENT_MODEL_VERSION,
+        })
+
+    if not rows_to_write:
+        return
+
+    os.makedirs(os.path.dirname(PREDICTIONS_LOG_PATH), exist_ok=True)
+    write_header = not os.path.exists(PREDICTIONS_LOG_PATH)
+    with open(PREDICTIONS_LOG_PATH, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=PREDICTIONS_LOG_FIELDS)
+        if write_header:
+            writer.writeheader()
+        for r in rows_to_write:
+            writer.writerow(r)
+    print(f"Appended {len(rows_to_write)} row(s) to "
+          f"{os.path.relpath(PREDICTIONS_LOG_PATH, _REPO_ROOT)}")
 
 
 def _summarize_accuracy(last_n=30):
@@ -2239,6 +2350,13 @@ def main():
     except Exception as e:
         print(f"ERROR fetching forecast: {e}", flush=True)
         raise
+
+    # Append to the master predictions log (HANDOFF 9b.3). Append-only.
+    # Wrapped: a logging failure must not break the daily forecast run.
+    try:
+        append_predictions_log(forecast)
+    except Exception as e:
+        print(f"WARNING: append_predictions_log failed: {e}", flush=True)
 
     if args.json:
         print(json.dumps(forecast, indent=2, default=str))
