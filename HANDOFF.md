@@ -687,15 +687,20 @@ Same surge information the Borough's emergency management is looking at.
     Pathway B outfall locations.
 16. **Cold-weather override calibration from historical data.** Two
     related ideas:
-    (a) Use historical air-temperature data (NOAA `air_temperature`
-        product at Sandy Hook) joined to hourly water-level data to
-        find past events where the cold-weather override SHOULD have
-        applied — i.e., 72-h mean temp < 32°F AND Sandy Hook peak
-        > 6.58 ft (would have crossed the curb without the override).
-        Check newspaper / borough archives or rain/met records to see
-        if flooding actually occurred. If most such past events also
-        produced no flooding, that's strong retrospective validation
-        of the cold-weather override without waiting for new events.
+    (a) ⏳ **Script written 2026-05-19** (commit pending — "X" in
+        that day's solo-work backlog):
+        `history/scripts/cold_weather_retrospective.py`. Pulls NOAA
+        `air_temperature` for Sandy Hook, joins to the existing
+        hourly_height parquet, computes 72-h rolling mean temp, and
+        identifies historical events where the v0.6 cold-lockout
+        would have applied (SH 6.58-8.0 ft MLLW AND 72-h mean temp
+        < 32°F). Outputs `history/data/cold_weather_candidates.csv`
+        + `history/reports/cold_weather_retrospective.md`. **NOT
+        YET RUN** — needs the user's local pandas env (or run on a
+        runner with pandas + pyarrow). Once run, cross-check each
+        candidate date against newspaper / borough archives to see
+        whether flooding was actually reported. If most weren't →
+        strong retrospective validation of cold-lockout.
         (Original Feb 22 2026 observation gives one data point.)
     (b) Filter cold-snap events out of the historical seasonality CSVs.
         Counts are slight over-estimates in winter. Not currently
