@@ -266,6 +266,11 @@ ACCURACY_CSV_FIELDS = [
     "actual_peak_observed_mllw",
     "actual_peak_observed_time",
     "mllw_error_ft",
+    # Added 2026-05-19 for self-calibrated confidence uncertainty (HANDOFF
+    # 9b.6 refinement / "N" in the solo-work backlog). Old rows from
+    # before this column was added have empty values — calibration code
+    # filters those out and falls back to the heuristic when N < 3.
+    "confidence_level",
 ]
 
 # Master predictions log — one row per (prediction_made_at, target_tide_time)
@@ -390,6 +395,7 @@ def update_forecast_accuracy():
             "actual_peak_observed_mllw":    actual_peak,
             "actual_peak_observed_time":    actual_time or "",
             "mllw_error_ft":                pred_peak - actual_peak,
+            "confidence_level":             fc.get("confidence_level", ""),
         })
 
     if new_rows:
@@ -1245,20 +1251,79 @@ def build_forecast():
     }
 
 
-def _confidence_uncertainty_ft(level):
-    """Estimated ±uncertainty in SH peak MLLW (ft) for each confidence
-    level. Rough heuristic — should eventually be data-driven from
-    `data/predictions_log.csv` joined to observed peaks (9b.8).
+_CONFIDENCE_HEURISTIC_FT = {
+    "high":   0.10,
+    "medium": 0.30,
+    "low":    0.50,
+}
+# Below this row count, prefer the heuristic over the per-band sample
+# mean — small samples are noisy and would mislead users with bogus
+# precision. Tune up as the accuracy log accumulates.
+CONFIDENCE_CALIBRATION_MIN_N = 3
 
-    Used by 9b.6 confidence refinement to translate the abstract
-    "LOW confidence" badge into a concrete "peak ± X ft" range that
-    can be propagated to a regime band.
+
+def _calibrate_confidence_from_accuracy_log():
+    """Compute per-confidence-band mean |error| in SH MLLW ft from
+    data/forecast_accuracy.csv (HANDOFF 9b.6 refinement). Returns
+    dict like {"high": {"mean_abs_err_ft": 0.08, "n": 4}, ...}.
+
+    Skips rows whose confidence_level column is empty (those were
+    written before that column existed in the CSV). Returns empty
+    dict when nothing usable yet.
     """
-    return {
-        "high":   0.10,
-        "medium": 0.30,
-        "low":    0.50,
-    }.get(level, 0.30)
+    if not os.path.exists(ACCURACY_CSV_PATH):
+        return {}
+    buckets = {}
+    try:
+        with open(ACCURACY_CSV_PATH) as f:
+            for r in csv.DictReader(f):
+                level = (r.get("confidence_level") or "").strip()
+                if not level:
+                    continue
+                try:
+                    err = float(r["mllw_error_ft"])
+                except (TypeError, ValueError, KeyError):
+                    continue
+                buckets.setdefault(level, []).append(abs(err))
+    except OSError:
+        return {}
+    out = {}
+    for level, errs in buckets.items():
+        out[level] = {
+            "mean_abs_err_ft": sum(errs) / len(errs),
+            "n":               len(errs),
+        }
+    return out
+
+
+def _confidence_uncertainty_ft(level):
+    """Estimated ±uncertainty in SH peak MLLW (ft) for a confidence
+    level. Uses per-band sample mean |error| from
+    data/forecast_accuracy.csv when ≥ CONFIDENCE_CALIBRATION_MIN_N
+    rows exist for that band; falls back to a hardcoded heuristic
+    otherwise.
+
+    HANDOFF 9b.6 refinement. Used by the confidence-qualifier
+    sentences to translate the abstract "LOW confidence" badge
+    into a concrete "peak ± X ft" range that propagates to a
+    regime band.
+    """
+    cal = _calibrate_confidence_from_accuracy_log()
+    band = cal.get(level)
+    if band and band["n"] >= CONFIDENCE_CALIBRATION_MIN_N:
+        return band["mean_abs_err_ft"]
+    return _CONFIDENCE_HEURISTIC_FT.get(level, 0.30)
+
+
+def _confidence_uncertainty_source(level):
+    """Returns 'data' if the uncertainty for this level is data-driven
+    (calibrated from the accuracy log), 'heuristic' otherwise. Used to
+    annotate the confidence qualifier line so users know which it is."""
+    cal = _calibrate_confidence_from_accuracy_log()
+    band = cal.get(level)
+    if band and band["n"] >= CONFIDENCE_CALIBRATION_MIN_N:
+        return ("data", band["n"])
+    return ("heuristic", 0)
 
 
 def _compute_regime_band(forecast, uncertainty_ft):
@@ -1349,10 +1414,16 @@ def _confidence_qualifier_sentences(forecast):
     unc = forecast.get("confidence_uncertainty_ft")
     if peak is None or not unc:
         return []
+    source, n = _confidence_uncertainty_source(level)
+    source_phrase = (
+        f"calibrated from {n} past forecasts at this confidence level"
+        if source == "data"
+        else "estimated heuristically until enough data accumulates"
+    )
     out = [
         f"This is uncertainty about the peak Sandy Hook level "
         f"({peak:.2f} ft MLLW), which could land within roughly "
-        f"±{unc:.1f} ft of the forecast."
+        f"±{unc:.2f} ft of the forecast ({source_phrase})."
     ]
     band = forecast.get("confidence_regime_band")
     if band:
