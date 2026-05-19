@@ -2391,6 +2391,18 @@ def main():
             except Exception as e:
                 print(f"WARNING: heat-map render failed: {e}", flush=True)
 
+    # Fallback: even when --write-map is NOT passed (hourly runs under
+    # 9b.1), embed the previously-rendered map if one exists on disk at
+    # the expected path. The map may be slightly stale within the day
+    # (it regenerates at the 09:00 UTC daily run) but doesn't disappear
+    # from the page between daily refreshes. 9b.10 (client-side render)
+    # replaces this with always-fresh map data.
+    if map_url is None and args.write_html:
+        html_dir = os.path.dirname(os.path.abspath(args.write_html))
+        candidate = os.path.join(html_dir, "icons", "map_today.png")
+        if os.path.exists(candidate):
+            map_url = os.path.relpath(candidate, html_dir)
+
     subject, text, html = render_email(forecast)
 
     # Write standalone HTML page if requested

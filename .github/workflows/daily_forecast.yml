@@ -1,15 +1,21 @@
-name: Daily Flood Forecast
+name: Bay Ave Barnacle Forecast
 
-# 09:00 UTC daily = 5 AM EDT (summer) / 4 AM EST (winter).
-# GitHub Actions cron does not adjust for DST.
-# Also runnable manually from the Actions tab via workflow_dispatch.
+# Runs hourly (HANDOFF 9b.1 — sub-daily dynamic updates). Most hourly
+# runs write HTML + JSON + append to data/predictions_log.csv, no email
+# and no map regen. The 09:00 UTC run is the "full daily" run: email
+# send + map regen + archive snapshot. 09:00 UTC = 5 AM EDT (summer) /
+# 4 AM EST (winter). GitHub Actions cron does not adjust for DST.
+#
+# Also runnable manually from the Actions tab via workflow_dispatch —
+# manual runs are treated as full-daily runs so testing exercises the
+# email path.
 on:
   schedule:
-    - cron: '0 9 * * *'
+    - cron: '0 * * * *'   # every hour, on the hour, UTC
   workflow_dispatch:
 
 permissions:
-  contents: write  # needed to commit docs/ updates
+  contents: write  # needed to commit docs/ + data/ updates
 
 jobs:
   forecast:
@@ -25,14 +31,27 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install heat-map dependencies (matplotlib + numpy)
+      - name: Determine run type (daily vs hourly)
+        id: when
+        run: |
+          today=$(date -u +%Y-%m-%d)
+          hour=$(date -u +%H)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$hour" = "09" ]; then
+            is_daily="true"
+          else
+            is_daily="false"
+          fi
+          echo "today=$today"     >> "$GITHUB_OUTPUT"
+          echo "hour=$hour"       >> "$GITHUB_OUTPUT"
+          echo "is_daily=$is_daily" >> "$GITHUB_OUTPUT"
+          echo "Run type: is_daily=$is_daily (hour=$hour UTC, event=${{ github.event_name }})"
+
+      - name: Install heat-map dependencies (daily only)
+        if: steps.when.outputs.is_daily == 'true'
         run: pip install matplotlib numpy
 
-      - name: Set today's date
-        id: date
-        run: echo "today=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
-
-      - name: Run forecast (sends email + writes HTML page + heat-map)
+      - name: Run forecast — DAILY (HTML + JSON + map + email)
+        if: steps.when.outputs.is_daily == 'true'
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
@@ -47,18 +66,29 @@ jobs:
             --write-json ../docs/forecast.json \
             --write-map  ../docs/icons/map_today.png
 
-      - name: Archive today's forecast snapshot
+      - name: Run forecast — HOURLY (HTML + JSON only, no email/map)
+        if: steps.when.outputs.is_daily == 'false'
+        working-directory: forecast
+        run: |
+          python3 flood_forecast_daily.py \
+            --write-html ../docs/index.html \
+            --write-json ../docs/forecast.json \
+            --no-send
+
+      - name: Archive today's forecast snapshot (daily only)
+        if: steps.when.outputs.is_daily == 'true'
         run: |
           mkdir -p docs/archive
-          cp docs/index.html "docs/archive/${{ steps.date.outputs.today }}.html"
-          cp docs/forecast.json "docs/archive/${{ steps.date.outputs.today }}.json"
+          cp docs/index.html  "docs/archive/${{ steps.when.outputs.today }}.html"
+          cp docs/forecast.json "docs/archive/${{ steps.when.outputs.today }}.json"
           # Heat-map only exists on flooding-eligible days (cold lockout or
           # no data skips it). Archive it when present.
           if [ -f docs/icons/map_today.png ]; then
-            cp docs/icons/map_today.png "docs/archive/${{ steps.date.outputs.today }}-map.png"
+            cp docs/icons/map_today.png "docs/archive/${{ steps.when.outputs.today }}-map.png"
           fi
 
-      - name: Regenerate archive index
+      - name: Regenerate archive index (daily only)
+        if: steps.when.outputs.is_daily == 'true'
         run: |
           cd docs/archive
           {
@@ -101,10 +131,19 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Pull-rebase first in case a parallel run / human commit landed
+          # between our checkout and this push. Hourly cadence makes this
+          # more likely than the old once-a-day cadence did.
+          git pull --rebase --autostash || true
           git add docs/ data/
           if git diff --staged --quiet; then
-            echo "No daily updates to commit"
+            echo "No updates to commit"
           else
-            git commit -m "daily forecast ${{ steps.date.outputs.today }}"
+            if [ "${{ steps.when.outputs.is_daily }}" = "true" ]; then
+              msg="daily forecast ${{ steps.when.outputs.today }}"
+            else
+              msg="hourly update ${{ steps.when.outputs.today }} ${{ steps.when.outputs.hour }}:00 UTC"
+            fi
+            git commit -m "$msg"
             git push
           fi
