@@ -152,10 +152,13 @@ def fetch_high_tides_24h():
     return fetch_tides_24h()["high"]
 
 
-def fetch_observed_recent():
-    """Past 6h of observed water level. Returns list of (time, value_mllw_ft)."""
+def fetch_observed_recent(hours=6):
+    """Past N hours of observed water level at Sandy Hook. Returns list of
+    (time, value_mllw_ft). Default 6h preserves backwards-compat with the
+    surge-swing calculation; pass hours=24 for the live-gauge widget
+    (HANDOFF 16f / Y in the 2026-05-19 solo-work backlog)."""
     end = dt.datetime.now(dt.timezone.utc)
-    start = end - dt.timedelta(hours=6)
+    start = end - dt.timedelta(hours=hours)
     data = _get(
         "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
         {
@@ -1222,6 +1225,12 @@ def build_forecast():
     except Exception:
         lookahead_watch = []
 
+    # Live gauge — past 24h of observed water level (HANDOFF 16f, "Y")
+    try:
+        live_gauge_24h = fetch_observed_recent(hours=24)
+    except Exception:
+        live_gauge_24h = []
+
     return {
         # Headline fields (worst-case tide)
         "peak_predicted_mllw": worst["predicted_mllw"],
@@ -1248,6 +1257,10 @@ def build_forecast():
         "recent_history_7d": recent_history,
         # Look-ahead "dates to watch" — astronomical only (HANDOFF 9b.7)
         "lookahead_watch": lookahead_watch,
+        # Last 24h observed water level for the live gauge (HANDOFF 16f / Y)
+        "live_gauge_24h": [
+            {"time": t, "value_mllw": v} for t, v in live_gauge_24h
+        ],
     }
 
 
@@ -2822,6 +2835,109 @@ def _oscillation_chart_data(forecast):
     return {"points": points, "landmarks": landmark_lines}
 
 
+def _render_live_gauge_section(forecast):
+    """Render a 24h sparkline of observed Sandy Hook water level.
+    HANDOFF 16f / Y in the 2026-05-19 solo-work backlog.
+
+    Empty string when no observed data available."""
+    obs = forecast.get("live_gauge_24h") or []
+    if len(obs) < 2:
+        return ""
+    latest = obs[-1]
+    latest_val = latest.get("value_mllw")
+    latest_time = latest.get("time", "")
+    series = [
+        {"time": p["time"], "v": p["value_mllw"]}
+        for p in obs if p.get("value_mllw") is not None
+    ]
+    series_json = json.dumps(series)
+
+    return f"""
+  <section class="live-gauge">
+    <h2>Live observed water level — past 24 h</h2>
+    <p class="note">Sandy Hook gauge (station 8531680). Latest:
+       <b>{latest_val:.2f} ft MLLW</b> at {format_time_full(latest_time)}.
+       Refreshed each workflow run (hourly).</p>
+    <canvas id="live-gauge-chart" width="800" height="240"
+            style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script>
+      (function() {{
+        var series = {series_json};
+        var labels = series.map(function(p) {{
+          var d = new Date(p.time.replace(' ', 'T'));
+          if (isNaN(d.getTime())) return p.time;
+          return d.toLocaleString(undefined, {{
+            hour: 'numeric', minute: '2-digit'
+          }});
+        }});
+        var values = series.map(function(p) {{ return p.v; }});
+        var ctx = document.getElementById('live-gauge-chart').getContext('2d');
+        new Chart(ctx, {{
+          type: 'line',
+          data: {{
+            labels: labels,
+            datasets: [{{
+              label: 'Observed (ft MLLW)',
+              data: values,
+              borderColor: 'rgba(31, 111, 235, 0.95)',
+              backgroundColor: 'rgba(31, 111, 235, 0.10)',
+              fill: true,
+              pointRadius: 0,
+              tension: 0.25,
+            }}]
+          }},
+          options: {{
+            responsive: true,
+            plugins: {{
+              annotation: {{ annotations: {{
+                curb: {{
+                  type: 'line', yMin: 6.58, yMax: 6.58,
+                  borderColor: 'rgba(217, 119, 6, 0.7)',
+                  borderWidth: 1, borderDash: [6, 4],
+                  label: {{ display: true, content: 'curb (6.58)',
+                            position: 'end',
+                            backgroundColor: 'rgba(255,255,255,0.85)',
+                            color: '#b35a00',
+                            font: {{ size: 10 }} }}
+                }},
+                grate: {{
+                  type: 'line', yMin: 6.02, yMax: 6.02,
+                  borderColor: 'rgba(31, 111, 235, 0.5)',
+                  borderWidth: 1, borderDash: [3, 3],
+                  label: {{ display: true, content: 'lowest grate (6.02)',
+                            position: 'end',
+                            backgroundColor: 'rgba(255,255,255,0.85)',
+                            color: '#1f6feb',
+                            font: {{ size: 10 }} }}
+                }}
+              }} }},
+              legend: {{ display: false }},
+              tooltip: {{
+                callbacks: {{
+                  label: function(c) {{ return c.parsed.y.toFixed(2) + ' ft MLLW'; }}
+                }}
+              }}
+            }},
+            scales: {{
+              x: {{ grid: {{ display: false }},
+                    ticks: {{ maxTicksLimit: 8, autoSkip: true }} }},
+              y: {{ title: {{ display: true, text: 'ft MLLW' }},
+                    grid: {{ color: 'rgba(0,0,0,0.05)' }} }}
+            }}
+          }}
+        }});
+      }})();
+    </script>
+    <p class="note">For NOAA's official gauge page (more products,
+       longer windows):
+       <a href="https://tidesandcurrents.noaa.gov/stationhome.html?id=8531680">
+       Sandy Hook 8531680</a>.</p>
+  </section>
+"""
+
+
 def _render_oscillation_section(forecast):
     """Render the home-page water-level oscillation chart section
     (HANDOFF 9b.4(b)). Empty string when there's no plottable data."""
@@ -3767,6 +3883,7 @@ def render_html_page(forecast):
       <dt>Cold lockout</dt><dd>{'<b>YES</b> (drains likely ice-locked)' if cold else 'no'}</dd>
     </dl>
   </section>
+{_render_live_gauge_section(forecast)}
 {map_section}
 {_render_oscillation_section(forecast)}
   {_render_rain_timing_html(forecast)}
