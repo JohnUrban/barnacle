@@ -1497,6 +1497,51 @@ def _render_accuracy_text(forecast):
     )]
 
 
+# Sandy Hook MLLW threshold for "flooded" in the binary classifier.
+# 6.02 = lowest grate emerges (the earliest visible-water signal at the
+# property). Configurable later (HANDOFF 9b.8 mentions "threshold
+# configurable per view") — keeping it as a constant for now.
+FLOODED_THRESHOLD_SH_MLLW = 6.02
+
+
+def _compute_classifier_metrics():
+    """Binary flood-classifier confusion matrix from forecast_accuracy.csv.
+    HANDOFF 9b.8 mode 3.
+
+    Flooded definition:
+      observed_flooded = observed SH peak >= FLOODED_THRESHOLD_SH_MLLW
+      predicted_flooded = predicted regime is not 'dry'
+
+    Returns None when no rows in the accuracy log.
+    """
+    rows = _load_accuracy_rows()
+    if not rows:
+        return None
+    tp = fp = fn = tn = 0
+    for r in rows:
+        pred_flood = (r.get("regime") or "") not in ("dry", "")
+        obs_flood = r["observed"] >= FLOODED_THRESHOLD_SH_MLLW
+        if pred_flood and obs_flood:
+            tp += 1
+        elif pred_flood and not obs_flood:
+            fp += 1
+        elif not pred_flood and obs_flood:
+            fn += 1
+        else:
+            tn += 1
+    total = tp + fp + fn + tn
+    def safe_div(a, b):
+        return (a / b) if b > 0 else None
+    return {
+        "tp": tp, "fp": fp, "fn": fn, "tn": tn,
+        "total": total,
+        "fpr":      safe_div(fp, fp + tn),
+        "fnr":      safe_div(fn, fn + tp),
+        "accuracy": safe_div(tp + tn, total),
+        "threshold_sh_mllw": FLOODED_THRESHOLD_SH_MLLW,
+    }
+
+
 def _load_accuracy_rows():
     """Load all rows from data/forecast_accuracy.csv with parsed numeric
     values. Used by the accuracy chart on the home page (HANDOFF 9b.8)."""
@@ -1537,6 +1582,33 @@ def _render_accuracy_html(forecast):
         f'worst |error| {a["max_abs_error_ft"]:.2f} ft. '
         f'Total scored: {a["n_scored_total"]}.</p>'
     )
+
+    # Binary classifier metrics (HANDOFF 9b.8 mode 3)
+    cm = _compute_classifier_metrics()
+    classifier_html = ""
+    if cm and cm["total"] > 0:
+        def pct(x):
+            return f"{x * 100:.1f}%" if x is not None else "—"
+        classifier_html = (
+            f'<div class="classifier-block">'
+            f'<h3 style="margin:12px 0 4px 0;font-size:15px">'
+            f'Flood / no-flood (binary, SH ≥ {cm["threshold_sh_mllw"]:.2f} ft = lowest grate)</h3>'
+            f'<table class="confusion-table"><tbody>'
+            f'<tr><th></th><th>Actual flood</th><th>Actual dry</th></tr>'
+            f'<tr><th>Predicted flood</th>'
+            f'<td class="tp">{cm["tp"]} TP</td>'
+            f'<td class="fp">{cm["fp"]} FP</td></tr>'
+            f'<tr><th>Predicted dry</th>'
+            f'<td class="fn">{cm["fn"]} FN</td>'
+            f'<td class="tn">{cm["tn"]} TN</td></tr>'
+            f'</tbody></table>'
+            f'<p style="font-size:13px;margin:6px 0">'
+            f'Overall accuracy: <b>{pct(cm["accuracy"])}</b> &middot; '
+            f'False-positive rate: {pct(cm["fpr"])} &middot; '
+            f'False-negative rate: {pct(cm["fnr"])} &middot; '
+            f'N = {cm["total"]}</p>'
+            f'</div>'
+        )
     note_html = (
         '<p class="note">Positive mean error = model over-predicts on '
         'average. Each point is one archived daily forecast (since the '
@@ -1549,11 +1621,13 @@ def _render_accuracy_html(forecast):
 
     rows = _load_accuracy_rows()
     if len(rows) < 2:
-        # Not enough data for a chart yet — just the text summary
+        # Not enough data for a scatter chart yet — text summary +
+        # (optional) binary classifier block, which is meaningful at N=1
         return (
             '<section class="accuracy">'
             '<h2>Model accuracy</h2>'
             f'{summary_html}'
+            f'{classifier_html}'
             f'{note_html}'
             '</section>'
         )
@@ -1571,6 +1645,7 @@ def _render_accuracy_html(forecast):
 <section class="accuracy">
   <h2>Model accuracy — predicted vs observed peaks</h2>
   {summary_html}
+  {classifier_html}
   <canvas id="accuracy-chart" width="800" height="380"
           style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>

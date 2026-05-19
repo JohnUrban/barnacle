@@ -223,6 +223,28 @@ section.scrubber-section { margin: 12px 0; }
     font-variant-numeric: tabular-nums;
 }
 
+/* Binary flood classifier confusion matrix (9b.8 mode 3) */
+.confusion-table {
+    border-collapse: collapse;
+    margin: 4px 0;
+    font-size: 13px;
+}
+.confusion-table th,
+.confusion-table td {
+    padding: 6px 12px;
+    border: 1px solid rgba(0,0,0,0.12);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+.confusion-table th {
+    background: #f4f4f8;
+    font-weight: 600;
+}
+.confusion-table .tp { background: #e3f5e9; }   /* good: predicted + observed flood */
+.confusion-table .tn { background: #f1f8f4; }   /* good: predicted + observed dry  */
+.confusion-table .fp { background: #fff8e1; }   /* over-prediction (false alarm)   */
+.confusion-table .fn { background: #fde7e7; }   /* miss (worse — could surprise)   */
+
 /* Duration toggle on the rollup table (9b.2 part 2) */
 .duration-toggle {
     margin: 8px 0 12px 0;
