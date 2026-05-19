@@ -3661,6 +3661,38 @@ def render_html_page(forecast):
   <header>
     <h1>Bay Ave Barnacle</h1>
     <p class="subtitle">Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ</p>
+    <p class="last-updated"
+       data-generated-at="{dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}">
+      <span id="last-updated-display">Last updated …</span>
+    </p>
+    <script>
+      (function() {{
+        var el = document.querySelector('.last-updated');
+        var disp = document.getElementById('last-updated-display');
+        if (!el || !disp) return;
+        var iso = el.getAttribute('data-generated-at');
+        var gen = new Date(iso);
+        if (isNaN(gen.getTime())) return;
+        function update() {{
+          var now = new Date();
+          var diffSec = Math.max(0, Math.round((now - gen) / 1000));
+          var ago;
+          if (diffSec < 90) ago = diffSec + ' s ago';
+          else if (diffSec < 3600) ago = Math.round(diffSec / 60) + ' min ago';
+          else if (diffSec < 86400) ago = Math.round(diffSec / 3600) + ' h ago';
+          else ago = Math.round(diffSec / 86400) + ' d ago';
+          var local = gen.toLocaleString(undefined, {{
+            month: 'numeric', day: 'numeric',
+            hour: 'numeric', minute: '2-digit'
+          }});
+          var stale = diffSec > 7200;  // >2h since last workflow run
+          disp.textContent = 'Last updated ' + local + ' (' + ago + ')';
+          if (stale) disp.classList.add('stale');
+        }}
+        update();
+        setInterval(update, 30000);  // refresh "X ago" every 30s while open
+      }})();
+    </script>
   </header>
 
   {_render_summary_html(forecast)}

@@ -194,6 +194,22 @@ p.tldr-confidence.confidence-low      { background: #fde7e7; color: #8a3232; bor
     font-style: italic;
 }
 
+/* Last-updated indicator in the home-page header (V) */
+.last-updated {
+    font-size: 12px;
+    color: #6b7a8e;
+    margin: 4px 0 0 0;
+    font-variant-numeric: tabular-nums;
+}
+.last-updated #last-updated-display.stale {
+    color: #b35a00;
+    font-weight: 600;
+}
+.last-updated #last-updated-display.stale::after {
+    content: ' — workflow may have stalled';
+    font-weight: normal;
+}
+
 /* Per-tide page prev/next navigation (9b.2 — T) */
 nav.tide-nav {
     display: flex;
