@@ -63,6 +63,9 @@ across four labeled flood events the user observed firsthand.
 | Unusual-forecast highlight (top-N% framing) | ✅ Live (2026-05-18, HANDOFF 16e) |
 | Forecast accuracy log (`data/forecast_accuracy.csv`) | ✅ Live (2026-05-18, HANDOFF 8b). Populates from day 2. |
 | Spot-check calibration callouts (pluvial-only, cold-lockout) | ✅ Live (2026-05-18, HANDOFF 10/14) |
+| First real spot-check session (2026-05-18 22:12 peak) | ✅ Recorded. Forecast 6.19 / actual 6.58. **Key finding: local enhancement at SH 6.58 was ~0, not +0.40.** See `assets/observations/2026-05-18/README.md` |
+| Photos from 2026-05-18 event in scratch/ awaiting distribution | ⏳ User has 22 photos (~83 MB, full iPhone res) at `assets/observations/2026-05-18/scratch/`. Resize via `sips -Z 1500` recommended before committing to subdirs. Then Claude walks EXIF + appends to `data/labeled_observations.csv` |
+| v0.7 model spec promotion (5 grates + SH-dependent enhancement) | ⏸ Queued. Adds grate_NW, grate_SW, grate_bay_ave_upstream as landmarks; renames existing corner_grate→grate_NE, lowest_sentinel_grate→grate_SE. Needs more sub-curb observations to firm up the enhancement model. |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
 | v0.6 model-spec promotion + 9th landmark added | ✅ Live (2026-05-18). model/v0.6.md canonical; v0.5 archived. New lowest sentinel at 3.60 NAVD88 (SH 6.02). |
@@ -513,6 +516,38 @@ Same surge information the Borough's emergency management is looking at.
 ## 9. Future work (prioritized)
 
 ### High value, near-term
+−1. **CRITICAL — 2026-05-18 spot-check session findings (DO NOT LOSE).**
+    First real observation event after spot-check feature went live.
+    Forecast: 6.19 ft at 21:58. Actual: 6.58 ft MLLW at 22:12 (NOAA
+    Sandy Hook 6-min). LOW confidence flag was correct (0.87 ft
+    surge swing in prior 6 h).
+    **Striking finding: effective local enhancement at SH 6.58 was
+    ~0, not the +0.40 the model assumes.** At SH 6.58 the v0.6
+    model predicts water at the curb (4.16 NAVD88) and 3.0" above
+    the corner grate (3.91); user observed water 1-1.5" *below* the
+    corner grate at peak. Back-solving from observations: water at
+    342 Bay at peak was ~3.78-3.83 NAVD88, implying enhancement of
+    ~0.03 ft. Hypothesis: +0.40 is the saturated value developed
+    only when SH is well above the Pathway B threshold (6.33) and
+    drains have time to equilibrate; at SH just above 6.33 with
+    short peak duration, enhancement is much smaller.
+    One event — do NOT recalibrate. Watch for the pattern.
+    Full write-up: `assets/observations/2026-05-18/README.md`.
+    Photos: 22 in `assets/observations/2026-05-18/scratch/`, awaiting
+    distribution to the 7 grate/landmark subdirectories. Sizes are
+    full iPhone res (3.8 MB ea, 83 MB total) — user may resize via
+    `sips -Z 1500` before committing.
+    Other key findings:
+    - 5 grates need modeling (currently 2): proposed names
+      grate_NE / NW / SE / SW + grate_bay_ave_upstream. See README.
+    - The upstream Bay Ave grate (~3.78 NAVD88, NOT in v0.6) is the
+      actual primary feeder to the user's gutter at walkway, not
+      the Bay+Central corner grate as v0.6 implies.
+    - The "pocket" near SE grate (~3.48-3.52 NAVD88) is *post-
+      overflow retention*, not a *pre-arrival* sentinel. Water can
+      only reach the pocket after bay water exceeds the grate top.
+    - Peak time can slip 10-30 min later than the astronomical
+      prediction when surge persistence is unreliable.
 0. **Accumulate landmark observations in `data/labeled_observations.csv`.**
    Append-only log started 2026-05-18 for empirical "what did the user
    actually see" data at named landmarks. Used to validate the +0.40 ft
@@ -972,5 +1007,32 @@ updated in the same commit as the change that necessitated them:
    pull the new year's data and rebuild the parquet. Update
    `history/reports/flood_history_report.md` numbers if doing a
    thorough refresh.
+
+---
+
+## 13. Cold-start pointer — last work was 2026-05-18 late night
+
+If you're a fresh Claude coming in after compaction: read
+`assets/observations/2026-05-18/README.md` first. That's the most
+important new artifact from the session that just ended. Headline:
+the first spot-check event surfaced a finding that the +0.40 ft
+local enhancement may not be constant — appears to be ~0 at SH just
+above the Pathway B threshold. Don't recalibrate from one event;
+watch the pattern.
+
+User is mid-distribution of 22 photos (currently in
+`assets/observations/2026-05-18/scratch/`, full iPhone res). They
+asked whether to resize before committing. I recommended `sips -Z
+1500` for ~7× reduction. User had not answered as of compaction.
+
+Once photos are distributed:
+1. Walk EXIF timestamps
+2. Pull NOAA water_level for each photo's 6-min window
+3. Append observation rows to `data/labeled_observations.csv`
+4. Compute per-observation effective enhancement; look for pattern
+5. If pattern holds across 3+ events, draft v0.7 with magnitude-
+   dependent enhancement + 5 grates
+
+v0.7 is queued but not started. Don't start it yet.
 
 End of handoff.
