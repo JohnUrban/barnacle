@@ -3296,6 +3296,13 @@ def render_per_tide_page(tide, forecast,
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tide {time_str} — Bay Ave Barnacle</title>
 <link rel="stylesheet" href="../../style.css">
+<meta name="description" content="Bay Ave Barnacle — high tide at {format_time_full(time_str)}: {regime.upper()} regime, peak {tide['forecast_peak_mllw']:.2f} ft MLLW Sandy Hook.">
+<!-- Open Graph — W -->
+<meta property="og:title" content="High tide {format_time_full(time_str)} — Bay Ave Barnacle">
+<meta property="og:description" content="{regime.upper()} regime. Forecast peak {tide['forecast_peak_mllw']:.2f} ft MLLW Sandy Hook.">
+<meta property="og:image" content="https://johnurban.github.io/barnacle/icons/icon-512.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
 </head>
 <body>
 <main>
@@ -3654,7 +3661,14 @@ def render_html_page(forecast):
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Barnacle">
 <meta name="theme-color" content="#0f4064">
-<meta name="description" content="Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ — daily prediction at 8 named landmarks.">
+<meta name="description" content="Bay Ave Barnacle — {regime.upper()} regime. Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ.">
+<!-- Open Graph (link previews) — W -->
+<meta property="og:title" content="Bay Ave Barnacle — {regime.upper()}">
+<meta property="og:description" content="Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ.">
+<meta property="og:image" content="https://johnurban.github.io/barnacle/icons/icon-512.png">
+<meta property="og:url" content="https://johnurban.github.io/barnacle/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
 </head>
 <body>
 <main>
