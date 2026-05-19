@@ -45,8 +45,8 @@ Central Ave):
 |---|---|---:|---|
 | `grate_NE` | `corner_grate` (v0.6) | 3.91 | Water 1–1.5" *below* top at peak — never overflowed |
 | `grate_NW` | (not in model) | unknown | Same side of Bay as NE, across Central. Never overflowed; water also 1–1.5" below top at peak. Probably similar elevation to NE. |
-| `grate_SE` | `lowest_sentinel_grate` (v0.6) | 3.60 | "Proximal" across Bay — closer to user's corner. Overflowed; ~1" above at observed peak. **More water emerged here than SW** — possibly a larger pit / less topographic resistance. |
-| `grate_SW` | (not in model) | likely < 3.60 | "Distal" across Bay — diagonally opposite NE. Overflowed deeper than SE: when SE had ~1" above, SW had ~1.5" above. **Suggests SW is slightly lower than SE** by maybe 0.5". |
+| `grate_SE` | `lowest_sentinel_grate` (v0.6) | 3.60 | "Proximal" across Bay — closer to user's corner. Overflowed; ~1" above at observed peak. **Water spread more widely from SE than SW** — likely a flatter / larger surrounding pavement pocket. |
+| `grate_SW` | (not in model) | likely ~3.55-3.58 | "Distal" across Bay — diagonally opposite NE. Overflowed earlier and *deeper directly above the grate* than SE: when SE had ~1" above, SW had ~1.5" above. **SW is ~0.5" lower than SE.** |
 | `grate_bay_ave_upstream` | (not in model) | inferred ~3.78 | On Bay Ave east of NE corner, upstream of the user's walkway. Water emerged ~1 cm above grate at peak. **This is the actual primary feeder to the gutter at the walkway**, not the NE corner grate. |
 
 ### Observed kinetics across grates
@@ -55,8 +55,13 @@ Inferred from the user's running commentary, ordered by which grate
 wets first:
 
 1. **`grate_SE` and `grate_SW`** (across Bay) wet first as bay rises.
-   At 21:45, water was already 1-2 cm shy of flush at SE. SW was
-   probably already overflowing by then but the user didn't measure.
+   At 21:45, water was already 1-2 cm shy of flush at SE. **SW was
+   likely overflowing at the same time or earlier** — the user was
+   hyperfocused on SE (the previously-mapped "lowest sentinel") and
+   didn't measure SW initially, but photos 3 and 4 show clear water
+   already at SW while SE was just starting to spread. SE spreads
+   widely (less depth above grate); SW concentrates deeper directly
+   above the grate (suggests it's the lower of the two, by ~0.5").
 2. **`grate_bay_ave_upstream`** wets next — water emerges and begins
    flowing along the curb downhill toward the user's walkway gutter,
    forming a thin "worm-like stream."
@@ -100,8 +105,11 @@ is the canonical record.)
 The starkest finding. At the NOAA observed peak (SH 6.58), v0.6
 predicts water at the property of 4.16 NAVD88 (= curb top), but the
 user observed water 1-1.5" below the corner grate (3.91 NAVD88) — so
-water at the property was ~3.79 NAVD88, not 4.16. Effective local
-enhancement at this event was ~0.03 ft, not +0.40 ft.
+water at the property was ~3.79-3.83 NAVD88, not 4.16. **Effective
+local enhancement at this event was about +0.06 to +0.10 ft at peak,
+0 to +0.04 ft on the rising tide, not +0.40 ft.** Across the event
+the enhancement was always small and positive — never close to the
++0.40 the model assumes.
 
 Possible explanations (need more events to discriminate):
 

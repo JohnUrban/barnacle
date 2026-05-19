@@ -45,36 +45,51 @@ Conventions:
 | 14 | 22:14:59 | SE proximal | wet patch + grate visible at right | 6.58 | +6.7″ | +1.9″ | ~0 ft | Looking back up at intersection from south of Bay |
 | 15 | 22:15:15 | SW distal | wet patch extending into crosswalk | 6.58 | +6.7″ | +1.9″ | ~0 ft | SW at peak. NW also visible across — no clear standing water at NW. |
 | 15 | 22:15:15 | NW (3.91 assumed) | no clear water above grate | 6.58 | +3.0″ | −1.6″ | <0 ft (water below grate) | NW visible across; appears dry on top |
-| 16 | 22:16:23 | NE user-corner (3.91) | grate dry on top, water in slots | 6.55 | +2.7″ | −1.9″ | ≤0 ft | Top-down view, clearly dry above grate |
-| 17 | 22:17:02 | NE user-corner | **water ~2–2.5″ below grate top** (tape measure visible) | 6.55 | +2.7″ | −1.9″ | ≈−0.04 ft (very small negative) | Tape shows 2-2.5 mark at water surface |
-| 18 | 22:17:43 | NE user-corner | grate dry on top (wide intersection shot) | 6.55 | +2.7″ | −1.9″ | ≤0 ft | Foreground NE grate clearly dry |
-| 18 | 22:17:43 | SE distant | wet patch visible across | 6.55 | +6.5″ | +1.7″ | ~0 ft | |
-| 19 | 22:18:08 | NW across-Central | grate dry on top | 6.55 | +2.7″ | −1.9″ | ≤0 ft | **Log says "SW" but photo and dir say NW — likely typo in log** |
-| 20 | 22:18:36 | NW across-Central | tape measure shows ~**3.5-4″ below grate top** (water surface) | 6.55 | +2.7″ | −1.9″ | ≈−0.1 ft | My reading uncertain — please verify the exact tape reading |
+| 16 | 22:16:23 | NE user-corner (3.91) | grate dry on top, water in slots | 6.55 | +2.7″ | −1.9″ | small positive | Top-down view, clearly dry above grate |
+| 17 | 22:17:02 | NE user-corner | **water 1–1.5″ below grate top** (USER-CONFIRMED tape reading) | 6.55 | +2.7″ | −1.9″ | **+0.06 to +0.10 ft** | Water at 3.79–3.83 NAVD88; SH 6.55 → no-enhancement water = 3.73; difference = +0.06–0.10 ft |
+| 18 | 22:17:43 | NE user-corner | grate dry on top (wide intersection shot) | 6.55 | +2.7″ | −1.9″ | small positive | Foreground NE grate clearly dry; consistent with 17 |
+| 18 | 22:17:43 | SE distant | wet patch visible across | 6.55 | +6.5″ | +1.7″ | small positive | |
+| 19 | 22:18:08 | NW across-Central | grate dry on top | 6.55 | +2.7″ | −1.9″ | small positive | NW confirmed by user (typo in log was fixed) |
+| 20 | 22:18:36 | NW across-Central | **water 1.5–1.75″ below grate top** (USER-CONFIRMED tape reading; tape slightly in water) | 6.55 | +2.7″ | −1.9″ | **+0.03 to +0.06 ft** | Water at 3.77–3.79 NAVD88; SH 6.55 → no-enhancement water = 3.73; difference = +0.04–0.06 ft. Marginally smaller enhancement than NE at 22:17, consistent with tide starting to recede. |
 | 21 | 22:28:37 | SE pocket retention | LARGE persistent puddle, road otherwise dry | 6.50 | +5.9″ | +1.1″ | n/a (pocket physics, not direct enhancement) | **Visual proof of post-overflow retention.** Pocket pavement ~3.48-3.52 NAVD88 (1-1.5″ below grate top); water trapped. |
 | 22 | 22:28:53 | SW receding | SW pocket much smaller than SE | 6.50 | +5.9″ | +1.1″ | n/a | Suggests SW pavement is more level — drains back through grate. |
 
 ## Key inferences (one event — don't recalibrate yet)
 
-### 1. Effective local enhancement at this event was ~0 ft, not +0.40
+### 1. Effective local enhancement at this event was +0.06–0.10 ft at peak, NOT +0.40
 
-Most striking pattern across all observations: the v0.6 model with +0.40 enhancement consistently
-overshoots by 4-7″ at every landmark. Setting enhancement = 0 brings every observed depth within
-~0.5″ of the model. Hypothesis (from earlier analysis): +0.40 is the saturated enhancement value
-that only develops when SH is well above 6.33 AND the peak lasts long enough for Pathway B to
-equilibrate. At SH 6.58 with a brief peak, only partial Pathway B engagement → small enhancement.
+With **corrected** tape readings (NE 1-1.5″ below at 22:17, NW 1.5-1.75″ below at 22:18), the
+implied enhancement was:
+- 0 to +0.04 ft on the rising tide (~22:06)
+- **+0.06 to +0.10 ft at peak (~22:15-22:17)**
+- +0.03 to +0.06 ft just past peak (~22:18)
 
-### 2. SW shows more water at peak than SE — likely a topography (pit-size) difference, not elevation
+So enhancement *did* build as Pathway B engaged — consistent with the "equilibration over time"
+hypothesis — but never approached the +0.40 the model assumes. At its peak tonight, enhancement
+was ~25% of the saturated value.
 
-User noted SE had more water than SW initially; later SW caught up and overflowed deeper.
-At peak, both showed similar overflow (~1″ above grate). The "SW slightly lower than SE"
-hypothesis is supported but the elevation difference is small (maybe 0.05 ft / 0.6″).
+Pattern matches the hypothesis: +0.40 is the saturated enhancement value that develops when SH
+is well above 6.33 AND the peak lasts long enough for Pathway B to equilibrate. At SH 6.58 with
+a brief peak (only ~10-15 min near top), only partial Pathway B engagement → smaller enhancement.
 
-### 3. NE and NW corner grates: water 2-4″ below top throughout the event
+### 2. SW vs SE: SW overflows earlier and deeper above the grate; SE spreads more widely
 
-Both NE and NW grates stayed below their tops. Tape-measure shots (17 + 20) are the most
-precise observations of the event. Reconciles with the implied water level at the property
-during peak: ~3.73-3.78 NAVD88 (zero-enhancement back-calc).
+**User correction:** SW probably started at the same time or *earlier* than SE — user was
+hyperfocused on SE (the previously-mapped "lowest sentinel"). Photos 3-4 show clear water
+already at SW while SE was just starting to spread. SE spreads widely (less depth directly
+above grate, more wet area); SW concentrates deeper directly above the grate. Suggests SW
+is the *lower* of the two by up to ~0.5" — SW likely at ~3.55-3.58 NAVD88 (SE at 3.60).
+
+### 3. NE and NW corner grates: water 1-2.5″ below top throughout the event
+
+**Corrected** based on user's live commentary + tape-measure photos:
+- ~22:06 (rising tide, SH 6.56): NE 2-2.5" below top → water at 3.70-3.74 NAVD88
+- ~22:15-22:17 (at peak, SH 6.55-6.58): NE 1-1.5" below → water at 3.79-3.83 NAVD88
+- ~22:18 (just past peak, SH 6.55): NW 1.5-1.75" below → water at 3.77-3.79 NAVD88
+
+Water level at the property climbed ~1" during the rise to peak, then started receding
+within a few minutes. Neither NE nor NW overflowed. NE and NW are likely at very similar
+elevations (~3.91 NAVD88).
 
 ### 4. The pocket-as-retention hypothesis is visually confirmed by photo 21
 
@@ -87,25 +102,36 @@ Photo 10 shows the "worm" stream visible along the curb-gutter line from the ups
 grate end toward the walkway. The corner grate (NE) never overflowed, so it didn't feed
 the gutter tonight at all.
 
-### 6. NW grate elevation inference
+### 6. NW grate elevation
 
-If my read of photo 20 is right (water ~3.5-4″ below top at 22:18, when SH was 6.55 and
-water-at-342 in the zero-enhancement model = 3.73), then NW grate top is at ~3.73 + 0.29 to
-0.33 = ~4.02-4.06 NAVD88 — slightly *higher* than NE (3.91). Possible. Or my tape read is
-off. Need user to verify.
+With corrected tape reading (1.5-1.75″ below top at 22:18, SH 6.55), water level at NW was
+3.77-3.79 NAVD88. If NW grate is at 3.91 NAVD88 (same as NE), implied enhancement = +0.04 to
++0.06 ft. Slightly smaller than NE's +0.06 to +0.10 ft at 22:17 (1 min earlier) — consistent
+with tide starting to recede. NW elevation appears to be very close to NE (~3.91 NAVD88).
 
-## Discrepancies to resolve before committing to CSV
+## Discrepancies resolved (2026-05-19)
 
-1. **Photo 19/20 log labels.** Log says "SW grate" but they're in the NW directory and the
-   photo content looks like NW. Likely a typo in the log. Confirm?
-2. **Tape measure readings (photos 17 and 20).** I read photo 17 as ~2-2.5″ below grate top.
-   Photo 20 as ~3.5-4″ below grate top. Hard to read at the medium resolution. Please confirm
-   the exact tape readings if you remember them, or check the original photos at full size.
-3. **NW elevation.** If both tape readings are accurate, NW grate is slightly higher than NE
-   (4.02-4.06 vs 3.91). Plausible but worth confirming.
-4. **Photo 21 placement.** I copied it to `pocket-SE-retention/` since it's clearly the
-   pocket photo. Should we also keep it in `grate-SE-proximal/` (since SE grate IS visible in
-   the lower-left corner), or remove from there?
+1. ✅ Photo 19/20: user confirmed log typo → updated to NW.
+2. ✅ Tape readings: user confirmed NE=1-1.5″, NW=1.5-1.75″ (my reads were off by
+   ~1-2″ each). Implied enhancement recomputed; all tables above use corrected values.
+3. ✅ NW elevation: with corrected tape, NW elevation appears very close to NE (~3.91 NAVD88).
+4. ✅ Photo 21 stays in both `grate-SE-proximal/` and `pocket-SE-retention/`.
 
-Once you've reviewed and corrected, I'll append the rows to `data/labeled_observations.csv`
-in proper CSV format.
+## Remaining uncertainties Claude wants to surface
+
+These are smaller and don't block the CSV write. Flagging in case the user wants to clarify:
+
+- **Spatial water-level variation:** at peak, NE-corner water level (3.79-3.83) and SW-corner
+  water level (3.67-3.72 if SW=3.55) don't quite match. ~0.1 ft difference could mean different
+  corners of the intersection have different water levels (plausible — Pathway B floods unevenly
+  across an intersection), or one of the elevations is slightly off. Not critical to resolve.
+- **Upstream grate elevation refinement:** if SE peak water was 3.68 NAVD88 and upstream grate
+  had ~1 cm of water above it at the same time, grate top = 3.68 - 0.033 ≈ 3.65 NAVD88. That's
+  lower than the earlier 3.78 estimate. Worth user verifying the timing (was the "1 cm above
+  upstream" observation at peak, or earlier/later?).
+- **NE/NW elevation slight asymmetry:** NW water reads as ~0.02-0.06 ft lower than NE at very
+  close-in-time tape shots. Could indicate NW grate is at 3.93 (slightly higher than NE's 3.91)
+  OR water level varied across the intersection. Not actionable without more events.
+
+Once the user gives a "looks good, proceed" I'll append rows to `data/labeled_observations.csv`
+using the corrected enhancement numbers above.
