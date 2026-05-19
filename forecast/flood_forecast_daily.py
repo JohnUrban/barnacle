@@ -1508,6 +1508,44 @@ def _render_accuracy_text(forecast):
     )]
 
 
+LABELED_OBSERVATIONS_PATH = os.path.join(
+    _REPO_ROOT, "data", "labeled_observations.csv"
+)
+
+
+def _load_outcome_depth_rows():
+    """Load `data/labeled_observations.csv` and return rows usable for
+    outcome-depth accuracy (HANDOFF 9b.8 mode 2): those with both
+    `observed_depth_in` and `model_predicted_depth_in` numeric.
+
+    Each returned dict has:
+      time, landmark, observed_in, predicted_in, error_in (signed,
+      positive = model over-predicted), notes
+    """
+    if not os.path.exists(LABELED_OBSERVATIONS_PATH):
+        return []
+    out = []
+    try:
+        with open(LABELED_OBSERVATIONS_PATH) as f:
+            for r in csv.DictReader(f):
+                try:
+                    obs = float(r["observed_depth_in"])
+                    pred = float(r["model_predicted_depth_in"])
+                except (TypeError, ValueError, KeyError):
+                    continue
+                out.append({
+                    "time":       r.get("observation_time_local", ""),
+                    "landmark":   r.get("landmark_key", ""),
+                    "observed_in":  obs,
+                    "predicted_in": pred,
+                    "error_in":   pred - obs,
+                    "notes":      r.get("notes", ""),
+                })
+    except OSError:
+        return []
+    return out
+
+
 # Sandy Hook MLLW threshold for "flooded" in the binary classifier.
 # 6.02 = lowest grate emerges (the earliest visible-water signal at the
 # property). Configurable later (HANDOFF 9b.8 mentions "threshold
@@ -1594,6 +1632,50 @@ def _render_accuracy_html(forecast):
         f'Total scored: {a["n_scored_total"]}.</p>'
     )
 
+    # Mode 2: outcome-depth accuracy from data/labeled_observations.csv
+    # (HANDOFF 9b.8 mode 2). Each row is one in-the-field observation
+    # that already has both `observed_depth_in` and
+    # `model_predicted_depth_in` columns — no joining needed.
+    outcome_rows = _load_outcome_depth_rows()
+    outcome_html = ""
+    if outcome_rows:
+        n = len(outcome_rows)
+        mean_err = sum(r["error_in"] for r in outcome_rows) / n
+        mean_abs = sum(abs(r["error_in"]) for r in outcome_rows) / n
+        max_abs = max(abs(r["error_in"]) for r in outcome_rows)
+        rows_html = ""
+        for r in outcome_rows:
+            err = r["error_in"]
+            sign_cls = "err-over" if err > 0 else ("err-under" if err < 0 else "")
+            rows_html += (
+                f'<tr>'
+                f'<td>{r["time"]}</td>'
+                f'<td>{r["landmark"]}</td>'
+                f'<td>{r["observed_in"]:+.1f}&Prime;</td>'
+                f'<td>{r["predicted_in"]:+.1f}&Prime;</td>'
+                f'<td class="{sign_cls}">{err:+.1f}&Prime;</td>'
+                f'</tr>'
+            )
+        outcome_html = (
+            f'<div class="outcome-block">'
+            f'<h3 style="margin:12px 0 4px 0;font-size:15px">'
+            f'Outcome-depth accuracy (per-observation)</h3>'
+            f'<p style="font-size:13px;margin:4px 0">'
+            f'N = {n} labeled observations. Mean error '
+            f'<b>{mean_err:+.1f}&Prime;</b> (positive = model over-predicts), '
+            f'mean |error| <b>{mean_abs:.1f}&Prime;</b>, '
+            f'worst |error| {max_abs:.1f}&Prime;.</p>'
+            f'<table class="outcome-table">'
+            f'<thead><tr><th>Time</th><th>Landmark</th>'
+            f'<th>Observed</th><th>Predicted</th><th>Error</th></tr></thead>'
+            f'<tbody>{rows_html}</tbody></table>'
+            f'<p class="note">Compares each user-logged observation in '
+            f'<code>data/labeled_observations.csv</code> to the model\'s '
+            f'predicted depth at the same landmark at the same time. '
+            f'Sparse but each row is a real observation with real depth.</p>'
+            f'</div>'
+        )
+
     # Binary classifier metrics (HANDOFF 9b.8 mode 3)
     cm = _compute_classifier_metrics()
     classifier_html = ""
@@ -1633,11 +1715,12 @@ def _render_accuracy_html(forecast):
     rows = _load_accuracy_rows()
     if len(rows) < 2:
         # Not enough data for a scatter chart yet — text summary +
-        # (optional) binary classifier block, which is meaningful at N=1
+        # (optional) outcome-depth + binary classifier blocks
         return (
             '<section class="accuracy">'
             '<h2>Model accuracy</h2>'
             f'{summary_html}'
+            f'{outcome_html}'
             f'{classifier_html}'
             f'{note_html}'
             '</section>'
@@ -1656,6 +1739,7 @@ def _render_accuracy_html(forecast):
 <section class="accuracy">
   <h2>Model accuracy — predicted vs observed peaks</h2>
   {summary_html}
+  {outcome_html}
   {classifier_html}
   <canvas id="accuracy-chart" width="800" height="380"
           style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
