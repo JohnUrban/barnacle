@@ -910,6 +910,351 @@ Same surge information the Borough's emergency management is looking at.
 
 ---
 
+## 9b. Web platform pivot — active development direction (2026-05-19+)
+
+After the heat-map MVP shipped (commits edac47d + 5be56b5), the next
+major development direction is to turn the website
+(johnurban.github.io/barnacle) into the dynamic, interactive,
+sub-daily-updated face of the project, with the daily email staying as
+a once-a-day summary plus optional follow-up alerts. The brainstorm
+that anchored this section: `dev/ideas/20260519.txt`.
+
+Three architectural decisions anchor the whole section:
+
+1. **Additive, not destructive.** Every new feature *adds* to what's
+   there; nothing existing gets removed without an explicit pruning
+   pass later. "When in doubt, keep what we have."
+2. **Client-side rendering of all map visuals.** GitHub Pages serves
+   only data (JSON/CSV) and static HTML. The browser parses the data
+   and renders contours in JavaScript (D3.js or similar). No PNG
+   storage in git history for time-varying maps. The base map
+   (`docs/icons/map_raw.png`) stays static.
+3. **One number canonically describes map state.** Water level
+   (NAVD88 ft) at any given moment + the static `assets/map_points.csv`
+   recovers every landmark depth, regime, map visual. Storage is one
+   row per prediction event, not one PNG per prediction event.
+
+The 10 items below are the work queue, roughly in build order.
+
+### 9b.1 — Sub-daily dynamic updates
+
+Workflow runs hourly instead of daily. Each run updates
+`docs/forecast.json` in place (and downstream HTML/CSV), and appends
+to the master log (9b.3). **Never deletes prior history.**
+
+- **Cadence**: start at every 1 hour (24 ticks/day). Slow to 2-6 h if
+  hourly proves too fine. Adaptive cadence (hourly within 12 h of a
+  tide, slower otherwise) deferred — we'll know if it's needed after
+  watching the data.
+- **Email policy**: morning email stays daily-only. A follow-up *alert
+  email* lands in the same thread when intra-day regime worsens
+  (e.g., DRY → LIGHT or LIGHT → MODERATE before the next morning's
+  email), one-two sentences body + link to the live site.
+- **Compute**: hourly is well within GitHub Actions free tier
+  (~30s/run × 24 = ~12 min/day on public repos which are unlimited).
+- **Storage**: text updates are cheap (overwrite same paths).
+  Binary-PNG growth was the concern — 9b.10 resolves it.
+- Status: queued
+- Replaces/extends: HANDOFF 16d (threshold-crossing alerts) and
+  HANDOFF 27 Stage-3 PWA push (both ride on this infrastructure).
+
+### 9b.2 — Per-high-tide as the primary unit (additive to current 24h rollup)
+
+Currently the home page is "today's forecast" with two high tides as
+table rows. Migrate to a per-tide model: each high tide is its own
+object with its own evolution log + final-prediction snapshot. The
+current 24h rollup table **stays** and gains:
+
+- A **duration toggle**: 24h / 48h / longer (capped at the surge
+  forecast horizon, e.g., 5-7 days; deep "next 1-2 months" view is
+  9b.7 — astronomical only)
+- **Severity-colored rows** using the regime palette, time-ordered
+  (earliest at top)
+- **Worst-case detail** auto-selects the worst row
+- Worst-case row also gets the heat-map underneath (rendered
+  client-side per 9b.10)
+
+New **per-tide deep-link pages** live at `docs/tides/<tide-time>/`:
+
+```
+docs/tides/2026-05-18T22-12/
+  ├── index.html        # static snapshot of the final prediction
+  ├── forecast.json     # final prediction object
+  └── evolution.csv     # all updates leading up to this tide's peak
+```
+
+- Per-tide pages: generated EAGERLY for upcoming tides in the rollup
+  window. (Lazy generation can come later if it becomes a maintenance
+  burden.)
+- Old per-day archive (`docs/archive/YYYY-MM-DD.html`) keeps
+  accumulating in parallel — leave it untouched. Pruning is a later
+  decision once the per-tide structure has settled.
+- Status: queued
+- Depends on: 9b.3 (evolution.csv comes from the master log)
+
+### 9b.3 — Master historical log of all predictions over time
+
+One row per `(prediction_made_at, target_tide_time)` pair. CSV
+(append-only, both JS and Python read it trivially). Schema:
+
+```
+prediction_made_at, target_tide_time,
+sh_peak_mllw_predicted, water_navd88_predicted,
+regime_predicted, source, confidence_band,
+peak_rain_in_hr_predicted, ...
+```
+
+User's key insight: from a single row's `water_navd88_predicted` plus
+`assets/map_points.csv`, every landmark depth, regime, and map visual
+can be reconstructed. So storage is small even at 24 ticks/day × ~3
+upcoming tides per tick.
+
+- The existing `data/forecast_accuracy.csv` (HANDOFF 8b) is the
+  degenerate one-row-per-day version of this. The new log replaces it
+  for new data; the old log stays frozen as a historical artifact.
+- Status: queued — foundational; nothing else in 9b ships without it.
+- Depends on: nothing
+
+### 9b.4 — Interactive website features
+
+All three derive from 9b.3 + 9b.10. Build order:
+
+**(a) Prediction-convergence plot per tide.** x = hours-before-peak
+(-12 → 0). y = predicted peak (or water_navd88). One point per
+prediction event. LOESS fit shows how the estimate converges as the
+tide approaches. Checkboxes to include/exclude prediction-sources or
+date ranges.
+
+**(b) Water-level oscillation plot.** Line plot of predicted (and
+observed, when available) water level over time. Background banded by
+landmark elevation with a blue→red gradient — lowest (pocket, 3.50)
+in blue, highest (porch step, 5.08) in red. Reading the plot tells you
+which landmarks the water has crossed.
+
+**(c) Map scrubber + play button.** Timeline slider scrolls through
+past predictions. "Play" button animates from date X → Y at N-hour
+increments. Renders the heat-map client-side from each row's
+`water_navd88`. Becomes nearly free once 9b.10 ships.
+
+- Status: queued, build in order (a) → (b) → (c)
+- Depends on: 9b.3 + 9b.10
+
+### 9b.5 — Rain in the heat-map (uniform water-level addition)
+
+Current heat-map shows tidal-only water level. Rain-driven events
+(Oct 30 2025) get visually undersold. Fix: rain raises water level by
+`dZ_rain` feet uniformly across the map. Contour bands shift up by
+that amount.
+
+- **Email**: pre-render two maps via `render_map.py` (with rain,
+  without rain) — keeps the existing Python pipeline alive for the
+  email path. Email is the least-dynamic surface and stays
+  server-rendered.
+- **Website**: client-side rendering with a checkbox toggle "include
+  rain" — same single number drives both states.
+- This falls out naturally of model refactor 9c.4 — once the model
+  itself uses a single water level, the map just reads that value.
+- Status: queued
+- Replaces: per-landmark rain shedding in the v0.6 model.
+
+### 9b.6 — Confidence semantics — always pair badge with what+why line
+
+The current confidence indicator ("LOW") doesn't say what it's about,
+which confused the user when a DRY day showed LOW confidence. Fix:
+
+- Keep the badge.
+- Always pair with an explicit "what + why" line:
+  > Confidence: LOW — surge shifted ±0.87 ft in the past 6 h; the
+  > forecast peak (6.19 ft MLLW) may differ from actual by ~±0.5 ft.
+  > Regime could span DRY → LIGHT depending on which way it resolves.
+- When the uncertainty band spans regime categories, state the span
+  ("could be DRY through LIGHT" or "could be MODERATE through SEVERE").
+- Status: queued
+- Extends: HANDOFF 16a (confidence indicator) — DONE; this is
+  refinement, not replacement.
+
+### 9b.7 — Look-ahead (1-2 months astronomical)
+
+Pull NOAA `tide_predictions` for the next 30-60 days. Surface days
+with astronomical peak ≥ thresholds:
+
+- ≥ 6.00 ft MLLW — mention in passing
+- ≥ 6.20 ft MLLW — call out (gutter onset)
+- ≥ 6.58 ft MLLW — call out clearly (curb at the property)
+- ≥ 7.00 ft MLLW — bold warning (lawn step)
+
+**Astronomical only.** Surge isn't forecast that far out; the caveat
+must be explicit on every surface: *"These are baseline astronomical
+tides; an event of significance also needs surge or rain, neither of
+which is forecast this far ahead."*
+
+- **Email**: section at the bottom listing dates / times.
+- **Website**: dedicated section, updated once-daily (no need for
+  hourly cadence on this view).
+- Status: queued
+- Adjacent: HANDOFF 25a (lunar / spring-tide annotation — same
+  calendar days, different framing).
+
+### 9b.8 — Accuracy on the website (three modes)
+
+Backward-looking accuracy section, subsettable by start/end dates.
+Three modes:
+
+1. **Peak-magnitude accuracy** — predicted SH peak (MLLW) vs observed
+   SH peak (MLLW from NOAA 6-min). Input-stage accuracy. Plot:
+   predicted vs observed scatter + |error| over time.
+2. **Outcome-depth accuracy** — predicted depth at curb (inches) vs
+   inferred depth at curb (from `data/labeled_observations.csv` when
+   available, else from regime classification). Output-stage
+   accuracy.
+3. **Binary flood classification** — predicted_flooded vs
+   observed_flooded where `flooded = depth at lowest grate > 0`
+   (threshold configurable per view). Confusion-matrix metrics:
+   false-positive rate (predicted flood, none observed),
+   false-negative rate (no prediction, actual flood). Single-number
+   "should I trust this?" summary.
+
+Plus a **time-to-peak axis** from 9b.3: plot accuracy by
+hours-before-peak. Does accuracy improve sharply at -3 h? -6 h?
+Checkboxes for which lead-time bucket to include.
+
+- Status: queued
+- Extends: HANDOFF 8b (forecast accuracy log) — DONE; this is the
+  visualization layer plus the three modes.
+
+### 9b.9 — Model refactor (v0.7) cross-reference
+
+The single-water-level math + per-landmark rain shedding removal
+happens as part of the v0.7 model spec promotion. See dedicated
+section **9c** below for the consolidated v0.7 roadmap.
+
+- Status: queued — **DO NOT START YET** (see 9c).
+- Forces alignment with: 9b.5 (rain map), 9b.10 (storage).
+
+### 9b.10 — Storage refactor: no per-update binary archives
+
+The current pipeline commits `docs/icons/map_today.png` (2 MB) on
+every workflow run. At 24 ticks/day that's ~18 GB/year of git history
+just for maps — not viable. Fix:
+
+- **No more per-update PNG storage.** The browser renders maps from
+  numbers (`water_navd88`) + `docs/icons/map_raw.png` (static base) +
+  `assets/map_points.csv`.
+- `render_map.py` **stays alive** for the email pipeline (9b.5) —
+  emails can't run JavaScript, so pre-rendering is the right answer
+  there.
+- Existing daily archive PNGs (`docs/archive/YYYY-MM-DD-map.png`) are
+  frozen — leave them; they're historical artifacts of v1.
+- The map renderer code becomes a static JS module in `docs/` (e.g.
+  `docs/map-render.js`), pure function of `(water_navd88, map_points)`
+  → SVG/Canvas.
+- Status: queued
+- Enables: 9b.4(c) — map scrubber becomes nearly free once render is
+  client-side.
+
+---
+
+## 9c. v0.7 model spec roadmap (DO NOT START YET)
+
+Consolidated view of everything queued for the v0.7 model promotion.
+Per HANDOFF section 12's versioning rule, elevation changes + formula
+changes warrant a version bump — v0.7 is the bundle of all five items
+below.
+
+**DO NOT START YET.** Two reasons to bundle rather than land
+piecewise:
+
+1. The **storm-surge enhancement hypothesis** (9c.3) needs at least
+   one more validating event before freezing v0.7's enhancement
+   function. A single 2026-05-18 observation isn't enough.
+2. Several **9b.X items depend on v0.7's water-level architecture**
+   (9b.5, 9b.9 explicitly; 9b.4 indirectly). Bundling avoids two
+   migrations.
+
+### 9c.1 — Corrected grate elevations (survey-derived)
+
+Per `model/HLND2303-Road-Reconstruction-Supplement-Set-2024.05.06.pdf`:
+
+- `grate_NE` and `grate_NW` = **3.80 NAVD88** (was 3.91 in v0.6)
+- `corner_NE` = **3.91 NAVD88** — NEW landmark; the NE pavement corner,
+  distinct from the grate
+- `corner_SE`, `corner_SW` = **3.64 NAVD88** — NEW landmarks
+- Pathway B activation threshold shifts from SH 6.33 to **SH 6.22**.
+
+### 9c.2 — Expanded grate set
+
+Five grates instead of two:
+
+| Key | NAVD88 | Notes |
+|---|---:|---|
+| `grate_NE` | 3.80 | User's corner (was `corner_grate` in v0.6) |
+| `grate_NW` | 3.80 | Across Central, NEW |
+| `grate_SE` | 3.60 | Across Bay (was `lowest_sentinel_grate`) |
+| `grate_SW` | ~3.55-3.58 | Across Bay, diagonal; NEW; ~0.5" lower than SE |
+| `grate_bay_ave_upstream` | ~3.76 | East on Bay Ave, NEW; *the actual primary feeder* of the user's gutter |
+
+### 9c.3 — Storm-surge propagation enhancement
+
+Replace the constant +0.40 ft local enhancement with a function of
+surge magnitude.
+
+Working hypothesis (one validating event: 2026-05-18; non-validating):
+
+> +0.40 ft is a storm-surge propagation effect, not a constant.
+> Storm events with meaningful surge (Apr 18: +1.30 ft; Oct 30:
+> +2.90 ft) amplify water at 342 Bay relative to Sandy Hook.
+> Normal tides without meaningful surge track Sandy Hook directly
+> or slightly lag.
+
+Form to fit: probably `enhancement = f(surge_ft)`, monotone, ~0 at
+surge=0, saturating at ~+0.4 around surge ~+2 ft. Linear or piecewise
+linear is fine pending more events.
+
+**Validation gate**: next storm event with meaningful surge. If
+enhancement re-emerges at ~+0.40 → hypothesis confirmed. If
+enhancement stays ~0 → look for a different driver.
+
+### 9c.4 — Single-water-level math (replacing per-landmark depth math)
+
+v0.6's `predict_landmark_depths()` computes depth per landmark with
+ad-hoc rain shedding at intersection (-2") and lawn/porch (-4").
+v0.7 replaces this with:
+
+```
+water_navd88 = sh_peak_mllw + enhancement(surge) + (-2.82)
+              + dZ_rain(peak_rain_rate)
+depth(landmark) = max(0, (water_navd88 - landmark.elev)) * 12
+```
+
+One water level, every depth derived from it. The per-landmark
+shedding constants are removed.
+
+**Why the shedding constants were wrong**: they conflated "water is
+level across the surface" (true in connected tidal/rain-driven
+flooding — the case at 342) with "this point's local micro-puddle
+sheds rain faster" (a different physical model for pure-rain
+isolated puddles). Combined tide+rain at 342 is always one
+connected water body.
+
+**Calibration constraint**: must reproduce the four labeled events
+(Apr 17, Apr 18, Oct 30, Dec 19) and the 2026-05-18 spot-check within
+their observed uncertainties.
+
+### 9c.5 — Rain term as water-level addition (recalibrated)
+
+The v0.6 `rain_add = 8 * tanh(rate)` (inches) becomes
+`dZ_rain = something(rate)` (ft) applied as a uniform water-level
+rise. Recalibrate against Oct 30 (SH 7.57 + 1.45 in/hr → ~12" at
+curb observed).
+
+Trade-off acknowledgment: the simple uniform-rise model slightly
+overstates depth at higher points (lawn, intersection) compared to
+v0.6's shedding-based predictions. User accepts this in exchange for
+a coherent water-is-level architecture (required for the heat-map to
+agree with the depth predictions per 9c.4 + 9b.5).
+
+---
+
 ## 10. Outstanding open questions
 
 - **Did Aug 21 2025 actually flood at 342 Bay?** Historical data confirms
@@ -1036,6 +1381,25 @@ For when you come back to a fresh chat with this document:
 - **Sandy 2012 is 13.31 ft instantaneous / 12.03 ft hourly_height.**
   Don't conflate these. Forecasts on hourly products that hit 12.0+
   IS Sandy-class.
+- **Active development direction (2026-05-19+) is the web platform
+  pivot in section 9b.** Email is intentionally the *least* dynamic
+  surface going forward — once-daily summary plus optional alert
+  follow-ups in the same thread. The website
+  (johnurban.github.io/barnacle) is where sub-daily updates,
+  interactivity, and historical scrubbing live.
+- **Additive, not destructive.** When uncertain whether to keep or
+  remove an existing feature/section while building something new,
+  KEEP IT. Pruning is a deliberate later pass. The user's words:
+  "let's do additive development, and pruning later."
+- **One number describes map state.** `water_navd88` at a given moment
+  + `assets/map_points.csv` reconstructs every landmark depth, regime,
+  and map visual. Don't store rendered binaries (PNGs); store the
+  number and re-render on demand (client-side for the website, via
+  `render_map.py` for the email). See section 9b.10.
+- **v0.7 is bundled work — DO NOT START YET.** Section 9c consolidates
+  the five v0.7 changes. The storm-surge enhancement hypothesis (9c.3)
+  needs a validating event first, and the other items want to ship
+  bundled to avoid two migrations.
 
 ---
 
@@ -1105,11 +1469,15 @@ elevations and v0.7 compass naming. User is mid-coordinate-picking
 via the (newly keyboard-driven) `assets/pick_coords.py`.
 
 Next likely sessions:
-1. User finishes coordinate picking → render `map_annotated.png`
-2. Next storm event with meaningful surge → test the storm-surge
-   enhancement hypothesis
-3. If hypothesis holds, draft v0.7 with: corrected elevations +
-   5 grates + storm-surge-dependent enhancement
+1. **Web platform pivot work** — see new section **9b** for the active
+   development direction. Ten queued items, build order indicated.
+   The big architectural decisions: hourly cadence, client-side
+   rendering, one-number-describes-map-state.
+2. **Next storm event with meaningful surge** — test the storm-surge
+   enhancement hypothesis (9c.3). Validation gates the v0.7 model
+   promotion.
+3. **v0.7 model promotion** when the surge hypothesis lands — section
+   **9c** consolidates everything in one place. **DO NOT START YET.**
 
 v0.7 is queued but not started. Don't start it yet.
 
