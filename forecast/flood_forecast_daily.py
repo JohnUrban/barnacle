@@ -182,31 +182,75 @@ def fetch_observed_recent(hours=6):
 
 
 def fetch_current_surge():
-    """Compute current surge (observed - predicted) in ft. None if unavailable."""
+    """Compute current surge (observed - predicted) in ft. None on failure.
+
+    BUG FIX 2026-05-19: previously this asked NOAA for hourly
+    predictions in a ZERO-DURATION range [last_obs_time, last_obs_time].
+    NOAA's hourly predictions land on the hour mark (21:00, 22:00, …),
+    and observed is on a 6-min boundary (21:06, 21:12, …), so the
+    range contained zero hourly hits → empty response → None
+    returned → caller fell back to `or 0.0`. Result: every run logged
+    surge as +0.000 regardless of actual conditions. User spotted this
+    on the prediction-convergence chart for tonight's tide showing
+    39 identical predictions.
+
+    Fix: pull a ±1 h window around the last observed time so we always
+    have at least one bracketing hourly prediction, then linearly
+    interpolate to the observed minute mark.
+    """
     obs = fetch_observed_recent()
     if not obs:
         return None
-    # Get predicted at the same hour as the latest observation
     last_obs_time, last_obs_val = obs[-1]
-    # Pull predicted for that hour
-    data = _get(
-        "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
-        {
-            "station": NOAA_STATION,
-            "product": "predictions",
-            "datum": "MLLW",
-            "time_zone": "lst_ldt",
-            "units": "english",
-            "interval": "h",
-            "begin_date": last_obs_time.replace("-", "")[:8] + " " + last_obs_time[11:16],
-            "end_date":   last_obs_time.replace("-", "")[:8] + " " + last_obs_time[11:16],
-            "format": "json",
-        },
-    )
-    preds = data.get("predictions", [])
+    try:
+        obs_dt = dt.datetime.strptime(last_obs_time, "%Y-%m-%d %H:%M")
+    except (ValueError, TypeError):
+        return None
+    start = (obs_dt - dt.timedelta(hours=1)).strftime("%Y%m%d %H:%M")
+    end   = (obs_dt + dt.timedelta(hours=1)).strftime("%Y%m%d %H:%M")
+    try:
+        data = _get(
+            "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+            {
+                "station":    NOAA_STATION,
+                "product":    "predictions",
+                "datum":      "MLLW",
+                "time_zone":  "lst_ldt",
+                "units":      "english",
+                "interval":   "h",
+                "begin_date": start,
+                "end_date":   end,
+                "format":     "json",
+            },
+        )
+    except Exception:
+        return None
+    preds = data.get("predictions", []) or []
     if not preds:
         return None
-    return last_obs_val - float(preds[0]["v"])
+    # Linear-interpolate between the bracketing hourly predictions
+    before_t = before_v = after_t = after_v = None
+    for p in preds:
+        try:
+            p_dt = dt.datetime.strptime(p["t"], "%Y-%m-%d %H:%M")
+            p_v  = float(p["v"])
+        except (ValueError, TypeError, KeyError):
+            continue
+        if p_dt <= obs_dt and (before_t is None or p_dt > before_t):
+            before_t, before_v = p_dt, p_v
+        if p_dt >= obs_dt and (after_t is None or p_dt < after_t):
+            after_t, after_v = p_dt, p_v
+    if before_t is not None and after_t is not None and after_t != before_t:
+        span = (after_t - before_t).total_seconds()
+        frac = (obs_dt - before_t).total_seconds() / span
+        pred_at_obs = before_v + frac * (after_v - before_v)
+    elif before_t is not None:
+        pred_at_obs = before_v
+    elif after_t is not None:
+        pred_at_obs = after_v
+    else:
+        return None
+    return last_obs_val - pred_at_obs
 
 
 def fetch_surge_swing_6h():
