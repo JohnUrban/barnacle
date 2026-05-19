@@ -3753,6 +3753,30 @@ def render_per_tide_page(tide, forecast,
               title: 'As predicted at ' + fmtTime(r.prediction_made_at),
             }});
           }}
+          // FF — link the views: highlight the matching point on the
+          // convergence chart. Match by hours_until_peak (same source
+          // field both use). Guarded for the case where the chart's
+          // script hasn't run yet (initial page load order).
+          if (window.convergenceChart && window.convergencePoints) {{
+            var hu = parseFloat(r.hours_until_peak);
+            var matchIdx = -1;
+            for (var j = 0; j < window.convergencePoints.length; j++) {{
+              if (Math.abs(window.convergencePoints[j].hours_until_peak - hu)
+                  < 0.01) {{
+                matchIdx = j;
+                break;
+              }}
+            }}
+            if (matchIdx >= 0) {{
+              window.convergenceChart.setActiveElements([
+                {{datasetIndex: 0, index: matchIdx}}
+              ]);
+              window.convergenceChart.update('none');
+            }} else {{
+              window.convergenceChart.setActiveElements([]);
+              window.convergenceChart.update('none');
+            }}
+          }}
         }}
         function setPlaying(p) {{
           playing = p;
@@ -3866,7 +3890,7 @@ def render_per_tide_page(tide, forecast,
             var conf = cols[idx['confidence_level']] || '';
             if (isNaN(hu) || isNaN(sh)) continue;
             // x = "hours from peak" (negative = before; convergence reads left→right)
-            points.push({{ x: -hu, y: sh, water: wat, conf: conf }});
+            points.push({{ x: -hu, y: sh, water: wat, conf: conf, hours_until_peak: hu }});
           }}
           points.sort(function(a, b) {{ return a.x - b.x; }});
           if (points.length < 2) {{
@@ -3876,8 +3900,13 @@ def render_per_tide_page(tide, forecast,
             note.textContent = points.length + ' predictions logged. '
               + 'Convergence pattern reveals how the forecast settles as the tide approaches.';
           }}
+          // Expose the parsed points so the scrubber can find the
+          // index matching a given prediction_made_at (FF).
+          window.convergencePoints = points;
           var ctx = document.getElementById('convergence-chart').getContext('2d');
-          new Chart(ctx, {{
+          // Expose for the scrubber to highlight the active point (FF —
+          // link the three interactive views on per-tide pages)
+          window.convergenceChart = new Chart(ctx, {{
             type: 'line',
             data: {{
               datasets: [{{
@@ -3887,6 +3916,7 @@ def render_per_tide_page(tide, forecast,
                 backgroundColor: 'rgba(31, 111, 235, 0.15)',
                 pointRadius: 4,
                 pointHoverRadius: 6,
+                pointHoverBackgroundColor: 'rgba(217, 119, 6, 1)',
                 tension: 0.2,
               }}]
             }},
