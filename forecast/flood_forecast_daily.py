@@ -2512,12 +2512,110 @@ def render_per_tide_page(tide, forecast):
   </section>
 
   <section class="evolution">
-    <h2>Prediction evolution</h2>
-    <p>How the forecast for this tide has evolved over time:
-       <a href="evolution.csv">evolution.csv</a> — a slice of the
+    <h2>Prediction convergence</h2>
+    <p>How the forecast for this tide has evolved as the tide approaches.
+       Each point is one prediction event from
+       <a href="evolution.csv">evolution.csv</a> (slice of the
        <a href="https://github.com/JohnUrban/barnacle/blob/main/data/predictions_log.csv">master
-       predictions log</a> filtered to this tide's target time. HANDOFF 9b.4(a)
-       will eventually render this as a per-tide convergence plot.</p>
+       predictions log</a>). x = hours from peak (negative = before),
+       y = predicted Sandy Hook peak in ft MLLW. HANDOFF 9b.4(a).</p>
+    <canvas id="convergence-chart" width="800" height="380"
+            style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
+    <p id="convergence-note" class="note" style="text-align:center"></p>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script>
+      (function() {{
+        var note = document.getElementById('convergence-note');
+        fetch('evolution.csv').then(function(r) {{
+          if (!r.ok) throw new Error('evolution.csv not found');
+          return r.text();
+        }}).then(function(text) {{
+          var lines = text.trim().split('\\n');
+          if (lines.length < 2) {{
+            note.textContent = 'No prediction history yet for this tide. '
+              + 'The chart fills in as the hourly workflow logs predictions.';
+            return;
+          }}
+          var headers = lines[0].split(',');
+          var idx = {{}};
+          headers.forEach(function(h, i) {{ idx[h] = i; }});
+          var points = [];
+          for (var i = 1; i < lines.length; i++) {{
+            var cols = lines[i].split(',');
+            var hu = parseFloat(cols[idx['hours_until_peak']]);
+            var sh = parseFloat(cols[idx['sh_peak_mllw_predicted']]);
+            var wat = parseFloat(cols[idx['water_navd88_predicted']]);
+            var conf = cols[idx['confidence_level']] || '';
+            if (isNaN(hu) || isNaN(sh)) continue;
+            // x = "hours from peak" (negative = before; convergence reads left→right)
+            points.push({{ x: -hu, y: sh, water: wat, conf: conf }});
+          }}
+          points.sort(function(a, b) {{ return a.x - b.x; }});
+          if (points.length < 2) {{
+            note.textContent = 'Only one prediction logged so far for this tide. '
+              + 'The convergence curve will appear after the next workflow run.';
+          }} else {{
+            note.textContent = points.length + ' predictions logged. '
+              + 'Convergence pattern reveals how the forecast settles as the tide approaches.';
+          }}
+          var ctx = document.getElementById('convergence-chart').getContext('2d');
+          new Chart(ctx, {{
+            type: 'line',
+            data: {{
+              datasets: [{{
+                label: 'Predicted SH peak (ft MLLW)',
+                data: points,
+                borderColor: 'rgba(31, 111, 235, 0.9)',
+                backgroundColor: 'rgba(31, 111, 235, 0.15)',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                tension: 0.2,
+              }}]
+            }},
+            options: {{
+              responsive: true,
+              plugins: {{
+                tooltip: {{
+                  callbacks: {{
+                    label: function(ctx) {{
+                      var p = ctx.raw;
+                      var lines = [
+                        'Predicted SH peak: ' + p.y.toFixed(2) + ' ft MLLW',
+                      ];
+                      if (!isNaN(p.water)) {{
+                        lines.push('Water at 342: ' + p.water.toFixed(2) + ' ft NAVD88');
+                      }}
+                      lines.push('Made ' + Math.abs(p.x).toFixed(1) + ' h '
+                        + (p.x < 0 ? 'before' : 'after') + ' peak');
+                      if (p.conf) lines.push('Confidence: ' + p.conf.toUpperCase());
+                      return lines;
+                    }}
+                  }}
+                }},
+                legend: {{ display: false }}
+              }},
+              scales: {{
+                x: {{
+                  type: 'linear',
+                  title: {{ display: true,
+                           text: 'Hours from peak (negative = before)' }},
+                  grid: {{ color: function(c) {{
+                    return c.tick.value === 0 ? 'rgba(217, 119, 6, 0.5)' : 'rgba(0,0,0,0.06)';
+                  }} }}
+                }},
+                y: {{
+                  title: {{ display: true, text: 'Predicted SH peak (ft MLLW)' }},
+                  grid: {{ color: 'rgba(0,0,0,0.06)' }}
+                }}
+              }}
+            }}
+          }});
+        }}).catch(function(e) {{
+          note.textContent = 'No convergence data available yet ('
+            + e.message + '). Will populate after a few workflow runs.';
+        }});
+      }})();
+    </script>
   </section>
 
   <footer>
