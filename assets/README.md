@@ -44,12 +44,13 @@ the picker will guide you through placing each.
 
 ```sh
 # 1. Open the picker. It walks you through each landmark in order,
-#    showing the map and prompting you to click for each.
+#    showing the map and prompting you to position your cursor and
+#    press SPACE for each. U undoes the last placement; ESC quits.
 python assets/pick_coords.py
 
-# 2. After landmarks, you can keep clicking to add extra topography
-#    spot heights. Terminal prompts for label + value after each click.
-#    Close the window or right-click when done.
+# 2. After the pre-seeded landmarks are placed, the same SPACE-to-
+#    place workflow lets you add extra topography spot heights —
+#    after each placement, terminal prompts for label + value.
 
 # 3. Generate the final PNG.
 python assets/render_map.py
@@ -59,6 +60,16 @@ python assets/render_map.py
 git add assets/map_points.csv docs/icons/map_annotated.png
 git commit -m "map: place landmarks + add N extras"
 ```
+
+**Picker keys:**
+- `SPACE` — place a point at the current cursor position
+- `U` — undo the last placement
+- `ESC` — quit (or just close the window)
+
+**Why keyboard placement instead of click:** macOS trackpad tap-to-click
+plus matplotlib's click handler caused spurious placements when moving
+the cursor or cmd+tabbing away to look up values in a PDF. SPACE-to-
+place eliminates that — only deliberate keypresses register.
 
 **Adding or moving points later:**
 

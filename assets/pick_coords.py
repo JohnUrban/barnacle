@@ -1,15 +1,24 @@
 #!/usr/bin/env python3
-"""Interactive picker for map_points.csv coordinates.
+"""Interactive picker for map_points.csv coordinates — KEYBOARD-DRIVEN.
 
 Opens docs/icons/map_raw.png in a matplotlib window. For each landmark
-in map_points.csv that still has empty x/y, asks you to click on the
-map. After the canonical landmarks are placed, accepts additional
-"extra" topography points (clicking + answering label/value prompts in
-the terminal). Updates map_points.csv on exit.
+in map_points.csv that still has empty x/y, prompts you to position
+the cursor over the spot, then press SPACE to place. Press U to undo
+the last placed point. Press ESC or close the window to quit.
+
+Why keyboard placement instead of click: macOS trackpad tap-to-click
++ matplotlib's click handler caused spurious placements when moving
+the cursor or cmd+tabbing away to look up values in a PDF. SPACE-to-
+place eliminates that — only deliberate keypresses register.
 
 Usage:
     python assets/pick_coords.py
     python assets/pick_coords.py --redo   # clear existing coords first
+
+Keys:
+    SPACE  — place a point at the current cursor position
+    U      — undo the last placed point
+    ESC    — quit (saves CSV; resume any time)
 """
 from __future__ import annotations
 
@@ -19,6 +28,7 @@ import os
 import sys
 from pathlib import Path
 
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.patheffects as PathEffects
@@ -28,11 +38,15 @@ REPO_ROOT = HERE.parent
 DEFAULT_CSV = HERE / "map_points.csv"
 DEFAULT_IMG = REPO_ROOT / "docs" / "icons" / "map_raw.png"
 
-LANDMARK_COLOR = "#1f6feb"   # blue
-EXTRA_COLOR    = "#d2444a"   # red
+LANDMARK_COLOR = "#1f6feb"
+EXTRA_COLOR    = "#d2444a"
+PENDING_COLOR  = "#ff9800"  # not currently used; reserved for future
 FIELDS = ["label", "value", "category", "x", "y"]
 
 
+# ============================================================
+# CSV I/O
+# ============================================================
 def load_rows(path: Path):
     rows = []
     if path.exists():
@@ -47,7 +61,6 @@ def save_rows(path: Path, rows):
         w = csv.DictWriter(f, fieldnames=FIELDS)
         w.writeheader()
         for r in rows:
-            # Normalize empty values
             r = {k: ("" if r.get(k) in (None, "") else r[k]) for k in FIELDS}
             w.writerow(r)
 
@@ -56,8 +69,11 @@ def has_coords(row):
     return row.get("x") not in ("", None) and row.get("y") not in ("", None)
 
 
-def draw_existing(ax, img, rows):
-    """Redraw image + any already-placed points."""
+# ============================================================
+# Plot helpers
+# ============================================================
+def redraw(ax, img, rows):
+    """Clear axes and replot everything from the current rows state."""
     ax.clear()
     ax.imshow(img)
     ax.set_axis_off()
@@ -65,11 +81,11 @@ def draw_existing(ax, img, rows):
         if not has_coords(r):
             continue
         try:
-            x, y = float(r["x"]), float(r["y"])
+            x = float(r["x"]); y = float(r["y"])
         except (ValueError, TypeError):
             continue
         color = LANDMARK_COLOR if r.get("category") == "landmark" else EXTRA_COLOR
-        ax.plot(x, y, "o", color=color, markersize=6,
+        ax.plot(x, y, "o", color=color, markersize=7,
                 markeredgecolor="white", markeredgewidth=1.5, zorder=10)
         txt = ax.annotate(
             r.get("value", "?"), (x, y), color=color, fontsize=10,
@@ -81,13 +97,19 @@ def draw_existing(ax, img, rows):
         )
 
 
+# ============================================================
+# Main loop
+# ============================================================
 def main():
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = argparse.ArgumentParser(
+        description="Pick (x,y) coordinates on map_raw.png for "
+                    "map_points.csv. Keyboard-driven; SPACE to place, "
+                    "U to undo, ESC to quit.",
+    )
     ap.add_argument("--csv",   default=str(DEFAULT_CSV))
     ap.add_argument("--image", default=str(DEFAULT_IMG))
     ap.add_argument("--redo",  action="store_true",
-                    help="Clear x/y on every row before starting "
-                         "(re-pick from scratch)")
+                    help="Clear x/y on every row before starting")
     args = ap.parse_args()
 
     csv_path = Path(args.csv)
@@ -101,69 +123,148 @@ def main():
         for r in rows:
             r["x"] = ""
             r["y"] = ""
+        save_rows(csv_path, rows)
 
     img = mpimg.imread(img_path)
-    fig, ax = plt.subplots(figsize=(12, 9))
-    draw_existing(ax, img, rows)
+    fig, ax = plt.subplots(figsize=(13, 10))
+    redraw(ax, img, rows)
+
+    # Shared state between event handlers and the main loop
+    state = {
+        "cursor_x": None,        # latest cursor x in image coords
+        "cursor_y": None,
+        "pending":  None,        # 'place', 'undo', 'quit'
+        "history":  [],          # stack: [{idx, was_new}, ...]
+        "closed":   False,
+    }
+
+    def title_for(idx, msg=""):
+        if 0 <= idx < len(rows):
+            r = rows[idx]
+            label = r["label"]; value = r["value"]; cat = r["category"]
+            return (f"NEXT: {label}  ({value} {cat})    "
+                    f"|  SPACE=place  U=undo  ESC=quit"
+                    + (f"     |  {msg}" if msg else ""))
+        return (f"Add extras (no more pre-seeded rows)    "
+                f"|  SPACE=place + prompt  U=undo  ESC=quit"
+                + (f"     |  {msg}" if msg else ""))
+
+    def next_pending_idx():
+        """Index of the next pre-seeded row with empty coords, or len(rows) if all placed."""
+        for i, r in enumerate(rows):
+            if not has_coords(r):
+                return i
+        return len(rows)
+
+    def update_title():
+        idx = next_pending_idx()
+        msg = ""
+        if state["cursor_x"] is not None:
+            msg = f"cursor=({state['cursor_x']:.0f}, {state['cursor_y']:.0f})"
+        ax.set_title(title_for(idx, msg), fontsize=12)
+        fig.canvas.draw_idle()
+
+    def on_motion(event):
+        if event.inaxes == ax:
+            state["cursor_x"] = event.xdata
+            state["cursor_y"] = event.ydata
+            update_title()
+
+    def on_key(event):
+        k = (event.key or "").lower()
+        if k == " " or k == "space":
+            state["pending"] = "place"
+        elif k == "u":
+            state["pending"] = "undo"
+        elif k in ("escape", "esc"):
+            state["pending"] = "quit"
+
+    def on_close(event):
+        state["closed"] = True
+
+    # Suppress matplotlib's default 'q' quit so user can use it if they want;
+    # we use ESC. (Keep 'q' available for matplotlib's own quit too.)
+    fig.canvas.mpl_connect("motion_notify_event", on_motion)
+    fig.canvas.mpl_connect("key_press_event", on_key)
+    fig.canvas.mpl_connect("close_event", on_close)
+
+    update_title()
     plt.show(block=False)
 
-    # ---- Phase 1: fill landmarks missing coords ----
-    print("\nPhase 1: place the canonical landmarks.")
-    print("Click on the map. Close the window or right-click to cancel.\n")
-    for r in rows:
-        if r.get("category") != "landmark" or has_coords(r):
-            continue
-        title = f"Click on: {r['label']}  ({r['value']} NAVD88)"
-        ax.set_title(title, fontsize=14)
-        plt.draw()
-        try:
-            pts = plt.ginput(n=1, timeout=0, mouse_stop=3)
-        except Exception:
-            print("Cancelled.")
-            break
-        if not pts:
-            print(f"  Skipped {r['label']} (no click).")
-            continue
-        r["x"], r["y"] = f"{pts[0][0]:.2f}", f"{pts[0][1]:.2f}"
-        draw_existing(ax, img, rows)
-        plt.draw()
-        print(f"  ✓ {r['label']} placed at ({r['x']}, {r['y']})")
-        save_rows(csv_path, rows)  # save progress after each click
+    print("\n=== pick_coords.py — keyboard-driven ===")
+    print("Move cursor over a target, press SPACE to place.")
+    print("U to undo, ESC (or close window) to quit. CSV saves after every action.\n")
 
-    # ---- Phase 2: add extra topography points ----
-    print("\nPhase 2: add extra topography points.")
-    print("Click on the map, then answer label/value in this terminal.")
-    print("Close the window or right-click to finish.\n")
-    while True:
-        ax.set_title(
-            "Add extra point — close window or right-click when done",
-            fontsize=14,
-        )
-        plt.draw()
-        try:
-            pts = plt.ginput(n=1, timeout=0, mouse_stop=3)
-        except Exception:
-            break
-        if not pts:
-            break
-        x, y = pts[0]
-        print(f"\nClicked at ({x:.2f}, {y:.2f})")
-        label = input("  Label (or empty to skip): ").strip()
-        if not label:
+    while not state["closed"]:
+        plt.pause(0.05)
+
+        action = state["pending"]
+        if action is None:
             continue
-        value = input("  Value (e.g., 4.20): ").strip()
-        cat = input("  Category [extra]: ").strip() or "extra"
-        rows.append({
-            "label": label, "value": value, "category": cat,
-            "x": f"{x:.2f}", "y": f"{y:.2f}",
-        })
-        draw_existing(ax, img, rows)
-        save_rows(csv_path, rows)
-        print(f"  ✓ Added {label}.")
+        state["pending"] = None
+
+        if action == "quit":
+            break
+
+        if action == "undo":
+            if not state["history"]:
+                print("  (nothing to undo)")
+                continue
+            last = state["history"].pop()
+            idx = last["idx"]
+            if last["was_new"]:
+                removed = rows.pop(idx)
+                print(f"  ✗ Undid: {removed['label']} (was a new extra)")
+            else:
+                rows[idx]["x"] = ""
+                rows[idx]["y"] = ""
+                print(f"  ✗ Undid: {rows[idx]['label']} (cleared coords)")
+            save_rows(csv_path, rows)
+            redraw(ax, img, rows)
+            update_title()
+            continue
+
+        # action == "place"
+        if state["cursor_x"] is None or state["cursor_y"] is None:
+            print("  (cursor not on map — move it inside the image first)")
+            continue
+        x = round(float(state["cursor_x"]), 2)
+        y = round(float(state["cursor_y"]), 2)
+
+        idx = next_pending_idx()
+        if idx < len(rows):
+            # Place in the next pre-seeded landmark row
+            rows[idx]["x"] = str(x)
+            rows[idx]["y"] = str(y)
+            state["history"].append({"idx": idx, "was_new": False})
+            save_rows(csv_path, rows)
+            redraw(ax, img, rows)
+            update_title()
+            print(f"  ✓ {rows[idx]['label']} placed at ({x}, {y})")
+        else:
+            # Extras mode — prompt for label/value in terminal
+            print(f"\nExtra point at ({x}, {y}).")
+            try:
+                label = input("  Label (or empty to cancel): ").strip()
+            except EOFError:
+                continue
+            if not label:
+                continue
+            value = input("  Value (e.g., 4.20): ").strip()
+            cat = input("  Category [extra]: ").strip() or "extra"
+            new_row = {"label": label, "value": value, "category": cat,
+                       "x": str(x), "y": str(y)}
+            rows.append(new_row)
+            state["history"].append({"idx": len(rows) - 1, "was_new": True})
+            save_rows(csv_path, rows)
+            redraw(ax, img, rows)
+            update_title()
+            print(f"  ✓ Added {label}.")
 
     save_rows(csv_path, rows)
-    print(f"\nSaved {len(rows)} rows to {csv_path}")
-    print("Next: run `python assets/render_map.py` to regenerate "
+    placed = sum(1 for r in rows if has_coords(r))
+    print(f"\nDone. {placed}/{len(rows)} rows have coords. Saved to {csv_path}")
+    print("Run `python assets/render_map.py` to regenerate "
           "docs/icons/map_annotated.png")
 
 
