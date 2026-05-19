@@ -125,10 +125,11 @@ These are smaller and don't block the CSV write. Flagging in case the user wants
   water level (3.67-3.72 if SW=3.55) don't quite match. ~0.1 ft difference could mean different
   corners of the intersection have different water levels (plausible — Pathway B floods unevenly
   across an intersection), or one of the elevations is slightly off. Not critical to resolve.
-- **Upstream grate elevation refinement:** if SE peak water was 3.68 NAVD88 and upstream grate
-  had ~1 cm of water above it at the same time, grate top = 3.68 - 0.033 ≈ 3.65 NAVD88. That's
-  lower than the earlier 3.78 estimate. Worth user verifying the timing (was the "1 cm above
-  upstream" observation at peak, or earlier/later?).
+- **Upstream grate elevation refined to ~3.76 NAVD88** (uneven top; 3.74-3.78 across the grate
+  face). User confirmed: "1 cm above" was at peak (~22:15), and photos 8/9 (22:04) show the
+  grate just barely emerging. Two independent estimates converge at ~3.76 NAVD88. Slightly
+  lower than the original 3.78 inference; tightening the elevation slightly affects the
+  effective-enhancement math at this landmark but not in any dramatic way.
 - **NE/NW elevation slight asymmetry:** NW water reads as ~0.02-0.06 ft lower than NE at very
   close-in-time tape shots. Could indicate NW grate is at 3.93 (slightly higher than NE's 3.91)
   OR water level varied across the intersection. Not actionable without more events.

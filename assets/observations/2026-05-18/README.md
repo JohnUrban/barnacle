@@ -47,7 +47,7 @@ Central Ave):
 | `grate_NW` | (not in model) | unknown | Same side of Bay as NE, across Central. Never overflowed; water also 1–1.5" below top at peak. Probably similar elevation to NE. |
 | `grate_SE` | `lowest_sentinel_grate` (v0.6) | 3.60 | "Proximal" across Bay — closer to user's corner. Overflowed; ~1" above at observed peak. **Water spread more widely from SE than SW** — likely a flatter / larger surrounding pavement pocket. |
 | `grate_SW` | (not in model) | likely ~3.55-3.58 | "Distal" across Bay — diagonally opposite NE. Overflowed earlier and *deeper directly above the grate* than SE: when SE had ~1" above, SW had ~1.5" above. **SW is ~0.5" lower than SE.** |
-| `grate_bay_ave_upstream` | (not in model) | inferred ~3.78 | On Bay Ave east of NE corner, upstream of the user's walkway. Water emerged ~1 cm above grate at peak. **This is the actual primary feeder to the gutter at the walkway**, not the NE corner grate. |
+| `grate_bay_ave_upstream` | (not in model) | inferred **~3.76** (uneven; 3.74-3.78 across the grate face) | On Bay Ave east of NE corner, upstream of the user's walkway. Photos 8/9 at 22:04 show water *just barely* emerging at the low points (≤1 cm somewhere, dry elsewhere on the grate top). By peak (~22:15) ~1 cm of water above. **This is the actual primary feeder to the gutter at the walkway**, not the NE corner grate. |
 
 ### Observed kinetics across grates
 
