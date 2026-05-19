@@ -2352,6 +2352,207 @@ Coastal Flood Statement directly.
     return subject, text, html
 
 
+def _oscillation_chart_data(forecast):
+    """Build data points for the home-page oscillation chart (HANDOFF 9b.4(b)).
+
+    Returns dict with:
+      'points': list of {time, water_navd88, kind} where kind is
+                'observed' (past tide peak from recent history) or
+                'predicted' (upcoming tide peak from current forecast).
+      'landmarks': list of {label, navd88} from the model's LANDMARKS,
+                   for rendering horizontal threshold lines.
+
+    Water level at 342 Bay (NAVD88) = SH_peak + LOCAL_ENHANCEMENT − 2.82,
+    so landmark crossings on this single axis tell the full story.
+    """
+    points = []
+
+    # Past: observed peaks from the last 7 days
+    for r in (forecast.get("recent_history_7d") or []):
+        peak = r.get("peak_mllw")
+        time_str = r.get("peak_time")
+        if peak is None or not time_str:
+            continue
+        try:
+            water = float(peak) + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+        except (TypeError, ValueError):
+            continue
+        points.append({
+            "time": time_str,
+            "water_navd88": round(water, 3),
+            "kind": "observed",
+            "sh_peak_mllw": float(peak),
+        })
+
+    # Future: predicted peaks for upcoming high tides in this forecast
+    for t in (forecast.get("all_tides") or []):
+        peak = t.get("forecast_peak_mllw")
+        time_str = t.get("time")
+        if peak is None or not time_str:
+            continue
+        try:
+            water = float(peak) + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+        except (TypeError, ValueError):
+            continue
+        points.append({
+            "time": time_str,
+            "water_navd88": round(water, 3),
+            "kind": "predicted",
+            "sh_peak_mllw": float(peak),
+        })
+
+    # Landmark threshold lines — use the model's LANDMARKS list
+    landmark_lines = [
+        {"label": label, "navd88": float(elev)}
+        for _key, label, elev, _sh in LANDMARKS
+    ]
+
+    return {"points": points, "landmarks": landmark_lines}
+
+
+def _render_oscillation_section(forecast):
+    """Render the home-page water-level oscillation chart section
+    (HANDOFF 9b.4(b)). Empty string when there's no plottable data."""
+    data = _oscillation_chart_data(forecast)
+    if len(data["points"]) < 2:
+        return ""
+    # Inline as JSON; Chart.js reads from the global on load.
+    data_json = json.dumps(data, default=str)
+    return f"""
+  <section class="oscillation">
+    <h2>Water level over time</h2>
+    <p class="note">Observed (■) past peaks and predicted (●) upcoming peaks
+       plotted on a single water-level axis (NAVD88 ft at 342 Bay). Horizontal
+       lines mark landmark elevations — when a peak crosses a line, the water
+       reached that landmark.</p>
+    <canvas id="oscillation-chart" width="800" height="380"
+            style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script>
+      (function() {{
+        var data = {data_json};
+        var points = data.points.slice().sort(function(a, b) {{
+          return (a.time < b.time) ? -1 : (a.time > b.time ? 1 : 0);
+        }});
+        var labels = points.map(function(p) {{
+          // Compact tide-time label (e.g., "Tue 5/19 11 PM")
+          var d = new Date(p.time.replace(' ', 'T'));
+          if (isNaN(d.getTime())) return p.time;
+          return d.toLocaleString(undefined, {{
+            weekday: 'short', month: 'numeric', day: 'numeric',
+            hour: 'numeric'
+          }});
+        }});
+        var observedData = points.map(function(p) {{
+          return p.kind === 'observed' ? p.water_navd88 : null;
+        }});
+        var predictedData = points.map(function(p) {{
+          return p.kind === 'predicted' ? p.water_navd88 : null;
+        }});
+        // Build a horizontal-line annotation per landmark, color-graded
+        // blue (low) → red (high) so the band reads bottom-to-top as a
+        // severity gradient.
+        var landmarks = data.landmarks;
+        var navd88s = landmarks.map(function(l) {{ return l.navd88; }});
+        var minE = Math.min.apply(null, navd88s);
+        var maxE = Math.max.apply(null, navd88s);
+        function lerp(a, b, t) {{ return a + (b - a) * t; }}
+        var annotations = {{}};
+        landmarks.forEach(function(l, i) {{
+          var t = (l.navd88 - minE) / (maxE - minE || 1);
+          // Blue (31, 111, 235) → Red (209, 68, 74)
+          var r = Math.round(lerp(31, 209, t));
+          var g = Math.round(lerp(111, 68, t));
+          var b = Math.round(lerp(235, 74, t));
+          annotations['lm' + i] = {{
+            type: 'line',
+            yMin: l.navd88, yMax: l.navd88,
+            borderColor: 'rgba(' + r + ',' + g + ',' + b + ',0.7)',
+            borderWidth: 1,
+            borderDash: [4, 3],
+            label: {{
+              display: true,
+              content: l.label + ' (' + l.navd88.toFixed(2) + ')',
+              position: 'end',
+              backgroundColor: 'rgba(255,255,255,0.85)',
+              color: 'rgb(' + r + ',' + g + ',' + b + ')',
+              font: {{ size: 10 }},
+              padding: 2,
+            }}
+          }};
+        }});
+        var ctx = document.getElementById('oscillation-chart').getContext('2d');
+        new Chart(ctx, {{
+          type: 'line',
+          data: {{
+            labels: labels,
+            datasets: [
+              {{
+                label: 'Observed peak',
+                data: observedData,
+                borderColor: 'rgba(60,60,60,0.85)',
+                backgroundColor: 'rgba(60,60,60,0.85)',
+                pointStyle: 'rect',
+                pointRadius: 6,
+                spanGaps: true,
+                showLine: false,
+              }},
+              {{
+                label: 'Predicted peak',
+                data: predictedData,
+                borderColor: 'rgba(31, 111, 235, 0.9)',
+                backgroundColor: 'rgba(31, 111, 235, 0.9)',
+                pointStyle: 'circle',
+                pointRadius: 6,
+                spanGaps: true,
+                showLine: false,
+              }}
+            ]
+          }},
+          options: {{
+            responsive: true,
+            plugins: {{
+              annotation: {{ annotations: annotations }},
+              tooltip: {{
+                callbacks: {{
+                  label: function(ctx) {{
+                    var p = points[ctx.dataIndex];
+                    if (!p) return ctx.formattedValue;
+                    return [
+                      (p.kind === 'observed' ? 'Observed' : 'Predicted'),
+                      'Water at 342: ' + p.water_navd88.toFixed(2) + ' ft NAVD88',
+                      'Sandy Hook: ' + p.sh_peak_mllw.toFixed(2) + ' ft MLLW',
+                    ];
+                  }}
+                }}
+              }},
+              legend: {{ position: 'top' }}
+            }},
+            scales: {{
+              x: {{
+                title: {{ display: true, text: 'Tide peak (local time)' }},
+                grid: {{ color: 'rgba(0,0,0,0.05)' }}
+              }},
+              y: {{
+                title: {{ display: true, text: 'Water at 342 Bay (ft NAVD88)' }},
+                grid: {{ color: 'rgba(0,0,0,0.06)' }},
+                suggestedMin: Math.min(minE - 0.2,
+                  Math.min.apply(null,
+                    points.map(function(p) {{ return p.water_navd88; }}))),
+                suggestedMax: Math.max(maxE + 0.2,
+                  Math.max.apply(null,
+                    points.map(function(p) {{ return p.water_navd88; }}))),
+              }}
+            }}
+          }}
+        }});
+      }})();
+    </script>
+  </section>
+"""
+
+
 def _tide_slug(tide_time_str):
     """Convert a NOAA tide time string ('YYYY-MM-DD HH:MM') to a
     filesystem-safe slug ('YYYY-MM-DDTHH-MM') for per-tide page paths.
@@ -2794,6 +2995,7 @@ def render_html_page(forecast, map_url=None, map_url_no_rain=None):
     </dl>
   </section>
 {map_section}
+{_render_oscillation_section(forecast)}
   {_render_rain_timing_html(forecast)}
 
   {_landmarks_section_html(forecast, wrapper='section')}
