@@ -850,29 +850,55 @@ Same surge information the Borough's emergency management is looking at.
     Script at `docs/barnacle-widget.js`. Free Scriptable app, copy-paste
     the JS, pin as home-screen widget. Small + medium sizes, color-coded
     by regime, tappable to open the live page.
-27c. **Map-based depth heat map.** The user provided a Google Maps
-    screenshot at `docs/icons/map_raw.png`. Annotation workflow now
-    data-driven via `assets/map_points.csv` (see `assets/README.md`)
-    — landmarks + extras with x/y pixel coords; renders to
-    `docs/icons/map_annotated.png` via `assets/render_map.py`. The
-    same CSV is the natural input for a depth heat-map overlay.
+27c. ✅ **Map-based depth heat-map.** DONE 2026-05-19
+    (commits edac47d + 5be56b5). The user expanded `assets/map_points.csv`
+    from 16 pre-seeded landmarks to 52 surveyed points (intersection
+    corners + grates, Bay Ave sidewalk pairs, Central Ave north all
+    the way to the neighbor's house, crosswalks). `assets/render_map.py`
+    grows a `--water-level NAVD88` flag that renders a smooth blue
+    semi-transparent overlay using matplotlib's Delaunay triangulation
+    (no scipy dep). Darker blue = deeper. Labels hidden by default in
+    heat-map mode (NAVD88 numbers read as "predicted depths" against a
+    depth-encoded overlay — confusing); `--show-labels` opts back in.
 
-    Long-term direction: render a depth-tinted overlay on the map
-    showing predicted water depth at each landmark today, possibly
-    with smooth interpolation across the topography points. Two
-    implementation paths:
-    - Server-side (PIL/matplotlib) emits `docs/map.png` daily as part
-      of the forecast workflow. Static daily image. Simpler — reuses
-      the existing `render_map.py` infrastructure.
-    - Client-side: `docs/map.html` page with SVG/canvas overlays
-      computed from forecast.json. More interactive (could animate
-      across all_tides), more code.
+    Wired into the daily forecast: `flood_forecast_daily.py --write-map
+    PATH` invokes `render_map.py` as a subprocess. HTML report embeds
+    the resulting PNG (new "Predicted water depth" section between
+    worst-case detail and rain timing). Workflow installs matplotlib +
+    numpy and archives the daily map to `docs/archive/YYYY-MM-DD-map.png`.
+    Cold-lockout days skip the overlay cleanly.
 
-    Prerequisite for smooth heat-map: user wants to add more
-    topography height values around the property (currently 9
-    canonical landmarks; smooth surface would benefit from 20-30).
-    The new picker + CSV workflow makes adding these easy:
-    `python assets/pick_coords.py` → click + label + value, repeat.
+    **Known limitations / future polish:**
+    - **Convex hull edges show as straight lines.** The triangulation
+      stops at the outermost survey points, so the overlay's outer
+      boundary is the convex hull of `map_points.csv` rather than
+      following real topography. Mitigation: add explicit "high-and-
+      dry" perimeter points where the road meets higher ground (lawns,
+      yards, property lines).
+    - **Triangulation doesn't respect barriers.** Water visually
+      bridges across the user's house from the upstream grate to the
+      neighbor on Central. In reality, the building blocks flow.
+      Need to either (a) mask out polygons inside building footprints,
+      or (b) add closely-spaced high-elevation points along building
+      edges so the surface "stairs up" sharply at the wall.
+    - **Curb-to-sidewalk-to-lawn step changes are smoothed out.**
+      Street is lower than sidewalk is lower than lawn, but the
+      triangulation interpolates linearly across those breaks. The
+      sidewalk-pair points the user surveyed help, but the smoothing
+      still understates the curb's containment effect. May need to
+      shift to a method that respects breaklines (e.g., constrained
+      Delaunay triangulation, or hand-drawn barrier polygons).
+    - **Colormap saturates at 2 ft depth.** A 6" event and a 2 ft
+      event look different; a 2 ft event and a 6 ft event look the
+      same. Intentional to keep small floods from looking dramatic,
+      but means extreme events lose visual differentiation. Could
+      use a non-linear depth mapping.
+    - **User feedback (2026-05-19):** "Looks a little silly right
+      now — but not all of it. I can see recognizable patterns like
+      water building up on the street sides and more on the SE / SW
+      side. And so on. Looks pretty good in that regard. Looks like
+      it can be even better though." Foundation works; the polish
+      items above would make it production-quality.
 
 ---
 
