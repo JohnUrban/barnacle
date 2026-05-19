@@ -18,13 +18,18 @@
 //
 // =====================  WHAT IT SHOWS  =====================
 // Small widget (2x2):     regime label, peak forecast + time,
-//                         highest exceeded landmark + depth above.
-// Medium widget (4x2):    same as small on the left, plus the
-//                         plain-language summary + confidence on the
-//                         right.
+//                         hours-to-peak, highest exceeded landmark
+//                         (or rel-to-lowest when no landmark exceeded),
+//                         cold-conditions advisory pip if applicable.
+// Medium widget (4x2):    same as small on the left; right column adds
+//                         plain-language summary, confidence + ± range,
+//                         and "next watch" date from the look-ahead.
 //
 // Source data: https://johnurban.github.io/barnacle/forecast.json
-// Generated daily by the GitHub Actions workflow in the barnacle repo.
+// Refreshed each hourly GitHub Actions workflow run (HANDOFF 9b.1).
+//
+// Refreshed 2026-05-19 to surface 9b-era fields: confidence_uncertainty_ft,
+// lookahead_watch, cold_lockout flag.
 
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -81,6 +86,41 @@ function relativeToLowest(forecastPeakMLLW) {
   return (waterNAVD88 - LOWEST_ELEV) * 12;
 }
 
+function hoursToPeak(peakTimeStr) {
+  // Returns signed hours to the peak (positive = future, negative = past).
+  const m = peakTimeStr && peakTimeStr.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
+  if (!m) return null;
+  const [, y, mo, d, h, mi] = m.map(Number);
+  // Treat the tide-time as local; iOS reads its own timezone for "now".
+  const peak = new Date(y, mo - 1, d, h, mi);
+  const now = new Date();
+  return (peak - now) / 3600000;
+}
+
+function formatHoursToPeak(hours) {
+  if (hours == null || isNaN(hours)) return "";
+  const abs = Math.abs(hours);
+  if (abs < 1) return `${Math.round(abs * 60)} min ${hours >= 0 ? "to" : "past"} peak`;
+  if (abs < 48) return `${abs.toFixed(1)} h ${hours >= 0 ? "to" : "past"} peak`;
+  return `${(abs / 24).toFixed(1)} d ${hours >= 0 ? "to" : "past"} peak`;
+}
+
+function nextWatchDate(forecast) {
+  // Returns short string for the first row of lookahead_watch, e.g.
+  // "Next watch: Jun 13 (6.24, gutter)". Empty when none.
+  const rows = forecast.lookahead_watch || [];
+  if (!rows.length) return "";
+  const r = rows[0];
+  const t = (r.time || "").match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (!t) return "";
+  const months = ["Jan","Feb","Mar","Apr","May","Jun",
+                  "Jul","Aug","Sep","Oct","Nov","Dec"];
+  const moStr = months[Number(t[2]) - 1] + " " + Number(t[3]);
+  // Trim label to fit
+  const label = (r.label || "").replace(" (no surge needed)", "");
+  return `Next watch ${moStr} (${r.mllw.toFixed(2)})`;
+}
+
 async function fetchForecast() {
   const req = new Request(FORECAST_URL);
   return await req.loadJSON();
@@ -111,7 +151,11 @@ function makeWidget(forecast, family) {
   const exceeded = highestExceeded(depths);
   const rel = peakFt != null ? relativeToLowest(peakFt) : null;
   const conf = forecast.confidence_level || "";
+  const confUnc = forecast.confidence_uncertainty_ft;   // ± ft on peak
   const summary = forecast.plain_language_summary || "";
+  const hToPeak = hoursToPeak(peakTime);
+  const watchStr = nextWatchDate(forecast);
+  const cold = forecast.cold_lockout === true;
 
   if (family === "medium") {
     // Two-column layout
@@ -137,6 +181,12 @@ function makeWidget(forecast, family) {
     const timeLine = left.addText(formatTimeShort(peakTime));
     timeLine.font = Font.systemFont(11);
     timeLine.textColor = new Color("#555");
+
+    if (hToPeak != null) {
+      const htp = left.addText(formatHoursToPeak(hToPeak));
+      htp.font = Font.systemFont(9);
+      htp.textColor = new Color("#666");
+    }
 
     left.addSpacer(4);
     if (exceeded) {
@@ -165,9 +215,22 @@ function makeWidget(forecast, family) {
     }
     right.addSpacer(4);
     if (conf) {
-      const confLine = right.addText(`Confidence: ${conf.toUpperCase()}`);
+      const confTxt = confUnc != null
+        ? `Confidence: ${conf.toUpperCase()} (±${confUnc.toFixed(2)} ft)`
+        : `Confidence: ${conf.toUpperCase()}`;
+      const confLine = right.addText(confTxt);
       confLine.font = Font.semiboldSystemFont(10);
       confLine.textColor = new Color("#555");
+    }
+    if (cold) {
+      const coldLine = right.addText("Cold conditions (hypothesis open)");
+      coldLine.font = Font.systemFont(9);
+      coldLine.textColor = new Color("#3a5b88");
+    }
+    if (watchStr) {
+      const wLine = right.addText(watchStr);
+      wLine.font = Font.systemFont(9);
+      wLine.textColor = new Color("#666");
     }
   } else {
     // Small widget — single column, key info
@@ -183,6 +246,11 @@ function makeWidget(forecast, family) {
     const timeLine = w.addText(formatTimeShort(peakTime));
     timeLine.font = Font.systemFont(10);
     timeLine.textColor = new Color("#555");
+    if (hToPeak != null) {
+      const htp = w.addText(formatHoursToPeak(hToPeak));
+      htp.font = Font.systemFont(9);
+      htp.textColor = new Color("#666");
+    }
     w.addSpacer(4);
     if (exceeded) {
       const landLine = w.addText(`★ ${exceeded.label}`);
@@ -197,6 +265,11 @@ function makeWidget(forecast, family) {
       );
       relLine.font = Font.systemFont(10);
       relLine.textColor = new Color("#666");
+    }
+    if (cold) {
+      const coldLine = w.addText("Cold (hyp. open)");
+      coldLine.font = Font.systemFont(9);
+      coldLine.textColor = new Color("#3a5b88");
     }
   }
 
