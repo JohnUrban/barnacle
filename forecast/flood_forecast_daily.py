@@ -3043,15 +3043,30 @@ Coastal Flood Statement directly.
 def _oscillation_chart_data(forecast):
     """Build data points for the home-page oscillation chart (HANDOFF 9b.4(b)).
 
+    Axis change 2026-05-19 (per Batch 2 idea #2): the y-axis is now
+    Sandy Hook peak in ft MLLW — a *pure* observation — not the
+    model-derived "water at 342 NAVD88". Past code projected each SH
+    peak through `+ LOCAL_ENHANCEMENT_FT - 2.82`, which embeds the
+    v0.6 storm-surge assumption. For the 2026-05-18 22:12 event that
+    label said 4.16 NAVD88 = right at the curb, but the user's
+    photo evidence (and the corrected analysis after the storm-surge
+    hypothesis) shows actual water at 342 was 3.68-3.72 NAVD88, NOT
+    4.16. v0.6's assumption is wrong for non-surge events.
+
+    The honest chart shows what was actually observed (SH peak at the
+    gauge) and what THRESHOLD each landmark would correspond to on
+    that observation axis. Landmark threshold (MLLW) =
+    landmark_NAVD88 + 2.82 - 0.40 = landmark_NAVD88 + 2.42 — the SH
+    peak value AT WHICH v0.6 would predict water reaches that
+    landmark. The chart caveat is then about the threshold lines
+    (they embed v0.6's enhancement), not about the data dots.
+
     Returns dict with:
-      'points': list of {time, water_navd88, kind} where kind is
+      'points': list of {time, sh_peak_mllw, kind} where kind is
                 'observed' (past tide peak from recent history) or
                 'predicted' (upcoming tide peak from current forecast).
-      'landmarks': list of {label, navd88} from the model's LANDMARKS,
-                   for rendering horizontal threshold lines.
-
-    Water level at 342 Bay (NAVD88) = SH_peak + LOCAL_ENHANCEMENT − 2.82,
-    so landmark crossings on this single axis tell the full story.
+      'landmarks': list of {label, mllw_threshold, navd88} for the
+                   horizontal threshold lines.
     """
     points = []
 
@@ -3062,14 +3077,13 @@ def _oscillation_chart_data(forecast):
         if peak is None or not time_str:
             continue
         try:
-            water = float(peak) + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+            peak_f = float(peak)
         except (TypeError, ValueError):
             continue
         points.append({
             "time": time_str,
-            "water_navd88": round(water, 3),
+            "sh_peak_mllw": peak_f,
             "kind": "observed",
-            "sh_peak_mllw": float(peak),
         })
 
     # Future: predicted peaks for upcoming high tides in this forecast
@@ -3079,28 +3093,27 @@ def _oscillation_chart_data(forecast):
         if peak is None or not time_str:
             continue
         try:
-            water = float(peak) + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+            peak_f = float(peak)
         except (TypeError, ValueError):
             continue
         points.append({
             "time": time_str,
-            "water_navd88": round(water, 3),
+            "sh_peak_mllw": peak_f,
             "kind": "predicted",
-            "sh_peak_mllw": float(peak),
         })
 
-    # Landmark threshold lines — a curated subset of LANDMARKS to keep
-    # the chart readable. Per user 2026-05-19: include lowest grate,
-    # gutter/curb, Bay+Central storm grate, curb at walkway, lawn step,
-    # porch step. Excluded: lowest_road_corner (3.64 — crowds the
-    # gutter line at 3.78), road_middle (4.36 — crowds curb at 4.16),
-    # intersection (4.54 — crowds lawn_step at 4.58).
+    # Landmark threshold lines — curated subset, expressed as the SH
+    # MLLW value at which v0.6 would predict water reaches that
+    # landmark. Per user 2026-05-19 selection: see OSCILLATION_LANDMARK_KEYS.
     keep_keys = OSCILLATION_LANDMARK_KEYS
-    landmark_lines = [
-        {"label": label, "navd88": float(elev)}
-        for key, label, elev, _sh in LANDMARKS
-        if key in keep_keys
-    ]
+    landmark_lines = []
+    for key, label, elev, sh in LANDMARKS:
+        if key in keep_keys:
+            landmark_lines.append({
+                "label":          label,
+                "mllw_threshold": float(sh),     # the threshold drawn on the chart
+                "navd88":         float(elev),   # for tooltip context
+            })
 
     return {"points": points, "landmarks": landmark_lines}
 
@@ -3275,11 +3288,16 @@ def _render_oscillation_section(forecast):
     data_json = json.dumps(data, default=str)
     return f"""
   <section class="oscillation">
-    <h2>Water level over time</h2>
-    <p class="note">Observed (■) past peaks and predicted (●) upcoming peaks
-       plotted on a single water-level axis (NAVD88 ft at 342 Bay). Horizontal
-       lines mark landmark elevations — when a peak crosses a line, the water
-       reached that landmark.</p>
+    <h2>Sandy Hook peak over time</h2>
+    <p class="note">Observed (■) past peaks and predicted (●) upcoming peaks,
+       plotted as <b>Sandy Hook MLLW</b> (the actual NOAA gauge reading) —
+       not as inferred water at 342 Bay, which would embed the v0.6 model's
+       still-uncertain storm-surge enhancement. Horizontal lines are the
+       SH-MLLW thresholds at which the v0.6 model predicts water reaches
+       each landmark. <b>Caveat</b>: a peak crossing a line means the v0.6
+       model would predict that landmark wet — actual observation at 342
+       Bay may differ (especially on no-surge events; see the 2026-05-18
+       spot-check).</p>
     <canvas id="oscillation-chart" width="800" height="380"
             style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
@@ -3300,35 +3318,35 @@ def _render_oscillation_section(forecast):
           }});
         }});
         var observedData = points.map(function(p) {{
-          return p.kind === 'observed' ? p.water_navd88 : null;
+          return p.kind === 'observed' ? p.sh_peak_mllw : null;
         }});
         var predictedData = points.map(function(p) {{
-          return p.kind === 'predicted' ? p.water_navd88 : null;
+          return p.kind === 'predicted' ? p.sh_peak_mllw : null;
         }});
         // Build a horizontal-line annotation per landmark, color-graded
-        // blue (low) → red (high) so the band reads bottom-to-top as a
-        // severity gradient.
+        // blue (low MLLW threshold) → red (high) so the band reads
+        // bottom-to-top as a severity gradient.
         var landmarks = data.landmarks;
-        var navd88s = landmarks.map(function(l) {{ return l.navd88; }});
-        var minE = Math.min.apply(null, navd88s);
-        var maxE = Math.max.apply(null, navd88s);
+        var thresholds = landmarks.map(function(l) {{ return l.mllw_threshold; }});
+        var minE = Math.min.apply(null, thresholds);
+        var maxE = Math.max.apply(null, thresholds);
         function lerp(a, b, t) {{ return a + (b - a) * t; }}
         var annotations = {{}};
         landmarks.forEach(function(l, i) {{
-          var t = (l.navd88 - minE) / (maxE - minE || 1);
+          var t = (l.mllw_threshold - minE) / (maxE - minE || 1);
           // Blue (31, 111, 235) → Red (209, 68, 74)
           var r = Math.round(lerp(31, 209, t));
           var g = Math.round(lerp(111, 68, t));
           var b = Math.round(lerp(235, 74, t));
           annotations['lm' + i] = {{
             type: 'line',
-            yMin: l.navd88, yMax: l.navd88,
+            yMin: l.mllw_threshold, yMax: l.mllw_threshold,
             borderColor: 'rgba(' + r + ',' + g + ',' + b + ',0.7)',
             borderWidth: 1,
             borderDash: [4, 3],
             label: {{
               display: true,
-              content: l.label + ' (' + l.navd88.toFixed(2) + ')',
+              content: l.label + ' (' + l.mllw_threshold.toFixed(2) + ')',
               position: 'end',
               backgroundColor: 'rgba(255,255,255,0.85)',
               color: 'rgb(' + r + ',' + g + ',' + b + ')',
@@ -3344,7 +3362,7 @@ def _render_oscillation_section(forecast):
             labels: labels,
             datasets: [
               {{
-                label: 'Observed peak',
+                label: 'Observed SH peak',
                 data: observedData,
                 borderColor: 'rgba(60,60,60,0.85)',
                 backgroundColor: 'rgba(60,60,60,0.85)',
@@ -3354,7 +3372,7 @@ def _render_oscillation_section(forecast):
                 showLine: false,
               }},
               {{
-                label: 'Predicted peak',
+                label: 'Predicted SH peak',
                 data: predictedData,
                 borderColor: 'rgba(31, 111, 235, 0.9)',
                 backgroundColor: 'rgba(31, 111, 235, 0.9)',
@@ -3376,7 +3394,6 @@ def _render_oscillation_section(forecast):
                     if (!p) return ctx.formattedValue;
                     return [
                       (p.kind === 'observed' ? 'Observed' : 'Predicted'),
-                      'Water at 342: ' + p.water_navd88.toFixed(2) + ' ft NAVD88',
                       'Sandy Hook: ' + p.sh_peak_mllw.toFixed(2) + ' ft MLLW',
                     ];
                   }}
@@ -3390,14 +3407,14 @@ def _render_oscillation_section(forecast):
                 grid: {{ color: 'rgba(0,0,0,0.05)' }}
               }},
               y: {{
-                title: {{ display: true, text: 'Water at 342 Bay (ft NAVD88)' }},
+                title: {{ display: true, text: 'Sandy Hook peak (ft MLLW)' }},
                 grid: {{ color: 'rgba(0,0,0,0.06)' }},
                 suggestedMin: Math.min(minE - 0.2,
                   Math.min.apply(null,
-                    points.map(function(p) {{ return p.water_navd88; }}))),
+                    points.map(function(p) {{ return p.sh_peak_mllw; }}))),
                 suggestedMax: Math.max(maxE + 0.2,
                   Math.max.apply(null,
-                    points.map(function(p) {{ return p.water_navd88; }}))),
+                    points.map(function(p) {{ return p.sh_peak_mllw; }}))),
               }}
             }}
           }}

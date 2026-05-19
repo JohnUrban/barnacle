@@ -872,7 +872,12 @@ Same surge information the Borough's emergency management is looking at.
 27b. ✅ **Stage 2 Scriptable widget.** DONE 2026-05-18 (commit 8c97c8f).
     Script at `docs/barnacle-widget.js`. Free Scriptable app, copy-paste
     the JS, pin as home-screen widget. Small + medium sizes, color-coded
-    by regime, tappable to open the live page.
+    by regime, tappable to open the live page. **Refresh queued
+    2026-05-19** (Batch 2 idea #4): widget hasn't been touched since
+    its initial ship; everything 9b added (confidence band, lookahead
+    spring tides, live gauge reading, accuracy/classifier signals) is
+    candidate content. Pending: review what fits in 2x2 vs 4x2 vs
+    larger sizes; pick a few high-value additions per size.
 27c. ✅ **Map-based depth heat-map.** DONE 2026-05-19
     (commits edac47d + 5be56b5). The user expanded `assets/map_points.csv`
     from 16 pre-seeded landmarks to 52 surveyed points (intersection
@@ -1218,6 +1223,15 @@ just for maps — not viable. Fix:
   it. `docs/icons/map_today.png` deleted.
 - Enables: 9b.4(c) — map scrubber became nearly free once render
   was client-side (shipped same day).
+- **Alternative considered + rejected** (Batch 2 idea #1, 2026-05-19):
+  pre-compute ~48 PNGs at 1" increments from 3.5 to 7.5 ft NAVD88
+  for an interactive slider. Rejected because (a) it reintroduces
+  the binary-storage problem this item just got rid of (~96 MB of
+  PNGs that get regenerated every time we tune the map's look), and
+  (b) the client-side render does it instantly on-demand from one
+  number per slider position. Slider use case is already served by
+  9b.4(c) (map scrubber) which re-runs `BarnacleMap.render()` on
+  each step.
 
 ---
 
