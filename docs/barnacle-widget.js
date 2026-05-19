@@ -30,16 +30,17 @@ const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
 // Landmark elevations (NAVD88). Match flood_forecast_daily.py LANDMARKS.
 const LANDMARKS = [
-  ["lowest_road_corner", "Lowest corner",  3.64],
-  ["gutter_walkway",     "Gutter",         3.78],
-  ["corner_grate",       "Storm grate",    3.91],
-  ["curb",               "Curb",           4.16],
-  ["road_middle",        "Road middle",    4.36],
-  ["intersection",       "Intersection",   4.54],
-  ["lawn_step",          "Lawn step",      4.58],
-  ["porch_step",         "Porch step",     5.08],
+  ["lowest_sentinel_grate", "Sentinel grate", 3.60],
+  ["lowest_road_corner",    "Lowest corner",  3.64],
+  ["gutter_walkway",        "Gutter",         3.78],
+  ["corner_grate",          "Storm grate",    3.91],
+  ["curb",                  "Curb",           4.16],
+  ["road_middle",           "Road middle",    4.36],
+  ["intersection",          "Intersection",   4.54],
+  ["lawn_step",             "Lawn step",      4.58],
+  ["porch_step",            "Porch step",     5.08],
 ];
-const LOWEST_ELEV = 3.64;
+const LOWEST_ELEV = 3.60;
 
 // Background + text colors per regime, matching the email/Pages CSS.
 const REGIME_STYLES = {

@@ -38,9 +38,10 @@ LOCAL_ENHANCEMENT_FT = 0.40        # Sandy Hook obs -> 342 Bay water level
 # Landmark elevations at 342 Bay Ave (NAVD88, ft).
 # Sandy Hook MLLW threshold for each = landmark + 2.42
 # (= +2.82 datum offset − 0.40 local enhancement).
-LOWEST_ROAD_CORNER = 3.64   # corner across Bay (early-warning sentinel) (SH 6.06)
-GUTTER_WALKWAY     = 3.78   # street-curb interface at walkway          (SH 6.20)
-CORNER_GRATE       = 3.91   # Bay+Central storm grate; Pathway B onset  (SH 6.33)
+LOWEST_SENTINEL_GRATE = 3.60   # storm grate Central Ave south (lowest seen) (SH 6.02)
+LOWEST_ROAD_CORNER    = 3.64   # corner across Bay (early-warning sentinel)  (SH 6.06)
+GUTTER_WALKWAY        = 3.78   # street-curb interface at walkway            (SH 6.20)
+CORNER_GRATE          = 3.91   # Bay+Central storm grate; Pathway B onset    (SH 6.33)
 CURB_TOP           = 4.16   # Bay Ave side at walkway                   (SH 6.58)
 ROAD_MIDDLE        = 4.36   # Bay Ave centerline at user's spot         (SH 6.78)
 INTERSECTION       = 4.54   # Bay+Central intersection (local high)     (SH 6.96)
@@ -52,17 +53,18 @@ FRONT_PORCH_STEP   = 5.08   # ~6" above lawn step, est. first step      (SH 7.50
 # offset still holds at the gauge-to-bay level, but the user may want to
 # revisit if more extreme-event data accumulates.
 
-# Stratified landmarks (ascending severity). First two are sub-curb sentinels
-# the user uses for early-warning visual check + parking decisions.
+# Stratified landmarks (ascending severity). First several are sub-curb
+# sentinels for early-warning visual check + parking decisions.
 LANDMARKS = [
-    ("lowest_road_corner", "Lowest road corner across Bay", LOWEST_ROAD_CORNER, 6.06),
-    ("gutter_walkway",     "Gutter / curb edge at walkway", GUTTER_WALKWAY,     6.20),
-    ("corner_grate",       "Storm grate at Bay+Central",    CORNER_GRATE,       6.33),
-    ("curb",               "Curb at walkway",               CURB_TOP,           6.58),
-    ("road_middle",        "Bay Ave road middle",           ROAD_MIDDLE,        6.78),
-    ("intersection",       "Intersection center",           INTERSECTION,       6.96),
-    ("lawn_step",          "Lawn / walkway step",           LAWN_STEP,          7.00),
-    ("porch_step",         "Front porch first step",        FRONT_PORCH_STEP,   7.50),
+    ("lowest_sentinel_grate", "Lowest storm grate (Central Ave)", LOWEST_SENTINEL_GRATE, 6.02),
+    ("lowest_road_corner",    "Lowest road corner across Bay",    LOWEST_ROAD_CORNER,    6.06),
+    ("gutter_walkway",        "Gutter / curb edge at walkway",    GUTTER_WALKWAY,        6.20),
+    ("corner_grate",          "Storm grate at Bay+Central",       CORNER_GRATE,          6.33),
+    ("curb",                  "Curb at walkway",                  CURB_TOP,              6.58),
+    ("road_middle",           "Bay Ave road middle",              ROAD_MIDDLE,           6.78),
+    ("intersection",          "Intersection center",              INTERSECTION,          6.96),
+    ("lawn_step",             "Lawn / walkway step",              LAWN_STEP,             7.00),
+    ("porch_step",            "Front porch first step",           FRONT_PORCH_STEP,      7.50),
 ]
 # Subset used for the "seasonality typical vs MTD" table — curb-and-up only.
 # Sub-curb landmarks would dominate the table (counts of 8-12 days/month
@@ -504,7 +506,7 @@ def fetch_nws_hourly_forecast():
 # ============================================================
 def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
                             cold_lockout=False):
-    """Apply v0.5 model. Returns dict of depths (inches) at each landmark."""
+    """Apply v0.6 model. Returns dict of depths (inches) at each landmark."""
     zero_dict = {key: 0.0 for key, *_ in LANDMARKS}
     if cold_lockout and sandy_hook_peak_mllw < 8.0:
         return {**zero_dict, "regime": "cold_lockout"}
@@ -519,10 +521,11 @@ def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
         # Sub-curb landmarks: full rain add. Water collects on the street
         # from sheet-flow off Waterwitch + river backup, then pools to
         # gutter level. Same physics as at the curb.
-        d["lowest_road_corner"] += rain_add
-        d["gutter_walkway"]     += rain_add
-        d["corner_grate"]       += rain_add
-        d["curb"]               += rain_add
+        d["lowest_sentinel_grate"] += rain_add
+        d["lowest_road_corner"]    += rain_add
+        d["gutter_walkway"]        += rain_add
+        d["corner_grate"]          += rain_add
+        d["curb"]                  += rain_add
         d["road_middle"]        += rain_add
         d["intersection"]       += max(0.0, rain_add - 2.0)  # crown sheds some
         d["lawn_step"]          += max(0.0, rain_add - 4.0)  # lawn sheds more
@@ -543,7 +546,8 @@ def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
         regime = "light"
     elif d["curb"] > 0:
         regime = "light"  # any curb-top water is light, don't underreport
-    elif d["gutter_walkway"] > 0 or d["lowest_road_corner"] > 0:
+    elif (d["gutter_walkway"] > 0 or d["lowest_road_corner"] > 0 or
+          d["lowest_sentinel_grate"] > 0):
         regime = "street"  # sub-curb water — early warning / parking caution
     else:
         regime = "dry"
@@ -865,7 +869,7 @@ def build_forecast():
             forecast_peak = tide_pred + max(0.0, surge)
             source = "surge-persistence"
 
-        # Rain in ±90 min of THIS high tide (used by the v0.5 model)
+        # Rain in ±90 min of THIS high tide (used by the v0.6 model)
         # plus a wider ±3h hourly profile for the email's rain-timing block.
         peak_rain_rate = 0.0
         rain_window = []  # list of (hours_offset_from_high_tide, rain_rate_in_hr)
@@ -1274,22 +1278,25 @@ def _format_decimal(v):
 # Per-landmark short role tags used in the unified table. Blank means
 # the landmark name itself is descriptive enough.
 LANDMARK_ROLES = {
-    "lowest_road_corner": "sentinel",
-    "gutter_walkway":     "parking",
-    "corner_grate":       "Pathway B",
-    "curb":               "flood onset",
+    # lowest_sentinel_grate: label "Lowest storm grate" is self-descriptive;
+    # leaving the role tag empty avoids overflow in the text table.
+    "lowest_road_corner":    "sentinel",
+    "gutter_walkway":        "parking",
+    "corner_grate":          "Pathway B",
+    "curb":                  "flood onset",
 }
 
 # Short labels for the compact per-tide table. Full labels live in LANDMARKS.
 LANDMARK_SHORT_LABELS = {
-    "lowest_road_corner": "Lowest corner",
-    "gutter_walkway":     "Gutter",
-    "corner_grate":       "Storm grate",
-    "curb":               "Curb",
-    "road_middle":        "Road middle",
-    "intersection":       "Intersection",
-    "lawn_step":          "Lawn step",
-    "porch_step":         "Porch step",
+    "lowest_sentinel_grate": "Sentinel grate",
+    "lowest_road_corner":    "Lowest corner",
+    "gutter_walkway":        "Gutter",
+    "corner_grate":          "Storm grate",
+    "curb":                  "Curb",
+    "road_middle":           "Road middle",
+    "intersection":          "Intersection",
+    "lawn_step":             "Lawn step",
+    "porch_step":            "Porch step",
 }
 
 
@@ -1868,10 +1875,11 @@ Worst case detail:
 Regime: {regime} — {REGIME_GLOSSARY.get(regime, '')}
 
 {recap_block}{accuracy_block}{low_block}Reference scale (Sandy Hook obs MLLW):
-  < 6.06  : dry (nothing visible from window)
+  < 6.02  : dry (nothing visible)
+  6.02    : water emerges from lowest storm grate (Central Ave south)
   6.06    : lowest road corner across Bay first wets (visible from window)
   6.20    : water at gutter / curb edge — don't park there
-  6.33    : water emerges from corner storm grate (Pathway B active)
+  6.33    : water emerges from corner storm grate at Bay+Central (Pathway B)
   6.58    : water at curb top — flood onset at property
   6.78    : Bay Ave road middle covered
   6.96    : intersection center submerged
@@ -1887,7 +1895,7 @@ Regime glossary (subject-line label, based on water depth at the curb):
   severe       : {REGIME_GLOSSARY['severe']}
   cold_lockout : {REGIME_GLOSSARY['cold_lockout']}
 
-Model: v0.5. Local enhancement +0.40 ft.
+Model: v0.6. Local enhancement +0.40 ft.
 """
 
     bg = {"dry": "#e8f5e9", "street": "#e3f2fd", "light": "#fff8e1",
@@ -1962,7 +1970,7 @@ Model: v0.5. Local enhancement +0.40 ft.
 {accuracy_html}
 {low_html}
 <p style="font-size:small;color:#666">
-Model v0.5. Local enhancement +0.40 ft. Rain term saturates at 8".
+Model v0.6. Local enhancement +0.40 ft. Rain term saturates at 8".
 Surge persistence is a rough proxy; for active coastal storms, check NWS
 Coastal Flood Statement directly.
 </p>
@@ -2076,10 +2084,11 @@ def render_html_page(forecast):
     <h2>Reference scale</h2>
     <p>Sandy Hook observed water level (MLLW):</p>
     <ul>
-      <li>&lt; 6.06 ft — dry, nothing visible from window</li>
-      <li>6.06 ft — lowest road corner across Bay first wets (sentinel)</li>
+      <li>&lt; 6.02 ft — dry, nothing visible</li>
+      <li>6.02 ft — water emerges from lowest storm grate (Central Ave south)</li>
+      <li>6.06 ft — lowest road corner across Bay first wets (visible from window)</li>
       <li>6.20 ft — water at gutter / curb edge (don't park there)</li>
-      <li>6.33 ft — water emerges from corner storm grate (Pathway B)</li>
+      <li>6.33 ft — water emerges from corner storm grate at Bay+Central (Pathway B)</li>
       <li>6.58 ft — water tops curb at walkway (flood onset at property)</li>
       <li>6.78 ft — Bay Ave road middle covered</li>
       <li>6.96 ft — intersection center submerged</li>
@@ -2103,7 +2112,7 @@ def render_html_page(forecast):
   </section>
 
   <footer>
-    <p>Model v0.5. Local enhancement +0.40 ft. Rain term saturates at 8&Prime;.
+    <p>Model v0.6. Local enhancement +0.40 ft. Rain term saturates at 8&Prime;.
        Updated daily at 5 AM ET.</p>
     <p><a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a> &middot;
        <a href="archive/">Past forecasts</a> &middot;

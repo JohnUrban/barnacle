@@ -42,7 +42,7 @@ across four labeled flood events the user observed firsthand.
 
 | Component | State |
 |---|---|
-| Model v0.5 specification | ✅ Complete, validated against 4 events |
+| Model v0.6 specification (9 landmarks, formal spec) | ✅ Complete, validated against 4-6 events. Old v0.5 in model/archive/ |
 | Daily forecast script (`forecast/flood_forecast_daily.py`) | ✅ In production, runs daily via GitHub Actions |
 | Multi-tide forecast (both high tides per day) | ✅ Live since 2026-05-18 |
 | NWS surge parser (`forecast/nws_surge_parser.py`) | ✅ Self-test passes; awaits first live event |
@@ -65,7 +65,7 @@ across four labeled flood events the user observed firsthand.
 | Spot-check calibration callouts (pluvial-only, cold-lockout) | ✅ Live (2026-05-18, HANDOFF 10/14) |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
-| v0.6 model-spec promotion (4 new landmarks since v0.5) | ⏸ Deferred to next session |
+| v0.6 model-spec promotion + 9th landmark added | ✅ Live (2026-05-18). model/v0.6.md canonical; v0.5 archived. New lowest sentinel at 3.60 NAVD88 (SH 6.02). |
 | SMS/push alerts for moderate/severe (Twilio/Pushover) | ⏸ Next-turn item |
 | iOS Stage-1 Web Clip (Add to Home Screen) | ✅ Live (2026-05-18). manifest.json + apple-touch-icon + meta tags |
 | iOS Stage-2 Scriptable widget | ✅ Live (2026-05-18). Script at docs/barnacle-widget.js |
@@ -766,6 +766,29 @@ Same surge information the Borough's emergency management is looking at.
     Key prereqs already in place: the JSON archive (16c) gives any
     client direct access to the structured forecast data, so iOS
     development can begin without backend changes.
+27a. ✅ **Stage 1 Web Clip (Add to Home Screen).** DONE 2026-05-18
+    (commit 3bfb966). Pages site has manifest.json + apple-touch-icon
+    + meta tags so iOS "Add to Home Screen" produces a real-looking
+    app icon with standalone webview.
+27b. ✅ **Stage 2 Scriptable widget.** DONE 2026-05-18 (commit 8c97c8f).
+    Script at `docs/barnacle-widget.js`. Free Scriptable app, copy-paste
+    the JS, pin as home-screen widget. Small + medium sizes, color-coded
+    by regime, tappable to open the live page.
+27c. **Map-based depth heat map.** The user provided a Google Maps
+    screenshot at `docs/icons/map_raw.png` and an annotated version at
+    `docs/icons/map_annotated.png` showing all 9 landmark elevations
+    around 342 Bay Ave. Long-term direction: render a depth-tinted
+    overlay on the map showing predicted water depth at each landmark
+    today, possibly with smooth interpolation if more topography
+    points are added. Two implementation paths:
+    - Server-side (PIL/matplotlib) emits `docs/map.png` daily as part
+      of the forecast workflow. Static daily image. Simpler.
+    - Client-side: `docs/map.html` page with SVG/canvas overlays
+      computed from forecast.json. More interactive (could animate
+      across all_tides), more code.
+    Prerequisite: user wants to add more topography height values
+    around the property (currently 9 data points; smooth surface
+    would benefit from 20-30).
 
 ---
 
@@ -835,19 +858,21 @@ a. **v0.6 model spec promotion** (HANDOFF upkeep rule). Move the
    v0.5.1 + v0.5.2 in-place additions to a new `model/v0.6.md` since
    they added 4 new landmarks. Archive `model/v0.5.md` to
    `model/archive/`. Update HANDOFF section 3 + spec cross-references.
-b. **HANDOFF item 16d — SMS/push alerts.** Twilio (text messaging
+a. **HANDOFF item 16d — SMS/push alerts.** Twilio (text messaging
    API, ~$0.0075 per SMS, requires phone number provisioning) or
    Pushover (one-time $5 app, free API, sends to your phone) for
    moderate/severe-only events. Twilio is general-purpose; Pushover
    is hobbyist-friendly. Pushover probably the simpler choice.
-c. **HANDOFF item 16f — live NOAA gauge embed on Pages site.** NOAA
+b. **HANDOFF item 16f — live NOAA gauge embed on Pages site.** NOAA
    has direct image URLs for the Sandy Hook gauge plot. Drop one
    `<img>` tag in `render_html_page()`.
-d. **HANDOFF item 16 (cold-weather retrospective).** Pull historical
+c. **HANDOFF item 16 (cold-weather retrospective).** Pull historical
    air-temperature data, join to hourly water-level, find past
    high-tide events that would have crossed the curb but had
    72-h mean temp < 32°F. Check whether flooding was reported / not
    reported. Builds calibration without waiting for new events.
+d. **HANDOFF item 27c — Map-based heat map of water depth.** New
+   addition this turn. See item below.
 
 ---
 
@@ -872,8 +897,10 @@ For when you come back to a fresh chat with this document:
 - **The repo is reorganized.** Old paths (`dev/highlands_floodwatch/...`)
   no longer exist except as `attic/dev_pre_v0.5_reorg_20260518/`.
   Canonical paths in section 5 above.
-- **When sources disagree, v0.5 spec wins.** v0.4 had three arithmetic
-  errors. Python code was always correct.
+- **When sources disagree, latest model/v0.{N}.md wins** (currently
+  v0.6). Earlier versions (v0.5, v0.4) had arithmetic errors and
+  partial landmark sets; archived for history under model/archive/.
+  Python code is canonical alongside the latest spec.
 - **The bot commits daily.** Always pull-rebase before pushing local
   changes. User has `git config pull.rebase true` set; safe to use
   bare `git pull`.
@@ -907,17 +934,18 @@ updated in the same commit as the change that necessitated them:
    - The model itself changes (sections 3, 5, 6, the elevations table)
    - The deployment infrastructure changes (section 8)
 
-2. **`model/v0.5.md` (or its successor)** — update whenever:
+2. **`model/v0.6.md` (or its successor)** — update whenever:
    - LANDMARKS, LOCAL_ENHANCEMENT, MLLW_TO_NAVD88, or any constant
      changes
    - The formula or pathway structure changes
    - Labeled events table changes
    - **Versioning convention:** *real* model changes warrant a version
-     bump (`v0.6.md`, `v0.7.md`, …), not inline sub-revisions. Reserve
+     bump (`v0.7.md`, `v0.8.md`, …), not inline sub-revisions. Reserve
      same-version edits for typo/wording corrections, not new
-     landmarks or formula changes. v0.5.1 and v0.5.2 in the current
-     file are retroactively due for a v0.6 promotion — left for next
-     session per user request.
+     landmarks or formula changes. (v0.5 → v0.6 promotion happened
+     2026-05-18 when the 9th landmark was added; v0.5 inline patches
+     from earlier the same day were also folded into v0.6's canonical
+     spec at the same time.)
 
 3. **`data/labeled_observations.csv`** — append a row whenever the user
    reports an observation. See
