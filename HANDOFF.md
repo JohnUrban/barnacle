@@ -65,7 +65,8 @@ across four labeled flood events the user observed firsthand.
 | Spot-check calibration callouts (pluvial-only, cold-lockout) | ✅ Live (2026-05-18, HANDOFF 10/14) |
 | First real spot-check session (2026-05-18 22:12 peak) | ✅ Recorded. Forecast 6.19 / actual 6.58. **Key finding: with corrected grate elevation (3.80 not 3.91 per survey), local enhancement at SH 6.58 was ~0 or slightly negative, not +0.40. Refined hypothesis: +0.40 is a storm-surge propagation effect, not a constant.** See `assets/observations/2026-05-18/README.md` |
 | v0.6 grate elevation bug surfaced (NE/NW grates 3.80 not 3.91) | ⏸ Per survey PDF `model/HLND2303-Road-Reconstruction-Supplement-Set-2024.05.06.pdf`: NE/NW grates = 3.80; 3.91 is the NE pavement corner (separate landmark). v0.6's `corner_grate` should have been 3.80. Pathway B threshold should be SH 6.22, not 6.33. Queue for v0.7. |
-| Photos from 2026-05-18 event in scratch/ awaiting distribution | ⏳ User has 22 photos (~83 MB, full iPhone res) at `assets/observations/2026-05-18/scratch/`. Resize via `sips -Z 1500` recommended before committing to subdirs. Then Claude walks EXIF + appends to `data/labeled_observations.csv` |
+| Photos from 2026-05-18 event distributed to 7 subdirectories | ✅ Done 2026-05-19. Medium-size exports (~13 MB total) under `assets/observations/2026-05-18/<grate-or-landmark>/`. 13 calibration rows in `data/labeled_observations.csv`. Plus 3 morning-after pocket photos (cba8338) confirming ≥11.4h pocket retention. |
+| Web platform pivot — sub-daily updates, interactive site | ✅ Foundation shipped 2026-05-19. See section 9b. Workflow hourly; per-tide deep-link pages; client-side heat-map renderer; convergence + oscillation + scrubber charts; severity-colored rollup with 24/48/72h toggle; rain-toggle map; refined confidence with regime band; 1-2 month astronomical look-ahead; accuracy scatter + binary classifier matrix. Master predictions log at `data/predictions_log.csv` accumulating since 2026-05-19. |
 | v0.7 model spec promotion (5 grates + storm-surge-dependent enhancement + corrected elevations) | ⏸ Queued. (a) Fix grate_NE elevation 3.91→3.80 (survey). (b) Add grate_NW (3.80), grate_SW (~3.55-3.58), grate_bay_ave_upstream (~3.76). (c) Add corner_NE (3.91), corner_SE (3.64), corner_SW (3.64), rename `intersection`→`intersection_highpoint` (4.54). (d) Rename existing corner_grate→grate_NE, lowest_sentinel_grate→grate_SE. (e) Replace constant +0.40 enhancement with storm-surge-dependent function — current hypothesis: +0.40 only develops during meaningful surge (likely tied to wind/pressure pushing surge into the bay), ~0 for normal tides. Needs ≥2 more events to firm up the surge-dependent form. |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
@@ -954,7 +955,9 @@ to the master log (9b.3). **Never deletes prior history.**
   (~30s/run × 24 = ~12 min/day on public repos which are unlimited).
 - **Storage**: text updates are cheap (overwrite same paths).
   Binary-PNG growth was the concern — 9b.10 resolves it.
-- Status: queued
+- Status: ✅ DONE 2026-05-19 (commit 12b160c). Cron flipped from
+  `'0 9 * * *'` to `'0 * * * *'`. Daily run (09 UTC + dispatch)
+  sends email + archive snapshot; hourly runs are text-only.
 - Replaces/extends: HANDOFF 16d (threshold-crossing alerts) and
   HANDOFF 27 Stage-3 PWA push (both ride on this infrastructure).
 
@@ -989,7 +992,10 @@ docs/tides/2026-05-18T22-12/
 - Old per-day archive (`docs/archive/YYYY-MM-DD.html`) keeps
   accumulating in parallel — leave it untouched. Pruning is a later
   decision once the per-tide structure has settled.
-- Status: queued
+- Status: ✅ DONE 2026-05-19 in two parts. Part 1 (4532521):
+  severity-colored rollup rows + per-tide deep-link pages with
+  index.html + forecast.json + evolution.csv. Part 2 (c28895f):
+  24h → 72h rollup window + JS duration toggle (24/48/72h).
 - Depends on: 9b.3 (evolution.csv comes from the master log)
 
 ### 9b.3 — Master historical log of all predictions over time
@@ -1012,7 +1018,10 @@ upcoming tides per tick.
 - The existing `data/forecast_accuracy.csv` (HANDOFF 8b) is the
   degenerate one-row-per-day version of this. The new log replaces it
   for new data; the old log stays frozen as a historical artifact.
-- Status: queued — foundational; nothing else in 9b ships without it.
+- Status: ✅ DONE 2026-05-19 (commit 1b54750). `data/predictions_log.csv`
+  + `data/predictions_log_README.md`. Foundational; powers per-tide
+  evolution.csv files (9b.2), the convergence chart (9b.4(a)), the
+  map scrubber (9b.4(c)), and eventually 9b.8's lead-time accuracy.
 - Depends on: nothing
 
 ### 9b.4 — Interactive website features
@@ -1036,8 +1045,14 @@ past predictions. "Play" button animates from date X → Y at N-hour
 increments. Renders the heat-map client-side from each row's
 `water_navd88`. Becomes nearly free once 9b.10 ships.
 
-- Status: queued, build in order (a) → (b) → (c)
-- Depends on: 9b.3 + 9b.10
+- Status: ✅ DONE 2026-05-19 in three parts. (a) Convergence plot
+  per-tide (67c34fc) — Chart.js loads evolution.csv. (b) Oscillation
+  plot on the home page (09e285a) — multi-tide line chart with
+  landmark-banded thresholds via chartjs-plugin-annotation;
+  curated to 5 landmarks per user feedback. (c) Map scrubber +
+  play button on per-tide pages (4d177aa) — slider replays the
+  heat-map across each prediction event in evolution.csv.
+- Depends on: 9b.3 + 9b.10 (both shipped)
 
 ### 9b.5 — Rain in the heat-map (uniform water-level addition)
 
@@ -1054,8 +1069,18 @@ that amount.
   rain" — same single number drives both states.
 - This falls out naturally of model refactor 9c.4 — once the model
   itself uses a single water level, the map just reads that value.
-- Status: queued
+- Status: ✅ DONE 2026-05-19 (commit dcd2242). The website renders
+  TWO maps when rain is meaningful — a "Tide + rain" map (default)
+  and a "Tide only" comparison — with a radio toggle. The rain
+  bonus is added uniformly to the water-level surface that drives
+  the contour overlay. Once 9b.10 shipped (client-side render),
+  the toggle just re-renders with a different water-level number;
+  no second PNG file needed.
 - Replaces: per-landmark rain shedding in the v0.6 model.
+- The DEPTH predictions in `predict_landmark_depths()` STILL use
+  v0.6's per-landmark shedding (intersection -2", lawn/porch -4").
+  Map ↔ depth-table disagreement at lawn/porch on rain days. v0.7
+  9c.4 unifies both on water-is-level math.
 
 ### 9b.6 — Confidence semantics — always pair badge with what+why line
 
@@ -1069,7 +1094,13 @@ which confused the user when a DRY day showed LOW confidence. Fix:
   > Regime could span DRY → LIGHT depending on which way it resolves.
 - When the uncertainty band spans regime categories, state the span
   ("could be DRY through LIGHT" or "could be MODERATE through SEVERE").
-- Status: queued
+- Status: ✅ DONE 2026-05-19 (commit 4cf5a4e). Badge + reason now
+  paired with up-to-two italicized qualifier lines spelling out
+  (a) what's uncertain (the peak SH MLLW number, ± estimated ft)
+  and (b) the regime band that uncertainty implies. Uncertainty
+  is currently a heuristic per band (high=±0.10, medium=±0.30,
+  low=±0.50 ft); a data-driven version is queued (see N in the
+  current solo-work backlog).
 - Extends: HANDOFF 16a (confidence indicator) — DONE; this is
   refinement, not replacement.
 
@@ -1091,7 +1122,11 @@ which is forecast this far ahead."*
 - **Email**: section at the bottom listing dates / times.
 - **Website**: dedicated section, updated once-daily (no need for
   hourly cadence on this view).
-- Status: queued
+- Status: ✅ DONE 2026-05-19 (commit 176214d). Pulls NOAA
+  tide_predictions hilo over 45 days, surfaces tides ≥ 6.00 / 6.20
+  / 6.58 / 7.00 ft MLLW with progressively heavier visual weight.
+  Appears in both the daily email and the website. Astronomical-
+  only caveat explicit on every surface.
 - Adjacent: HANDOFF 25a (lunar / spring-tide annotation — same
   calendar days, different framing).
 
@@ -1118,7 +1153,18 @@ Plus a **time-to-peak axis** from 9b.3: plot accuracy by
 hours-before-peak. Does accuracy improve sharply at -3 h? -6 h?
 Checkboxes for which lead-time bucket to include.
 
-- Status: queued
+- Status: PARTIAL — modes 1 + 3 shipped 2026-05-19.
+  - Mode 1 (peak-magnitude): scatter plot of predicted vs observed
+    SH peak with y=x reference line (commit 42bee09). Falls back
+    to text-only summary when <2 scored rows.
+  - Mode 3 (binary classifier): 2×2 confusion matrix with TP/FP/FN/TN,
+    accuracy, FPR, FNR; flooded threshold = SH ≥ 6.02 MLLW (lowest
+    grate). Color-coded cells (green = caught/dry, red = missed)
+    (commit 357a82b).
+  - Mode 2 (outcome-depth) still queued — waits for
+    data/labeled_observations.csv to grow.
+  - Lead-time accuracy axis (using predictions_log.csv hours_until_peak)
+    still queued — waits for log to accumulate.
 - Extends: HANDOFF 8b (forecast accuracy log) — DONE; this is the
   visualization layer plus the three modes.
 
@@ -1148,9 +1194,16 @@ just for maps — not viable. Fix:
 - The map renderer code becomes a static JS module in `docs/` (e.g.
   `docs/map-render.js`), pure function of `(water_navd88, map_points)`
   → SVG/Canvas.
-- Status: queued
-- Enables: 9b.4(c) — map scrubber becomes nearly free once render is
-  client-side.
+- Status: ✅ DONE 2026-05-19 (commit dcc8da4). New
+  `docs/map-render.js` does the contouring in the browser using
+  d3-delaunay (CDN) + per-triangle barycentric rasterization onto a
+  2D canvas. Map and per-tide pages embed `<canvas>` + inlined
+  map_points.csv data + a render() invocation. No more PNG storage
+  in git history. `assets/render_map.py` remains for local
+  convenience and future email-embed; the workflow no longer calls
+  it. `docs/icons/map_today.png` deleted.
+- Enables: 9b.4(c) — map scrubber became nearly free once render
+  was client-side (shipped same day).
 
 ---
 
@@ -1444,40 +1497,53 @@ updated in the same commit as the change that necessitated them:
 
 ---
 
-## 13. Cold-start pointer — last work was 2026-05-18 / -19
+## 13. Cold-start pointer — last work was 2026-05-19
 
-If you're a fresh Claude coming in after compaction: read
-`assets/observations/2026-05-18/README.md` first. That's the most
-important new artifact from the session that just ended. Headline:
-the first spot-check event surfaced a refined hypothesis — **the
-+0.40 ft local enhancement is a storm-surge propagation effect,
-not a constant.** Storm events (Apr 18, Oct 30) with meaningful
-surge fit the +0.40; normal tides (2026-05-18) show ~0 enhancement.
-Don't recalibrate from one event; watch the pattern at the next
-storm event with surge.
+If you're a fresh Claude coming in after compaction: the
+**web platform pivot** (section 9b) shipped in one long session on
+2026-05-19. Most of 9b is now DONE:
+✅ 9b.1 (hourly cadence) — workflow cron `'0 * * * *'`, daily run
+   at 09 UTC sends email + archive snapshot; hourly runs are
+   text-only updates to JSON + HTML + predictions log.
+✅ 9b.2 part 1 (severity rows + per-tide deep-link pages) and
+   part 2 (24h → 72h rollup window + JS duration toggle).
+✅ 9b.3 (master predictions log at `data/predictions_log.csv`,
+   accumulating since 2026-05-19 ~16:26 UTC).
+✅ 9b.4 (a) convergence plot, (b) oscillation plot, (c) map scrubber.
+✅ 9b.5 (rain in heat-map — uniform water-level addition + toggle).
+✅ 9b.6 (confidence semantics — badge + reason + regime band).
+✅ 9b.7 (1-2 month astronomical look-ahead).
+✅ 9b.8 modes 1 + 3 (peak-magnitude scatter + binary classifier
+   matrix). Mode 2 (outcome-depth) still queued.
+✅ 9b.10 (client-side map rendering via d3-delaunay; no PNG storage).
 
-Also: **v0.6 has a corner_grate elevation bug** (3.91 → should be
-3.80 per survey). The 3.91 is the NE pavement corner, not the grate.
-Pathway B threshold shifts from SH 6.33 to SH 6.22. Queued for v0.7
-along with the storm-surge enhancement function.
+Read these for context if needed:
+- `assets/observations/2026-05-18/README.md` — first spot-check
+  event surfaced the **storm-surge enhancement hypothesis**: the
+  +0.40 ft enhancement is probably a storm-surge propagation effect,
+  not a constant. Validation gates v0.7 (see 9c.3).
+- `dev/ideas/20260519.txt` — user's brainstorm that anchored the
+  9b pivot.
+- `data/predictions_log_README.md` — schema of the master log.
 
-Photos distributed to 7 subdirectories; 13 observation rows logged
-in `data/labeled_observations.csv` for the 2026-05-18 event.
-
-`assets/map_points.csv` updated to 16 entries with corrected
-elevations and v0.7 compass naming. User is mid-coordinate-picking
-via the (newly keyboard-driven) `assets/pick_coords.py`.
+**Known v0.6 bugs deferred to v0.7 (DO NOT START v0.7 YET):**
+- `corner_grate` elevation: 3.91 → 3.80 (survey-confirmed).
+- `predict_landmark_depths()`'s per-landmark rain shedding
+  (intersection -2", lawn/porch -4") disagrees with the
+  client-side heat-map's uniform additive. See FIX-IN-v0.7 comment
+  in the function. v0.7 9c.4 picks water-is-level for both.
 
 Next likely sessions:
-1. **Web platform pivot work** — see new section **9b** for the active
-   development direction. Ten queued items, build order indicated.
-   The big architectural decisions: hourly cadence, client-side
-   rendering, one-number-describes-map-state.
-2. **Next storm event with meaningful surge** — test the storm-surge
-   enhancement hypothesis (9c.3). Validation gates the v0.7 model
-   promotion.
-3. **v0.7 model promotion** when the surge hypothesis lands — section
-   **9c** consolidates everything in one place. **DO NOT START YET.**
+1. **Mode 2 of the accuracy story** (9b.8 outcome-depth) once
+   `data/labeled_observations.csv` has accumulated more rows.
+2. **Self-calibrated confidence ± uncertainty** (refine 9b.6 with
+   real data from `data/predictions_log.csv` once it accumulates).
+3. **Next storm event with meaningful surge** — test the storm-
+   surge enhancement hypothesis (9c.3). Validation gates the v0.7
+   model promotion.
+4. **v0.7 model promotion** when the surge hypothesis lands —
+   section **9c** consolidates everything in one place. **DO NOT
+   START YET.**
 
 v0.7 is queued but not started. Don't start it yet.
 
