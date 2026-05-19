@@ -582,6 +582,14 @@ Same surge information the Borough's emergency management is looking at.
     - The "pocket" near SE grate (~3.48-3.52 NAVD88) is *post-
       overflow retention*, not a *pre-arrival* sentinel. Water can
       only reach the pocket after bay water exceeds the grate top.
+      **Pocket retention is ≥11 hours** (confirmed 2026-05-19 09:33,
+      water still present from prior 22:12 peak; no rain, minimal
+      morning sun). **Spot-check disambiguation rule:** when arriving
+      for a subsequent tide, the pocket may hold leftover water from
+      a prior tide and mislead — read the **grate-slot** water level
+      to determine the current bay state. Pocket residual matters
+      only when the grate itself reads sub-flush; if the grate is
+      also flush/over, the current tide is breaching anyway.
     - Peak time can slip 10-30 min later than the astronomical
       prediction when surge persistence is unreliable.
 0. **Accumulate landmark observations in `data/labeled_observations.csv`.**

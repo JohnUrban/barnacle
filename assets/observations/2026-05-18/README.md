@@ -191,10 +191,26 @@ water can only reach the pocket *after* it has overflowed the grate.
 So the pocket is a **post-overflow retention indicator**, not a
 sub-3.60 sentinel for water arrival.
 
+**Retention duration is long.** User confirmed 2026-05-19 09:33 (≥11
+hours after the 22:12 peak the night before) that water was still
+present in the pocket, with no rain and minimal solar drying through
+the early morning. Likely persists 12+ hours from an evening tide.
+This matters because:
+
+> **Spot-check methodology implication:** leftover pocket water
+> from a *prior* tide can mislead an observer arriving for a
+> *subsequent* tide. Disambiguate by reading the **grate slot**
+> water level — that reflects the *current* bay level. If the grate
+> is dry or clearly sub-flush, any pocket water is residual from
+> earlier. If the grate is also flush / overflowing, then the
+> current tide is also breaching anyway, so the pocket reading
+> doesn't add ambiguity.
+
 **Action**: Don't add the pocket as a landmark for tidal arrival.
 *Do* use the pocket's pavement elevation for the future heat-map
 work — it'll affect the visualized depth in that area after water
-recedes.
+recedes. *Do* check the grate-slot level first when interpreting
+pocket water during a spot-check.
 
 ### 4. Peak time can slip ~15 min later than forecast
 
