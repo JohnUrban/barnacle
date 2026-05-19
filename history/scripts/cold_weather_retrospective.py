@@ -64,9 +64,17 @@ HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
 HISTORY_DIR = REPO_ROOT / "history"
 RAW_CHUNKS_DIR = HISTORY_DIR / "data" / "raw_chunks" / "air_temperature"
+RAW_CHUNKS_WIND = HISTORY_DIR / "data" / "raw_chunks" / "wind"
 HOURLY_HEIGHT_PARQUET = HISTORY_DIR / "data" / "sandy_hook_hourly_history.parquet"
 CANDIDATES_CSV = HISTORY_DIR / "data" / "cold_weather_candidates.csv"
 REPORT_MD = HISTORY_DIR / "reports" / "cold_weather_retrospective.md"
+
+# v0.6 model constants — match forecast/flood_forecast_daily.py so the
+# predicted_depth_at_curb_without_lockout column reflects what the
+# model would have said had the cold-lockout NOT been applied.
+LOCAL_ENHANCEMENT_FT  = 0.40
+MLLW_TO_NAVD88_OFFSET = -2.82
+CURB_NAVD88           = 4.16  # 342 Bay curb elevation
 
 NOAA_STATION = "8531680"  # Sandy Hook
 NOAA_API = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
@@ -78,11 +86,12 @@ LOCKOUT_CEILING_MLLW = 8.0        # Override only applies when SH < this
 ROLLING_HOURS       = 72          # Rolling mean window
 
 
-def fetch_air_temperature_chunk(begin: dt.date, end: dt.date) -> dict:
-    """Fetch one chunk of hourly air_temperature data from NOAA CO-OPS."""
+def _fetch_chunk(product: str, begin: dt.date, end: dt.date) -> dict:
+    """Generic NOAA CO-OPS chunk fetcher. `product` is one of NOAA's
+    product names (air_temperature, wind, etc.)."""
     params = {
         "station":    NOAA_STATION,
-        "product":    "air_temperature",
+        "product":    product,
         "units":      "english",
         "time_zone":  "lst_ldt",
         "interval":   "h",
@@ -107,6 +116,11 @@ def fetch_air_temperature_chunk(begin: dt.date, end: dt.date) -> dict:
                   file=sys.stderr)
             time.sleep(sleep_for)
             backoff *= 2
+
+
+def fetch_air_temperature_chunk(begin: dt.date, end: dt.date) -> dict:
+    """Backwards-compat wrapper around _fetch_chunk for air_temperature."""
+    return _fetch_chunk("air_temperature", begin, end)
 
 
 def pull_air_temperature(begin: dt.date, end: dt.date) -> pd.DataFrame:
@@ -154,6 +168,73 @@ def pull_air_temperature(begin: dt.date, end: dt.date) -> pd.DataFrame:
     return pd.concat(chunks, ignore_index=True).sort_values("time")
 
 
+def pull_wind(begin: dt.date, end: dt.date) -> pd.DataFrame:
+    """Pull NOAA `wind` at Sandy Hook in chunked + resumable fashion,
+    cached under history/data/raw_chunks/wind/. Returns combined
+    dataframe with columns: time, wind_speed_kts (max during hour),
+    wind_dir_deg. NOAA returns wind direction in degrees from true
+    north (0 = N, 90 = E, 180 = S, 270 = W)."""
+    RAW_CHUNKS_WIND.mkdir(parents=True, exist_ok=True)
+    cur = begin
+    chunks = []
+    while cur < end:
+        nxt = min(cur + dt.timedelta(days=31), end)
+        chunk_name = f"{cur:%Y%m%d}-{nxt:%Y%m%d}.parquet"
+        chunk_path = RAW_CHUNKS_WIND / chunk_name
+        empty_marker = RAW_CHUNKS_WIND / (chunk_name + ".empty")
+
+        if chunk_path.exists():
+            chunks.append(pd.read_parquet(chunk_path))
+        elif empty_marker.exists():
+            pass
+        else:
+            print(f"wind  {cur:%Y-%m-%d} → {nxt:%Y-%m-%d}")
+            try:
+                payload = _fetch_chunk("wind", cur, nxt)
+            except Exception as e:
+                print(f"  ERROR: {e} (skipping)", file=sys.stderr)
+                cur = nxt
+                continue
+            rows = payload.get("data") or []
+            if not rows:
+                empty_marker.touch()
+            else:
+                df = pd.DataFrame(rows)
+                # NOAA `wind` returns: t (time), s (speed kts), d (dir deg),
+                # dr (direction code, e.g. "NE"), g (gust kts), f (flags).
+                df = df.rename(columns={
+                    "t":  "time",
+                    "s":  "wind_speed_kts",
+                    "d":  "wind_dir_deg",
+                })
+                df["time"] = pd.to_datetime(df["time"], errors="coerce")
+                df["wind_speed_kts"] = pd.to_numeric(
+                    df["wind_speed_kts"], errors="coerce")
+                df["wind_dir_deg"] = pd.to_numeric(
+                    df["wind_dir_deg"], errors="coerce")
+                df = df.dropna(subset=["time"])
+                df = df[["time", "wind_speed_kts", "wind_dir_deg"]]
+                df.to_parquet(chunk_path, index=False)
+                chunks.append(df)
+            time.sleep(0.6)
+        cur = nxt
+
+    if not chunks:
+        return pd.DataFrame(columns=["time", "wind_speed_kts", "wind_dir_deg"])
+    return pd.concat(chunks, ignore_index=True).sort_values("time")
+
+
+def _dir_label(deg):
+    """Convert a degrees-from-true-north heading to compass label
+    (16-point rose). Returns '' for NaN."""
+    if pd.isna(deg):
+        return ""
+    labels = ["N","NNE","NE","ENE","E","ESE","SE","SSE",
+              "S","SSW","SW","WSW","W","WNW","NW","NNW"]
+    idx = int(round(deg / 22.5)) % 16
+    return labels[idx]
+
+
 def load_hourly_height() -> pd.DataFrame:
     """Load the existing combined hourly_height parquet. Raises a helpful
     message when the file is gitignored and hasn't been regenerated."""
@@ -180,6 +261,67 @@ def load_hourly_height() -> pd.DataFrame:
     df["time"] = pd.to_datetime(df["time"], errors="coerce")
     df = df.dropna(subset=["time", "observed_mllw"])
     return df[["time", "observed_mllw"]]
+
+
+def augment_candidates(events: pd.DataFrame,
+                        wind: pd.DataFrame,
+                        water: pd.DataFrame) -> pd.DataFrame:
+    """Add the 4 enrichment columns to the candidate event rows
+    (per user 2026-05-19 follow-up):
+
+      predicted_depth_at_curb_without_lockout (inches) — what v0.6
+        would have predicted at the curb if cold-lockout were NOT
+        applied. Tells you how big each "claim" is.
+      rain_24h_in — total precipitation in the 24h around peak.
+        Lets you filter pure-tidal candidates from rain-confounded ones.
+        Pulled from a separate met source if needed; for now we leave
+        this column empty when no precip data is available (NOAA's
+        precipitation product isn't reliably reported at 8531680).
+      wind_dir / wind_speed_max — wind at peak hour. Onshore wind
+        (NE-ESE roughly 30-110° for Sandy Hook Bay) drives surge AND
+        may prevent drain-outfall ice formation by continuously
+        bathing the outfall in bay water.
+    """
+    if events.empty:
+        return events
+
+    out = events.copy()
+
+    # predicted_depth_at_curb_without_lockout
+    # Match the model formula at the BARE TIDE level (no rain bonus
+    # — rain isn't in this analysis pipeline yet).
+    water_navd88 = out["observed_mllw"] + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+    out["predicted_depth_at_curb_without_lockout_in"] = (
+        (water_navd88 - CURB_NAVD88).clip(lower=0) * 12
+    ).round(1)
+
+    # rain_24h_in — placeholder (NOAA precipitation isn't reliably
+    # available at this station). Real precipitation requires a
+    # separate met source (e.g., NWS Mt Holly gridded precip,
+    # NJ State Climatologist station network). For now: empty.
+    out["rain_24h_in"] = pd.NA
+
+    # wind_dir + wind_speed_max — match each event's peak hour to
+    # the nearest wind reading (merge_asof, 90-min tolerance).
+    if not wind.empty:
+        wind_sorted = wind.sort_values("time").reset_index(drop=True)
+        events_sorted = out.sort_values("time").reset_index(drop=True)
+        matched = pd.merge_asof(
+            events_sorted, wind_sorted,
+            on="time", direction="nearest",
+            tolerance=pd.Timedelta("90min"),
+        )
+        out = matched.sort_values("time").reset_index(drop=True)
+        out["wind_dir"] = out["wind_dir_deg"].apply(_dir_label)
+        out = out.rename(columns={
+            "wind_speed_kts": "wind_speed_max_kts",
+        })
+    else:
+        out["wind_dir"] = ""
+        out["wind_speed_max_kts"] = pd.NA
+        out["wind_dir_deg"] = pd.NA
+
+    return out
 
 
 def find_candidate_events(joined: pd.DataFrame) -> pd.DataFrame:
@@ -320,6 +462,14 @@ def main():
     print("Step 4: identify candidate cold-weather flood events…")
     events = find_candidate_events(joined)
     print(f"  {len(events)} candidate events")
+
+    print("Step 4b: pull wind data + augment candidates with the 4 "
+          "additional columns…")
+    wind = pull_wind(begin, end)
+    print(f"  {len(wind):,} hourly wind rows")
+    events = augment_candidates(events, wind, water)
+    print(f"  augmented columns: predicted_depth_at_curb_without_lockout_in, "
+          f"rain_24h_in (placeholder), wind_dir, wind_speed_max_kts")
 
     CANDIDATES_CSV.parent.mkdir(parents=True, exist_ok=True)
     events.to_csv(CANDIDATES_CSV, index=False)

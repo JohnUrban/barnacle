@@ -788,10 +788,24 @@ def fetch_nws_hourly_forecast():
 # ============================================================
 def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
                             cold_lockout=False):
-    """Apply v0.6 model. Returns dict of depths (inches) at each landmark."""
-    zero_dict = {key: 0.0 for key, *_ in LANDMARKS}
-    if cold_lockout and sandy_hook_peak_mllw < 8.0:
-        return {**zero_dict, "regime": "cold_lockout"}
+    """Apply v0.6 model. Returns dict of depths (inches) at each landmark.
+
+    NOTE 2026-05-19: the `cold_lockout` parameter is retained in the
+    signature for backwards-compat with callers but is **no longer
+    applied as an active override**. The 19-candidate cold-weather
+    retrospective (see history/reports/cold_weather_retrospective.md)
+    surfaced web evidence that ~3 of 5 named-storm candidates likely
+    did produce coastal flooding in Monmouth County despite meeting
+    the override conditions. The single Feb 22-23 2026 calibration
+    point may be an outlier. Until more evidence accumulates at 342
+    Bay specifically, the model returns its normal predictions and
+    leaves the cold-conditions advisory to the surrounding script
+    (rendered as a yellow banner instead of zeroing the forecast)."""
+    # Cold-lockout demoted from override to advisory (2026-05-19).
+    # Old behavior, preserved for git archaeology:
+    #   zero_dict = {key: 0.0 for key, *_ in LANDMARKS}
+    #   if cold_lockout and sandy_hook_peak_mllw < 8.0:
+    #       return {**zero_dict, "regime": "cold_lockout"}
 
     water_navd88 = sandy_hook_peak_mllw + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
 
@@ -2377,9 +2391,9 @@ def assess_confidence(forecast):
     """Return (level, reason) for the daily forecast confidence indicator.
     Levels: 'high' / 'medium' / 'low'. Reason is a one-liner human
     explanation safe to drop into the email."""
-    if forecast.get("cold_lockout"):
-        return ("high",
-                "cold lockout active — model is correctly zeroing predictions")
+    # Note 2026-05-19: cold-lockout no longer flips confidence to HIGH
+    # — see history/reports/cold_weather_retrospective.md. Cold
+    # conditions are surfaced as a separate advisory instead.
     surge_source = forecast.get("surge_source", "")
     if surge_source == "nws-coastal-flood-product":
         return ("high",
@@ -2443,6 +2457,10 @@ def plain_language_summary(forecast):
     def phrase_for_tide(t):
         regime = t["depths_in"]["regime"]
         short, above, _ = landmark_summary(t["depths_in"], t["forecast_peak_mllw"])
+        # "cold_lockout" regime can no longer be produced by
+        # predict_landmark_depths after 2026-05-19 (rule demoted to
+        # advisory). Branch retained for safety / legacy archive
+        # entries that may have the old regime label.
         if regime == "cold_lockout":
             return "cold lockout — no flooding predicted despite high tide"
         if regime == "dry":
@@ -2500,7 +2518,7 @@ REGIME_GLOSSARY = {
     "light":        "water at curb (0–4 inches)",
     "moderate":     "water at curb (4–8 inches)",
     "severe":       "water past lawn step / bulkhead overtopping territory",
-    "cold_lockout": "drains likely ice-locked; flooding suppressed despite high tide",
+    "cold_lockout": "cold conditions met but rule no longer actively applied (see retrospective)",
 }
 
 
@@ -2893,11 +2911,13 @@ def render_email(forecast):
     accuracy_block = ("\n".join(accuracy_lines) + "\n\n") if accuracy_lines else ""
     lookahead_lines = _render_lookahead_text(forecast)
     lookahead_block = ("\n".join(lookahead_lines) + "\n\n") if lookahead_lines else ""
+    cold_lines = _render_cold_advisory_text(forecast)
+    cold_block = ("\n".join(cold_lines) + "\n\n") if cold_lines else ""
 
     text = f"""\
 Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
 
-{summary_block}High tides in next 24h ( * = worst case, headlined below):
+{summary_block}{cold_block}High tides in next 24h ( * = worst case, headlined below):
 {tide_block}
 
 Worst case detail:
@@ -2909,7 +2929,7 @@ Worst case detail:
                    ({forecast['nws_status']})
   Rain in window:  {forecast['peak_rain_rate_in_hr']:.2f} in/hr peak
   72h mean temp:   {forecast['temp_avg_72h_f']:.1f} F
-  Cold lockout:    {'YES (drains likely ice-locked)' if forecast['cold_lockout'] else 'no'}
+  Cold conditions: {'YES — ice-lock hypothesis met but no longer applied (see retrospective)' if forecast['cold_lockout'] else 'no'}
 
 {rain_block}{_landmarks_section_text(forecast)}
 Regime: {regime} — {REGIME_GLOSSARY.get(regime, '')}
@@ -2990,7 +3010,7 @@ Model: v0.6. Local enhancement +0.40 ft.
 <b>Surge source:</b> {forecast['surge_source']} ({forecast['nws_status']})<br>
 <b>Rainfall in window:</b> {forecast['peak_rain_rate_in_hr']:.2f} in/hr peak<br>
 <b>72h mean temp:</b> {forecast['temp_avg_72h_f']:.1f}&deg;F
-{'(COLD LOCKOUT ACTIVE)' if forecast['cold_lockout'] else ''}</p>
+{'(cold conditions met — ice-lock hypothesis no longer applied; see retrospective)' if forecast['cold_lockout'] else ''}</p>
 
 {rain_html}
 {_landmarks_section_html(forecast, wrapper='inline')}
@@ -3083,6 +3103,63 @@ def _oscillation_chart_data(forecast):
     ]
 
     return {"points": points, "landmarks": landmark_lines}
+
+
+def _render_cold_advisory_html(forecast):
+    """When 72-h mean temp is below 32°F (cold-lockout conditions met),
+    surface an advisory note instead of zeroing predictions.
+
+    Pre-2026-05-19: predict_landmark_depths returned all-zero depths
+    in cold conditions and the regime banner said COLD_LOCKOUT.
+    Post-2026-05-19 (per history/reports/cold_weather_retrospective.md):
+    the web-evidence retrospective showed the rule was likely too
+    generous, so predictions go through unchanged and this advisory
+    notes that conditions are met but the hypothesis is unresolved.
+
+    Empty string when cold-lockout conditions are NOT met."""
+    if not forecast.get("cold_lockout"):
+        return ""
+    temp = forecast.get("temp_avg_72h_f")
+    temp_str = f"{temp:.1f}°F" if temp is not None else "below freezing"
+    return (
+        '\n  <section class="cold-advisory">\n'
+        '    <h2>Cold-conditions advisory</h2>\n'
+        f'    <p>72-h mean temperature at Sandy Hook is <b>{temp_str}</b> '
+        '(below the 32°F cold-lockout threshold). The v0.6 model previously '
+        'forced predicted flooding to zero in this regime, on the theory '
+        'that storm-drain outfalls become ice-locked and block bay → street '
+        'backflow (Pathway B).</p>\n'
+        '    <p>The 19-event historical retrospective '
+        '(<a href="https://github.com/JohnUrban/barnacle/blob/main/history/reports/cold_weather_retrospective.md">'
+        'cold_weather_retrospective.md</a>) found web evidence that ~3 of '
+        '5 named-storm candidates likely flooded Monmouth County despite '
+        'the override conditions being met — so the rule appears too '
+        'generous. The single Feb 22-23 2026 observation that originally '
+        'calibrated it may be an outlier.</p>\n'
+        '    <p><b>Current status: hypothesis open, not applied.</b> The '
+        'predictions below assume <i>no</i> suppression. Cold-lockout '
+        'may still apply at 342 Bay specifically — every cold-conditions-'
+        'met event going forward adds to the validation dataset.</p>\n'
+        '  </section>\n'
+    )
+
+
+def _render_cold_advisory_text(forecast):
+    """Plain-text equivalent of _render_cold_advisory_html. Returns
+    list of lines (possibly empty)."""
+    if not forecast.get("cold_lockout"):
+        return []
+    temp = forecast.get("temp_avg_72h_f")
+    temp_str = f"{temp:.1f} F" if temp is not None else "below freezing"
+    return [
+        "Cold-conditions advisory:",
+        f"  72-h mean temp at Sandy Hook is {temp_str} (below 32 F).",
+        "  v0.6's cold-lockout rule would have suppressed predicted",
+        "  flooding here, but the 19-event historical retrospective",
+        "  (history/reports/cold_weather_retrospective.md) found",
+        "  evidence the rule is too generous. Hypothesis remains open;",
+        "  predictions below assume NO suppression.",
+    ]
 
 
 def _render_live_gauge_section(forecast):
@@ -4160,9 +4237,10 @@ def render_html_page(forecast):
       <dt>Surge source</dt><dd>{forecast['surge_source']} <span class="note">({forecast['nws_status']})</span></dd>
       <dt>Peak rainfall</dt><dd>{forecast['peak_rain_rate_in_hr']:.2f} in/hr</dd>
       <dt>72h mean temp</dt><dd>{forecast['temp_avg_72h_f']:.1f}&deg;F</dd>
-      <dt>Cold lockout</dt><dd>{'<b>YES</b> (drains likely ice-locked)' if cold else 'no'}</dd>
+      <dt>Cold conditions</dt><dd>{'<b>YES</b> — ice-lock hypothesis met; <i>no longer actively applied</i> (see <a href="https://github.com/JohnUrban/barnacle/blob/main/history/reports/cold_weather_retrospective.md">retrospective</a>)' if cold else 'no'}</dd>
     </dl>
   </section>
+{_render_cold_advisory_html(forecast)}
 {_render_live_gauge_section(forecast)}
 {map_section}
 {_render_oscillation_section(forecast)}

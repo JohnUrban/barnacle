@@ -104,8 +104,14 @@ depth(landmark)     = max(0, (water − landmark_NAVD88)) × 12   # inches
 if peak_rain ≥ 0.1: depth += 8 × tanh(peak_rain)   # saturating, ≤8"
                     (lawn and intersection shed more, get less)
 
-# Cold override (Pathway B suppression)
-if temp_72h < 32°F and SH_peak < 8.0:  depth = 0
+# Cold override (Pathway B suppression) — DEMOTED 2026-05-19
+# After the 19-event retrospective, this rule was demoted from
+# active override to advisory note. Predictions now go through
+# unchanged when conditions are met; a yellow banner explains
+# the hypothesis is open but not applied. See
+# history/reports/cold_weather_retrospective.md.
+# Old behavior (preserved here for the spec history):
+#   if temp_72h < 32°F and SH_peak < 8.0:  depth = 0
 ```
 
 **Landmark elevations at 342 Bay Ave (ft NAVD88):**
@@ -687,21 +693,24 @@ Same surge information the Borough's emergency management is looking at.
     Pathway B outfall locations.
 16. **Cold-weather override calibration from historical data.** Two
     related ideas:
-    (a) ⏳ **Script written 2026-05-19** (commit pending — "X" in
-        that day's solo-work backlog):
-        `history/scripts/cold_weather_retrospective.py`. Pulls NOAA
-        `air_temperature` for Sandy Hook, joins to the existing
-        hourly_height parquet, computes 72-h rolling mean temp, and
-        identifies historical events where the v0.6 cold-lockout
-        would have applied (SH 6.58-8.0 ft MLLW AND 72-h mean temp
-        < 32°F). Outputs `history/data/cold_weather_candidates.csv`
-        + `history/reports/cold_weather_retrospective.md`. **NOT
-        YET RUN** — needs the user's local pandas env (or run on a
-        runner with pandas + pyarrow). Once run, cross-check each
-        candidate date against newspaper / borough archives to see
-        whether flooding was actually reported. If most weren't →
-        strong retrospective validation of cold-lockout.
-        (Original Feb 22 2026 observation gives one data point.)
+    (a) ✅ **Script written + run 2026-05-19** (commits ceb518d +
+        pending). `history/scripts/cold_weather_retrospective.py`
+        pulled NOAA `air_temperature` for Sandy Hook, joined to the
+        existing hourly_height parquet, computed 72-h rolling mean
+        temp, identified **19 candidate events 2010-2026** where
+        the v0.6 cold-lockout override would have applied (SH 6.58-
+        8.0 ft MLLW AND 72-h mean temp < 32°F). Outputs:
+        `history/data/cold_weather_candidates.csv` (19 rows) +
+        `history/reports/cold_weather_retrospective.md` (table +
+        year grouping + named-storm matches + suggested validation
+        path). **Validation queued**: the 3 candidates from 2026
+        (Jan 4, Feb 1, Feb 2) the user was there for — direct memory
+        beats archive lookup. Plus the bigger pre-2026 named storms
+        (Hercules 2014, Jonas 2016, Stella 2017, Grayson 2018,
+        Orlena 2021) all have NWS Mt Holly storm summaries to
+        cross-check. Resolution gates v0.7: if most candidates
+        didn't flood → cold-lockout stays; if many did →
+        threshold/ceiling needs revision.
     (b) Filter cold-snap events out of the historical seasonality CSVs.
         Counts are slight over-estimates in winter. Not currently
         advocated for filtering — but the (a) calibration would
