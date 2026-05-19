@@ -1334,6 +1334,41 @@ v0.6's shedding-based predictions. User accepts this in exchange for
 a coherent water-is-level architecture (required for the heat-map to
 agree with the depth predictions per 9c.4 + 9b.5).
 
+### 9c.6 — Review the negative-surge clip (`max(0.0, surge)`)
+
+`build_forecast` currently does:
+
+```python
+forecast_peak = tide_pred + max(0.0, surge)
+```
+
+i.e., the model NEVER predicts water below the astronomical tide,
+even when observed surge is negative (high pressure, anti-surge
+wind, etc.). Surface origin: probably a "never under-predict
+flooding risk" safety bias added at some point — but it loses the
+model's ability to predict negative-surge regimes at all.
+
+User position (2026-05-19): "We should revisit max(0.0, surge). I
+would need to be convinced we should not be using negative surge
+values for some reason."
+
+Status: surge_ft_predicted in `data/predictions_log.csv` IS the
+raw signed surge (the clip happens only in forecast_peak), so the
+data isn't lost. But the convergence chart and forecast peak DO
+embed the clip. On calm days with slightly negative surge (like
+today, surge ≈ -0.04 ft), the chart looks flat because the
+clipping pins forecast_peak to the astronomical value.
+
+v0.7 candidate: drop the clip. Predict actual surge. Accept that
+some predictions will be lower than astronomical. Pair with the
+storm-surge enhancement work in 9c.3 (which also revisits surge
+handling).
+
+Related: 2026-05-19 surge bug fix (commit d67459e) — fetch_current_surge
+was returning None on every run due to a zero-duration NOAA query
+range; caller defaulted to 0.0. After fix, surge varies as it
+should. But forecast_peak still clips it.
+
 ---
 
 ## 10. Outstanding open questions
