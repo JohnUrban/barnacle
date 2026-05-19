@@ -557,6 +557,37 @@ LOOKAHEAD_THRESHOLDS = [
 ]
 
 
+def _moon_phase_age_days(date):
+    """Days since 2000-01-06 reference new moon, modulo synodic month.
+    Used to annotate spring tides in the look-ahead table (HANDOFF 25a / Z).
+
+    Accurate to about ±1 day across centuries — good enough for the
+    "is this date within ±2 days of new/full moon" purpose. For finer
+    precision, see Jean Meeus's astronomical formulas; for the current
+    use case the simple modular arithmetic is sufficient and dep-free.
+    """
+    synodic = 29.530588
+    ref = dt.date(2000, 1, 6)
+    return ((date - ref).days % synodic + synodic) % synodic
+
+
+def _spring_tide_marker(date, tolerance_days=2.0):
+    """Returns 'new moon' if `date` is within ±tolerance of new moon,
+    'full moon' if within ±tolerance of full moon, else ''. Spring tides
+    cluster around these days because the Sun + Moon + Earth approach
+    alignment — strongest tidal pull, highest highs."""
+    synodic = 29.530588
+    full = 14.765
+    age = _moon_phase_age_days(date)
+    d_new  = min(age, synodic - age)
+    d_full = abs(age - full)
+    if d_new <= tolerance_days and d_new <= d_full:
+        return "new moon"
+    if d_full <= tolerance_days:
+        return "full moon"
+    return ""
+
+
 def fetch_high_tides_lookahead(days=LOOKAHEAD_DAYS):
     """Pull NOAA `predictions` hilo for the next `days` days. Returns list of
     (time_str, mllw_ft) for high tides only. Astronomical only — no surge.
@@ -637,6 +668,7 @@ def build_lookahead_watch_dates(high_tides, skip_first_hours=24):
         # Find the highest threshold this tide crosses
         for threshold, label, css_class in LOOKAHEAD_THRESHOLDS:
             if mllw >= threshold:
+                spring = _spring_tide_marker(tide_dt.date())
                 rows.append({
                     "time":           time_str,
                     "time_dt":        tide_dt,
@@ -644,6 +676,7 @@ def build_lookahead_watch_dates(high_tides, skip_first_hours=24):
                     "threshold_mllw": threshold,
                     "label":          label,
                     "severity_class": css_class,
+                    "spring_tide":    spring,  # 'new moon', 'full moon', or ''
                 })
                 break
     rows.sort(key=lambda r: r["time_dt"])
@@ -1945,6 +1978,16 @@ def _render_low_tides_html(forecast):
     )
 
 
+def _lookahead_label(row):
+    """Build the human-readable significance label for one look-ahead
+    row, appending the spring-tide marker when present (HANDOFF 25a / Z)."""
+    base = row["label"]
+    spring = row.get("spring_tide") or ""
+    if spring:
+        return f"{base}  ·  spring tide ({spring})"
+    return base
+
+
 def _render_lookahead_text(forecast):
     """Plain-text "dates to watch" block — 1-2 month astronomical look-ahead.
     HANDOFF 9b.7. Empty when no upcoming tides cross the lowest threshold."""
@@ -1957,11 +2000,13 @@ def _render_lookahead_text(forecast):
     for r in rows:
         when_full = format_time_full(r["time"])
         lines.append(
-            f"  {when_full}  —  {r['mllw']:.2f} ft MLLW  ({r['label']})"
+            f"  {when_full}  —  {r['mllw']:.2f} ft MLLW  ({_lookahead_label(r)})"
         )
     lines.append(
         "  These are baseline astronomical tides — surge isn't forecast "
-        "this far out. An event of significance also needs surge or rain."
+        "this far out. An event of significance also needs surge or rain. "
+        "Spring tides (new/full moon ±2 d) are when astronomical highs "
+        "stack highest; expect tighter margins on those days."
     )
     return lines
 
@@ -1973,11 +2018,12 @@ def _render_lookahead_html(forecast):
         return ""
     body = ""
     for r in rows:
+        spring_cls = f" spring-{r['spring_tide'].replace(' ', '-')}" if r.get("spring_tide") else ""
         body += (
-            f'<tr class="{r["severity_class"]}">'
+            f'<tr class="{r["severity_class"]}{spring_cls}">'
             f'<td>{format_time_full(r["time"])}</td>'
             f'<td>{r["mllw"]:.2f}</td>'
-            f'<td>{r["label"]}</td>'
+            f'<td>{_lookahead_label(r)}</td>'
             f'</tr>'
         )
     return (
@@ -1991,7 +2037,9 @@ def _render_lookahead_html(forecast):
         'forecast this far out. An event of real significance also needs '
         'surge or rain, neither of which is in this table. Use as a '
         'planning aid (which dates have elevated baseline tides) rather '
-        'than as a flood forecast.</p>'
+        'than as a flood forecast. Spring-tide rows (new / full moon '
+        '±2 d) are marked — those are when astronomical highs stack '
+        'highest and a small surge can do extra damage.</p>'
         '</section>'
     )
 
