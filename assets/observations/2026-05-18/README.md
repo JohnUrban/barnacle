@@ -43,8 +43,8 @@ Central Ave):
 
 | Proposed name | Old / current name | Approx elev (NAVD88) | Status tonight |
 |---|---|---:|---|
-| `grate_NE` | `corner_grate` (v0.6) | 3.91 | Water 1–1.5" *below* top at peak — never overflowed |
-| `grate_NW` | (not in model) | unknown | Same side of Bay as NE, across Central. Never overflowed; water also 1–1.5" below top at peak. Probably similar elevation to NE. |
+| `grate_NE` | `corner_grate` (v0.6) | **3.80** (survey; v0.6 had 3.91 in error — see below) | Water 1–1.5" *below* top at peak — never overflowed |
+| `grate_NW` | (not in model) | **3.80** (survey) | Same side of Bay as NE, across Central. Never overflowed; water also 1.5-1.75" below top at peak. |
 | `grate_SE` | `lowest_sentinel_grate` (v0.6) | 3.60 | "Proximal" across Bay — closer to user's corner. Overflowed; ~1" above at observed peak. **Water spread more widely from SE than SW** — likely a flatter / larger surrounding pavement pocket. |
 | `grate_SW` | (not in model) | likely ~3.55-3.58 | "Distal" across Bay — diagonally opposite NE. Overflowed earlier and *deeper directly above the grate* than SE: when SE had ~1" above, SW had ~1.5" above. **SW is ~0.5" lower than SE.** |
 | `grate_bay_ave_upstream` | (not in model) | inferred **~3.76** (uneven; 3.74-3.78 across the grate face) | On Bay Ave east of NE corner, upstream of the user's walkway. Photos 8/9 at 22:04 show water *just barely* emerging at the low points (≤1 cm somewhere, dry elsewhere on the grate top). By peak (~22:15) ~1 cm of water above. **This is the actual primary feeder to the gutter at the walkway**, not the NE corner grate. |
@@ -104,12 +104,49 @@ is the canonical record.)
 
 The starkest finding. At the NOAA observed peak (SH 6.58), v0.6
 predicts water at the property of 4.16 NAVD88 (= curb top), but the
-user observed water 1-1.5" below the corner grate (3.91 NAVD88) — so
-water at the property was ~3.79-3.83 NAVD88, not 4.16. **Effective
-local enhancement at this event was about +0.06 to +0.10 ft at peak,
-0 to +0.04 ft on the rising tide, not +0.40 ft.** Across the event
-the enhancement was always small and positive — never close to the
-+0.40 the model assumes.
+user observed water 1-1.5" below the **NE grate at 3.80 NAVD88
+(survey-confirmed; v0.6's 3.91 was the corner, not the grate)** — so
+water at the property was **~3.68-3.72 NAVD88**, not 4.16.
+
+**With the corrected grate elevation, effective local enhancement
+at this event was ~0 or slightly negative across the whole event
+(water at 342 was at or slightly below the Sandy Hook gauge reading
+projected to NAVD88).**
+
+**Refined hypothesis (cleaner than the earlier "magnitude-dependent"
+or "time-dependent" framings):**
+
+> **The +0.40 ft enhancement is a storm-surge propagation effect,
+> not a constant.** Storm events with wind/pressure pushing surge
+> *into* the bay amplify water at 342 Bay (near the head of the
+> bay) relative to Sandy Hook (at the bay-ocean transition).
+> Normal tides without surge — like 2026-05-18 — track Sandy Hook
+> directly or slightly lag it.
+
+The original 4 calibration events (Apr 17, Apr 18, Oct 30, Dec 19)
+all involved meaningful surge: Apr 18 had +1.30 ft surge, Oct 30
+had +2.90 ft. The +0.40 fits those storm events. Tonight had
+essentially no surge at peak (forecast was 6.19 ft predicted +0
+surge persistence; actual peak was 6.58 ft = 0.39 ft of "late surge"
+that didn't show up until the peak itself).
+
+**This is testable.** Next storm event with significant surge: if
+water at 342 amplifies to ~+0.40 again, the storm-surge hypothesis
+is confirmed. If enhancement stays ~0, something else is going on.
+
+### v0.6 model has a corner_grate elevation bug — flag for v0.7
+
+The v0.6 spec lists `corner_grate` at 3.91 NAVD88. Survey data shows
+that 3.91 is the **NE corner** (the pavement corner near where Bay
+meets Central), not the **NE grate** (which sits 0.11 ft lower at
+3.80). The Pathway B activation threshold should be SH = 3.80 + 2.42
+= **6.22 ft MLLW**, not 6.33 as v0.6 says.
+
+v0.7 needs to:
+- Correct grate_NE elevation: 3.80 (was 3.91)
+- Add corner_NE as a separate landmark at 3.91 (the actual pavement
+  corner the user has been treating distinct from the grate)
+- Refine the Pathway B threshold to SH 6.22
 
 Possible explanations (need more events to discriminate):
 

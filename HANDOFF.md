@@ -63,9 +63,10 @@ across four labeled flood events the user observed firsthand.
 | Unusual-forecast highlight (top-N% framing) | ✅ Live (2026-05-18, HANDOFF 16e) |
 | Forecast accuracy log (`data/forecast_accuracy.csv`) | ✅ Live (2026-05-18, HANDOFF 8b). Populates from day 2. |
 | Spot-check calibration callouts (pluvial-only, cold-lockout) | ✅ Live (2026-05-18, HANDOFF 10/14) |
-| First real spot-check session (2026-05-18 22:12 peak) | ✅ Recorded. Forecast 6.19 / actual 6.58. **Key finding: local enhancement at SH 6.58 was ~0, not +0.40.** See `assets/observations/2026-05-18/README.md` |
+| First real spot-check session (2026-05-18 22:12 peak) | ✅ Recorded. Forecast 6.19 / actual 6.58. **Key finding: with corrected grate elevation (3.80 not 3.91 per survey), local enhancement at SH 6.58 was ~0 or slightly negative, not +0.40. Refined hypothesis: +0.40 is a storm-surge propagation effect, not a constant.** See `assets/observations/2026-05-18/README.md` |
+| v0.6 grate elevation bug surfaced (NE/NW grates 3.80 not 3.91) | ⏸ Per survey PDF `model/HLND2303-Road-Reconstruction-Supplement-Set-2024.05.06.pdf`: NE/NW grates = 3.80; 3.91 is the NE pavement corner (separate landmark). v0.6's `corner_grate` should have been 3.80. Pathway B threshold should be SH 6.22, not 6.33. Queue for v0.7. |
 | Photos from 2026-05-18 event in scratch/ awaiting distribution | ⏳ User has 22 photos (~83 MB, full iPhone res) at `assets/observations/2026-05-18/scratch/`. Resize via `sips -Z 1500` recommended before committing to subdirs. Then Claude walks EXIF + appends to `data/labeled_observations.csv` |
-| v0.7 model spec promotion (5 grates + SH-dependent enhancement) | ⏸ Queued. Adds grate_NW, grate_SW, grate_bay_ave_upstream as landmarks; renames existing corner_grate→grate_NE, lowest_sentinel_grate→grate_SE. Needs more sub-curb observations to firm up the enhancement model. |
+| v0.7 model spec promotion (5 grates + storm-surge-dependent enhancement + corrected elevations) | ⏸ Queued. (a) Fix grate_NE elevation 3.91→3.80 (survey). (b) Add grate_NW (3.80), grate_SW (~3.55-3.58), grate_bay_ave_upstream (~3.76). (c) Add corner_NE (3.91), corner_SE (3.64), corner_SW (3.64), rename `intersection`→`intersection_highpoint` (4.54). (d) Rename existing corner_grate→grate_NE, lowest_sentinel_grate→grate_SE. (e) Replace constant +0.40 enhancement with storm-surge-dependent function — current hypothesis: +0.40 only develops during meaningful surge (likely tied to wind/pressure pushing surge into the bay), ~0 for normal tides. Needs ≥2 more events to firm up the surge-dependent form. |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
 | v0.6 model-spec promotion + 9th landmark added | ✅ Live (2026-05-18). model/v0.6.md canonical; v0.5 archived. New lowest sentinel at 3.60 NAVD88 (SH 6.02). |
@@ -364,6 +365,30 @@ These are the model corrections that actually moved the needle:
     1.4 ft surge) above the user's curb threshold. See section 7
     below for the headline findings.
 
+11. **The +0.40 ft local enhancement is probably a storm-surge
+    propagation effect, not a constant** (2026-05-18 spot-check
+    event). All 4 original calibration events involved meaningful
+    surge (+1.30 to +2.90 ft); the 2026-05-18 event had essentially
+    no surge at peak and showed ~0 enhancement (water at 342 Bay
+    tracked Sandy Hook directly, not amplified). Cleaner framing
+    than earlier "magnitude-dependent" or "time-dependent"
+    hypotheses: wind/pressure pushing surge into the bay drives the
+    amplification at 342 Bay (near the head of the bay) relative
+    to Sandy Hook (at the bay-ocean transition). Testable at next
+    storm event with surge. Queue for v0.7 model spec.
+
+12. **v0.6 has a grate elevation bug** (2026-05-18 / survey reconciliation).
+    `corner_grate` is listed at 3.91 NAVD88 — but per the H2M
+    Road Reconstruction Supplement survey, the NE/NW grates are
+    3.80 NAVD88. The 3.91 is the NE pavement corner, a separate
+    landmark. Pathway B activation threshold shifts from SH 6.33 to
+    SH 6.22. This was discovered when reconciling 2026-05-18
+    observations against the surveyed elevations: the observed
+    water level at the NE grate matched 3.80 well, not 3.91. Fix
+    queued for v0.7 (don't patch v0.6 inline; this changes a
+    landmark elevation, which per the versioning rule warrants a
+    bump).
+
 ---
 
 ## 6b. Historical-stats project — key findings (2026-05-18)
@@ -522,25 +547,36 @@ Same surge information the Borough's emergency management is looking at.
     Sandy Hook 6-min). LOW confidence flag was correct (0.87 ft
     surge swing in prior 6 h).
     **Striking finding: effective local enhancement at SH 6.58 was
-    ~0, not the +0.40 the model assumes.** At SH 6.58 the v0.6
-    model predicts water at the curb (4.16 NAVD88) and 3.0" above
-    the corner grate (3.91); user observed water 1-1.5" *below* the
-    corner grate at peak. Back-solving from observations: water at
-    342 Bay at peak was ~3.78-3.83 NAVD88, implying enhancement of
-    ~0.03 ft. Hypothesis: +0.40 is the saturated value developed
-    only when SH is well above the Pathway B threshold (6.33) and
-    drains have time to equilibrate; at SH just above 6.33 with
-    short peak duration, enhancement is much smaller.
+    ~0 (or slightly negative), not the +0.40 the model assumes.**
+    Back-solving from observations (with corrected 3.80 grate elev,
+    see "v0.6 elevation bug" below): water at 342 Bay at peak was
+    ~3.68-3.72 NAVD88; SH-implied baseline 3.76; implied local
+    enhancement ~-0.04 to -0.08 ft.
+    **Refined hypothesis (cleaner than earlier "magnitude-dependent"
+    framing): +0.40 is a storm-surge propagation effect, not a
+    constant.** Storm events with wind/pressure pushing surge *into*
+    the bay (Apr 18: +1.30 ft; Oct 30: +2.90 ft) amplify water at
+    342 Bay relative to Sandy Hook. Normal tides without meaningful
+    surge — like 2026-05-18 — track Sandy Hook directly or slightly
+    lag. Testable next storm event with surge: if enhancement
+    re-emerges at ~+0.40, hypothesis confirmed.
     One event — do NOT recalibrate. Watch for the pattern.
     Full write-up: `assets/observations/2026-05-18/README.md`.
-    Photos: 22 in `assets/observations/2026-05-18/scratch/`, awaiting
-    distribution to the 7 grate/landmark subdirectories. Sizes are
-    full iPhone res (3.8 MB ea, 83 MB total) — user may resize via
-    `sips -Z 1500` before committing.
+    Photos: distributed to 7 grate/landmark subdirectories under
+    `assets/observations/2026-05-18/` (Medium-size export, ~13 MB
+    total). EXIF timestamps walked; 13 observation rows appended to
+    `data/labeled_observations.csv`.
+    **v0.6 elevation bug surfaced (per survey PDF):**
+    - `corner_grate` listed at 3.91 NAVD88 — actually 3.80. 3.91 is
+      the NE pavement corner, a separate landmark.
+    - Pathway B activation threshold should be SH 6.22, not 6.33.
+    - Corrected map_points.csv (16 entries) has compass-named
+      grates + corners + intersection_highpoint.
     Other key findings:
-    - 5 grates need modeling (currently 2): proposed names
-      grate_NE / NW / SE / SW + grate_bay_ave_upstream. See README.
-    - The upstream Bay Ave grate (~3.78 NAVD88, NOT in v0.6) is the
+    - 5 grates need modeling (currently 2): grate_NE / NW (both
+      3.80) / SE (3.60) / SW (~3.55-3.58, ~0.5" lower than SE) +
+      grate_bay_ave_upstream (~3.76).
+    - The upstream Bay Ave grate (~3.76 NAVD88, NOT in v0.6) is the
       actual primary feeder to the user's gutter at walkway, not
       the Bay+Central corner grate as v0.6 implies.
     - The "pocket" near SE grate (~3.48-3.52 NAVD88) is *post-
@@ -1010,28 +1046,36 @@ updated in the same commit as the change that necessitated them:
 
 ---
 
-## 13. Cold-start pointer — last work was 2026-05-18 late night
+## 13. Cold-start pointer — last work was 2026-05-18 / -19
 
 If you're a fresh Claude coming in after compaction: read
 `assets/observations/2026-05-18/README.md` first. That's the most
 important new artifact from the session that just ended. Headline:
-the first spot-check event surfaced a finding that the +0.40 ft
-local enhancement may not be constant — appears to be ~0 at SH just
-above the Pathway B threshold. Don't recalibrate from one event;
-watch the pattern.
+the first spot-check event surfaced a refined hypothesis — **the
++0.40 ft local enhancement is a storm-surge propagation effect,
+not a constant.** Storm events (Apr 18, Oct 30) with meaningful
+surge fit the +0.40; normal tides (2026-05-18) show ~0 enhancement.
+Don't recalibrate from one event; watch the pattern at the next
+storm event with surge.
 
-User is mid-distribution of 22 photos (currently in
-`assets/observations/2026-05-18/scratch/`, full iPhone res). They
-asked whether to resize before committing. I recommended `sips -Z
-1500` for ~7× reduction. User had not answered as of compaction.
+Also: **v0.6 has a corner_grate elevation bug** (3.91 → should be
+3.80 per survey). The 3.91 is the NE pavement corner, not the grate.
+Pathway B threshold shifts from SH 6.33 to SH 6.22. Queued for v0.7
+along with the storm-surge enhancement function.
 
-Once photos are distributed:
-1. Walk EXIF timestamps
-2. Pull NOAA water_level for each photo's 6-min window
-3. Append observation rows to `data/labeled_observations.csv`
-4. Compute per-observation effective enhancement; look for pattern
-5. If pattern holds across 3+ events, draft v0.7 with magnitude-
-   dependent enhancement + 5 grates
+Photos distributed to 7 subdirectories; 13 observation rows logged
+in `data/labeled_observations.csv` for the 2026-05-18 event.
+
+`assets/map_points.csv` updated to 16 entries with corrected
+elevations and v0.7 compass naming. User is mid-coordinate-picking
+via the (newly keyboard-driven) `assets/pick_coords.py`.
+
+Next likely sessions:
+1. User finishes coordinate picking → render `map_annotated.png`
+2. Next storm event with meaningful surge → test the storm-surge
+   enhancement hypothesis
+3. If hypothesis holds, draft v0.7 with: corrected elevations +
+   5 grates + storm-surge-dependent enhancement
 
 v0.7 is queued but not started. Don't start it yet.
 
