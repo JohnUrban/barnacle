@@ -2532,7 +2532,7 @@ def render_per_tide_page(tide, forecast):
 """
 
 
-def render_html_page(forecast, map_url=None):
+def render_html_page(forecast, map_url=None, map_url_no_rain=None):
     """
     Standalone HTML page for GitHub Pages publication.
     Like the email HTML but with proper <head>, mobile meta, and footer
@@ -2540,6 +2540,13 @@ def render_html_page(forecast, map_url=None):
 
     If `map_url` is provided, embeds a heat-map image (blue overlay
     showing predicted water depth across nearby topography).
+
+    If `map_url_no_rain` is also provided, the page additionally embeds
+    a TIDE-ONLY map (rain bonus stripped) and offers a radio toggle to
+    switch between the two — HANDOFF 9b.5 lets the user see what
+    portion of predicted flooding is from rain vs tide. The toggle is
+    rendered server-side as two stacked <img>s plus a tiny inline
+    script that flips their visibility.
     """
     d = forecast["depths_in"]
     regime = d["regime"]
@@ -2551,15 +2558,50 @@ def render_html_page(forecast, map_url=None):
 
     # Heat-map section (only if a map was rendered today)
     map_section = ""
-    if map_url:
+    if map_url and map_url_no_rain:
+        # Two-map mode: rain-included (default visible) + tide-only.
+        map_section = f"""
+  <section class="heatmap">
+    <h2>Predicted water depth (worst tide)</h2>
+    <p class="note">Blue overlay shows predicted water depth across nearby topography.
+       Darker blue = deeper. Toggle between including the forecast rain bonus or
+       tide-only (HANDOFF 9b.5).</p>
+    <div class="heatmap-toggle">
+      <label><input type="radio" name="heatmap-mode" value="with-rain" checked> Tide + rain</label>
+      <label><input type="radio" name="heatmap-mode" value="no-rain"> Tide only</label>
+    </div>
+    <img id="heatmap-with-rain" class="heatmap-img" src="{map_url}"
+         alt="Predicted water depth (tide + rain)"
+         style="max-width:100%;height:auto;display:block;margin:0 auto;">
+    <img id="heatmap-no-rain"   class="heatmap-img" src="{map_url_no_rain}"
+         alt="Predicted water depth (tide only)"
+         style="max-width:100%;height:auto;display:none;margin:0 auto;">
+    <script>
+      (function() {{
+        var radios = document.querySelectorAll('input[name="heatmap-mode"]');
+        var withRain = document.getElementById('heatmap-with-rain');
+        var noRain   = document.getElementById('heatmap-no-rain');
+        radios.forEach(function(r) {{
+          r.addEventListener('change', function() {{
+            var show = r.value;
+            withRain.style.display = (show === 'with-rain') ? 'block' : 'none';
+            noRain.style.display   = (show === 'no-rain')   ? 'block' : 'none';
+          }});
+        }});
+      }})();
+    </script>
+  </section>
+"""
+    elif map_url:
+        # Single-map mode (no rain forecast, or no comparison map written)
         map_section = (
             '\n  <section class="heatmap">\n'
             '    <h2>Predicted water depth (worst tide)</h2>\n'
             '    <p class="note">Blue overlay shows predicted tidal water '
             'depth across nearby topography. Darker blue = deeper. '
-            'Surveyed point elevations are labeled in feet NAVD88. '
-            'Rain bonus is NOT included in this overlay (it is per-landmark).</p>\n'
-            f'    <img src="{map_url}" alt="Predicted water depth heat-map" '
+            'No meaningful rain forecast — overlay is tide-only.</p>\n'
+            f'    <img class="heatmap-img" src="{map_url}" '
+            'alt="Predicted water depth heat-map" '
             'style="max-width:100%;height:auto;display:block;margin:0 auto;">\n'
             '  </section>\n'
         )
@@ -2738,22 +2780,50 @@ def send_email(subject, text_body, html_body):
         s.send_message(msg)
 
 
-def _compute_map_water_level(forecast):
+def _compute_map_water_level(forecast, include_rain=True):
     """NAVD88 water level (ft) for the worst tide today, for heat-map
     rendering. Returns None when no overlay should be drawn (cold lockout
     suppressing flooding, or peak below all map points).
 
-    This is BARE tidal water level — does not include the rain term.
-    The rain bonus is a per-landmark adjustment (lawn/intersection shed
-    more, others receive more) and can't be expressed as a single water
-    level surface."""
+    With `include_rain=True` (default), folds in the rain term as a
+    uniform water-level addition. Per the user's "water is level"
+    framing (HANDOFF 9b.5 + 9c.4): rain raises the surface uniformly;
+    depth at each point follows from `water_navd88 - elev`.
+
+    Uses v0.6's `rain_add = 8 * tanh(rate)` inches at street level
+    (the strongest of v0.6's per-landmark rain bonuses), divided by
+    12 for feet. This slightly over-states water level at lawn/porch
+    vs v0.6's per-landmark shedding (the shedding constants subtract
+    2-4 inches at higher points), but is internally consistent: the
+    map is one water-level surface, and all depths derive from it.
+    v0.7 9c.4 will make this the canonical model formulation.
+
+    `include_rain=False` returns the bare tide-only water level, used
+    to render a comparison "no-rain" map when rain is forecast.
+    """
     peak_mllw = forecast.get("peak_forecast_observed_mllw")
     cold = forecast.get("cold_lockout", False)
     if peak_mllw is None:
         return None
     if cold and peak_mllw < 8.0:
         return None
-    return peak_mllw + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+    water = peak_mllw + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+    if include_rain:
+        rain_rate = forecast.get("peak_rain_rate_in_hr") or 0.0
+        if rain_rate > 0.1:
+            rain_add_in = RAIN_SATURATION_IN * math.tanh(rain_rate)
+            water += rain_add_in / 12.0
+    return water
+
+
+def _rain_bonus_inches(forecast):
+    """Returns the rain bonus added to the water level (inches), or 0.
+    Used by callers that need to label maps / titles with the rain
+    contribution. Matches the formula in _compute_map_water_level."""
+    rain_rate = forecast.get("peak_rain_rate_in_hr") or 0.0
+    if rain_rate <= 0.1:
+        return 0.0
+    return RAIN_SATURATION_IN * math.tanh(rain_rate)
 
 
 def _render_heatmap(out_path, water_navd88, title):
@@ -2819,27 +2889,38 @@ def main():
         print(json.dumps(forecast, indent=2, default=str))
         return
 
-    # Render heat-map PNG (before HTML so the page knows the map exists).
+    # Render heat-map PNG(s). When rain is forecast, we render TWO maps —
+    # one with the rain bonus folded into the water level (9b.5), one
+    # tide-only — so the HTML page can offer a toggle and the user can
+    # see what rain alone would add.
     map_url = None
+    map_url_no_rain = None
     if args.write_map:
-        water_navd88 = _compute_map_water_level(forecast)
+        rain_bonus_in = _rain_bonus_inches(forecast)
+        rain_meaningful = rain_bonus_in > 0.0
+
+        water_navd88 = _compute_map_water_level(forecast, include_rain=True)
         if water_navd88 is None:
             print("Skipping heat-map: cold lockout suppressing flooding "
                   "or no peak data.")
         else:
             peak_t = forecast.get("peak_time_local", "")
             peak_mllw = forecast["peak_forecast_observed_mllw"]
-            title = (
-                f"Predicted water level — {water_navd88:.2f} ft NAVD88 "
-                f"(SH {peak_mllw:.2f} ft MLLW @ {peak_t})"
-            )
+            if rain_meaningful:
+                title = (
+                    f"Predicted water level — {water_navd88:.2f} ft NAVD88 "
+                    f"(SH {peak_mllw:.2f} + rain {rain_bonus_in:.1f}\" @ {peak_t})"
+                )
+            else:
+                title = (
+                    f"Predicted water level — {water_navd88:.2f} ft NAVD88 "
+                    f"(SH {peak_mllw:.2f} ft MLLW @ {peak_t})"
+                )
             out_path = os.path.abspath(args.write_map)
             try:
                 _render_heatmap(out_path, water_navd88, title)
                 print(f"Wrote heat-map: {args.write_map}")
-                # Compute a URL for HTML embedding: if both --write-html
-                # and --write-map were given and the map lives under the
-                # HTML's docs/ tree, we can use a relative path.
+                # Compute URL for HTML embed
                 if args.write_html:
                     html_dir = os.path.dirname(os.path.abspath(args.write_html))
                     map_url = os.path.relpath(out_path, html_dir)
@@ -2847,6 +2928,32 @@ def main():
                     map_url = out_path
             except Exception as e:
                 print(f"WARNING: heat-map render failed: {e}", flush=True)
+
+            # Second map: no-rain comparison (only when rain is meaningful)
+            if rain_meaningful:
+                water_no_rain = _compute_map_water_level(
+                    forecast, include_rain=False
+                )
+                if water_no_rain is not None:
+                    # Derive path: …map_today.png → …map_today_no_rain.png
+                    base, ext = os.path.splitext(out_path)
+                    out_path_nr = base + "_no_rain" + ext
+                    title_nr = (
+                        f"Predicted water level — {water_no_rain:.2f} ft NAVD88 "
+                        f"— TIDE ONLY (no rain bonus) — SH {peak_mllw:.2f} ft MLLW"
+                    )
+                    try:
+                        _render_heatmap(out_path_nr, water_no_rain, title_nr)
+                        print(f"Wrote heat-map (no rain): {out_path_nr}")
+                        if args.write_html:
+                            map_url_no_rain = os.path.relpath(
+                                out_path_nr, html_dir
+                            )
+                        else:
+                            map_url_no_rain = out_path_nr
+                    except Exception as e:
+                        print(f"WARNING: no-rain heat-map render failed: {e}",
+                              flush=True)
 
     # Fallback: even when --write-map is NOT passed (hourly runs under
     # 9b.1), embed the previously-rendered map if one exists on disk at
@@ -2859,12 +2966,18 @@ def main():
         candidate = os.path.join(html_dir, "icons", "map_today.png")
         if os.path.exists(candidate):
             map_url = os.path.relpath(candidate, html_dir)
+        # Same fallback for the no-rain map
+        candidate_nr = os.path.join(html_dir, "icons", "map_today_no_rain.png")
+        if os.path.exists(candidate_nr):
+            map_url_no_rain = os.path.relpath(candidate_nr, html_dir)
 
     subject, text, html = render_email(forecast)
 
     # Write standalone HTML page if requested
     if args.write_html:
-        page_html = render_html_page(forecast, map_url=map_url)
+        page_html = render_html_page(
+            forecast, map_url=map_url, map_url_no_rain=map_url_no_rain
+        )
         out_path = os.path.abspath(args.write_html)
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path, "w") as f:
