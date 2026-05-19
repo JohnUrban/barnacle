@@ -72,11 +72,10 @@ LANDMARKS = [
 SEASONALITY_LANDMARK_KEYS = {"curb", "road_middle", "intersection",
                              "lawn_step", "porch_step"}
 # Curated landmarks for the oscillation chart on the home page (9b.4(b)).
-# Six entries — fewer than the full 9 — so labels don't crowd each other
+# Five entries — fewer than the full 9 — so labels don't crowd each other
 # on the chart's y-axis. Selected by user 2026-05-19.
 OSCILLATION_LANDMARK_KEYS = {
     "lowest_sentinel_grate",  # 3.60 — lowest grate
-    "gutter_walkway",         # 3.78 — gutter / curb edge
     "corner_grate",           # 3.91 — Bay+Central storm grate
     "curb",                   # 4.16 — curb at walkway
     "lawn_step",              # 4.58 — lawn / walkway step
@@ -759,9 +758,21 @@ def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
 
     if peak_rain_rate_in_hr > 0.1:
         rain_add = RAIN_SATURATION_IN * math.tanh(peak_rain_rate_in_hr)
-        # Sub-curb landmarks: full rain add. Water collects on the street
-        # from sheet-flow off Waterwitch + river backup, then pools to
-        # gutter level. Same physics as at the curb.
+        # NOTE / FIX-IN-v0.7 (HANDOFF 9c.4): the per-landmark rain shedding
+        # below (intersection -2", lawn/porch -4") conflates "water is
+        # level across a connected surface" with "this point sheds rain
+        # locally as an isolated puddle". For the combined tide+rain
+        # regime at 342 Bay (one connected water body in any flooding
+        # event), the simpler water-is-level math is correct: rain raises
+        # a single water level uniformly, and depth at each landmark is
+        # (water - elevation). v0.7 replaces this whole block with a
+        # uniform dZ_rain addition to water_navd88. The client-side
+        # heat-map (9b.10) already uses the water-is-level model, so the
+        # map and the depth predictions DISAGREE at lawn/porch on rain
+        # days — the map says more water there than this function says.
+        # Both can't be right; v0.7 9c.4 picks water-is-level. Until v0.7
+        # ships, keep this v0.6 behavior intact so the calibration
+        # against the 4 labeled events doesn't shift mid-flight.
         d["lowest_sentinel_grate"] += rain_add
         d["lowest_road_corner"]    += rain_add
         d["gutter_walkway"]        += rain_add
@@ -3378,18 +3389,16 @@ def render_per_tide_page(tide, forecast):
 """
 
 
-def render_html_page(forecast, map_url=None, map_url_no_rain=None):
+def render_html_page(forecast):
     """
     Standalone HTML page for GitHub Pages publication.
     Like the email HTML but with proper <head>, mobile meta, and footer
     links to source repo + archive.
 
-    The heat-map is rendered CLIENT-SIDE (HANDOFF 9b.10) from the static
-    map_points.csv data and the current water level. The legacy
-    map_url / map_url_no_rain parameters are kept for backwards-compat
-    but unused; the client-side render replaces them.
+    The heat-map is rendered CLIENT-SIDE (HANDOFF 9b.10) from the
+    static map_points.csv data and the current water level — no
+    pre-rendered PNG needed.
     """
-    _ = map_url, map_url_no_rain  # legacy parameters, kept for compat
     d = forecast["depths_in"]
     regime = d["regime"]
     peak_t = forecast["peak_time_local"]
@@ -3721,16 +3730,14 @@ def main():
         print(json.dumps(forecast, indent=2, default=str))
         return
 
-    # Render heat-map PNG(s). When rain is forecast, we render TWO maps —
-    # one with the rain bonus folded into the water level (9b.5), one
-    # tide-only — so the HTML page can offer a toggle and the user can
-    # see what rain alone would add.
-    map_url = None
-    map_url_no_rain = None
+    # Optionally render heat-map PNG(s) via assets/render_map.py
+    # (matplotlib). This is purely a local convenience for the user's
+    # workflow; the website (HTML page below) renders maps CLIENT-SIDE
+    # (HANDOFF 9b.10) and does not consume these PNGs. Kept for a
+    # future email-embed feature (HANDOFF 9b.5 — emails can't run JS).
     if args.write_map:
         rain_bonus_in = _rain_bonus_inches(forecast)
         rain_meaningful = rain_bonus_in > 0.0
-
         water_navd88 = _compute_map_water_level(forecast, include_rain=True)
         if water_navd88 is None:
             print("Skipping heat-map: cold lockout suppressing flooding "
@@ -3752,12 +3759,6 @@ def main():
             try:
                 _render_heatmap(out_path, water_navd88, title)
                 print(f"Wrote heat-map: {args.write_map}")
-                # Compute URL for HTML embed
-                if args.write_html:
-                    html_dir = os.path.dirname(os.path.abspath(args.write_html))
-                    map_url = os.path.relpath(out_path, html_dir)
-                else:
-                    map_url = out_path
             except Exception as e:
                 print(f"WARNING: heat-map render failed: {e}", flush=True)
 
@@ -3767,7 +3768,6 @@ def main():
                     forecast, include_rain=False
                 )
                 if water_no_rain is not None:
-                    # Derive path: …map_today.png → …map_today_no_rain.png
                     base, ext = os.path.splitext(out_path)
                     out_path_nr = base + "_no_rain" + ext
                     title_nr = (
@@ -3777,39 +3777,17 @@ def main():
                     try:
                         _render_heatmap(out_path_nr, water_no_rain, title_nr)
                         print(f"Wrote heat-map (no rain): {out_path_nr}")
-                        if args.write_html:
-                            map_url_no_rain = os.path.relpath(
-                                out_path_nr, html_dir
-                            )
-                        else:
-                            map_url_no_rain = out_path_nr
                     except Exception as e:
                         print(f"WARNING: no-rain heat-map render failed: {e}",
                               flush=True)
 
-    # Fallback: even when --write-map is NOT passed (hourly runs under
-    # 9b.1), embed the previously-rendered map if one exists on disk at
-    # the expected path. The map may be slightly stale within the day
-    # (it regenerates at the 09:00 UTC daily run) but doesn't disappear
-    # from the page between daily refreshes. 9b.10 (client-side render)
-    # replaces this with always-fresh map data.
-    if map_url is None and args.write_html:
-        html_dir = os.path.dirname(os.path.abspath(args.write_html))
-        candidate = os.path.join(html_dir, "icons", "map_today.png")
-        if os.path.exists(candidate):
-            map_url = os.path.relpath(candidate, html_dir)
-        # Same fallback for the no-rain map
-        candidate_nr = os.path.join(html_dir, "icons", "map_today_no_rain.png")
-        if os.path.exists(candidate_nr):
-            map_url_no_rain = os.path.relpath(candidate_nr, html_dir)
-
     subject, text, html = render_email(forecast)
 
-    # Write standalone HTML page if requested
+    # Write standalone HTML page if requested. Map renders client-side
+    # from inlined points + the static base map (HANDOFF 9b.10) — no
+    # map_url argument needed.
     if args.write_html:
-        page_html = render_html_page(
-            forecast, map_url=map_url, map_url_no_rain=map_url_no_rain
-        )
+        page_html = render_html_page(forecast)
         out_path = os.path.abspath(args.write_html)
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         with open(out_path, "w") as f:
