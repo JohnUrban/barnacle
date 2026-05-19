@@ -2255,7 +2255,7 @@ def main():
             peak_t = forecast.get("peak_time_local", "")
             peak_mllw = forecast["peak_forecast_observed_mllw"]
             title = (
-                f"Predicted peak depth — water at {water_navd88:.2f} ft NAVD88 "
+                f"Predicted water level — {water_navd88:.2f} ft NAVD88 "
                 f"(SH {peak_mllw:.2f} ft MLLW @ {peak_t})"
             )
             out_path = os.path.abspath(args.write_map)

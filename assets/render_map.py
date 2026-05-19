@@ -81,6 +81,11 @@ def main():
     ap.add_argument("--title", default=None,
                     help="Optional title for the figure (only used with "
                          "--water-level by default).")
+    ap.add_argument("--show-labels", action="store_true",
+                    help="When --water-level is set, also draw the labeled "
+                         "elevation dots on top of the overlay. Off by "
+                         "default in heat-map mode (the NAVD88 labels can "
+                         "be mistaken for predicted depths).")
     args = ap.parse_args()
 
     img = mpimg.imread(args.image)
@@ -91,8 +96,10 @@ def main():
 
     rows, points_xy, elevs = load_points(args.csv)
 
+    heatmap_mode = args.water_level is not None and len(points_xy) >= 3
+
     # === Heat-map overlay (only when water level supplied) ===
-    if args.water_level is not None and len(points_xy) >= 3:
+    if heatmap_mode:
         xs = np.array([p[0] for p in points_xy])
         ys = np.array([p[1] for p in points_xy])
         depths_ft = np.array(
@@ -107,45 +114,63 @@ def main():
         ax.tricontourf(triang, depths_ft, levels=levels, cmap=cmap,
                        zorder=5, extend="max")
         title = args.title or (
-            f"Predicted water depth — water level "
-            f"{args.water_level:.2f} ft NAVD88"
+            f"Predicted water level — {args.water_level:.2f} ft NAVD88"
         )
         ax.set_title(title, fontsize=14, fontweight="bold")
     elif args.title:
         ax.set_title(args.title, fontsize=14, fontweight="bold")
 
     # === Dots and labels ===
+    # In heat-map mode the labels are NAVD88 elevations, which read as
+    # "predicted depths" against a depth-encoded overlay — confusing.
+    # Hide labels in heat-map mode unless --show-labels is set.
+    draw_labels = (not heatmap_mode) or args.show_labels
     n_landmark = 0
     n_extra = 0
     n_skipped = 0
-    for r in rows:
-        try:
-            x = float(r["x"]); y = float(r["y"])
-        except (ValueError, KeyError, TypeError):
-            n_skipped += 1
-            continue
-        cat = r.get("category", "extra")
-        color = LANDMARK_COLOR if cat == "landmark" else EXTRA_COLOR
-        ax.plot(x, y, "o", color=color, markersize=6,
-                markeredgecolor="white", markeredgewidth=1.5, zorder=10)
-        txt = ax.annotate(
-            r.get("value", "?"), (x, y), color=color, fontsize=11,
-            fontweight="bold", xytext=(8, -4),
-            textcoords="offset points", zorder=11,
-        )
-        txt.set_path_effects(
-            [PathEffects.withStroke(linewidth=2.5, foreground="white")]
-        )
-        if cat == "landmark":
-            n_landmark += 1
-        else:
-            n_extra += 1
+    if draw_labels:
+        for r in rows:
+            try:
+                x = float(r["x"]); y = float(r["y"])
+            except (ValueError, KeyError, TypeError):
+                n_skipped += 1
+                continue
+            cat = r.get("category", "extra")
+            color = LANDMARK_COLOR if cat == "landmark" else EXTRA_COLOR
+            ax.plot(x, y, "o", color=color, markersize=6,
+                    markeredgecolor="white", markeredgewidth=1.5, zorder=10)
+            txt = ax.annotate(
+                r.get("value", "?"), (x, y), color=color, fontsize=11,
+                fontweight="bold", xytext=(8, -4),
+                textcoords="offset points", zorder=11,
+            )
+            txt.set_path_effects(
+                [PathEffects.withStroke(linewidth=2.5, foreground="white")]
+            )
+            if cat == "landmark":
+                n_landmark += 1
+            else:
+                n_extra += 1
+    else:
+        # Still count for the summary line, but don't render
+        for r in rows:
+            try:
+                float(r["x"]); float(r["y"])
+            except (ValueError, KeyError, TypeError):
+                n_skipped += 1
+                continue
+            cat = r.get("category", "extra")
+            if cat == "landmark":
+                n_landmark += 1
+            else:
+                n_extra += 1
 
     plt.savefig(args.out, bbox_inches="tight", pad_inches=0, dpi=args.dpi)
     plt.close(fig)
     print(f"Wrote {args.out}")
     print(f"  {n_landmark} landmarks (blue) + {n_extra} extras (red); "
-          f"{n_skipped} rows skipped (no coords yet)")
+          f"{n_skipped} rows skipped (no coords yet)"
+          + ("" if draw_labels else " — labels HIDDEN (heat-map mode)"))
     if args.water_level is not None:
         print(f"  Heat-map overlay rendered for water level "
               f"{args.water_level:.2f} ft NAVD88")
