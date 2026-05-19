@@ -3591,6 +3591,51 @@ def _relpath_to_map_render_js(base_map_url):
     return "map-render.js"
 
 
+def _per_tide_log_stats(target_tide_time):
+    """Quick stats about predictions_log.csv slice for one tide.
+    Returns dict with n, first_at, last_at, span_hours, avg_cadence_min.
+    HANDOFF observability — CC in the 2026-05-19 solo-work backlog.
+
+    Returns None when no rows match (e.g., tide just rolled into the
+    window and the log hasn't ticked yet)."""
+    if not os.path.exists(PREDICTIONS_LOG_PATH):
+        return None
+    times = []
+    try:
+        with open(PREDICTIONS_LOG_PATH) as f:
+            for r in csv.DictReader(f):
+                if r.get("target_tide_time") == target_tide_time:
+                    pred_at = r.get("prediction_made_at", "")
+                    if pred_at:
+                        times.append(pred_at)
+    except OSError:
+        return None
+    if not times:
+        return None
+    times.sort()
+    n = len(times)
+    first_at = times[0]
+    last_at = times[-1]
+    span_hours = None
+    avg_cadence_min = None
+    try:
+        first_dt = dt.datetime.strptime(first_at, "%Y-%m-%dT%H:%M:%SZ")
+        last_dt = dt.datetime.strptime(last_at, "%Y-%m-%dT%H:%M:%SZ")
+        span_seconds = (last_dt - first_dt).total_seconds()
+        span_hours = span_seconds / 3600.0
+        if n > 1 and span_seconds > 0:
+            avg_cadence_min = span_seconds / (n - 1) / 60.0
+    except (ValueError, TypeError):
+        pass
+    return {
+        "n":               n,
+        "first_at":        first_at,
+        "last_at":         last_at,
+        "span_hours":      span_hours,
+        "avg_cadence_min": avg_cadence_min,
+    }
+
+
 def _tide_slug(tide_time_str):
     """Convert a NOAA tide time string ('YYYY-MM-DD HH:MM') to a
     filesystem-safe slug ('YYYY-MM-DDTHH-MM') for per-tide page paths.
@@ -3717,6 +3762,33 @@ def render_per_tide_page(tide, forecast,
         if next_slug and next_time else '<span class="nav-disabled">— &rarr;</span>'
     )
 
+    # Prediction-log status (CC — observability). Tells the reader how
+    # much data this tide has accumulated and at what cadence.
+    log_stats = _per_tide_log_stats(time_str)
+    if log_stats:
+        n = log_stats["n"]
+        span = log_stats["span_hours"]
+        cadence = log_stats["avg_cadence_min"]
+        bits = [f"<b>{n}</b> prediction{'s' if n != 1 else ''} logged"]
+        if span is not None:
+            bits.append(f"over {span:.1f} h")
+        if cadence is not None:
+            bits.append(f"({cadence:.0f} min cadence avg)")
+        log_status_html = (
+            '<section class="log-status">'
+            '<p class="note">' + " ".join(bits) +
+            ' for this tide so far. Updates as the hourly workflow ticks.</p>'
+            '</section>'
+        )
+    else:
+        log_status_html = (
+            '<section class="log-status">'
+            '<p class="note">No predictions logged yet for this tide. '
+            'Rows accumulate as the hourly workflow runs leading up to '
+            'the peak.</p>'
+            '</section>'
+        )
+
     # Per-tide heat-map: build a fake "forecast" with this tide as the
     # worst-case so _client_map_section_html renders for THIS tide's
     # water level (not the home page's worst-case). HANDOFF 9b.10.
@@ -3794,6 +3866,7 @@ def render_per_tide_page(tide, forecast,
     </dl>
   </section>
 
+{log_status_html}
 {tide_heatmap_section}
   <section class="scrubber-section">
     <h2>Replay forecast evolution</h2>
@@ -4169,35 +4242,66 @@ def render_html_page(forecast):
        data-generated-at="{dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}">
       <span id="last-updated-display">Last updated …</span>
     </p>
-    <script>
-      (function() {{
-        var el = document.querySelector('.last-updated');
-        var disp = document.getElementById('last-updated-display');
-        if (!el || !disp) return;
-        var iso = el.getAttribute('data-generated-at');
-        var gen = new Date(iso);
-        if (isNaN(gen.getTime())) return;
-        function update() {{
-          var now = new Date();
-          var diffSec = Math.max(0, Math.round((now - gen) / 1000));
-          var ago;
-          if (diffSec < 90) ago = diffSec + ' s ago';
-          else if (diffSec < 3600) ago = Math.round(diffSec / 60) + ' min ago';
-          else if (diffSec < 86400) ago = Math.round(diffSec / 3600) + ' h ago';
-          else ago = Math.round(diffSec / 86400) + ' d ago';
-          var local = gen.toLocaleString(undefined, {{
-            month: 'numeric', day: 'numeric',
-            hour: 'numeric', minute: '2-digit'
-          }});
-          var stale = diffSec > 7200;  // >2h since last workflow run
-          disp.textContent = 'Last updated ' + local + ' (' + ago + ')';
-          if (stale) disp.classList.add('stale');
-        }}
-        update();
-        setInterval(update, 30000);  // refresh "X ago" every 30s while open
-      }})();
-    </script>
   </header>
+  <!-- DD: workflow-health banner. Hidden by default; revealed by the
+       script below when last-update age exceeds the stale threshold.
+       Three tiers: <90 min fresh (no banner), 90 min - 3 h amber on
+       the inline last-updated indicator only (V), >3 h red banner (DD),
+       >24 h bright-red banner with a "Run workflow manually" note. -->
+  <div class="health-alert" id="health-alert" style="display:none">
+    <span class="health-alert-title">⚠ System update is delayed</span>
+    <span class="health-alert-detail" id="health-alert-detail"></span>
+  </div>
+  <script>
+    (function() {{
+      var el = document.querySelector('.last-updated');
+      var disp = document.getElementById('last-updated-display');
+      var banner = document.getElementById('health-alert');
+      var bDetail = document.getElementById('health-alert-detail');
+      if (!el || !disp) return;
+      var iso = el.getAttribute('data-generated-at');
+      var gen = new Date(iso);
+      if (isNaN(gen.getTime())) return;
+      function update() {{
+        var now = new Date();
+        var diffSec = Math.max(0, Math.round((now - gen) / 1000));
+        var ago;
+        if (diffSec < 90) ago = diffSec + ' s ago';
+        else if (diffSec < 3600) ago = Math.round(diffSec / 60) + ' min ago';
+        else if (diffSec < 86400) ago = Math.round(diffSec / 3600) + ' h ago';
+        else ago = Math.round(diffSec / 86400) + ' d ago';
+        var local = gen.toLocaleString(undefined, {{
+          month: 'numeric', day: 'numeric',
+          hour: 'numeric', minute: '2-digit'
+        }});
+        disp.textContent = 'Last updated ' + local + ' (' + ago + ')';
+        // V: amber inline indicator at >2h
+        if (diffSec > 7200) disp.classList.add('stale');
+        else disp.classList.remove('stale');
+        // DD: prominent banner at >3h, severe variant at >24h
+        if (banner && bDetail) {{
+          if (diffSec > 86400) {{
+            banner.style.display = 'block';
+            banner.classList.add('severe');
+            bDetail.innerHTML = 'Last workflow run was <b>' + ago +
+              '</b> (' + local + '). The hourly cron may have stalled. ' +
+              '<a href="https://github.com/JohnUrban/barnacle/actions" target="_blank">' +
+              'Run the workflow manually</a> to refresh.';
+          }} else if (diffSec > 10800) {{
+            banner.style.display = 'block';
+            banner.classList.remove('severe');
+            bDetail.innerHTML = 'Last workflow run was <b>' + ago +
+              '</b> (' + local + '). Expected hourly; if this persists, ' +
+              'the cron may have stalled.';
+          }} else {{
+            banner.style.display = 'none';
+          }}
+        }}
+      }}
+      update();
+      setInterval(update, 30000);  // refresh "X ago" every 30s while open
+    }})();
+  </script>
 
   {_render_summary_html(forecast)}
 

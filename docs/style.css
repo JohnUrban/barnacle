@@ -327,6 +327,41 @@ section.scrubber-section { margin: 12px 0; }
     margin-right: 4px;
 }
 
+/* Per-tide log-status block (CC) — small muted note above the heat-map */
+section.log-status {
+    margin: 8px 0 4px 0;
+    font-size: 13px;
+    color: #5a7088;
+    text-align: center;
+}
+
+/* Workflow-health banner (DD) — appears via JS when last-updated
+   age exceeds 3 h. Default amber tint; .severe variant (red) when
+   age exceeds 24 h. */
+.health-alert {
+    background: #fff3e0;
+    border: 1px solid #d97706;
+    border-left-width: 4px;
+    color: #6e4400;
+    padding: 10px 14px;
+    margin: 12px 0;
+    border-radius: 4px;
+    font-size: 14px;
+}
+.health-alert .health-alert-title {
+    font-weight: 700;
+    margin-right: 8px;
+}
+.health-alert.severe {
+    background: #fde7e7;
+    border-color: #c14d4d;
+    color: #8a3232;
+}
+.health-alert a {
+    color: inherit;
+    text-decoration: underline;
+}
+
 /* Cold-conditions advisory — formerly the cold-lockout override (2026-05-19
    demoted from active override to advisory after the 19-event
    retrospective; see history/reports/cold_weather_retrospective.md) */
