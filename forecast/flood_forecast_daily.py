@@ -3719,6 +3719,201 @@ def _relpath_to_map_render_js(base_map_url):
     return "map-render.js"
 
 
+def _render_equation_widget_html(forecast, wrapper="section"):
+    """Interactive widget that shows the v0.6 model equation with the
+    current forecast's term values filled in. Every term is an editable
+    number input; the water level and the depth at a chosen landmark
+    recompute live. A 'snap back' button restores the forecast values.
+
+    The math here mirrors predict_landmark_depths() exactly:
+        water_navd88 = SH_peak_mllw + local_enhancement + datum_offset
+        rain_add(in) = 8 * tanh(rate)   when rate > 0.1, else 0
+        depth(in)    = max(0, water_navd88 - elev) * 12
+                       + max(0, rain_add - shed[landmark])
+    so the widget is a faithful calculator for the model, not a
+    simplified illustration.
+    """
+    sh_peak = forecast.get("peak_forecast_observed_mllw", 0.0) or 0.0
+    rain_rate = forecast.get("peak_rain_rate_in_hr", 0.0) or 0.0
+
+    # Per-landmark rain shedding, matching predict_landmark_depths(): the
+    # crowned intersection sheds 2", the lawn/porch shed 4". v0.7 (9c.4)
+    # removes this in favor of a uniform water-is-level rise.
+    shed = {"intersection": 2.0, "lawn_step": 4.0, "porch_step": 4.0}
+    landmarks_js = json.dumps([
+        {"key": key, "label": label, "elev": elev,
+         "shed": shed.get(key, 0.0)}
+        for key, label, elev, _sh in LANDMARKS
+    ])
+
+    hh = "h2" if wrapper == "section" else "h3"
+    open_tag = f'<section class="eqn-widget">' if wrapper == "section" else \
+               '<div class="eqn-widget">'
+    close_tag = "</section>" if wrapper == "section" else "</div>"
+
+    return f"""
+  {open_tag}
+    <{hh}>The model, term by term</{hh}>
+    <p class="note">This is the actual v0.6 prediction math with this
+       forecast's numbers filled in. Edit any term to see how the
+       prediction would change — then "Snap back" to return to the
+       live forecast.</p>
+
+    <div class="eqn-line">
+      <span class="eqn-lhs">Water level (NAVD88) =</span>
+      <input type="number" id="eq-shpeak" step="0.01"
+             value="{sh_peak:.2f}" data-default="{sh_peak:.4f}">
+      <span class="eqn-termname">ft &mdash; Sandy Hook peak (MLLW)</span>
+    </div>
+    <div class="eqn-line">
+      <span class="eqn-op">+</span>
+      <input type="number" id="eq-enh" step="0.01"
+             value="{LOCAL_ENHANCEMENT_FT:.2f}"
+             data-default="{LOCAL_ENHANCEMENT_FT:.4f}">
+      <span class="eqn-termname">ft &mdash; local enhancement</span>
+    </div>
+    <div class="eqn-line">
+      <span class="eqn-op">+</span>
+      <input type="number" id="eq-datum" step="0.01"
+             value="{MLLW_TO_NAVD88_OFFSET:.2f}"
+             data-default="{MLLW_TO_NAVD88_OFFSET:.4f}">
+      <span class="eqn-termname">ft &mdash; MLLW&rarr;NAVD88 datum offset</span>
+    </div>
+    <div class="eqn-result">
+      &rarr; Water level = <b id="eq-water">&mdash;</b> ft NAVD88
+    </div>
+
+    <div class="eqn-line">
+      <span class="eqn-lhs">Depth at</span>
+      <select id="eq-landmark"></select>
+      <span class="eqn-termname">= max(0, water &minus; elevation) &times; 12
+        + rain</span>
+    </div>
+    <div class="eqn-line">
+      <span class="eqn-lhs">Peak rain</span>
+      <input type="number" id="eq-rain" step="0.05" min="0"
+             value="{rain_rate:.2f}" data-default="{rain_rate:.4f}">
+      <span class="eqn-termname">in/hr &mdash; adds
+        <b id="eq-rainadd">&mdash;</b>&Prime; of depth
+        (<span id="eq-rainnote"></span>)</span>
+    </div>
+    <div class="eqn-result">
+      &rarr; Depth at <span id="eq-lmname">&mdash;</span> =
+      <b id="eq-depth">&mdash;</b>&Prime;
+      <span class="eqn-regime" id="eq-regime"></span>
+    </div>
+
+    <button type="button" id="eq-reset">Snap back to current forecast</button>
+
+    <h3 class="eqn-sub">What each term means</h3>
+    <dl class="eqn-glossary">
+      <dt>Sandy Hook peak (MLLW)</dt>
+      <dd>The forecast peak water height at the NOAA Sandy Hook gauge
+        (station 8531680) for the worst high tide in the next 24 hours,
+        in feet above Mean Lower Low Water. This is the live input that
+        changes tide to tide &mdash; it already folds in the astronomical
+        tide plus any storm surge.</dd>
+      <dt>Local enhancement (+{LOCAL_ENHANCEMENT_FT:.2f} ft)</dt>
+      <dd>A fixed bump because 342 Bay Ave runs higher than the gauge
+        reads, fit from past street-flooding events. It is most likely a
+        storm-surge propagation effect rather than a true constant;
+        v0.7 will test whether it should scale with surge instead of
+        being flat.</dd>
+      <dt>MLLW&rarr;NAVD88 offset (&minus;2.82 ft)</dt>
+      <dd>A pure datum conversion. The gauge reports heights in MLLW;
+        the landmark elevations at the house were surveyed in NAVD88.
+        This is fixed geometry, not a tunable model parameter.</dd>
+      <dt>Peak rain (in/hr)</dt>
+      <dd>The heaviest single hour of rainfall the NWS forecasts in the
+        window around the high tide. Rain adds depth through a
+        saturating curve, 8&middot;tanh(rate) inches, and only kicks in
+        above 0.1 in/hr. The crowned intersection sheds 2&Prime; of it
+        and the lawn/porch shed 4&Prime; (a v0.6 quirk that v0.7
+        replaces with a uniform rise).</dd>
+    </dl>
+    <p class="note">The whole model: convert the gauge's tide forecast
+       to a water level at the house (first three terms), then at each
+       landmark the depth is simply how far that water level sits above
+       the landmark's surveyed elevation, with a rain term added on top.
+       Everything downstream &mdash; the alerts, the heat-map, the
+       depth table &mdash; is this one calculation applied at different
+       points.</p>
+
+    <script>
+      (function() {{
+        var L = {landmarks_js};
+        var ids = ['eq-shpeak','eq-enh','eq-datum','eq-rain'];
+        var sel = document.getElementById('eq-landmark');
+        if (!sel) return;
+        for (var i = 0; i < L.length; i++) {{
+          var o = document.createElement('option');
+          o.value = String(i);
+          o.textContent = L[i].label;
+          sel.appendChild(o);
+        }}
+        // Default to the curb landmark (the alert reference point).
+        for (var i = 0; i < L.length; i++) {{
+          if (L[i].key === 'curb') {{ sel.value = String(i); break; }}
+        }}
+        function num(id) {{
+          return parseFloat(document.getElementById(id).value) || 0;
+        }}
+        function recompute() {{
+          var shpeak = num('eq-shpeak');
+          var enh    = num('eq-enh');
+          var datum  = num('eq-datum');
+          var rate   = num('eq-rain');
+          var water  = shpeak + enh + datum;
+          var rainAdd = (rate > 0.1) ? 8.0 * Math.tanh(rate) : 0.0;
+          var lm = L[parseInt(sel.value, 10) || 0];
+          var rainHere = Math.max(0, rainAdd - lm.shed);
+          var depth = Math.max(0, water - lm.elev) * 12 + rainHere;
+          document.getElementById('eq-water').textContent =
+            water.toFixed(2);
+          document.getElementById('eq-rainadd').textContent =
+            rainAdd.toFixed(1);
+          document.getElementById('eq-rainnote').textContent =
+            (rate > 0.1)
+              ? (lm.shed > 0
+                  ? lm.label + ' sheds ' + lm.shed.toFixed(0)
+                    + '\\u2033 \\u2192 +' + rainHere.toFixed(1) + '\\u2033 here'
+                  : 'no shedding here')
+              : 'below the 0.1 in/hr threshold';
+          document.getElementById('eq-lmname').textContent = lm.label;
+          document.getElementById('eq-depth').textContent =
+            depth.toFixed(1);
+          var regime = '';
+          if (depth >= 8)      regime = 'severe';
+          else if (depth >= 4) regime = 'moderate';
+          else if (depth > 0)  regime = 'light';
+          else                 regime = 'dry';
+          var rEl = document.getElementById('eq-regime');
+          rEl.textContent = '(' + regime + ')';
+          rEl.className = 'eqn-regime regime-' + regime;
+        }}
+        ids.forEach(function(id) {{
+          document.getElementById(id)
+            .addEventListener('input', recompute);
+        }});
+        sel.addEventListener('change', recompute);
+        document.getElementById('eq-reset')
+          .addEventListener('click', function() {{
+            ids.forEach(function(id) {{
+              var el = document.getElementById(id);
+              el.value = el.getAttribute('data-default');
+            }});
+            for (var i = 0; i < L.length; i++) {{
+              if (L[i].key === 'curb') {{ sel.value = String(i); break; }}
+            }}
+            recompute();
+          }});
+        recompute();
+      }})();
+    </script>
+  {close_tag}
+"""
+
+
 def _per_tide_log_stats(target_tide_time):
     """Quick stats about predictions_log.csv slice for one tide.
     Returns dict with n, first_at, last_at, span_hours, avg_cadence_min.
@@ -4598,6 +4793,7 @@ def render_html_page(forecast):
 {_render_cold_advisory_html(forecast)}
 {_render_live_gauge_section(forecast)}
 {map_section}
+{_render_equation_widget_html(forecast)}
 {_render_oscillation_section(forecast)}
   {_render_rain_timing_html(forecast)}
 

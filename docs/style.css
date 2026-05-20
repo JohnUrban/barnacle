@@ -386,6 +386,84 @@ h2 .detail-link:hover { background: #d8e3f3; }
 .depth-slider.rain-slider button { background: #2f8f5f; }
 .depth-slider.rain-slider button:hover { background: #226b47; }
 
+/* Interactive model-equation widget — shows the v0.6 math with the
+   current forecast's term values, every term editable. */
+.eqn-widget {
+    background: #f7f9fc;
+    border: 1px solid #d8e0ea;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin: 18px 0;
+}
+.eqn-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 6px 0;
+    font-size: 14px;
+}
+.eqn-line .eqn-lhs,
+.eqn-line .eqn-op {
+    font-weight: 600;
+    color: #485a73;
+}
+.eqn-line .eqn-op {
+    width: 1em;
+    text-align: center;
+}
+.eqn-widget input[type="number"] {
+    width: 6em;
+    padding: 3px 6px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    border: 1px solid #b9c6d6;
+    border-radius: 4px;
+}
+.eqn-widget select {
+    padding: 3px 6px;
+    font-size: 14px;
+    border: 1px solid #b9c6d6;
+    border-radius: 4px;
+}
+.eqn-line .eqn-termname { color: #607089; }
+.eqn-result {
+    margin: 8px 0 8px 0;
+    font-size: 15px;
+    color: #1f2d3d;
+}
+.eqn-result b { font-variant-numeric: tabular-nums; }
+.eqn-regime { font-weight: 600; background: none !important; }
+.eqn-regime.regime-dry      { color: #2e7d32; }
+.eqn-regime.regime-light    { color: #b08900; }
+.eqn-regime.regime-moderate { color: #d2691e; }
+.eqn-regime.regime-severe   { color: #c62828; }
+.eqn-widget #eq-reset {
+    padding: 5px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    background: #1f6feb;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    margin: 6px 0 4px 0;
+}
+.eqn-widget #eq-reset:hover { background: #144fa8; }
+.eqn-widget .eqn-sub {
+    font-size: 15px;
+    margin: 14px 0 6px 0;
+}
+.eqn-glossary dt {
+    font-weight: 600;
+    color: #485a73;
+    margin-top: 8px;
+}
+.eqn-glossary dd {
+    margin: 2px 0 0 0;
+    font-size: 13px;
+    color: #5a6b80;
+}
+
 /* Per-tide log-status block (CC) — small muted note above the heat-map */
 section.log-status {
     margin: 8px 0 4px 0;
