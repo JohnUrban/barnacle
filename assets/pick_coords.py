@@ -43,10 +43,20 @@ REPO_ROOT = HERE.parent
 DEFAULT_CSV = HERE / "map_points.csv"
 DEFAULT_IMG = REPO_ROOT / "docs" / "icons" / "map_raw.png"
 
-LANDMARK_COLOR = "#1f6feb"
-EXTRA_COLOR    = "#d2444a"
-PENDING_COLOR  = "#ff9800"  # not currently used; reserved for future
+LANDMARK_COLOR     = "#1f6feb"   # blue  — canonical model landmarks
+EXTRA_COLOR        = "#d2444a"   # red   — surveyed extra topography
+APPROXIMATED_COLOR = "#e08a1e"   # amber — best-guess / approximated points
+PENDING_COLOR      = "#ff9800"   # not currently used; reserved for future
 FIELDS = ["label", "value", "category", "x", "y"]
+
+
+def category_color(cat):
+    """Dot color by category — matches render_map.py's _category_color."""
+    if cat == "landmark":
+        return LANDMARK_COLOR
+    if cat == "approximated":
+        return APPROXIMATED_COLOR
+    return EXTRA_COLOR
 
 
 # ============================================================
@@ -89,7 +99,7 @@ def redraw(ax, img, rows):
             x = float(r["x"]); y = float(r["y"])
         except (ValueError, TypeError):
             continue
-        color = LANDMARK_COLOR if r.get("category") == "landmark" else EXTRA_COLOR
+        color = category_color(r.get("category", "extra"))
         ax.plot(x, y, "o", color=color, markersize=7,
                 markeredgecolor="white", markeredgewidth=1.5, zorder=10)
         txt = ax.annotate(
