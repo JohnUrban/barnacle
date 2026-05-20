@@ -1389,6 +1389,59 @@ was returning None on every run due to a zero-duration NOAA query
 range; caller defaulted to 0.0. After fix, surge varies as it
 should. But forecast_peak still clips it.
 
+### 9c.7 — Rain accumulation window (before-biased, not symmetric)
+
+**Current behavior.** For each high tide, `build_forecast` takes
+`peak_rain_rate = MAX(quantitativePrecipitation.value)` over the NWS
+hourly buckets falling within a **symmetric ±90 min window** around
+the tide peak (`flood_forecast_daily.py` ~line 1224). It's a windowed
+peak *rate*, not an accumulation, and it's keyed to the tide time, not
+the prediction time.
+
+**Problem (user, 2026-05-20).** Rain that falls *after* the high tide
+cannot raise the water level *at* the peak. The symmetric window can
+pick a purely post-peak bucket as the "peak rate" and overstate the
+rain contribution to that tide. For any timepoint of interest (high
+tide or otherwise), only rain *before* that point should count.
+
+**v0.7 change — before-biased window.** Replace the symmetric ±90 min
+window with `[timepoint − 90 min, timepoint + 15 min]`. The small
+forward tolerance is deliberate: our tide-time accuracy is not exact,
+and observed flooding has lagged the predicted high-tide time (e.g.
+one recent event flooded within the 30 min *after* the predicted
+peak). A +15 min default is a reasonable compromise; +30 min is
+defensible. The point is to bias the weight to *before* the timepoint
+while not discarding rain that effectively coincides with it.
+
+NWS QPF nuance: buckets are hourly accumulations stamped at the
+*start* of the hour. A bucket stamped 40 min before the peak still
+covers ~20 min after it. The before-biased window keeps such
+straddling buckets and only drops the buckets that are entirely
+post-peak — which is the actual correction wanted.
+
+**Open question — is 90 min of window enough?** (User, 2026-05-20,
+explicitly flagged as speculation, recorded so v0.7 calibration can
+test it.) The Oct 30 2025 event suggests a ~90 min window may capture
+enough of the relevant rainfall. But the *same* rain depth can produce
+very different flooding depending on **antecedent conditions**, and it
+is genuinely unclear which direction dominates:
+
+- A flash downpour onto otherwise-dry ground after 24 h of no rain:
+  dry soil/pavement may not absorb water fast enough, so runoff and
+  ponding could be *worse* than expected.
+- The same rain depth after 24 h of lighter rain: the ground is
+  already wet/saturated, less infiltration capacity left — runoff
+  could also be *worse*.
+
+So a short fixed window may miss the antecedent-moisture signal
+entirely. v0.7 should at least consider: (a) whether the rain term
+should be driven by *accumulated* rain over the window rather than the
+peak hourly *rate*, and (b) whether a longer "antecedent" lookback
+(e.g. prior 24 h cumulative) belongs as a separate term feeding a
+soil-saturation / infiltration factor. No decision yet — needs data
+from labeled rain events. Pairs with the rain-term recalibration in
+9c.5.
+
 ---
 
 ## 10. Outstanding open questions
