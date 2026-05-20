@@ -359,7 +359,8 @@ h2 .detail-link:hover { background: #d8e3f3; }
     flex: 1;
     min-width: 200px;
 }
-.depth-slider #depth-slider-value {
+.depth-slider #depth-slider-value,
+.depth-slider #rain-slider-value {
     font-variant-numeric: tabular-nums;
     font-size: 13px;
     color: #485a73;
@@ -375,6 +376,15 @@ h2 .detail-link:hover { background: #d8e3f3; }
     border-radius: 4px;
 }
 .depth-slider button:hover { background: #144fa8; }
+/* Extra-rain slider sits directly under the depth slider; tighten the
+   gap between the two rows and tint it so it reads as a secondary
+   control rather than a second independent slider. */
+.depth-slider.rain-slider {
+    margin-top: -8px;
+}
+.depth-slider.rain-slider label { color: #2f6f4f; }
+.depth-slider.rain-slider button { background: #2f8f5f; }
+.depth-slider.rain-slider button:hover { background: #226b47; }
 
 /* Per-tide log-status block (CC) — small muted note above the heat-map */
 section.log-status {

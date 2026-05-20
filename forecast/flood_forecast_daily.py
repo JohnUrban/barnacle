@@ -3620,33 +3620,67 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
       <span id="depth-slider-value">{water_with_rain:.2f} ft NAVD88</span>
       <button type="button" id="depth-slider-reset">Snap to current forecast</button>
     </div>
+    <div class="depth-slider rain-slider">
+      <label for="rain-slider-input">Extra rain:</label>
+      <input type="range" id="rain-slider-input"
+             min="0" max="2.0" step="0.05" value="0">
+      <span id="rain-slider-value">0.00 in/hr &rarr; +0.0&Prime;</span>
+      <button type="button" id="rain-slider-reset">Reset extra rain</button>
+    </div>
+    <p class="note">The depth slider sets a base water level; the extra-rain
+       slider adds on top of it via the model's rain term
+       (8&middot;tanh(rate) inches, applied uniformly per HANDOFF 9b.5).
+       "Extra" because rain may already be in the current forecast's
+       water level — this explores additional rain beyond that.</p>
 """
         slider_script = f"""
       (function() {{
-        var slider = document.getElementById('depth-slider-input');
-        var label = document.getElementById('depth-slider-value');
-        var btn = document.getElementById('depth-slider-reset');
-        var canvas = document.getElementById('heatmap-canvas');
-        if (!slider || !canvas) return;
-        var defaultWater = parseFloat(slider.getAttribute('data-current'));
-        function rerender(w) {{
-          label.textContent = w.toFixed(2) + ' ft NAVD88'
-            + (Math.abs(w - defaultWater) < 0.005 ? ' (current forecast)' : '');
+        var dSlider = document.getElementById('depth-slider-input');
+        var dLabel  = document.getElementById('depth-slider-value');
+        var dBtn    = document.getElementById('depth-slider-reset');
+        var rSlider = document.getElementById('rain-slider-input');
+        var rLabel  = document.getElementById('rain-slider-value');
+        var rBtn    = document.getElementById('rain-slider-reset');
+        var canvas  = document.getElementById('heatmap-canvas');
+        if (!dSlider || !canvas) return;
+        var defaultWater = parseFloat(dSlider.getAttribute('data-current'));
+        var RAIN_SAT_IN = {RAIN_SATURATION_IN};  // matches v0.6 model
+        // Rain rate (in/hr) -> water-level rise (ft). Same saturating
+        // tanh the model uses; divided by 12 for feet.
+        function rainAddFt(rate) {{
+          return (RAIN_SAT_IN * Math.tanh(rate)) / 12.0;
+        }}
+        function rerender() {{
+          var base = parseFloat(dSlider.value);
+          var rate = parseFloat(rSlider.value);
+          var extraFt = rainAddFt(rate);
+          var w = base + extraFt;
+          var atDefault = (Math.abs(base - defaultWater) < 0.005
+                           && rate < 0.001);
+          dLabel.textContent = base.toFixed(2) + ' ft NAVD88'
+            + (Math.abs(base - defaultWater) < 0.005 ? ' (current forecast)' : '');
+          rLabel.innerHTML = rate.toFixed(2) + ' in/hr \\u2192 +'
+            + (extraFt * 12).toFixed(1) + '\\u2033';
           BarnacleMap.render({{
             canvas: canvas,
             points: window.barnaclePoints,
             waterNavd88: w,
             baseMapUrl: {json.dumps(base_map_url)},
-            title: 'Predicted water level — ' + w.toFixed(2) + ' ft NAVD88'
-              + (Math.abs(w - defaultWater) < 0.005 ? '' : '  (exploration)')
+            title: 'Water level — ' + w.toFixed(2) + ' ft NAVD88'
+              + (rate > 0.001 ? ' (incl. +' + (extraFt * 12).toFixed(1)
+                                 + '\\u2033 extra rain)' : '')
+              + (atDefault ? '' : '  (exploration)')
           }});
         }}
-        slider.addEventListener('input', function() {{
-          rerender(parseFloat(slider.value));
+        dSlider.addEventListener('input', rerender);
+        rSlider.addEventListener('input', rerender);
+        dBtn.addEventListener('click', function() {{
+          dSlider.value = String(defaultWater);
+          rerender();
         }});
-        btn.addEventListener('click', function() {{
-          slider.value = String(defaultWater);
-          rerender(defaultWater);
+        rBtn.addEventListener('click', function() {{
+          rSlider.value = '0';
+          rerender();
         }});
       }})();
 """
