@@ -35,6 +35,15 @@
   // wouldn't otherwise let the rest of the gradient breathe.
   var MAX_DEPTH_FT = 2.0;
 
+  // Post-render Gaussian blur applied to the overlay layer only (NOT
+  // the base map). A light touch — just enough to soften the
+  // triangle-edge "spoke" creases and the angular flood boundary so
+  // the overlay reads more like water and less like a faceted mesh.
+  // User-evaluated 2026-05-19: radius 7 (at the base image's native
+  // ~1966 px width) was the sweet spot — 12+ started looking mushy.
+  // Set to 0 to disable.
+  var OVERLAY_BLUR_PX = 7;
+
   // matplotlib Blues colormap, sampled. Each row [r, g, b]; alpha is
   // applied separately based on normalized depth.
   var BLUES = [
@@ -105,7 +114,12 @@
       var ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0);
 
-      var imageData = ctx.getImageData(0, 0, w, h);
+      // Render the depth overlay into its OWN transparent buffer
+      // (not composited onto the base yet). This lets us blur the
+      // overlay layer in isolation before compositing — the base map
+      // stays crisp. `data` is RGBA, all-zero (fully transparent) to
+      // start.
+      var imageData = ctx.createImageData(w, h);
       var data = imageData.data;
 
       // EE — perf. Pre-compute a 256-entry (r, g, b, alpha) lookup
@@ -200,16 +214,40 @@
             var t = depthFt / MAX_DEPTH_FT;
             if (t > 1) t = 1;
             var li = (t * (LUT_SIZE - 1)) | 0;  // bitwise OR for fast trunc
-            var alpha = lutA[li];
-            var inv = 1 - alpha;
             var idx = (y * w + x) * 4;
-            data[idx]     = data[idx]     * inv + lutR[li] * alpha;
-            data[idx + 1] = data[idx + 1] * inv + lutG[li] * alpha;
-            data[idx + 2] = data[idx + 2] * inv + lutB[li] * alpha;
+            // Write the RAW overlay color + alpha into the separate
+            // buffer (no compositing here — that happens after blur).
+            data[idx]     = lutR[li];
+            data[idx + 1] = lutG[li];
+            data[idx + 2] = lutB[li];
+            data[idx + 3] = (lutA[li] * 255) | 0;
           }
         }
       }
-      ctx.putImageData(imageData, 0, 0);
+
+      // Composite the overlay onto the base map. When OVERLAY_BLUR_PX
+      // > 0, route the overlay through an offscreen canvas and draw it
+      // back with a Gaussian blur filter so the triangle-edge creases
+      // and angular flood boundary soften into something water-like.
+      // The base map (already drawn above) is untouched by the blur.
+      if (OVERLAY_BLUR_PX > 0) {
+        var off = document.createElement('canvas');
+        off.width = w;
+        off.height = h;
+        off.getContext('2d').putImageData(imageData, 0, 0);
+        ctx.save();
+        ctx.filter = 'blur(' + OVERLAY_BLUR_PX + 'px)';
+        ctx.drawImage(off, 0, 0);
+        ctx.restore();
+      } else {
+        // No blur — composite the overlay directly. putImageData
+        // would overwrite the base, so go through drawImage too.
+        var off0 = document.createElement('canvas');
+        off0.width = w;
+        off0.height = h;
+        off0.getContext('2d').putImageData(imageData, 0, 0);
+        ctx.drawImage(off0, 0, 0);
+      }
       if (title) drawTitle(ctx, title, w);
     });
   }
