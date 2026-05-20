@@ -38,8 +38,25 @@ DEFAULT_CSV = HERE / "map_points.csv"
 DEFAULT_IMG = REPO_ROOT / "docs" / "icons" / "map_raw.png"
 DEFAULT_OUT = REPO_ROOT / "docs" / "icons" / "map_annotated.png"
 
-LANDMARK_COLOR = "#1f6feb"   # blue
-EXTRA_COLOR    = "#d2444a"   # red
+LANDMARK_COLOR     = "#1f6feb"   # blue  — canonical model landmarks
+EXTRA_COLOR        = "#d2444a"   # red   — extra surveyed topography points
+APPROXIMATED_COLOR = "#e08a1e"   # amber — best-guess / approximated points
+
+
+def _category_color(cat):
+    """Dot color for a map point by category. Three categories:
+      landmark     — canonical project landmarks (blue)
+      extra        — additional SURVEYED topography points (red)
+      approximated — best-guess points the user placed to shape the
+                     heat-map surface (e.g. street-crown centerline,
+                     curb/sidewalk/lawn boundary lines). NOT surveyed —
+                     amber, so they're visually distinct from real data.
+    """
+    if cat == "landmark":
+        return LANDMARK_COLOR
+    if cat == "approximated":
+        return APPROXIMATED_COLOR
+    return EXTRA_COLOR
 
 
 def make_blue_alpha_cmap(n=256):
@@ -127,48 +144,40 @@ def main():
     draw_labels = (not heatmap_mode) or args.show_labels
     n_landmark = 0
     n_extra = 0
+    n_approx = 0
     n_skipped = 0
-    if draw_labels:
-        for r in rows:
-            try:
-                x = float(r["x"]); y = float(r["y"])
-            except (ValueError, KeyError, TypeError):
-                n_skipped += 1
-                continue
-            cat = r.get("category", "extra")
-            color = LANDMARK_COLOR if cat == "landmark" else EXTRA_COLOR
-            ax.plot(x, y, "o", color=color, markersize=6,
-                    markeredgecolor="white", markeredgewidth=1.5, zorder=10)
-            txt = ax.annotate(
-                r.get("value", "?"), (x, y), color=color, fontsize=11,
-                fontweight="bold", xytext=(8, -4),
-                textcoords="offset points", zorder=11,
-            )
-            txt.set_path_effects(
-                [PathEffects.withStroke(linewidth=2.5, foreground="white")]
-            )
-            if cat == "landmark":
-                n_landmark += 1
-            else:
-                n_extra += 1
-    else:
-        # Still count for the summary line, but don't render
-        for r in rows:
-            try:
-                float(r["x"]); float(r["y"])
-            except (ValueError, KeyError, TypeError):
-                n_skipped += 1
-                continue
-            cat = r.get("category", "extra")
-            if cat == "landmark":
-                n_landmark += 1
-            else:
-                n_extra += 1
+    for r in rows:
+        try:
+            x = float(r["x"]); y = float(r["y"])
+        except (ValueError, KeyError, TypeError):
+            n_skipped += 1
+            continue
+        cat = r.get("category", "extra")
+        if cat == "landmark":
+            n_landmark += 1
+        elif cat == "approximated":
+            n_approx += 1
+        else:
+            n_extra += 1
+        if not draw_labels:
+            continue
+        color = _category_color(cat)
+        ax.plot(x, y, "o", color=color, markersize=6,
+                markeredgecolor="white", markeredgewidth=1.5, zorder=10)
+        txt = ax.annotate(
+            r.get("value", "?"), (x, y), color=color, fontsize=11,
+            fontweight="bold", xytext=(8, -4),
+            textcoords="offset points", zorder=11,
+        )
+        txt.set_path_effects(
+            [PathEffects.withStroke(linewidth=2.5, foreground="white")]
+        )
 
     plt.savefig(args.out, bbox_inches="tight", pad_inches=0, dpi=args.dpi)
     plt.close(fig)
     print(f"Wrote {args.out}")
-    print(f"  {n_landmark} landmarks (blue) + {n_extra} extras (red); "
+    print(f"  {n_landmark} landmarks (blue) + {n_extra} extras (red) + "
+          f"{n_approx} approximated (amber); "
           f"{n_skipped} rows skipped (no coords yet)"
           + ("" if draw_labels else " — labels HIDDEN (heat-map mode)"))
     if args.water_level is not None:

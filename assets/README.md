@@ -28,11 +28,33 @@ extra_corner_1,4.20,extra,234.5,567.8
 - `label`: machine-readable identifier (snake_case)
 - `value`: human-readable label that appears on the map (typically the
   NAVD88 elevation as a string, e.g. `"3.60"`)
-- `category`: `landmark` (one of the 9 canonical model landmarks —
-  rendered in blue) or `extra` (additional topography / spot height —
-  rendered in red)
+- `category`: one of three —
+  - `landmark` — a canonical project landmark (rendered **blue**).
+    Limited to the model's exclusive landmarks.
+  - `extra` — an additional **surveyed** topography point / spot
+    height (rendered **red**). A real measured elevation.
+  - `approximated` — a **best-guess** point placed to shape the
+    heat-map surface (rendered **amber**). NOT a real measurement —
+    e.g. points along a street's crowned centerline (middle higher
+    than the sides), or boundary lines between street / sidewalk /
+    lawn / house where you can infer a height from nearby known
+    points. The amber color keeps these visually distinct from real
+    survey data, so nobody mistakes a guess for a measurement.
 - `x`, `y`: pixel coordinates in `map_raw.png` (top-left origin,
   matplotlib convention). Decimal pixels fine.
+
+**Why `approximated` exists.** The heat-map's flood surface is a
+Delaunay triangulation that linearly interpolates elevation between
+known points. Real terrain has non-linear structure the triangulation
+can't infer on its own — streets are crowned, sidewalks sit above the
+adjacent street, there's a step up at each curb. The way to encode
+that knowledge is to *add points* that capture it: a few `approximated`
+points along the road centerline at a best-guess slightly-higher
+elevation, and the triangulation then produces the crown because the
+data says so. This is far simpler than any geometry-aware
+interpolation algorithm — and honest, because the points are labeled
+as guesses. All three categories feed the heat-map equally; the
+category only affects the dot color on the base annotated map.
 
 The CSV is committed and pre-seeded with the 9 canonical landmarks
 (values matching `model/v0.6.md`). On first use, their x/y are empty —

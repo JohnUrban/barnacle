@@ -896,13 +896,30 @@ Same surge information the Borough's emergency management is looking at.
     numpy and archives the daily map to `docs/archive/YYYY-MM-DD-map.png`.
     Cold-lockout days skip the overlay cleanly.
 
+    **The `approximated` map-point category (added 2026-05-19).**
+    `map_points.csv` `category` now has a third value:
+    `landmark` / `extra` / `approximated`. `approximated` points are
+    best-guess elevations the user places to *shape* the heat-map
+    surface — street-crown centerlines, curb/sidewalk/lawn boundary
+    lines — where a height can be inferred from nearby known points
+    but wasn't surveyed. Rendered amber on the base map (vs blue
+    landmark / red surveyed-extra) so guesses are never mistaken for
+    measurements. All three categories feed the heat-map triangulation
+    equally. **This is the practical mechanism for most of the
+    polish items below** — rather than build geometry-aware
+    interpolation, the user encodes the domain knowledge as
+    approximated data points and the triangulation produces the
+    structure (crown, curb step) because the data now says so.
+
     **Known limitations / future polish:**
     - **Convex hull edges show as straight lines.** The triangulation
       stops at the outermost survey points, so the overlay's outer
       boundary is the convex hull of `map_points.csv` rather than
       following real topography. Mitigation: add explicit "high-and-
       dry" perimeter points where the road meets higher ground (lawns,
-      yards, property lines).
+      yards, property lines) — good `approximated`-category use case.
+      (The EE phantom-point fix smooths the boundary SHAPE; real
+      perimeter points constrain the flood EXTENT.)
     - **Triangulation doesn't respect barriers.** Water visually
       bridges across the user's house from the upstream grate to the
       neighbor on Central. In reality, the building blocks flow.
@@ -913,9 +930,12 @@ Same surge information the Borough's emergency management is looking at.
       Street is lower than sidewalk is lower than lawn, but the
       triangulation interpolates linearly across those breaks. The
       sidewalk-pair points the user surveyed help, but the smoothing
-      still understates the curb's containment effect. May need to
-      shift to a method that respects breaklines (e.g., constrained
-      Delaunay triangulation, or hand-drawn barrier polygons).
+      still understates the curb's containment effect. Primary
+      mitigation now: dense `approximated`-category points along the
+      curb / sidewalk / lawn boundary lines (the user volunteered to
+      place these). A constrained-Delaunay-with-breaklines approach is
+      the "proper" fix but heavy — approximated points get ~90% of
+      the benefit for ~10% of the work.
     - **Colormap saturates at 2 ft depth.** A 6" event and a 2 ft
       event look different; a 2 ft event and a 6 ft event look the
       same. Intentional to keep small floods from looking dramatic,

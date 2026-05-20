@@ -259,7 +259,12 @@ def main():
             if not label:
                 continue
             value = input("  Value (e.g., 4.20): ").strip()
-            cat = input("  Category [extra]: ").strip() or "extra"
+            # Category: landmark (canonical model point), extra (surveyed
+            # topography), approximated (best-guess point placed to shape
+            # the heat-map — e.g. street-crown centerline, curb/sidewalk/
+            # lawn boundaries). Default 'extra'.
+            cat = input("  Category — extra / approximated / landmark "
+                        "[extra]: ").strip() or "extra"
             new_row = {"label": label, "value": value, "category": cat,
                        "x": str(x), "y": str(y)}
             rows.append(new_row)
