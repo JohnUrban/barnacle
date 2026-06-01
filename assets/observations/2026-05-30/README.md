@@ -27,11 +27,16 @@ follow-up event with measurements) lives in a separate sibling folder.
 - **NOAA Sandy Hook observed peak: 6.538 ft MLLW at 20:36 ET** (vs
   predicted 5.491 at 20:07; **surge +1.05 ft, time delay +29 min** — a
   meaningful event).
-- **Final logged barnacle forecast** (T−11.6 h, made 2026-05-30 12:30
-  UTC; *hourly cron stopped logging this tide after that for a
-  separate reason*): SH peak 5.821, water 3.401 NAVD88 → "dry" regime.
-  Actual SH peak 6.538 → **under-predicted by 0.72 ft**; the regime
-  should have been "street" at minimum.
+- **Final logged barnacle forecast** (T−4.57 h, made 2026-05-30 19:32
+  UTC = 15:32 ET): SH peak 5.844, water 3.424 NAVD88 → "dry" regime.
+  Actual SH peak 6.538 → **under-predicted by 0.69 ft even at T−4.6 h**;
+  the regime should have been "street" at minimum. (CORRECTION: an
+  earlier draft of this README claimed the hourly bot stopped logging
+  this tide after T−11.6 h. That was wrong — I had a faulty grep. The
+  bot kept logging hourly through T−4.6 h; the under-prediction is a
+  real model/surge-persistence accuracy concern, not a workflow gap.
+  See the "Hourly bot cadence" note below for the actual cadence
+  finding.)
 - **Observation: post-peak drive-by, ~21:00–21:30 ET (1–1.5 h after
   peak)**, no photos. User confirmed qualitatively:
   - water *surfaced over* grate_SE (i.e. the SE grate top, 3.60 NAVD88,
@@ -51,14 +56,30 @@ follow-up event with measurements) lives in a separate sibling folder.
   predict over-grate, under-curb). The discriminating events remain
   the 2026-05-18 set.
 
-### Hourly forecast gap — flagged for separate investigation
+### Hourly bot cadence — investigation result
 
-The bot logged predictions for the 20:07 tide up through 2026-05-30
-12:30 UTC (= 08:30 ET) and then stopped — the last logged prediction
-was T−11.6 h. No runs through the afternoon/evening of 5/30 appear in
-`data/predictions_log.csv`. This is a workflow/scheduler issue, not a
-model issue, and is unrelated to the calibration data above. (Track in
-HANDOFF as an ops gap to look at.)
+Investigated 2026-05-31. **The bot is not failing — it just isn't
+actually hourly.** GitHub Actions throttles the `'0 * * * *'`
+schedule:
+
+- Over the last 7 days, **120 runs in 192 hour-slots = 62% coverage**.
+- UTC hours that NEVER ran in those 7 days: **02, 04, 06**. Hours 08,
+  10, 11, 12, 14, 16 ran inconsistently. The other hours (00, 01, 03,
+  05, 07, 09, 13, 15, 17–23) are reliable.
+- 51 normal-jitter gaps (60–90 min), 74 single-skip gaps (90–180 min),
+  2 multi-skip gaps (>180 min, both ~4 h around 09–13 UTC).
+- This is consistent with GitHub Actions free-tier load-shedding;
+  scheduled cron is best-effort, not guaranteed.
+
+So my earlier "the bot stopped logging this tide after T−11.6 h" was
+just a misread of the log — the bot actually kept logging through
+T−4.57 h on the 5/30 PM tide. The under-prediction at T−4.57 h
+(SH 5.844 vs actual 6.538) is a **real surge-persistence accuracy
+issue** at moderate short-term lead times, not a workflow gap.
+
+Operational implication: convergence charts have ~1.5–2 h effective
+resolution, not 1 h. Worth noting in HANDOFF as a known limitation
+rather than a fix-it-now bug.
 
 ---
 

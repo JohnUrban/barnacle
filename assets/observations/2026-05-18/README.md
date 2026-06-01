@@ -7,6 +7,11 @@ everything the user observed verbally plus the inferences Claude drew
 from those observations. Photos accompanying the observations live in
 the subdirectories listed below.
 
+For independent tape-reading verification of any of the tape-measure
+photos in this folder, see the high-res tape reference at
+[`../0-measuring-tape/`](../0-measuring-tape/README.md) — covers the
+digit-after-line convention and common photo-reading failure modes.
+
 ---
 
 ## TL;DR

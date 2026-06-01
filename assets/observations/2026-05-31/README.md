@@ -56,8 +56,12 @@ min before the earliest photo; bay was at a post-peak plateau, dropping
   past the digit, on the side away from the start of the tape.
 - 2D photo geometry + camera angle distort tape readings; precise
   reading from photo alone is hard without being there.
-- TODO (future session): take a high-resolution reference photo of
-  ~12″ of the tape so the precise number/line mapping is on file.
+- **High-resolution tape reference now lives in
+  [`../0-measuring-tape/`](../0-measuring-tape/README.md)** — two
+  straight-on photos (0–13 in full view and 0–4 in close-up) plus a
+  README covering subdivision lines, color cues, and common
+  photo-reading failure modes. Closes the TODO that was previously
+  here.
 
 ## Per-grate water-level estimate (cross-check)
 
