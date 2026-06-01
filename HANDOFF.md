@@ -70,7 +70,8 @@ across four labeled flood events the user observed firsthand.
 | High-res measuring-tape reference photos | ✅ Added 2026-05-31. Two straight-on photos + README in `assets/observations/0-measuring-tape/` covering the digit-after-line convention, subdivision marks, color cues, and common photo-reading failure modes. Use when independently verifying tape readings from spot-check photos. |
 | Hourly bot cadence — actually ~62%, not 100% | ⚠️ Documented 2026-05-31 (see `assets/observations/2026-05-30/README.md` cadence section). GitHub Actions throttles the `'0 * * * *'` schedule. Last 7 days: 120/192 hour-slots filled. UTC hours 02/04/06 never run; 08/10/11/12/14/16 partial. No fix — this is GHA free-tier load shedding behavior. Convergence charts have ~1.5-2 h effective resolution, not 1 h. |
 | Web platform pivot — sub-daily updates, interactive site | ✅ Foundation shipped 2026-05-19. See section 9b. Workflow hourly; per-tide deep-link pages; client-side heat-map renderer; convergence + oscillation + scrubber charts; severity-colored rollup with 24/48/72h toggle; rain-toggle map; refined confidence with regime band; 1-2 month astronomical look-ahead; accuracy scatter + binary classifier matrix. Master predictions log at `data/predictions_log.csv` accumulating since 2026-05-19. |
-| v0.7 model spec promotion (5 grates + storm-surge-dependent enhancement + corrected elevations) | ⏸ Queued. (a) Fix grate_NE elevation 3.91→3.80 (survey). (b) Add grate_NW (3.80), grate_SW (~3.55-3.58), grate_bay_ave_upstream (~3.76). (c) Add corner_NE (3.91), corner_SE (3.64), corner_SW (3.64), rename `intersection`→`intersection_highpoint` (4.54). (d) Rename existing corner_grate→grate_NE, lowest_sentinel_grate→grate_SE. (e) Replace constant +0.40 enhancement with storm-surge-dependent function — current hypothesis: +0.40 only develops during meaningful surge (likely tied to wind/pressure pushing surge into the bay), ~0 for normal tides. Needs ≥2 more events to firm up the surge-dependent form. |
+| v0.7 model spec promotion (shippable now) | 🟡 Spec ready 2026-05-31; awaiting implementation approval. Bundles: corrected grate elevations + 5-grate set (NE/NW=3.80; SE=3.60; SW=3.52 refined from 5/31 cross-fit; upstream≈3.76); new corner landmarks (corner_NE=3.91; corner_SE/SW=3.64); rename `corner_grate`→`grate_NE`, `lowest_sentinel_grate`→`grate_SE`, `intersection`→`intersection_highpoint`. **Enhancement gets a piecewise heuristic** (0 at SH≤6.6, ramps linearly to +0.40 at SH≥7.0) calibrated against 5/18+5/31 (both pin enhancement≈−0.13 at moderate SH) while preserving the +0.40 safety bias at high SH where we lack data. Single-water-level math (drops per-landmark rain shedding). Negative-surge clip removed. Rain window before-biased [−90 min, +15 min]. See section 9c for the full spec. |
+| v0.8 model spec promotion (data-blocked, deferred) | ⏸ Queued. Holds the two items v0.7 can't responsibly land: (a) fitted form of the surge-dependent enhancement (needs a high-surge event SH≥7.0 to fit); (b) rain-term recalibration (needs a second rain-flood event — Oct 30 2025 is the only anchor). Open bucket — anything else added between now and shipment lands here. See section 9d. |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
 | v0.6 model-spec promotion + 9th landmark added | ✅ Live (2026-05-18). model/v0.6.md canonical; v0.5 archived. New lowest sentinel at 3.60 NAVD88 (SH 6.02). |
@@ -1216,7 +1217,9 @@ The single-water-level math + per-landmark rain shedding removal
 happens as part of the v0.7 model spec promotion. See dedicated
 section **9c** below for the consolidated v0.7 roadmap.
 
-- Status: queued — **DO NOT START YET** (see 9c).
+- Status: spec ready 2026-05-31, awaiting user once-over before
+  implementation. Section 9c has the v0.7 spec; the data-blocked
+  portions moved to section 9d (v0.8).
 - Forces alignment with: 9b.5 (rain map), 9b.10 (storage).
 
 ### 9b.10 — Storage refactor: no per-update binary archives
@@ -1258,28 +1261,38 @@ just for maps — not viable. Fix:
 
 ---
 
-## 9c. v0.7 model spec roadmap (DO NOT START YET)
+## 9c. v0.7 model spec (shippable now)
 
-Consolidated view of everything queued for the v0.7 model promotion.
+Consolidated view of everything bundled into the v0.7 model promotion.
 Per HANDOFF section 12's versioning rule, elevation changes + formula
-changes warrant a version bump — v0.7 is the bundle of all five items
-below.
+changes warrant a version bump.
 
-**DO NOT START YET.** Two reasons to bundle rather than land
-piecewise:
+**Status (2026-05-31): spec ready, awaiting implementation approval.**
+The original "DO NOT START YET" gate was the surge-dependent
+enhancement hypothesis (need ≥2 validating events). That gate is now
+**met** — 2026-05-18 (SH 6.58) and 2026-05-31 (SH 6.17) both pin
+enhancement at ~0 to −0.13 ft. We can ship v0.7 with a piecewise
+heuristic (9c.3) and defer the fitted form to v0.8 once we have a
+high-surge event.
 
-1. The **storm-surge enhancement hypothesis** (9c.3) needs at least
-   one more validating event before freezing v0.7's enhancement
-   function. A single 2026-05-18 observation isn't enough.
-2. Several **9b.X items depend on v0.7's water-level architecture**
-   (9b.5, 9b.9 explicitly; 9b.4 indirectly). Bundling avoids two
-   migrations.
+Items the v0.7 bundle includes: **9c.1–9c.4, 9c.6, 9c.7**. The old
+9c.5 (rain-term recalibration) moved to **9d.2** because we still
+only have one rain-flood anchor event (Oct 30 2025), and a one-point
+fit isn't a fit.
 
-### 9c.1 — Corrected grate elevations (survey-derived)
+### 9c.1 — Corrected grate elevations (survey-derived + cross-fit)
 
-Per `model/HLND2303-Road-Reconstruction-Supplement-Set-2024.05.06.pdf`:
+Per `model/HLND2303-Road-Reconstruction-Supplement-Set-2024.05.06.pdf`
+and 2026-05-18 + 2026-05-31 cross-fit measurements:
 
-- `grate_NE` and `grate_NW` = **3.80 NAVD88** (was 3.91 in v0.6)
+- `grate_NE` and `grate_NW` = **3.80 NAVD88** (was 3.91 in v0.6; survey)
+- `grate_SE` = **3.60 NAVD88** (survey, unchanged)
+- `grate_SW` = **3.52 NAVD88** (refined 2026-05-31; previously
+  placeholder 3.55–3.58. Three independent measurements across two
+  events agree to within 0.05 ft — see
+  `assets/observations/2026-05-31/README.md` cross-fit table)
+- `grate_bay_ave_upstream` ≈ **3.76 NAVD88** (uneven top 3.74–3.78;
+  inferred from 5/18, consistent with 5/31)
 - `corner_NE` = **3.91 NAVD88** — NEW landmark; the NE pavement corner,
   distinct from the grate
 - `corner_SE`, `corner_SW` = **3.64 NAVD88** — NEW landmarks
@@ -1294,29 +1307,44 @@ Five grates instead of two:
 | `grate_NE` | 3.80 | User's corner (was `corner_grate` in v0.6) |
 | `grate_NW` | 3.80 | Across Central, NEW |
 | `grate_SE` | 3.60 | Across Bay (was `lowest_sentinel_grate`) |
-| `grate_SW` | ~3.55-3.58 | Across Bay, diagonal; NEW; ~0.5" lower than SE |
+| `grate_SW` | **3.52** | Across Bay, diagonal; NEW; ~1.1" lower than SE (refined 5/31) |
 | `grate_bay_ave_upstream` | ~3.76 | East on Bay Ave, NEW; *the actual primary feeder* of the user's gutter |
 
-### 9c.3 — Storm-surge propagation enhancement
+### 9c.3 — Storm-surge enhancement: piecewise heuristic (v0.7 shippable form)
 
-Replace the constant +0.40 ft local enhancement with a function of
-surge magnitude.
+Replace the constant +0.40 ft local enhancement with a piecewise
+linear function of Sandy Hook peak (SH_peak_mllw):
 
-Working hypothesis (one validating event: 2026-05-18; non-validating):
+```
+enhancement_ft(sh_peak) =
+    0.00                                  if sh_peak <= 6.6
+    0.40 * (sh_peak - 6.6) / (7.0 - 6.6)  if 6.6 < sh_peak < 7.0
+    0.40                                  if sh_peak >= 7.0
+```
 
-> +0.40 ft is a storm-surge propagation effect, not a constant.
-> Storm events with meaningful surge (Apr 18: +1.30 ft; Oct 30:
-> +2.90 ft) amplify water at 342 Bay relative to Sandy Hook.
-> Normal tides without meaningful surge track Sandy Hook directly
-> or slightly lag.
+**Calibration evidence (2 events at moderate SH)**:
 
-Form to fit: probably `enhancement = f(surge_ft)`, monotone, ~0 at
-surge=0, saturating at ~+0.4 around surge ~+2 ft. Linear or piecewise
-linear is fine pending more events.
+| Event | SH_peak | n grates | Implied enh | Notes |
+|---|---:|:-:|---:|---|
+| 2026-05-18 22:12 | 6.58 | 5 | −0.01 to −0.13 | corrected NE elev |
+| 2026-05-31 20:42 | 6.17 | 4 | **−0.13** (mean, σ=0.02) | tight cross-fit |
 
-**Validation gate**: next storm event with meaningful surge. If
-enhancement re-emerges at ~+0.40 → hypothesis confirmed. If
-enhancement stays ~0 → look for a different driver.
+Both events sit below the 6.6 ft pivot in the heuristic above, so the
+heuristic returns 0 — matching the data within measurement noise.
+
+**Why piecewise and not just 0**: at high SH we have ZERO 342 Bay
+spot-check data. The four labeled events that drove the original +0.40
+fit are at higher SH (Apr 17: 6.91, Apr 18: 6.39+1.30 surge, Oct 30:
+7.57, Dec 19: ~7.0). Dropping enhancement to 0 across the board would
+under-predict at the high end where we have no fresh data — that's a
+false-negative risk in the unsafe direction. User preference (5/31):
+*"our errors should err in the over-sensitive direction. False
+positives are better than false negatives here."* The piecewise form
+honors that: matches new data where we have it, preserves the safety
+bias where we don't.
+
+**The fitted form (the original 9c.3 goal) moves to 9d.1** once we
+get a high-surge spot-check event to calibrate against.
 
 ### 9c.4 — Single-water-level math (replacing per-landmark depth math)
 
@@ -1344,20 +1372,18 @@ connected water body.
 (Apr 17, Apr 18, Oct 30, Dec 19) and the 2026-05-18 spot-check within
 their observed uncertainties.
 
-### 9c.5 — Rain term as water-level addition (recalibrated)
+### 9c.5 — *moved to 9d.2*
 
-The v0.6 `rain_add = 8 * tanh(rate)` (inches) becomes
-`dZ_rain = something(rate)` (ft) applied as a uniform water-level
-rise. Recalibrate against Oct 30 (SH 7.57 + 1.45 in/hr → ~12" at
-curb observed).
+The old 9c.5 "rain term as water-level addition (recalibrated)"
+content moves to **section 9d.2** because it depends on a second
+rain-flood event we don't have yet. v0.7 keeps the v0.6 rain term
+form unchanged (`rain_add = 8 * tanh(rate)`) so we don't shift
+calibration on something we can't validate. The per-landmark rain
+shedding *constants* in v0.6 ARE removed in v0.7 (that's 9c.4 —
+water-is-level math; the rain still adds, but now adds to one shared
+water level rather than to each landmark independently).
 
-Trade-off acknowledgment: the simple uniform-rise model slightly
-overstates depth at higher points (lawn, intersection) compared to
-v0.6's shedding-based predictions. User accepts this in exchange for
-a coherent water-is-level architecture (required for the heat-map to
-agree with the depth predictions per 9c.4 + 9b.5).
-
-### 9c.6 — Review the negative-surge clip (`max(0.0, surge)`)
+### 9c.6 — Drop the negative-surge clip (`max(0.0, surge)`)
 
 `build_forecast` currently does:
 
@@ -1382,7 +1408,7 @@ embed the clip. On calm days with slightly negative surge (like
 today, surge ≈ -0.04 ft), the chart looks flat because the
 clipping pins forecast_peak to the astronomical value.
 
-v0.7 candidate: drop the clip. Predict actual surge. Accept that
+v0.7 decision: drop the clip. Predict actual surge. Accept that
 some predictions will be lower than astronomical. Pair with the
 storm-surge enhancement work in 9c.3 (which also revisits surge
 handling).
@@ -1407,7 +1433,7 @@ pick a purely post-peak bucket as the "peak rate" and overstate the
 rain contribution to that tide. For any timepoint of interest (high
 tide or otherwise), only rain *before* that point should count.
 
-**v0.7 change — before-biased window.** Replace the symmetric ±90 min
+**v0.7 decision — before-biased window.** Replace the symmetric ±90 min
 window with `[timepoint − 90 min, timepoint + 15 min]`. The small
 forward tolerance is deliberate: our tide-time accuracy is not exact,
 and observed flooding has lagged the predicted high-tide time (e.g.
@@ -1422,12 +1448,78 @@ covers ~20 min after it. The before-biased window keeps such
 straddling buckets and only drops the buckets that are entirely
 post-peak — which is the actual correction wanted.
 
-**Open question — is 90 min of window enough?** (User, 2026-05-20,
-explicitly flagged as speculation, recorded so v0.7 calibration can
-test it.) The Oct 30 2025 event suggests a ~90 min window may capture
-enough of the relevant rainfall. But the *same* rain depth can produce
-very different flooding depending on **antecedent conditions**, and it
-is genuinely unclear which direction dominates:
+**Open question — is 90 min of window enough, and should we be
+tracking accumulation vs. peak rate?** This open question moves to
+**9d.3** because it needs labeled rain events to answer and travels
+with the rain-term recalibration in 9d.2. Summary: it's not clear
+whether a fixed window captures enough rainfall, and the same rain
+depth produces different flooding depending on antecedent moisture
+(dry ground vs. already-wet ground). See 9d.3 for the full
+discussion.
+
+---
+
+## 9d. v0.8 model spec (data-blocked / deferred)
+
+Items the v0.7 spec (section 9c) cannot responsibly land yet because
+they depend on event data we don't have. These travel together as the
+v0.8 bundle. Open bucket — anything else that comes up between now
+and v0.8 ship can land here.
+
+**Release gate for v0.8**: enough new event data to fit 9d.1 and 9d.2
+properly (specifically: at least one high-surge spot-check event with
+SH ≥ 7.0 for 9d.1, and at least one more rain-flood event for 9d.2).
+Could be weeks or months — we get those a few times a year.
+
+### 9d.1 — Storm-surge enhancement: fitted form
+
+**Goal**: replace the v0.7 piecewise heuristic (9c.3) with a fitted
+functional form, e.g. `enhancement = f(surge_ft)` with the breakpoint
+and the high-end value both pinned by data.
+
+**Hypothesis (still standing)**: +0.40 ft is a storm-surge propagation
+effect, not a constant. Events with meaningful surge (Apr 18: +1.30 ft;
+Oct 30: +2.90 ft) amplify water at 342 Bay relative to Sandy Hook.
+Normal tides without meaningful surge track Sandy Hook directly or
+slightly lag (confirmed: 2026-05-18, 2026-05-31, both essentially
+zero enhancement at SH ≈ 6.15-6.58).
+
+**Data needed**: at least one high-surge spot-check event (SH ≥ 7.0
+ideally; SH ≥ 6.8 acceptable) measured at 342 Bay with multiple
+grates so we can cross-fit water level and confirm whether
+enhancement does in fact recover toward +0.40.
+
+**Validation**: if enhancement re-emerges at ~+0.40 → hypothesis
+confirmed, fit the breakpoint. If enhancement stays ~0 → drop the
++0.40 entirely (the heuristic is wrong; we should accept lower
+high-end predictions); look for a different physical driver.
+
+### 9d.2 — Rain term as water-level addition (recalibrated)
+
+The v0.6 `rain_add = 8 * tanh(rate)` (inches per landmark) becomes
+`dZ_rain = something(rate)` (ft) applied as a uniform water-level
+rise. Recalibrate against the rain-flood corpus.
+
+**Why this is in v0.8, not v0.7**: only one rain-flood anchor event
+exists in our labeled data (2025-10-30: SH 7.57 + 1.45 in/hr → ~12"
+at curb observed). A one-point fit isn't a fit. The water-is-level
+*architecture* lands in v0.7 (9c.4) and the per-landmark shedding
+constants are removed — but the rain-term magnitude formula stays at
+v0.6 form so we don't shift calibration on an unsupported guess.
+
+**Data needed**: at least one more rain-flood event at 342 Bay with
+the rain rate, the SH peak, and observed depths at multiple grates.
+
+**Pairs with 9d.3** — the rain term and the window definition should
+probably be re-fit together.
+
+### 9d.3 — Antecedent-moisture handling + accumulation vs. peak rate
+
+**Open question (user, 2026-05-20)**: is a 90-minute window enough
+rainfall accumulation? The Oct 30 2025 event suggests a ~90 min
+window may suffice, but the *same* rain depth can produce very
+different flooding depending on **antecedent conditions**, and it's
+genuinely unclear which direction dominates:
 
 - A flash downpour onto otherwise-dry ground after 24 h of no rain:
   dry soil/pavement may not absorb water fast enough, so runoff and
@@ -1437,13 +1529,27 @@ is genuinely unclear which direction dominates:
   could also be *worse*.
 
 So a short fixed window may miss the antecedent-moisture signal
-entirely. v0.7 should at least consider: (a) whether the rain term
-should be driven by *accumulated* rain over the window rather than the
-peak hourly *rate*, and (b) whether a longer "antecedent" lookback
-(e.g. prior 24 h cumulative) belongs as a separate term feeding a
-soil-saturation / infiltration factor. No decision yet — needs data
-from labeled rain events. Pairs with the rain-term recalibration in
-9c.5.
+entirely. v0.8 should at least consider: (a) whether the rain term
+should be driven by *accumulated* rain over the window rather than
+the peak hourly *rate*, and (b) whether a longer "antecedent"
+lookback (e.g. prior 24 h cumulative) belongs as a separate term
+feeding a soil-saturation / infiltration factor.
+
+**Data needed**: multiple rain-flood events at 342 Bay spanning a
+range of antecedent conditions. We won't be able to disentangle (a)
+vs. (b) without a few events.
+
+### 9d.X — Open bucket
+
+This section can grow between now and v0.8 ship. Anything new that
+surfaces (new landmark category, new term, a feature for which the
+design isn't settled, a behavior we'd like to add but don't have data
+for) lands here as a numbered subsection. When v0.8 has enough scope
++ enough new event data to be worth shipping, we promote.
+
+Candidates that may end up here as the project evolves:
+
+- *(none yet — placeholder)*
 
 ---
 
@@ -1588,10 +1694,15 @@ For when you come back to a fresh chat with this document:
   and map visual. Don't store rendered binaries (PNGs); store the
   number and re-render on demand (client-side for the website, via
   `render_map.py` for the email). See section 9b.10.
-- **v0.7 is bundled work — DO NOT START YET.** Section 9c consolidates
-  the five v0.7 changes. The storm-surge enhancement hypothesis (9c.3)
-  needs a validating event first, and the other items want to ship
-  bundled to avoid two migrations.
+- **v0.7 / v0.8 are split (2026-05-31).** Section 9c is v0.7 — six
+  items, all shippable now: corrected grate elevations + 5-grate set
+  (9c.1, 9c.2), surge-dependent enhancement as a piecewise heuristic
+  (9c.3), single-water-level math (9c.4), drop negative-surge clip
+  (9c.6), before-biased rain window (9c.7). Section 9d is v0.8 — the
+  two items v0.7 can't responsibly land: fitted enhancement form
+  (9d.1, needs a high-surge spot-check event), rain-term
+  recalibration (9d.2, needs a second rain-flood event). v0.8 is an
+  open bucket for anything else that surfaces between now and ship.
 
 ---
 
@@ -1712,7 +1823,9 @@ Read these for context if needed:
 - `assets/observations/2026-05-18/README.md` — first spot-check
   event surfaced the **storm-surge enhancement hypothesis**: the
   +0.40 ft enhancement is probably a storm-surge propagation effect,
-  not a constant. Validation gates v0.7 (see 9c.3).
+  not a constant. v0.7 9c.3 ships a piecewise heuristic from current
+  data; v0.8 9d.1 will fit a proper functional form once we have a
+  high-surge spot-check event.
 - `history/reports/cold_weather_retrospective.md` — full
   19-candidate analysis, web evidence, decision, and the
   wind-direction refinement hypothesis (NNE/N onshore winds
@@ -1721,7 +1834,7 @@ Read these for context if needed:
 - `dev/ideas/20260519.txt` — user's brainstorm (Batch 1 + 2)
   that anchored everything in this session.
 
-**Known v0.6 bugs deferred to v0.7 (DO NOT START v0.7 YET):**
+**Known v0.6 bugs deferred to v0.7 (spec ready 2026-05-31; await user approval before coding):**
 - `corner_grate` elevation: 3.91 → 3.80 (survey-confirmed).
 - `predict_landmark_depths()`'s per-landmark rain shedding
   (intersection -2", lawn/porch -4") disagrees with the
@@ -1773,16 +1886,18 @@ Read these for context if needed:
    labeled_observations rows; lead-time needs past tides).
 2. **Self-calibrated confidence ± uncertainty** activates once
    the accuracy log has ≥3 rows per confidence band.
-3. **Next storm event with meaningful surge** — test the
-   storm-surge enhancement hypothesis (9c.3). Validation gates
-   the v0.7 model promotion.
+3. **Next storm event with meaningful surge** — discriminates
+   whether the +0.40 enhancement re-emerges at high SH. Gates the
+   v0.8 fitted enhancement form (9d.1). v0.7 ships a piecewise
+   heuristic (9c.3) that doesn't wait on this event.
 4. **Cold-conditions data collection**: every cold-conditions-met
    event observed at 342 Bay going forward becomes a new
    validation data point for the cold-lockout hypothesis.
-5. **v0.7 model promotion** when the surge hypothesis lands —
-   section **9c** consolidates everything in one place. **DO
-   NOT START YET.**
+5. **v0.7 model promotion** — shippable now (section 9c), pending
+   user once-over of the spec. Once shipped, v0.8 (section 9d)
+   carries the data-blocked items.
 
-v0.7 is queued but not started. Don't start it yet.
+v0.7 spec is ready for review. Don't start coding it yet — wait for
+explicit user approval.
 
 End of handoff.
