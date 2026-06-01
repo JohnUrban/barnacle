@@ -681,6 +681,23 @@ section.low-tides h2 {
     color: #d97706;
 }
 
+/* Recent-past tide rows — peak is up to PAST_TIDE_VISIBILITY_HOURS in
+   the past. Still shown in the rollup (it's still relevant for a
+   couple hours post-peak: you can check whether it flooded before
+   you head home) but visually de-emphasized so the eye lands on the
+   upcoming tides first. */
+.tide-table tr.tide-row.past-tide {
+    opacity: 0.65;
+    font-style: italic;
+}
+.tide-table tr.tide-row.past-tide td:first-child::after {
+    content: " (past)";
+    color: #6b7280;
+    font-size: 0.85em;
+    font-style: normal;
+    margin-left: 0.3em;
+}
+
 /* Per-tide deep links from the rollup table — make them obviously
    clickable so the per-tide pages are discoverable. */
 .tide-table .tide-row a {

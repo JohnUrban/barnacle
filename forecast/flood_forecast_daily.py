@@ -116,15 +116,26 @@ def _get(url, params=None, headers=None):
 # lead-time band (24/48/72h).
 ROLLUP_WINDOW_HOURS = 72
 
+# Recent-past tide visibility: keep a high tide visible in the rollup
+# table for this many hours after its predicted peak. Rationale (user,
+# 2026-05-31): "if I look at 9:44 PM, for example, and see it flooded,
+# it would be better than finding out when I got home a couple hours
+# later." Past tides remain visually distinct (`past-tide` class) and
+# are excluded from the worst-case headline + predictions log append
+# so we don't pollute downstream artifacts with already-happened tides.
+PAST_TIDE_VISIBILITY_HOURS = 2
+
 
 def fetch_tides_24h():
     """Returns dict with 'high' and 'low' lists of (time_str, value_mllw_ft)
-    for tides in the next ROLLUP_WINDOW_HOURS (currently 72h). The "24h"
-    in the name is retained for backwards-compat with the rest of the
-    code; the function now fetches a 72h window so the rollup table can
-    show 2-3 days ahead with a JS toggle (HANDOFF 9b.2 part 2). Uses
+    for tides in the recent past + future. The "24h" in the name is
+    retained for backwards-compat; the window is now
+    [-PAST_TIDE_VISIBILITY_HOURS, +ROLLUP_WINDOW_HOURS] so the rollup
+    can show very-recent past tides (still relevant for a few hours
+    post-peak) alongside upcoming ones (HANDOFF 9b.2 part 2). Uses
     NOAA's hilo product for exact tide times."""
     now = dt.datetime.now(dt.timezone.utc)
+    start = now - dt.timedelta(hours=PAST_TIDE_VISIBILITY_HOURS)
     end = now + dt.timedelta(hours=ROLLUP_WINDOW_HOURS)
     data = _get(
         "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
@@ -135,7 +146,7 @@ def fetch_tides_24h():
             "time_zone": "lst_ldt",
             "units": "english",
             "interval": "hilo",
-            "begin_date": now.strftime("%Y%m%d %H:%M"),
+            "begin_date": start.strftime("%Y%m%d %H:%M"),
             "end_date": end.strftime("%Y%m%d %H:%M"),
             "format": "json",
         },
@@ -481,6 +492,13 @@ def append_predictions_log(forecast):
 
     rows_to_write = []
     for t in forecast.get("all_tides", []) or []:
+        # Skip past tides (rollup now includes them for visibility, but
+        # appending them here would create duplicate-with-different-
+        # hours_until_peak rows in the log, polluting the convergence
+        # chart for that tide).
+        hfn = t.get("hours_from_now")
+        if hfn is not None and hfn < 0:
+            continue
         target_time = t.get("time") or ""
         sh_peak = t.get("forecast_peak_mllw")
         # Hours until peak (signed). Tide times are local lst_ldt
@@ -1278,8 +1296,17 @@ def build_forecast():
             "hours_from_now": hours_from_now,
         })
 
-    # Identify the worst-case high tide for headline / subject line
-    worst = max(all_tides, key=lambda t: t["forecast_peak_mllw"])
+    # Identify the worst-case high tide for headline / subject line.
+    # Exclude past tides (hours_from_now < 0): the headline is about
+    # what to watch out for, not what already happened. If the rollup
+    # contains only past tides (edge case — e.g. bot just resumed
+    # after a multi-hour gap), fall back to the full list so something
+    # still gets headlined.
+    upcoming_tides = [t for t in all_tides
+                      if (t.get("hours_from_now") is None
+                          or t["hours_from_now"] >= 0)]
+    worst = max(upcoming_tides or all_tides,
+                key=lambda t: t["forecast_peak_mllw"])
 
     forecast_for_context = {"peak_forecast_observed_mllw": worst["forecast_peak_mllw"]}
     seasonal_context = build_seasonal_context(forecast_for_context)
@@ -1590,13 +1617,22 @@ def _render_summary_html(forecast):
     return "".join(parts)
 
 
+def _upcoming_tides_only(forecast):
+    """all_tides minus any tide whose peak is already past (rollup includes
+    very-recent past tides for visibility; summary blocks like rain
+    timing should not — past-tide rain info is stale)."""
+    return [t for t in (forecast.get("all_tides") or [])
+            if (t.get("hours_from_now") is None
+                or t["hours_from_now"] >= 0)]
+
+
 def _rain_is_notable(forecast):
     """True if there's enough rain in the next 24 h to warrant a rain block.
     Threshold deliberately low (0.05 in cumulative) so even minor wet weather
     surfaces — these are the events where timing relative to tide matters."""
     return (forecast.get("cumulative_rain_24h_in") or 0) >= 0.05 or any(
         (t.get("peak_rain_in_hr") or 0) >= 0.05
-        for t in (forecast.get("all_tides") or [])
+        for t in _upcoming_tides_only(forecast)
     )
 
 
@@ -1608,7 +1644,7 @@ def _render_rain_timing_text(forecast):
     lines = ["Rain & tide timing:"]
     lines.append(f"  Cumulative next 24 h: {cum:.2f}\"")
     peak_t = forecast.get("peak_time_local")
-    for t in (forecast.get("all_tides") or []):
+    for t in _upcoming_tides_only(forecast):
         peak_rain = t.get("peak_rain_in_hr") or 0
         offset = t.get("peak_rain_offset_h")
         label = "★ peak tide" if t["time"] == peak_t else "lower high"
@@ -1635,7 +1671,7 @@ def _render_rain_timing_html(forecast):
     cum = forecast.get("cumulative_rain_24h_in") or 0
     peak_t = forecast.get("peak_time_local")
     rows = ""
-    for t in (forecast.get("all_tides") or []):
+    for t in _upcoming_tides_only(forecast):
         peak_rain = t.get("peak_rain_in_hr") or 0
         offset = t.get("peak_rain_offset_h")
         label = "★ peak tide" if t["time"] == peak_t else "lower high"
@@ -4598,10 +4634,14 @@ def render_html_page(forecast):
     for t in all_tides:
         td = t["depths_in"]
         is_worst = (t["time"] == peak_t)
+        hfn_row = t.get("hours_from_now")
+        is_past = hfn_row is not None and hfn_row < 0
         regime_class = f"regime-{td['regime']}"
         classes = ["tide-row", regime_class]
         if is_worst:
             classes.append("worst-tide")
+        if is_past:
+            classes.append("past-tide")
         row_class = f' class="{" ".join(classes)}"'
         hours = t.get("hours_from_now")
         data_attr = f' data-hours-from-now="{hours:.2f}"' if hours is not None else ""
@@ -4747,7 +4787,9 @@ def render_html_page(forecast):
        <b>Rel</b> = inches above the lowest landmark (lowest road corner,
        3.64 NAVD88) — always. Surge persistence is increasingly unreliable
        for tides beyond ~24h out — use the longer windows for planning,
-       not for trust.</p>
+       not for trust. The most recent high tide stays visible (greyed
+       out, marked "past") for {PAST_TIDE_VISIBILITY_HOURS} h after its
+       peak so you can check whether it flooded before you head home.</p>
     <script>
       (function() {{
         var radios = document.querySelectorAll('input[name="duration"]');
