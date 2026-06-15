@@ -643,6 +643,22 @@ Same surge information the Borough's emergency management is looking at.
    converge the estimate. 6/13 + 6/14 events may already provide this
    data (6/14 hit SH 7.16 → potentially above lawn step; awaiting user
    measurement organization).
+
+   **Backlog of related items surfaced 2026-06-14** (see
+   `assets/observations/2026-06-14/README.md` "Open todos" section for
+   full context):
+   - Add 3 new landmarks to `assets/map_points.csv`:
+     `fire_hydrant_central`, `driveway_central`,
+     `cross_central_driveway` (elevations from cross-fit, not tape).
+   - Add `flood_edge` category to `pick_coords.py` /
+     `render_map.py` and mark the 5 edge-photo locations from 6/14
+     (each edge point's location + concurrent water level → implied
+     ground elevation, free topographic data).
+   - Establish a permanent reference point on `grate_bay_ave_upstream`
+     for future tape (low-point convention agreed 6/14; grate top is
+     uneven 3.64–3.78 NAVD88 over ~1.7″).
+   - Log 19 measurements from 6/14 to `data/labeled_observations.csv`
+     (deferred until v0.7 spec revision discussion is settled).
 5. ~~**Day-name labeling in tide times.**~~ ✅ DONE (2026-05-18).
    Format helpers `format_time_full` ("May 18, 2026: Mon 9:58 PM") and
    `format_time_short` ("Mon 9:58 PM") applied across email + HTML
@@ -1307,8 +1323,14 @@ and 2026-05-18 + 2026-05-31 cross-fit measurements:
   placeholder 3.55–3.58. Three independent measurements across two
   events agree to within 0.05 ft — see
   `assets/observations/2026-05-31/README.md` cross-fit table)
-- `grate_bay_ave_upstream` ≈ **3.76 NAVD88** (uneven top 3.74–3.78;
-  inferred from 5/18, consistent with 5/31)
+- `grate_bay_ave_upstream` — **grate top is uneven over 1.7″ vertically;
+  low point ≈ 3.64, high point ≈ 3.78 NAVD88** (refined 2026-06-14 with
+  4 cross-fit cluster estimates pinning the low-point measurement spot
+  at 3.640 ± 0.04 ft; 5/18 + 5/31 high-point readings give 3.74–3.78).
+  Going forward, measure tape from the lowest visible point of the
+  grate top (operationally meaningful — that's where water first
+  overtops). For `map_points.csv`, use the low point (3.64) since
+  that's the activation elevation.
 - `corner_NE` = **3.91 NAVD88** — NEW landmark; the NE pavement corner,
   distinct from the grate
 - `corner_SE`, `corner_SW` = **3.64 NAVD88** — NEW landmarks
@@ -1324,9 +1346,51 @@ Five grates instead of two:
 | `grate_NW` | 3.80 | Across Central, NEW |
 | `grate_SE` | 3.60 | Across Bay (was `lowest_sentinel_grate`) |
 | `grate_SW` | **3.52** | Across Bay, diagonal; NEW; ~1.1" lower than SE (refined 5/31) |
-| `grate_bay_ave_upstream` | ~3.76 | East on Bay Ave, NEW; *the actual primary feeder* of the user's gutter |
+| `grate_bay_ave_upstream` | **3.64 (low) / 3.78 (high)** | East on Bay Ave, NEW; *the actual primary feeder* of the user's gutter; grate top uneven over 1.7″ vertical span |
 
-### 9c.3 — Storm-surge enhancement: piecewise heuristic (v0.7 shippable form)
+### 9c.3 — Storm-surge enhancement (revision pending user approval as of 2026-06-14)
+
+#### Status update — 2026-06-14: piecewise heuristic disproven at high SH
+
+The 2026-06-14 PM event (SH peak 7.161 MLLW) was supposed to validate
+the piecewise heuristic at the high end (where the heuristic returns
++0.40). It did the opposite: 19 measurements across 5 grates at 4
+time-clusters give a mean enhancement of **−0.13 ft at SH ≈ 7.13** —
+**identical to the values measured at SH 6.17 and SH 6.58.** See
+`assets/observations/2026-06-14/README.md` for full analysis.
+
+The heuristic now over-predicts by **0.53 ft (~6.4″ at every landmark)
+at SH 7.13.** That's the safety-bias-in-the-wrong-direction failure
+mode we were trying to avoid.
+
+**Recommended v0.7 revision (awaiting user approval before applying)**:
+replace the piecewise heuristic with a constant:
+
+```
+enhancement_ft = -0.13   # 3-event mean (5/18, 5/31, 6/14)
+```
+
+This matches all 3 spot-check events (SH 6.17, 6.58, 7.13) within
+measurement noise (σ ≈ 0.02–0.04 ft per event).
+
+**Required caveat to ship with this revision**: the v0.6 rain term
+(`8 · tanh(rate)`) was almost certainly co-fit with the +0.40
+enhancement from the original 4-event calibration (Apr 17, Apr 18,
+Oct 30, Dec 19 — all had rain). Dropping the +0.40 will under-predict
+rain-flood events by ~5″ at the curb until v0.8 9d.2 re-fits the rain
+term. Document prominently as a v0.7 known limitation.
+
+#### v0.8 9d.1 implication
+
+The original 9d.1 plan was "fit f(surge) from a high-SH spot-check."
+The 6/14 data answered that question — the +0.40 hypothesis is
+disproven; the answer is a constant −0.13 across SH 6.17–7.13. **9d.1
+becomes much lighter: just verify −0.13 holds at SH ≥ 7.5 if such an
+event comes up.** No fitting needed.
+
+---
+
+#### Original 9c.3 (piecewise heuristic) — kept for context
 
 Replace the constant +0.40 ft local enhancement with a piecewise
 linear function of Sandy Hook peak (SH_peak_mllw):
@@ -1338,29 +1402,30 @@ enhancement_ft(sh_peak) =
     0.40                                  if sh_peak >= 7.0
 ```
 
-**Calibration evidence (2 events at moderate SH)**:
+**Calibration evidence (3 events — 6/14 added 2026-06-14)**:
 
 | Event | SH_peak | n grates | Implied enh | Notes |
 |---|---:|:-:|---:|---|
 | 2026-05-18 22:12 | 6.58 | 5 | −0.01 to −0.13 | corrected NE elev |
 | 2026-05-31 20:42 | 6.17 | 4 | **−0.13** (mean, σ=0.02) | tight cross-fit |
+| **2026-06-14 ~20:00** | **7.13** | **15** | **−0.13** (mean across 4 clusters, σ=0.03) | high-SH; *contradicts heuristic* |
 
-Both events sit below the 6.6 ft pivot in the heuristic above, so the
-heuristic returns 0 — matching the data within measurement noise.
+5/18 and 5/31 sit below the 6.6 ft pivot, so the heuristic returns 0
+— matching the data within measurement noise. **6/14 (added
+2026-06-14) sits at 7.13 — well above the pivot — where the heuristic
+predicts +0.40 but data says −0.13. The heuristic is wrong at the
+high end.** See the "Status update — 2026-06-14" block at the top of
+this section for the recommended revision.
 
-**Why piecewise and not just 0**: at high SH we have ZERO 342 Bay
-spot-check data. The four labeled events that drove the original +0.40
-fit are at higher SH (Apr 17: 6.91, Apr 18: 6.39+1.30 surge, Oct 30:
-7.57, Dec 19: ~7.0). Dropping enhancement to 0 across the board would
-under-predict at the high end where we have no fresh data — that's a
-false-negative risk in the unsafe direction. User preference (5/31):
-*"our errors should err in the over-sensitive direction. False
-positives are better than false negatives here."* The piecewise form
-honors that: matches new data where we have it, preserves the safety
-bias where we don't.
-
-**The fitted form (the original 9c.3 goal) moves to 9d.1** once we
-get a high-surge spot-check event to calibrate against.
+**Why the original "piecewise not just 0" rationale was wrong** (kept
+for archaeology): the assumption was that the +0.40 from the original
+4-event calibration would re-emerge at high SH. 6/14 directly tested
+this at SH 7.13 and found enhancement = −0.13, not +0.40. The
++0.40 from the original 4 events was almost certainly co-fit with the
+rain term (all 4 historical events had rain). The safety-bias
+preference is honored by accepting the constant −0.13 plus an
+explicit "rain term may under-predict until v0.8" caveat — not by a
+ramp that was never validated by data.
 
 ### 9c.4 — Single-water-level math (replacing per-landmark depth math)
 
@@ -1487,28 +1552,30 @@ properly (specifically: at least one high-surge spot-check event with
 SH ≥ 7.0 for 9d.1, and at least one more rain-flood event for 9d.2).
 Could be weeks or months — we get those a few times a year.
 
-### 9d.1 — Storm-surge enhancement: fitted form
+### 9d.1 — Storm-surge enhancement: high-SH sanity check (scope changed 2026-06-14)
 
-**Goal**: replace the v0.7 piecewise heuristic (9c.3) with a fitted
-functional form, e.g. `enhancement = f(surge_ft)` with the breakpoint
-and the high-end value both pinned by data.
+**Original goal (now obsolete)**: fit `enhancement = f(surge_ft)` from
+a high-SH spot-check, replacing v0.7's piecewise heuristic.
 
-**Hypothesis (still standing)**: +0.40 ft is a storm-surge propagation
-effect, not a constant. Events with meaningful surge (Apr 18: +1.30 ft;
-Oct 30: +2.90 ft) amplify water at 342 Bay relative to Sandy Hook.
-Normal tides without meaningful surge track Sandy Hook directly or
-slightly lag (confirmed: 2026-05-18, 2026-05-31, both essentially
-zero enhancement at SH ≈ 6.15-6.58).
+**What happened**: the 2026-06-14 event provided the high-SH data
+point (SH peak 7.161, 19 measurements, 5 grates). Implied enhancement
+came back at **−0.13 ft, the same as 5/18 and 5/31** — directly
+contradicting both the +0.40 hypothesis and the v0.7 piecewise
+heuristic. See 9c.3 status update and
+`assets/observations/2026-06-14/README.md`.
 
-**Data needed**: at least one high-surge spot-check event (SH ≥ 7.0
-ideally; SH ≥ 6.8 acceptable) measured at 342 Bay with multiple
-grates so we can cross-fit water level and confirm whether
-enhancement does in fact recover toward +0.40.
+So the original storm-surge-amplification hypothesis is essentially
+disproven across the SH 6.17–7.13 range: enhancement is constant at
+~−0.13, not a function of surge or SH magnitude.
 
-**Validation**: if enhancement re-emerges at ~+0.40 → hypothesis
-confirmed, fit the breakpoint. If enhancement stays ~0 → drop the
-+0.40 entirely (the heuristic is wrong; we should accept lower
-high-end predictions); look for a different physical driver.
+**Revised v0.8 scope for 9d.1**: just verify the constant holds at
+even higher SH (SH ≥ 7.5). If a spot-check there also gives ~−0.13,
+the picture is closed and 9d.1 is done. If enhancement starts to
+diverge at very high SH, revisit the constant-vs-functional choice
+with the new data.
+
+**Data needed**: one spot-check at SH ≥ 7.5 with multi-grate
+measurements. Not blocking other v0.8 work; opportunistic.
 
 ### 9d.2 — Rain term as water-level addition (recalibrated)
 
