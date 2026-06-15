@@ -33,50 +33,65 @@ from urllib.parse import urlencode
 # ============================================================
 # v0.4 model parameters - update these as the model improves
 # ============================================================
-LOCAL_ENHANCEMENT_FT = 0.40        # Sandy Hook obs -> 342 Bay water level
+LOCAL_ENHANCEMENT_FT = -0.13       # 3-event mean (5/18, 5/31, 6/14); v0.7 promotion 2026-06-14
+# v0.7 calibration (2026-06-14): three spot-check events at SH 6.17, 6.58,
+# and 7.13 all give enhancement ≈ -0.13 ft. The v0.6 constant +0.40 was
+# almost certainly co-fit with the v0.6 rain term (all 4 historical
+# calibration events had rain). Dropping +0.40 means rain-flood events
+# similar to 2025-10-30 (SH 7.57 + 1.45 in/hr → 12" curb observed) will
+# likely UNDER-predict by ~5" at the curb until the rain term is refit in
+# v0.8 (HANDOFF 9d.2). v0.7 known limitation; documented in model/v0.7.md.
 
 # Landmark elevations at 342 Bay Ave (NAVD88, ft).
-# Sandy Hook MLLW threshold for each = landmark + 2.42
-# (= +2.82 datum offset − 0.40 local enhancement).
-LOWEST_SENTINEL_GRATE = 3.60   # storm grate Central Ave south (lowest seen) (SH 6.02)
-LOWEST_ROAD_CORNER    = 3.64   # corner across Bay (early-warning sentinel)  (SH 6.06)
-GUTTER_WALKWAY        = 3.78   # street-curb interface at walkway            (SH 6.20)
-CORNER_GRATE          = 3.91   # Bay+Central storm grate; Pathway B onset    (SH 6.33)
-CURB_TOP           = 4.16   # Bay Ave side at walkway                   (SH 6.58)
-ROAD_MIDDLE        = 4.36   # Bay Ave centerline at user's spot         (SH 6.78)
-INTERSECTION       = 4.54   # Bay+Central intersection (local high)     (SH 6.96)
-LAWN_STEP          = 4.58   # estimated walkway step                    (SH 7.00)
-FRONT_PORCH_STEP   = 5.08   # ~6" above lawn step, est. first step      (SH 7.50)
-# At and above the porch step we're firmly in direct-inundation territory
-# (well above curb), so the +0.40 ft local enhancement — fit primarily from
-# drain-backflow-era events at street level — is an extrapolation. The
-# offset still holds at the gauge-to-bay level, but the user may want to
-# revisit if more extreme-event data accumulates.
+# Sandy Hook MLLW threshold for each = landmark + 2.95
+# (= +2.82 datum offset − (−0.13) local enhancement).
+GRATE_SW              = 3.52   # SW distal grate across Bay (lowest grate)   (SH 6.47)
+GRATE_SE              = 3.60   # SE proximal grate across Bay                (SH 6.55)
+CORNER_SE             = 3.64   # SE pavement corner across Bay               (SH 6.59)
+CORNER_SW             = 3.64   # SW pavement corner across Bay               (SH 6.59)
+GRATE_BAY_AVE_UPSTREAM = 3.64  # upstream grate (low-point ref; uneven 3.64-3.78) (SH 6.59)
+GUTTER_WALKWAY        = 3.78   # street-curb interface at walkway            (SH 6.73)
+GRATE_NE              = 3.80   # user's corner grate (was CORNER_GRATE=3.91 in v0.6) (SH 6.75)
+GRATE_NW              = 3.80   # NW corner grate across Central              (SH 6.75)
+CORNER_NE             = 3.91   # NE pavement corner (not the grate)          (SH 6.86)
+CORNER_NW             = 3.91   # NW pavement corner (not the grate)          (SH 6.86)
+CURB_TOP              = 4.16   # Bay Ave side at walkway                     (SH 7.11)
+ROAD_MIDDLE           = 4.36   # Bay Ave centerline at user's spot           (SH 7.31)
+INTERSECTION_HIGHPOINT = 4.54  # Bay+Central intersection (local high)       (SH 7.49)
+LAWN_STEP             = 4.58   # walkway step (inferred; cross-fit todo)     (SH 7.53)
+FRONT_PORCH_STEP      = 5.08   # ~6" above lawn step                         (SH 8.03)
 
 # Stratified landmarks (ascending severity). First several are sub-curb
-# sentinels for early-warning visual check + parking decisions.
+# sentinels for early-warning visual check + parking decisions. SH
+# thresholds are recomputed under v0.7 enhancement (-0.13).
 LANDMARKS = [
-    ("lowest_sentinel_grate", "Lowest storm grate (Central Ave)", LOWEST_SENTINEL_GRATE, 6.02),
-    ("lowest_road_corner",    "Lowest road corner across Bay",    LOWEST_ROAD_CORNER,    6.06),
-    ("gutter_walkway",        "Gutter / curb edge at walkway",    GUTTER_WALKWAY,        6.20),
-    ("corner_grate",          "Storm grate at Bay+Central",       CORNER_GRATE,          6.33),
-    ("curb",                  "Curb at walkway",                  CURB_TOP,              6.58),
-    ("road_middle",           "Bay Ave road middle",              ROAD_MIDDLE,           6.78),
-    ("intersection",          "Intersection center",              INTERSECTION,          6.96),
-    ("lawn_step",             "Lawn / walkway step",              LAWN_STEP,             7.00),
-    ("porch_step",            "Front porch first step",           FRONT_PORCH_STEP,      7.50),
+    ("grate_SW",              "SW distal grate across Bay",       GRATE_SW,              6.47),
+    ("grate_SE",              "SE proximal grate across Bay",     GRATE_SE,              6.55),
+    ("corner_SE",             "SE corner across Bay",             CORNER_SE,             6.59),
+    ("corner_SW",             "SW corner across Bay",             CORNER_SW,             6.59),
+    ("grate_bay_ave_upstream", "Bay Ave upstream grate",          GRATE_BAY_AVE_UPSTREAM, 6.59),
+    ("gutter_walkway",        "Gutter / curb edge at walkway",    GUTTER_WALKWAY,        6.73),
+    ("grate_NE",              "Storm grate at user's corner (NE)", GRATE_NE,              6.75),
+    ("grate_NW",              "NW corner grate across Central",   GRATE_NW,              6.75),
+    ("corner_NE",             "NE corner pavement",               CORNER_NE,             6.86),
+    ("corner_NW",             "NW corner pavement",               CORNER_NW,             6.86),
+    ("curb",                  "Curb at walkway",                  CURB_TOP,              7.11),
+    ("road_middle",           "Bay Ave road middle",              ROAD_MIDDLE,           7.31),
+    ("intersection_highpoint", "Intersection high point",         INTERSECTION_HIGHPOINT, 7.49),
+    ("lawn_step",             "Lawn / walkway step",              LAWN_STEP,             7.53),
+    ("porch_step",            "Front porch first step",           FRONT_PORCH_STEP,      8.03),
 ]
 # Subset used for the "seasonality typical vs MTD" table — curb-and-up only.
 # Sub-curb landmarks would dominate the table (counts of 8-12 days/month
 # in recent decades); they're shown in the daily depth table instead.
-SEASONALITY_LANDMARK_KEYS = {"curb", "road_middle", "intersection",
+SEASONALITY_LANDMARK_KEYS = {"curb", "road_middle", "intersection_highpoint",
                              "lawn_step", "porch_step"}
 # Curated landmarks for the oscillation chart on the home page (9b.4(b)).
-# Five entries — fewer than the full 9 — so labels don't crowd each other
-# on the chart's y-axis. Selected by user 2026-05-19.
+# Five entries — fewer than the full landmark set — so labels don't crowd
+# each other on the chart's y-axis. Updated for v0.7 (2026-06-14).
 OSCILLATION_LANDMARK_KEYS = {
-    "lowest_sentinel_grate",  # 3.60 — lowest grate
-    "corner_grate",           # 3.91 — Bay+Central storm grate
+    "grate_SE",               # 3.60 — SE proximal grate (was lowest_sentinel_grate)
+    "grate_NE",               # 3.80 — user's corner grate (was corner_grate at 3.91)
     "curb",                   # 4.16 — curb at walkway
     "lawn_step",              # 4.58 — lawn / walkway step
     "porch_step",             # 5.08 — front porch first step
@@ -349,7 +364,7 @@ PREDICTIONS_LOG_FIELDS = [
     "regime_predicted",
     "cold_lockout",              # "true" | "false"
     "confidence_level",          # "high" | "medium" | "low" | ""
-    "model_version",             # current model spec version (currently v0.6)
+    "model_version",             # current model spec version (currently v0.7)
 ]
 
 
@@ -469,7 +484,7 @@ def update_forecast_accuracy():
     return _summarize_accuracy(last_n=30)
 
 
-CURRENT_MODEL_VERSION = "v0.6"
+CURRENT_MODEL_VERSION = "v0.7"
 
 
 def append_predictions_log(forecast):
@@ -850,60 +865,45 @@ def fetch_nws_hourly_forecast():
 # ============================================================
 def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
                             cold_lockout=False):
-    """Apply v0.6 model. Returns dict of depths (inches) at each landmark.
+    """Apply v0.7 model. Returns dict of depths (inches) at each landmark.
 
-    NOTE 2026-05-19: the `cold_lockout` parameter is retained in the
-    signature for backwards-compat with callers but is **no longer
-    applied as an active override**. The 19-candidate cold-weather
-    retrospective (see history/reports/cold_weather_retrospective.md)
-    surfaced web evidence that ~3 of 5 named-storm candidates likely
-    did produce coastal flooding in Monmouth County despite meeting
-    the override conditions. The single Feb 22-23 2026 calibration
-    point may be an outlier. Until more evidence accumulates at 342
-    Bay specifically, the model returns its normal predictions and
-    leaves the cold-conditions advisory to the surrounding script
-    (rendered as a yellow banner instead of zeroing the forecast)."""
-    # Cold-lockout demoted from override to advisory (2026-05-19).
-    # Old behavior, preserved for git archaeology:
-    #   zero_dict = {key: 0.0 for key, *_ in LANDMARKS}
-    #   if cold_lockout and sandy_hook_peak_mllw < 8.0:
-    #       return {**zero_dict, "regime": "cold_lockout"}
+    v0.7 (2026-06-14) changes from v0.6:
+    - Enhancement constant: +0.40 → -0.13 (3-event mean across SH
+      6.17, 6.58, 7.13; see model/v0.7.md and
+      assets/observations/2026-06-14/README.md for full analysis).
+    - Single-water-level math: rain adds to a shared water level
+      (dZ_rain = 8·tanh(rate)/12 ft); per-landmark shedding constants
+      removed. The heat-map already used this; v0.7 makes the depth
+      function agree.
+    - Expanded landmark set: 15 landmarks (was 9). 5 grates,
+      4 pavement corners, gutter, curb, road middle, intersection
+      high-point, lawn step, porch step.
 
+    Cold-lockout demoted from override to advisory (2026-05-19);
+    parameter retained for caller-API stability but no longer applied
+    as a zero-override. See history/reports/cold_weather_retrospective.md.
+
+    Known v0.7 limitation: the v0.6 rain term (8·tanh(rate)) was
+    almost certainly co-fit with the +0.40 enhancement (all 4
+    historical rain-flood calibration events had rain). Dropping the
+    +0.40 means rain-flood events similar to 2025-10-30 (SH 7.57 +
+    1.45 in/hr → 12" curb observed) will likely UNDER-predict by ~5"
+    at the curb until the rain term is refit in v0.8 (HANDOFF 9d.2).
+    Documented in model/v0.7.md.
+    """
+    # Tide-driven water level at 342 Bay (NAVD88, ft).
     water_navd88 = sandy_hook_peak_mllw + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+
+    # Rain adds to the shared water level (water-is-level model).
+    # 8·tanh(rate) is the v0.6 rain magnitude (inches) preserved
+    # verbatim; division by 12 converts to feet. v0.7 9d.2 will refit
+    # this term once we have a second rain-flood anchor event.
+    if peak_rain_rate_in_hr > 0.1:
+        rain_add_ft = RAIN_SATURATION_IN * math.tanh(peak_rain_rate_in_hr) / 12.0
+        water_navd88 += rain_add_ft
 
     d = {key: max(0.0, water_navd88 - elev) * 12
          for key, _label, elev, _sh in LANDMARKS}
-
-    if peak_rain_rate_in_hr > 0.1:
-        rain_add = RAIN_SATURATION_IN * math.tanh(peak_rain_rate_in_hr)
-        # NOTE / FIX-IN-v0.7 (HANDOFF 9c.4): the per-landmark rain shedding
-        # below (intersection -2", lawn/porch -4") conflates "water is
-        # level across a connected surface" with "this point sheds rain
-        # locally as an isolated puddle". For the combined tide+rain
-        # regime at 342 Bay (one connected water body in any flooding
-        # event), the simpler water-is-level math is correct: rain raises
-        # a single water level uniformly, and depth at each landmark is
-        # (water - elevation). v0.7 replaces this whole block with a
-        # uniform dZ_rain addition to water_navd88. The client-side
-        # heat-map (9b.10) already uses the water-is-level model, so the
-        # map and the depth predictions DISAGREE at lawn/porch on rain
-        # days — the map says more water there than this function says.
-        # Both can't be right; v0.7 9c.4 picks water-is-level. Until v0.7
-        # ships, keep this v0.6 behavior intact so the calibration
-        # against the 4 labeled events doesn't shift mid-flight.
-        d["lowest_sentinel_grate"] += rain_add
-        d["lowest_road_corner"]    += rain_add
-        d["gutter_walkway"]        += rain_add
-        d["corner_grate"]          += rain_add
-        d["curb"]                  += rain_add
-        d["road_middle"]        += rain_add
-        d["intersection"]       += max(0.0, rain_add - 2.0)  # crown sheds some
-        d["lawn_step"]          += max(0.0, rain_add - 4.0)  # lawn sheds more
-        # Porch step receives rain via flash-flood from up-slope
-        # (Waterwitch Ave et al.) + river backup — same mechanism as the
-        # lawn step. Calibrated to Oct 30 2025: SH 7.57 + 1.45 in/hr rain →
-        # user observed water rising to the porch first step.
-        d["porch_step"]         += max(0.0, rain_add - 4.0)
 
     # Regime label (subject-line summary). Order matters: severe is most
     # alarming. STREET sits between DRY and LIGHT — sub-curb water present
@@ -916,8 +916,8 @@ def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
         regime = "light"
     elif d["curb"] > 0:
         regime = "light"  # any curb-top water is light, don't underreport
-    elif (d["gutter_walkway"] > 0 or d["lowest_road_corner"] > 0 or
-          d["lowest_sentinel_grate"] > 0):
+    elif (d["gutter_walkway"] > 0 or d["corner_SE"] > 0 or
+          d["grate_SE"] > 0 or d["grate_SW"] > 0):
         regime = "street"  # sub-curb water — early warning / parking caution
     else:
         regime = "dry"
@@ -1234,19 +1234,27 @@ def build_forecast():
                 source = "nws-coastal-flood-product"
 
         if forecast_peak is None:
-            # Surge persistence fallback
+            # Surge persistence fallback. v0.7 (2026-06-14) dropped the
+            # `max(0.0, surge)` clip — negative surge is now passed
+            # through (HANDOFF 9c.6). Anti-surge conditions exist; the
+            # forecast should be allowed to predict below the
+            # astronomical tide.
             surge = persisted_surge if persisted_surge is not None else 0.0
-            forecast_peak = tide_pred + max(0.0, surge)
+            forecast_peak = tide_pred + surge
             source = "surge-persistence"
 
-        # Rain in ±90 min of THIS high tide (used by the v0.6 model)
-        # plus a wider ±3h hourly profile for the email's rain-timing block.
+        # Rain in [-90 min, +15 min] of THIS high tide (v0.7 before-biased
+        # window — HANDOFF 9c.7). Rain after the peak cannot raise the
+        # peak water level; the small +15 min forward tolerance covers
+        # tide-time uncertainty (observed flooding has lagged the
+        # predicted peak by up to ~30 min). Wider ±3h hourly profile
+        # for the email's rain-timing block is unchanged.
         peak_rain_rate = 0.0
         rain_window = []  # list of (hours_offset_from_high_tide, rain_rate_in_hr)
         peak_rain_offset_h = None
         if peak_dt is not None:
             window_start = peak_dt - dt.timedelta(minutes=90)
-            window_end   = peak_dt + dt.timedelta(minutes=90)
+            window_end   = peak_dt + dt.timedelta(minutes=15)
             wider_start  = peak_dt - dt.timedelta(hours=3)
             wider_end    = peak_dt + dt.timedelta(hours=3)
             for p in nws_hourly[:96]:
@@ -2392,9 +2400,9 @@ def _render_recent_history_html(forecast):
         f'<tbody>{rows}</tbody></table>'
         '<p class="note">From NOAA Sandy Hook water_level (6-min product, '
         'preliminary). <b>Rel</b> = inches above the lowest landmark '
-        '(lowest road corner, 3.64 NAVD88), always positive or negative. '
-        '"Highest landmark" applies the +0.40 ft local enhancement to the '
-        'observed peak.</p>'
+        '(SW grate, 3.52 NAVD88), always positive or negative. '
+        '"Highest landmark" applies the −0.13 ft local enhancement (v0.7) '
+        'to the observed peak.</p>'
         '</section>'
     )
 
@@ -2410,23 +2418,28 @@ def _format_decimal(v):
 # Per-landmark short role tags used in the unified table. Blank means
 # the landmark name itself is descriptive enough.
 LANDMARK_ROLES = {
-    # lowest_sentinel_grate: label "Lowest storm grate" is self-descriptive;
-    # leaving the role tag empty avoids overflow in the text table.
-    "lowest_road_corner":    "sentinel",
+    "corner_SE":             "sentinel",
+    "corner_SW":             "sentinel",
     "gutter_walkway":        "parking",
-    "corner_grate":          "Pathway B",
+    "grate_NE":              "Pathway B",
     "curb":                  "flood onset",
 }
 
 # Short labels for the compact per-tide table. Full labels live in LANDMARKS.
 LANDMARK_SHORT_LABELS = {
-    "lowest_sentinel_grate": "Sentinel grate",
-    "lowest_road_corner":    "Lowest corner",
+    "grate_SW":              "SW grate",
+    "grate_SE":              "SE grate",
+    "corner_SE":             "SE corner",
+    "corner_SW":             "SW corner",
+    "grate_bay_ave_upstream": "Upstream grate",
     "gutter_walkway":        "Gutter",
-    "corner_grate":          "Storm grate",
+    "grate_NE":              "NE grate",
+    "grate_NW":              "NW grate",
+    "corner_NE":             "NE corner",
+    "corner_NW":             "NW corner",
     "curb":                  "Curb",
     "road_middle":           "Road middle",
-    "intersection":          "Intersection",
+    "intersection_highpoint": "Intersection",
     "lawn_step":             "Lawn step",
     "porch_step":            "Porch step",
 }
@@ -2438,11 +2451,11 @@ def landmark_summary(depths, sandy_hook_peak_mllw):
         (short_label, inches_above_landmark, relative_to_lowest_inches)
     where:
       - short_label = highest landmark exceeded by water level, OR the
-        lowest landmark (Lowest road corner) if no landmark is exceeded
+        lowest landmark (grate_SW in v0.7) if no landmark is exceeded
       - inches_above_landmark = depth at that landmark from depths dict
         (positive); when no exceedance, negative inches below the lowest
         landmark (computed from tide-only water level)
-      - relative_to_lowest = depth at the lowest_road_corner from depths
+      - relative_to_lowest = depth at the lowest landmark from depths
         when water exceeds it; when below the lowest, the same negative
         value as inches_above_landmark
     Uses rain-augmented depths so the per-tide row stays consistent with
@@ -2793,7 +2806,7 @@ def _high_value_calibration_callouts(forecast):
     # any tidal contribution?"
     rain_meaningful = cumulative_rain >= 0.25
     any_tide_above_sentinel = any(
-        (t.get("depths_in") or {}).get("lowest_road_corner", 0) > 0
+        (t.get("depths_in") or {}).get("corner_SE", 0) > 0
         for t in all_tides
     )
     if rain_meaningful and not any_tide_above_sentinel:
@@ -3022,7 +3035,7 @@ Regime: {regime} — {REGIME_GLOSSARY.get(regime, '')}
   6.33    : water emerges from corner storm grate at Bay+Central (Pathway B)
   6.58    : water at curb top — flood onset at property
   6.78    : Bay Ave road middle covered
-  6.96    : intersection center submerged
+  7.49    : intersection high point submerged
   7.00    : water at lawn / walkway step
   7.50    : water at front porch first step
   7.9+    : severe (well past porch)
@@ -3035,7 +3048,7 @@ Regime glossary (subject-line label, based on water depth at the curb):
   severe       : {REGIME_GLOSSARY['severe']}
   cold_lockout : {REGIME_GLOSSARY['cold_lockout']}
 
-Model: v0.6. Local enhancement +0.40 ft.
+Model: v0.7. Local enhancement -0.13 ft (3-event calibration).
 """
 
     bg = {"dry": "#e8f5e9", "street": "#e3f2fd", "light": "#fff8e1",
@@ -3112,7 +3125,7 @@ Model: v0.6. Local enhancement +0.40 ft.
 {low_html}
 {lookahead_html}
 <p style="font-size:small;color:#666">
-Model v0.6. Local enhancement +0.40 ft. Rain term saturates at 8".
+Model v0.7. Local enhancement -0.13 ft (3-event mean). Rain term saturates at 8".
 Surge persistence is a rough proxy; for active coastal storms, check NWS
 Coastal Flood Statement directly.
 </p>
@@ -3123,23 +3136,12 @@ Coastal Flood Statement directly.
 def _oscillation_chart_data(forecast):
     """Build data points for the home-page oscillation chart (HANDOFF 9b.4(b)).
 
-    Axis change 2026-05-19 (per Batch 2 idea #2): the y-axis is now
-    Sandy Hook peak in ft MLLW — a *pure* observation — not the
-    model-derived "water at 342 NAVD88". Past code projected each SH
-    peak through `+ LOCAL_ENHANCEMENT_FT - 2.82`, which embeds the
-    v0.6 storm-surge assumption. For the 2026-05-18 22:12 event that
-    label said 4.16 NAVD88 = right at the curb, but the user's
-    photo evidence (and the corrected analysis after the storm-surge
-    hypothesis) shows actual water at 342 was 3.68-3.72 NAVD88, NOT
-    4.16. v0.6's assumption is wrong for non-surge events.
-
-    The honest chart shows what was actually observed (SH peak at the
-    gauge) and what THRESHOLD each landmark would correspond to on
-    that observation axis. Landmark threshold (MLLW) =
-    landmark_NAVD88 + 2.82 - 0.40 = landmark_NAVD88 + 2.42 — the SH
-    peak value AT WHICH v0.6 would predict water reaches that
-    landmark. The chart caveat is then about the threshold lines
-    (they embed v0.6's enhancement), not about the data dots.
+    Axis: y is Sandy Hook peak (ft MLLW) — a pure observation, not
+    model-derived. v0.7 enhancement = -0.13, so landmark threshold
+    (MLLW) = landmark_NAVD88 + 2.82 - (-0.13) = landmark_NAVD88 + 2.95.
+    The chart shows SH peaks observed at the gauge plus the SH-MLLW
+    threshold lines at which v0.7 predicts water reaches each
+    landmark.
 
     Returns dict with:
       'points': list of {time, sh_peak_mllw, kind} where kind is
@@ -3183,7 +3185,7 @@ def _oscillation_chart_data(forecast):
         })
 
     # Landmark threshold lines — curated subset, expressed as the SH
-    # MLLW value at which v0.6 would predict water reaches that
+    # MLLW value at which v0.7 would predict water reaches that
     # landmark. Per user 2026-05-19 selection: see OSCILLATION_LANDMARK_KEYS.
     keep_keys = OSCILLATION_LANDMARK_KEYS
     landmark_lines = []
@@ -3218,7 +3220,7 @@ def _render_cold_advisory_html(forecast):
         '\n  <section class="cold-advisory">\n'
         '    <h2>Cold-conditions advisory</h2>\n'
         f'    <p>72-h mean temperature at Sandy Hook is <b>{temp_str}</b> '
-        '(below the 32°F cold-lockout threshold). The v0.6 model previously '
+        '(below the 32°F cold-lockout threshold). The v0.6 model previously (now v0.7) '
         'forced predicted flooding to zero in this regime, on the theory '
         'that storm-drain outfalls become ice-locked and block bay → street '
         'backflow (Pathway B).</p>\n'
@@ -3247,7 +3249,7 @@ def _render_cold_advisory_text(forecast):
     return [
         "Cold-conditions advisory:",
         f"  72-h mean temp at Sandy Hook is {temp_str} (below 32 F).",
-        "  v0.6's cold-lockout rule would have suppressed predicted",
+        "  Pre-v0.7 cold-lockout rule would have suppressed predicted",
         "  flooding here, but the 19-event historical retrospective",
         "  (history/reports/cold_weather_retrospective.md) found",
         "  evidence the rule is too generous. Hypothesis remains open;",
@@ -3371,13 +3373,13 @@ def _render_oscillation_section(forecast):
     <h2>Sandy Hook peak over time</h2>
     <p class="note">Observed (■) past peaks and predicted (●) upcoming peaks,
        plotted as <b>Sandy Hook MLLW</b> (the actual NOAA gauge reading) —
-       not as inferred water at 342 Bay, which would embed the v0.6 model's
+       not as inferred water at 342 Bay, which would embed the v0.7 model's
        still-uncertain storm-surge enhancement. Horizontal lines are the
-       SH-MLLW thresholds at which the v0.6 model predicts water reaches
-       each landmark. <b>Caveat</b>: a peak crossing a line means the v0.6
+       SH-MLLW thresholds at which the v0.7 model predicts water reaches
+       each landmark. <b>Caveat</b>: a peak crossing a line means the v0.7
        model would predict that landmark wet — actual observation at 342
-       Bay may differ (especially on no-surge events; see the 2026-05-18
-       spot-check).</p>
+       Bay may differ on rain-flood events until v0.8 refits the rain
+       term (see 6/14 README).</p>
     <canvas id="oscillation-chart" width="800" height="380"
             style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
@@ -3772,13 +3774,12 @@ def _render_equation_widget_html(forecast, wrapper="section"):
     sh_peak = forecast.get("peak_forecast_observed_mllw", 0.0) or 0.0
     rain_rate = forecast.get("peak_rain_rate_in_hr", 0.0) or 0.0
 
-    # Per-landmark rain shedding, matching predict_landmark_depths(): the
-    # crowned intersection sheds 2", the lawn/porch shed 4". v0.7 (9c.4)
-    # removes this in favor of a uniform water-is-level rise.
-    shed = {"intersection": 2.0, "lawn_step": 4.0, "porch_step": 4.0}
+    # v0.7 single-water-level math: rain adds to a shared water level,
+    # not per-landmark with shedding constants. Each landmark's `shed`
+    # is 0 — kept in the JS API for backwards compatibility with the
+    # widget's render path.
     landmarks_js = json.dumps([
-        {"key": key, "label": label, "elev": elev,
-         "shed": shed.get(key, 0.0)}
+        {"key": key, "label": label, "elev": elev, "shed": 0.0}
         for key, label, elev, _sh in LANDMARKS
     ])
 
@@ -3790,7 +3791,7 @@ def _render_equation_widget_html(forecast, wrapper="section"):
     return f"""
   {open_tag}
     <{hh}>The model, term by term</{hh}>
-    <p class="note">This is the actual v0.6 prediction math with this
+    <p class="note">This is the actual v0.7 prediction math with this
        forecast's numbers filled in. Edit any term to see how the
        prediction would change — then "Snap back" to return to the
        live forecast.</p>
@@ -3849,23 +3850,27 @@ def _render_equation_widget_html(forecast, wrapper="section"):
         in feet above Mean Lower Low Water. This is the live input that
         changes tide to tide &mdash; it already folds in the astronomical
         tide plus any storm surge.</dd>
-      <dt>Local enhancement (+{LOCAL_ENHANCEMENT_FT:.2f} ft)</dt>
-      <dd>A fixed bump because 342 Bay Ave runs higher than the gauge
-        reads, fit from past street-flooding events. It is most likely a
-        storm-surge propagation effect rather than a true constant;
-        v0.7 will test whether it should scale with surge instead of
-        being flat.</dd>
+      <dt>Local enhancement ({LOCAL_ENHANCEMENT_FT:+.2f} ft)</dt>
+      <dd>The residual after the datum conversion: how much water at
+        342 Bay differs from what the SH gauge reads. v0.7 (2026-06-14)
+        sets this to a constant <b>-0.13 ft</b> based on 3 spot-check
+        events at SH 6.17, 6.58, and 7.13 that all give the same
+        value. The v0.6 +0.40 was likely co-fit with the rain term;
+        rain-flood events may under-predict by ~5" at curb until v0.8
+        refits the rain term.</dd>
       <dt>MLLW&rarr;NAVD88 offset (&minus;2.82 ft)</dt>
       <dd>A pure datum conversion. The gauge reports heights in MLLW;
         the landmark elevations at the house were surveyed in NAVD88.
         This is fixed geometry, not a tunable model parameter.</dd>
       <dt>Peak rain (in/hr)</dt>
-      <dd>The heaviest single hour of rainfall the NWS forecasts in the
-        window around the high tide. Rain adds depth through a
-        saturating curve, 8&middot;tanh(rate) inches, and only kicks in
-        above 0.1 in/hr. The crowned intersection sheds 2&Prime; of it
-        and the lawn/porch shed 4&Prime; (a v0.6 quirk that v0.7
-        replaces with a uniform rise).</dd>
+      <dd>The heaviest single hour of rainfall the NWS forecasts in
+        the window [-90 min, +15 min] around the high tide (v0.7
+        before-biased window — rain after the peak can't raise the
+        peak). Rain adds depth through a saturating curve,
+        8&middot;tanh(rate) inches, and only kicks in above 0.1 in/hr.
+        v0.7 applies the rain term as a uniform water-level rise
+        (8&middot;tanh(rate)/12 ft); the v0.6 per-landmark shedding
+        constants are gone.</dd>
     </dl>
     <p class="note">The whole model: convert the gauge's tide forecast
        to a water level at the house (first three terms), then at each
@@ -4860,7 +4865,7 @@ def render_html_page(forecast):
       <li>6.33 ft — water emerges from corner storm grate at Bay+Central (Pathway B)</li>
       <li>6.58 ft — water tops curb at walkway (flood onset at property)</li>
       <li>6.78 ft — Bay Ave road middle covered</li>
-      <li>6.96 ft — intersection center submerged</li>
+      <li>7.49 ft — intersection high point submerged</li>
       <li>7.00 ft — water at lawn / walkway step</li>
       <li>7.50 ft — water at front porch first step</li>
       <li>&ge; 7.9 ft — severe (well past porch)</li>
@@ -4881,7 +4886,7 @@ def render_html_page(forecast):
   </section>
 
   <footer>
-    <p>Model v0.6. Local enhancement +0.40 ft. Rain term saturates at 8&Prime;.
+    <p>Model v0.7. Local enhancement -0.13 ft (3-event mean, 2026-06-14). Rain term saturates at 8&Prime;.
        Updated daily at 5 AM ET.</p>
     <p><a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a> &middot;
        <a href="archive/">Past daily archives</a> &middot;
@@ -4928,17 +4933,15 @@ def _compute_map_water_level(forecast, include_rain=True):
     suppressing flooding, or peak below all map points).
 
     With `include_rain=True` (default), folds in the rain term as a
-    uniform water-level addition. Per the user's "water is level"
-    framing (HANDOFF 9b.5 + 9c.4): rain raises the surface uniformly;
-    depth at each point follows from `water_navd88 - elev`.
+    uniform water-level addition. v0.7 (2026-06-14) made this the
+    canonical model formulation — both the heat-map and
+    `predict_landmark_depths` now use water-is-level math, no per-
+    landmark shedding.
 
-    Uses v0.6's `rain_add = 8 * tanh(rate)` inches at street level
-    (the strongest of v0.6's per-landmark rain bonuses), divided by
-    12 for feet. This slightly over-states water level at lawn/porch
-    vs v0.6's per-landmark shedding (the shedding constants subtract
-    2-4 inches at higher points), but is internally consistent: the
-    map is one water-level surface, and all depths derive from it.
-    v0.7 9c.4 will make this the canonical model formulation.
+    Rain term: `rain_add = 8 * tanh(rate)` inches, divided by 12 for
+    feet. (v0.7 known limitation: this magnitude was co-fit with the
+    old +0.40 enhancement; with the v0.7 -0.13 enhancement, rain-
+    flood events will likely under-predict. v0.8 9d.2 will refit.)
 
     `include_rain=False` returns the bare tide-only water level, used
     to render a comparison "no-rain" map when rain is forecast.

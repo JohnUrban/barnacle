@@ -64,13 +64,13 @@ across four labeled flood events the user observed firsthand.
 | Forecast accuracy log (`data/forecast_accuracy.csv`) | ✅ Live (2026-05-18, HANDOFF 8b). Populates from day 2. |
 | Spot-check calibration callouts (pluvial-only, cold-lockout) | ✅ Live (2026-05-18, HANDOFF 10/14) |
 | First real spot-check session (2026-05-18 22:12 peak) | ✅ Recorded. Forecast 6.19 / actual 6.58. **Key finding: with corrected grate elevation (3.80 not 3.91 per survey), local enhancement at SH 6.58 was ~0 or slightly negative, not +0.40. Refined hypothesis: +0.40 is a storm-surge propagation effect, not a constant.** See `assets/observations/2026-05-18/README.md` |
-| v0.6 grate elevation bug surfaced (NE/NW grates 3.80 not 3.91) | ⏸ Per survey PDF `model/HLND2303-Road-Reconstruction-Supplement-Set-2024.05.06.pdf`: NE/NW grates = 3.80; 3.91 is the NE pavement corner (separate landmark). v0.6's `corner_grate` should have been 3.80. Pathway B threshold should be SH 6.22, not 6.33. Queue for v0.7. |
+| v0.6 grate elevation bug | ✅ **Fixed in v0.7 (2026-06-15).** `corner_grate` renamed to `grate_NE`, elevation corrected 3.91 → 3.80; 3.91 lives separately as `corner_NE` landmark. Pathway B threshold under v0.7 enhancement (-0.13): SH 6.59 (= grate_bay_ave_upstream 3.64 + 2.95). |
 | Photos from 2026-05-18 event distributed to 7 subdirectories | ✅ Done 2026-05-19. Medium-size exports (~13 MB total) under `assets/observations/2026-05-18/<grate-or-landmark>/`. 13 calibration rows in `data/labeled_observations.csv`. Plus 3 morning-after pocket photos (cba8338) confirming ≥11.4h pocket retention. |
 | Second + third real spot-check events (2026-05-30, 2026-05-31) | ✅ Logged 2026-05-31. 2026-05-30 PM tide qualitative (SE/SW overtopped at SH 6.538). 2026-05-31 PM tide cleanly measured at 4 grates (water 7.25/7/5/4 in below NE/upstream/SE/SW respectively at SH 6.17 peak) — water at 342 Bay = 3.20 ± 0.05 NAVD88, implied local enhancement = -0.13 ft, **consistent with 5/18 finding**. Two events now contradict the +0.40 constant. 9 new rows in `data/labeled_observations.csv`. See `assets/observations/2026-05-30/README.md` and `assets/observations/2026-05-31/README.md`. |
 | High-res measuring-tape reference photos | ✅ Added 2026-05-31. Two straight-on photos + README in `assets/observations/0-measuring-tape/` covering the digit-after-line convention, subdivision marks, color cues, and common photo-reading failure modes. Use when independently verifying tape readings from spot-check photos. |
 | Hourly bot cadence — actually ~62%, not 100% | ⚠️ Documented 2026-05-31 (see `assets/observations/2026-05-30/README.md` cadence section). GitHub Actions throttles the `'0 * * * *'` schedule. Last 7 days: 120/192 hour-slots filled. UTC hours 02/04/06 never run; 08/10/11/12/14/16 partial. No fix — this is GHA free-tier load shedding behavior. Convergence charts have ~1.5-2 h effective resolution, not 1 h. |
 | Web platform pivot — sub-daily updates, interactive site | ✅ Foundation shipped 2026-05-19. See section 9b. Workflow hourly; per-tide deep-link pages; client-side heat-map renderer; convergence + oscillation + scrubber charts; severity-colored rollup with 24/48/72h toggle; rain-toggle map; refined confidence with regime band; 1-2 month astronomical look-ahead; accuracy scatter + binary classifier matrix. Master predictions log at `data/predictions_log.csv` accumulating since 2026-05-19. |
-| v0.7 model spec promotion (shippable now) | 🟡 Spec ready 2026-05-31; awaiting implementation approval. Bundles: corrected grate elevations + 5-grate set (NE/NW=3.80; SE=3.60; SW=3.52 refined from 5/31 cross-fit; upstream≈3.76); new corner landmarks (corner_NE=3.91; corner_SE/SW=3.64); rename `corner_grate`→`grate_NE`, `lowest_sentinel_grate`→`grate_SE`, `intersection`→`intersection_highpoint`. **Enhancement gets a piecewise heuristic** (0 at SH≤6.6, ramps linearly to +0.40 at SH≥7.0) calibrated against 5/18+5/31 (both pin enhancement≈−0.13 at moderate SH) while preserving the +0.40 safety bias at high SH where we lack data. Single-water-level math (drops per-landmark rain shedding). Negative-surge clip removed. Rain window before-biased [−90 min, +15 min]. See section 9c for the full spec. |
+| v0.7 model spec promotion | ✅ **Shipped 2026-06-15.** Bundles: corrected grate elevations + 5-grate set (NE/NW=3.80; SE=3.60; SW=3.52; upstream=3.64 low-point); new corner landmarks (corner_NE/NW=3.91; corner_SE/SW=3.64); renames (`corner_grate`→`grate_NE`, `lowest_sentinel_grate`→`grate_SE`, `lowest_road_corner`→`corner_SE`, `intersection`→`intersection_highpoint`); **enhancement = constant −0.13 ft** (3-event mean — 6/14 disproved the original piecewise heuristic at high SH); single-water-level math (drops per-landmark rain shedding); negative-surge clip removed; rain window before-biased [−90 min, +15 min]. Known limitation: rain-flood events may under-predict by ~5″ at curb until v0.8 9d.2 refits rain term. See `model/v0.7.md`. |
 | v0.8 model spec promotion (data-blocked, deferred) | ⏸ Queued. Holds the two items v0.7 can't responsibly land: (a) fitted form of the surge-dependent enhancement (needs a high-surge event SH≥7.0 to fit); (b) rain-term recalibration (needs a second rain-flood event — Oct 30 2025 is the only anchor). Open bucket — anything else added between now and shipment lands here. See section 9d. |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
@@ -1249,9 +1249,8 @@ The single-water-level math + per-landmark rain shedding removal
 happens as part of the v0.7 model spec promotion. See dedicated
 section **9c** below for the consolidated v0.7 roadmap.
 
-- Status: spec ready 2026-05-31, awaiting user once-over before
-  implementation. Section 9c has the v0.7 spec; the data-blocked
-  portions moved to section 9d (v0.8).
+- Status: ✅ **shipped 2026-06-15** as part of v0.7 promotion. The
+  data-blocked portions remain at section 9d (v0.8).
 - Forces alignment with: 9b.5 (rain map), 9b.10 (storage).
 
 ### 9b.10 — Storage refactor: no per-update binary archives
@@ -1293,7 +1292,15 @@ just for maps — not viable. Fix:
 
 ---
 
-## 9c. v0.7 model spec (shippable now)
+## 9c. v0.7 model spec (✅ SHIPPED 2026-06-15)
+
+**Status as of 2026-06-15**: all items in this section landed in one
+commit (the `v0.7 promotion` commit). The 6/14 spot-check event
+disproved the piecewise enhancement heuristic that this spec
+originally proposed; the shipped form is `enhancement = -0.13 ft`
+constant. See the "Status update — 2026-06-14" subsection inside
+9c.3 below for the data and rationale, and `model/v0.7.md` for the
+canonical spec as shipped.
 
 Consolidated view of everything bundled into the v0.7 model promotion.
 Per HANDOFF section 12's versioning rule, elevation changes + formula
@@ -1777,15 +1784,14 @@ For when you come back to a fresh chat with this document:
   and map visual. Don't store rendered binaries (PNGs); store the
   number and re-render on demand (client-side for the website, via
   `render_map.py` for the email). See section 9b.10.
-- **v0.7 / v0.8 are split (2026-05-31).** Section 9c is v0.7 — six
-  items, all shippable now: corrected grate elevations + 5-grate set
-  (9c.1, 9c.2), surge-dependent enhancement as a piecewise heuristic
-  (9c.3), single-water-level math (9c.4), drop negative-surge clip
-  (9c.6), before-biased rain window (9c.7). Section 9d is v0.8 — the
-  two items v0.7 can't responsibly land: fitted enhancement form
-  (9d.1, needs a high-surge spot-check event), rain-term
-  recalibration (9d.2, needs a second rain-flood event). v0.8 is an
-  open bucket for anything else that surfaces between now and ship.
+- **v0.7 shipped 2026-06-15** (commit + push completed). The 6/14
+  spot-check event disproved the originally-planned piecewise
+  enhancement heuristic at high SH; v0.7 ships with `enhancement =
+  -0.13 ft` constant (3-event mean). Section 9c is the spec history;
+  `model/v0.7.md` is the canonical as-shipped spec. Section 9d (v0.8)
+  remains data-blocked: 9d.1 (sanity-check at SH ≥ 7.5) +
+  9d.2 (rain-term recalibration, needs second rain-flood event) +
+  9d.3 (antecedent moisture). Open bucket for new items.
 
 ---
 
@@ -1917,14 +1923,14 @@ Read these for context if needed:
 - `dev/ideas/20260519.txt` — user's brainstorm (Batch 1 + 2)
   that anchored everything in this session.
 
-**Known v0.6 bugs deferred to v0.7 (spec ready 2026-05-31; await user approval before coding):**
-- `corner_grate` elevation: 3.91 → 3.80 (survey-confirmed).
-- `predict_landmark_depths()`'s per-landmark rain shedding
-  (intersection -2", lawn/porch -4") disagrees with the
-  client-side heat-map's uniform additive. See FIX-IN-v0.7 comment
-  in the function. v0.7 9c.4 picks water-is-level for both.
-- Cold-lockout rule: possibly add wind-direction condition OR
-  drop entirely. Currently demoted to advisory only.
+**Known v0.6 bugs — all fixed in v0.7 (shipped 2026-06-15):**
+- ~~`corner_grate` elevation: 3.91 → 3.80~~ ✅ v0.7 renamed to
+  `grate_NE` with correct 3.80 elev.
+- ~~Per-landmark rain shedding disagrees with heat-map~~ ✅ v0.7
+  uses single-water-level math everywhere; shedding constants removed.
+- Cold-lockout rule remains demoted to advisory (HANDOFF 9b cold-
+  lockout work). v0.8 may revisit with wind-direction condition or
+  drop entirely.
 
 ### Two important workflow gotchas
 
@@ -1969,18 +1975,19 @@ Read these for context if needed:
    labeled_observations rows; lead-time needs past tides).
 2. **Self-calibrated confidence ± uncertainty** activates once
    the accuracy log has ≥3 rows per confidence band.
-3. **Next storm event with meaningful surge** — discriminates
-   whether the +0.40 enhancement re-emerges at high SH. Gates the
-   v0.8 fitted enhancement form (9d.1). v0.7 ships a piecewise
-   heuristic (9c.3) that doesn't wait on this event.
+3. **Next high-SH event (SH ≥ 7.5)** — opportunistic v0.8 9d.1
+   sanity check: confirm the −0.13 enhancement constant still holds
+   above the SH 7.13 we've measured. Not blocking.
 4. **Cold-conditions data collection**: every cold-conditions-met
    event observed at 342 Bay going forward becomes a new
    validation data point for the cold-lockout hypothesis.
-5. **v0.7 model promotion** — shippable now (section 9c), pending
-   user once-over of the spec. Once shipped, v0.8 (section 9d)
-   carries the data-blocked items.
+5. **Next rain-flood event** — gates v0.8 9d.2 (rain-term
+   recalibration). The v0.7 model under-predicts rain-flood events
+   by ~5″ at curb (known limitation) until this anchor lands.
+6. **v0.8 model promotion** when 9d.1 + 9d.2 have enough data.
+   Spec is section 9d.
 
-v0.7 spec is ready for review. Don't start coding it yet — wait for
-explicit user approval.
+v0.7 shipped 2026-06-15 (commit + push completed). All section 9c
+items landed in one promotion commit. Production now runs v0.7.
 
 End of handoff.
