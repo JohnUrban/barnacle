@@ -624,9 +624,25 @@ Same surge information the Borough's emergency management is looking at.
 3. **Switch SMTP_USER to `bayavebarnacle@gmail.com`** once the account
    ages enough to support app passwords. Update three GitHub secrets;
    no code change. Keeps forecast emails out of personal Sent folder.
-4. **Field-measure the lawn/walkway step elevation.** Current 4.58 NAVD88
-   is the midpoint of an inferred 4.54–4.63 range. A precise reading
-   tightens the moderate-flood threshold.
+4. **Refine the `lawn_step` and `porch_step` elevations via cross-fit
+   from grate measurements** (preferred over direct tape, per user
+   2026-06-14). Current values (`lawn_step` 4.58, `porch_step` 5.08)
+   were originally tape-measured but the user is uncertain whether
+   the 4.54–4.63 range reflects survey uncertainty vs. tape uncertainty
+   at the time. Either way, direct tape alone is unreliable here
+   because the sidewalk and walkway slope toward the road — a tape
+   reading of step height won't translate cleanly to a single NAVD88
+   elevation.
+
+   **Better method (the SW elevation refinement on 5/31 used this
+   exact approach):** at any event where water visibly reaches the
+   lawn step or porch step, simultaneously measure depths at the
+   grates whose NAVD88 elevations are now survey-grade (NE=3.80,
+   SE=3.60, SW=3.52). Cross-fit: water_NAVD88 = grate_elev + depth,
+   then step_elev = water_NAVD88 − step_visible_offset. Multiple events
+   converge the estimate. 6/13 + 6/14 events may already provide this
+   data (6/14 hit SH 7.16 → potentially above lawn step; awaiting user
+   measurement organization).
 5. ~~**Day-name labeling in tide times.**~~ ✅ DONE (2026-05-18).
    Format helpers `format_time_full` ("May 18, 2026: Mon 9:58 PM") and
    `format_time_short` ("Mon 9:58 PM") applied across email + HTML
