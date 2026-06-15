@@ -34,13 +34,16 @@ from urllib.parse import urlencode
 # v0.4 model parameters - update these as the model improves
 # ============================================================
 LOCAL_ENHANCEMENT_FT = -0.13       # 3-event mean (5/18, 5/31, 6/14); v0.7 promotion 2026-06-14
-# v0.7 calibration (2026-06-14): three spot-check events at SH 6.17, 6.58,
-# and 7.13 all give enhancement ≈ -0.13 ft. The v0.6 constant +0.40 was
-# almost certainly co-fit with the v0.6 rain term (all 4 historical
-# calibration events had rain). Dropping +0.40 means rain-flood events
-# similar to 2025-10-30 (SH 7.57 + 1.45 in/hr → 12" curb observed) will
-# likely UNDER-predict by ~5" at the curb until the rain term is refit in
-# v0.8 (HANDOFF 9d.2). v0.7 known limitation; documented in model/v0.7.md.
+# v0.7 calibration (2026-06-14): three tape-measured spot-check events at
+# SH 6.17, 6.58, and 7.13 all give enhancement ≈ -0.13 ft. Re-evaluation
+# 2026-06-15 confirmed v0.7 also fits Oct 30 2025 (SH 7.57 + 1.45 in/hr →
+# observed 12" curb, water at lawn step min) within 0.7" at curb — the
+# v0.6 rain term (8·tanh(rate)) applied as water-is-level rise is
+# correctly calibrated. v0.6's +0.40 was over-fit to noisy memory-based
+# observations of Apr 17, Apr 18, Dec 19 (all pre-spot-check). v0.7
+# under-predicts those events by 2-8" at curb IF those reported depths
+# are taken at face value, but they weren't tape-measured. See
+# model/v0.7.md "Historical events — re-evaluated 2026-06-15".
 
 # Landmark elevations at 342 Bay Ave (NAVD88, ft).
 # Sandy Hook MLLW threshold for each = landmark + 2.95
@@ -883,13 +886,15 @@ def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
     parameter retained for caller-API stability but no longer applied
     as a zero-override. See history/reports/cold_weather_retrospective.md.
 
-    Known v0.7 limitation: the v0.6 rain term (8·tanh(rate)) was
-    almost certainly co-fit with the +0.40 enhancement (all 4
-    historical rain-flood calibration events had rain). Dropping the
-    +0.40 means rain-flood events similar to 2025-10-30 (SH 7.57 +
-    1.45 in/hr → 12" curb observed) will likely UNDER-predict by ~5"
-    at the curb until the rain term is refit in v0.8 (HANDOFF 9d.2).
-    Documented in model/v0.7.md.
+    Rain-term calibration: re-evaluated 2026-06-15. v0.7 fits the
+    Oct 30 2025 anchor (SH 7.57 + 1.45 in/hr → ~12" curb observed,
+    water at lawn step minimum) within 0.7" at curb without retuning.
+    The earlier "v0.7 will under-predict rain events" claim was
+    based on a flawed mental calculation. v0.6's +0.40 enhancement
+    was over-fit to noisy memory-based depth observations of Apr 17,
+    Apr 18, Dec 19 (all pre-spot-check). Open question: whether the
+    saturating form `8·tanh(rate)` holds at lower rain rates (e.g.
+    Dec 19's 0.44 in/hr observation, which doesn't fit). v0.8 9d.2.
     """
     # Tide-driven water level at 342 Bay (NAVD88, ft).
     water_navd88 = sandy_hook_peak_mllw + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
@@ -3378,8 +3383,9 @@ def _render_oscillation_section(forecast):
        SH-MLLW thresholds at which the v0.7 model predicts water reaches
        each landmark. <b>Caveat</b>: a peak crossing a line means the v0.7
        model would predict that landmark wet — actual observation at 342
-       Bay may differ on rain-flood events until v0.8 refits the rain
-       term (see 6/14 README).</p>
+       Bay may differ on storm-condition events; v0.7 is calibrated on
+       regular high tides + Oct 30 2025 (heavy rain), not yet on
+       tape-measured storm-surge events.</p>
     <canvas id="oscillation-chart" width="800" height="380"
             style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
@@ -3852,12 +3858,14 @@ def _render_equation_widget_html(forecast, wrapper="section"):
         tide plus any storm surge.</dd>
       <dt>Local enhancement ({LOCAL_ENHANCEMENT_FT:+.2f} ft)</dt>
       <dd>The residual after the datum conversion: how much water at
-        342 Bay differs from what the SH gauge reads. v0.7 (2026-06-14)
-        sets this to a constant <b>-0.13 ft</b> based on 3 spot-check
-        events at SH 6.17, 6.58, and 7.13 that all give the same
-        value. The v0.6 +0.40 was likely co-fit with the rain term;
-        rain-flood events may under-predict by ~5" at curb until v0.8
-        refits the rain term.</dd>
+        342 Bay differs from what the SH gauge reads. v0.7 sets this
+        to a constant <b>-0.13 ft</b> based on 3 tape-measured
+        spot-check events at SH 6.17, 6.58, and 7.13 that all give
+        the same value. The v0.6 constant +0.40 was over-fit to noisy
+        memory-based observations of older events (Apr 17, 18, Dec 19)
+        that pre-dated the spot-check protocol; whether those were
+        memory artifacts or a real storm-condition amplification is
+        still open.</dd>
       <dt>MLLW&rarr;NAVD88 offset (&minus;2.82 ft)</dt>
       <dd>A pure datum conversion. The gauge reports heights in MLLW;
         the landmark elevations at the house were surveyed in NAVD88.

@@ -70,7 +70,7 @@ across four labeled flood events the user observed firsthand.
 | High-res measuring-tape reference photos | ✅ Added 2026-05-31. Two straight-on photos + README in `assets/observations/0-measuring-tape/` covering the digit-after-line convention, subdivision marks, color cues, and common photo-reading failure modes. Use when independently verifying tape readings from spot-check photos. |
 | Hourly bot cadence — actually ~62%, not 100% | ⚠️ Documented 2026-05-31 (see `assets/observations/2026-05-30/README.md` cadence section). GitHub Actions throttles the `'0 * * * *'` schedule. Last 7 days: 120/192 hour-slots filled. UTC hours 02/04/06 never run; 08/10/11/12/14/16 partial. No fix — this is GHA free-tier load shedding behavior. Convergence charts have ~1.5-2 h effective resolution, not 1 h. |
 | Web platform pivot — sub-daily updates, interactive site | ✅ Foundation shipped 2026-05-19. See section 9b. Workflow hourly; per-tide deep-link pages; client-side heat-map renderer; convergence + oscillation + scrubber charts; severity-colored rollup with 24/48/72h toggle; rain-toggle map; refined confidence with regime band; 1-2 month astronomical look-ahead; accuracy scatter + binary classifier matrix. Master predictions log at `data/predictions_log.csv` accumulating since 2026-05-19. |
-| v0.7 model spec promotion | ✅ **Shipped 2026-06-15.** Bundles: corrected grate elevations + 5-grate set (NE/NW=3.80; SE=3.60; SW=3.52; upstream=3.64 low-point); new corner landmarks (corner_NE/NW=3.91; corner_SE/SW=3.64); renames (`corner_grate`→`grate_NE`, `lowest_sentinel_grate`→`grate_SE`, `lowest_road_corner`→`corner_SE`, `intersection`→`intersection_highpoint`); **enhancement = constant −0.13 ft** (3-event mean — 6/14 disproved the original piecewise heuristic at high SH); single-water-level math (drops per-landmark rain shedding); negative-surge clip removed; rain window before-biased [−90 min, +15 min]. Known limitation: rain-flood events may under-predict by ~5″ at curb until v0.8 9d.2 refits rain term. See `model/v0.7.md`. |
+| v0.7 model spec promotion | ✅ **Shipped 2026-06-15.** Bundles: corrected grate elevations + 5-grate set (NE/NW=3.80; SE=3.60; SW=3.52; upstream=3.64 low-point); new corner landmarks (corner_NE/NW=3.91; corner_SE/SW=3.64); renames (`corner_grate`→`grate_NE`, `lowest_sentinel_grate`→`grate_SE`, `lowest_road_corner`→`corner_SE`, `intersection`→`intersection_highpoint`); **enhancement = constant −0.13 ft** (3-event mean — 6/14 disproved the original piecewise heuristic at high SH); single-water-level math (drops per-landmark rain shedding); negative-surge clip removed; rain window before-biased [−90 min, +15 min]. **Re-evaluated 2026-06-15**: v0.7 actually fits Oct 30 2025 within 0.7″ at curb without retuning — the v0.6 rain term (`8·tanh(rate)`) applied as water-is-level rise is correctly calibrated. The earlier "rain-flood under-predicts" caveat I wrote was based on a flawed mental calculation. The remaining open question is whether the pre-spot-check Apr/Dec events (which give implied enhancement ~+0.4) reflect memory imprecision or a real storm-condition amplification. See `model/v0.7.md` for the full calibration table. |
 | v0.8 model spec promotion (data-blocked, deferred) | ⏸ Queued. Holds the two items v0.7 can't responsibly land: (a) fitted form of the surge-dependent enhancement (needs a high-surge event SH≥7.0 to fit); (b) rain-term recalibration (needs a second rain-flood event — Oct 30 2025 is the only anchor). Open bucket — anything else added between now and shipment lands here. See section 9d. |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
@@ -1380,12 +1380,18 @@ enhancement_ft = -0.13   # 3-event mean (5/18, 5/31, 6/14)
 This matches all 3 spot-check events (SH 6.17, 6.58, 7.13) within
 measurement noise (σ ≈ 0.02–0.04 ft per event).
 
-**Required caveat to ship with this revision**: the v0.6 rain term
-(`8 · tanh(rate)`) was almost certainly co-fit with the +0.40
-enhancement from the original 4-event calibration (Apr 17, Apr 18,
-Oct 30, Dec 19 — all had rain). Dropping the +0.40 will under-predict
-rain-flood events by ~5″ at the curb until v0.8 9d.2 re-fits the rain
-term. Document prominently as a v0.7 known limitation.
+**Caveat I wrote at promotion time (now superseded by 2026-06-15
+re-evaluation)**: I originally claimed the v0.6 rain term was
+co-fit with the +0.40 enhancement and v0.7 would under-predict
+rain-flood events by ~5″. **That was wrong** — a re-computation
+on 2026-06-15 confirmed v0.7 actually fits Oct 30 within 0.7″ at
+the curb without any rain-term refit. The +0.40 enhancement in
+v0.6 was over-fit to noisy memory-based depth observations of Apr
+17, Apr 18, and Dec 19 (all pre-spot-check). v0.7 under-predicts
+those events by 2–8″ at curb if their reported depths are taken at
+face value, but those depths weren't tape-measured. See
+`model/v0.7.md` "Historical events — re-evaluated 2026-06-15" for
+the full table.
 
 #### v0.8 9d.1 implication
 
@@ -1584,24 +1590,29 @@ with the new data.
 **Data needed**: one spot-check at SH ≥ 7.5 with multi-grate
 measurements. Not blocking other v0.8 work; opportunistic.
 
-### 9d.2 — Rain term as water-level addition (recalibrated)
+### 9d.2 — Rain term: verify at lower rain rates (scope reduced 2026-06-15)
 
-The v0.6 `rain_add = 8 * tanh(rate)` (inches per landmark) becomes
-`dZ_rain = something(rate)` (ft) applied as a uniform water-level
-rise. Recalibrate against the rain-flood corpus.
+**Re-evaluation 2026-06-15**: the v0.6 rain term (`8·tanh(rate)`)
+applied as a uniform water-level rise (v0.7 water-is-level math)
+actually fits Oct 30 2025 within 0.7″ at the curb. The rain term
+*magnitude* is well-calibrated at peak rate 1.45 in/hr. So 9d.2 is
+no longer a wholesale recalibration — the existing form may already
+be right.
 
-**Why this is in v0.8, not v0.7**: only one rain-flood anchor event
-exists in our labeled data (2025-10-30: SH 7.57 + 1.45 in/hr → ~12"
-at curb observed). A one-point fit isn't a fit. The water-is-level
-*architecture* lands in v0.7 (9c.4) and the per-landmark shedding
-constants are removed — but the rain-term magnitude formula stays at
-v0.6 form so we don't shift calibration on an unsupported guess.
+The remaining open question is whether the saturating form is right
+at lower rain rates. Dec 19 2025 (SH 6.83, 0.44 in/hr peak,
+~7–9″ observed at curb) does NOT fit v0.7: predicted 0″ vs
+observed 7–9″. Either Dec 19 was misobserved (memory artifact;
+pre-spot-check) OR the rain term needs more weight at modest rates
+OR Dec 19 was a storm-condition event (real enhancement we can't
+model). Cannot distinguish without measured storm/rain data.
 
-**Data needed**: at least one more rain-flood event at 342 Bay with
-the rain rate, the SH peak, and observed depths at multiple grates.
+**Data needed**: tape-measured rain-flood events spanning a range
+of rain rates (especially 0.3–0.7 in/hr) and antecedent moisture
+conditions (pairs with 9d.3).
 
-**Pairs with 9d.3** — the rain term and the window definition should
-probably be re-fit together.
+**Pairs with 9d.3** — the rain term's functional form and the
+window definition should be re-fit together once we have data.
 
 ### 9d.3 — Antecedent-moisture handling + accumulation vs. peak rate
 
@@ -1981,9 +1992,13 @@ Read these for context if needed:
 4. **Cold-conditions data collection**: every cold-conditions-met
    event observed at 342 Bay going forward becomes a new
    validation data point for the cold-lockout hypothesis.
-5. **Next rain-flood event** — gates v0.8 9d.2 (rain-term
-   recalibration). The v0.7 model under-predicts rain-flood events
-   by ~5″ at curb (known limitation) until this anchor lands.
+5. **Next tape-measured rain-flood event** — gates v0.8 9d.2.
+   v0.7 fits Oct 30 within 0.7″ at curb without retuning, so the
+   rain term *magnitude* may already be right. The open question is
+   whether it works at lower rain rates (Dec 19's 0.44 in/hr case
+   gave 7–9″ observed vs 0″ predicted, but that observation was
+   memory-based pre-spot-check). One tape-measured rain event at a
+   different rate would clarify.
 6. **v0.8 model promotion** when 9d.1 + 9d.2 have enough data.
    Spec is section 9d.
 
