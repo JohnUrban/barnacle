@@ -71,7 +71,7 @@ across four labeled flood events the user observed firsthand.
 | Hourly bot cadence — actually ~62%, not 100% | ⚠️ Documented 2026-05-31 (see `assets/observations/2026-05-30/README.md` cadence section). GitHub Actions throttles the `'0 * * * *'` schedule. Last 7 days: 120/192 hour-slots filled. UTC hours 02/04/06 never run; 08/10/11/12/14/16 partial. No fix — this is GHA free-tier load shedding behavior. Convergence charts have ~1.5-2 h effective resolution, not 1 h. |
 | Web platform pivot — sub-daily updates, interactive site | ✅ Foundation shipped 2026-05-19. See section 9b. Workflow hourly; per-tide deep-link pages; client-side heat-map renderer; convergence + oscillation + scrubber charts; severity-colored rollup with 24/48/72h toggle; rain-toggle map; refined confidence with regime band; 1-2 month astronomical look-ahead; accuracy scatter + binary classifier matrix. Master predictions log at `data/predictions_log.csv` accumulating since 2026-05-19. |
 | v0.7 model spec promotion | ✅ **Shipped 2026-06-15.** Bundles: corrected grate elevations + 5-grate set (NE/NW=3.80; SE=3.60; SW=3.52; upstream=3.64 low-point); new corner landmarks (corner_NE/NW=3.91; corner_SE/SW=3.64); renames (`corner_grate`→`grate_NE`, `lowest_sentinel_grate`→`grate_SE`, `lowest_road_corner`→`corner_SE`, `intersection`→`intersection_highpoint`); **enhancement = constant −0.13 ft** (3-event mean — 6/14 disproved the original piecewise heuristic at high SH); single-water-level math (drops per-landmark rain shedding); negative-surge clip removed; rain window before-biased [−90 min, +15 min]. **Re-evaluated 2026-06-15**: v0.7 actually fits Oct 30 2025 within 0.7″ at curb without retuning — the v0.6 rain term (`8·tanh(rate)`) applied as water-is-level rise is correctly calibrated. The earlier "rain-flood under-predicts" caveat I wrote was based on a flawed mental calculation. The remaining open question is whether the pre-spot-check Apr/Dec events (which give implied enhancement ~+0.4) reflect memory imprecision or a real storm-condition amplification. See `model/v0.7.md` for the full calibration table. |
-| v0.8 model spec promotion (data-blocked, deferred) | ⏸ Queued. Holds the two items v0.7 can't responsibly land: (a) fitted form of the surge-dependent enhancement (needs a high-surge event SH≥7.0 to fit); (b) rain-term recalibration (needs a second rain-flood event — Oct 30 2025 is the only anchor). Open bucket — anything else added between now and shipment lands here. See section 9d. |
+| v0.8 model spec promotion | ✅ **Shipped 2026-06-16.** Same-night reaction to 2026-06-15 PM storm-condition event (SH 7.289, peak winds N/NNE, v0.7 under by 1.3″ structural / 3.5″ operational at curb). Changes: enhancement constant −0.13 → 0.00 (conservative; matches storm condition, errs +1.5″ on regular tides — within tape precision); **NEW wind-direction adjustment** (`compute_wind_adjustment()`) reports a −0.13 ft "expected actual" line when forecast wind at peak is in offshore sector (S/SSW/SW/WSW/SSE) — calibrated against 6/14 (offshore peak, enh −0.13) vs 6/15 (onshore peak, enh 0); NEW landmark `sidewalk_under_walkway_lawn_step` at 4.33 NAVD88 (cross-fit from 3 measurements). SH thresholds all shift −0.13 ft uniformly. See `model/v0.8.md` and `assets/observations/2026-06-15/README.md` for the full anchor. |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
 | v0.6 model-spec promotion + 9th landmark added | ✅ Live (2026-05-18). model/v0.6.md canonical; v0.5 archived. New lowest sentinel at 3.60 NAVD88 (SH 6.02). |
@@ -1553,17 +1553,19 @@ discussion.
 
 ---
 
-## 9d. v0.8 model spec (data-blocked / deferred)
+## 9d. v0.8 model spec (✅ SHIPPED 2026-06-16)
 
-Items the v0.7 spec (section 9c) cannot responsibly land yet because
-they depend on event data we don't have. These travel together as the
-v0.8 bundle. Open bucket — anything else that comes up between now
-and v0.8 ship can land here.
+Same-night promotion after the 2026-06-15 PM storm-condition event
+where v0.7 (enhancement −0.13) under-predicted by 1.3″ structural /
+3.5″ operational at curb. The 6/15 event provided exactly the
+high-surge + onshore-wind data point we'd been waiting for. The
+sub-items below describe the v0.8 scope as shipped — including the
+NEW wind-direction adjustment, which wasn't in any prior plan
+because we didn't have the calibration data for it.
 
-**Release gate for v0.8**: enough new event data to fit 9d.1 and 9d.2
-properly (specifically: at least one high-surge spot-check event with
-SH ≥ 7.0 for 9d.1, and at least one more rain-flood event for 9d.2).
-Could be weeks or months — we get those a few times a year.
+See `model/v0.8.md` for the canonical spec and
+`assets/observations/2026-06-15/README.md` for the full event
+analysis.
 
 ### 9d.1 — Storm-surge enhancement: high-SH sanity check (scope changed 2026-06-14)
 

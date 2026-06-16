@@ -33,56 +33,61 @@ from urllib.parse import urlencode
 # ============================================================
 # v0.4 model parameters - update these as the model improves
 # ============================================================
-LOCAL_ENHANCEMENT_FT = -0.13       # 3-event mean (5/18, 5/31, 6/14); v0.7 promotion 2026-06-14
-# v0.7 calibration (2026-06-14): three tape-measured spot-check events at
-# SH 6.17, 6.58, and 7.13 all give enhancement ≈ -0.13 ft. Re-evaluation
-# 2026-06-15 confirmed v0.7 also fits Oct 30 2025 (SH 7.57 + 1.45 in/hr →
-# observed 12" curb, water at lawn step min) within 0.7" at curb — the
-# v0.6 rain term (8·tanh(rate)) applied as water-is-level rise is
-# correctly calibrated. v0.6's +0.40 was over-fit to noisy memory-based
-# observations of Apr 17, Apr 18, Dec 19 (all pre-spot-check). v0.7
-# under-predicts those events by 2-8" at curb IF those reported depths
-# are taken at face value, but they weren't tape-measured. See
-# model/v0.7.md "Historical events — re-evaluated 2026-06-15".
+LOCAL_ENHANCEMENT_FT = 0.00        # v0.8 (2026-06-16): the 4-event-mean conservative value
+# v0.8 calibration (2026-06-16): the 6/15 PM tide (SH 7.289) was a
+# storm-condition event with a late wind veer from offshore (NW
+# afternoon) to onshore (NNE at peak). v0.7 (-0.13) under-predicted
+# by 1.5" at curb. Tonight's implied enhancement at peak was ~0,
+# vs -0.13 on the 3 prior regular-tide events (5/18, 5/31, 6/14, all
+# with offshore peak winds). v0.8 takes the conservative value:
+#   - Main model: enhancement = 0 (matches storm conditions)
+#   - Wind adjustment (compute_wind_adjustment): reports a -0.13 ft
+#     "expected actual" line when forecast wind at peak is in the
+#     offshore sector (S/SSW/SW/WSW/SSE)
+# This errs on the safer / over-predict side per user preference; the
+# wind-adjusted secondary line gives the calibrated regular-tide
+# estimate when conditions warrant.
 
 # Landmark elevations at 342 Bay Ave (NAVD88, ft).
-# Sandy Hook MLLW threshold for each = landmark + 2.95
-# (= +2.82 datum offset − (−0.13) local enhancement).
-GRATE_SW              = 3.52   # SW distal grate across Bay (lowest grate)   (SH 6.47)
-GRATE_SE              = 3.60   # SE proximal grate across Bay                (SH 6.55)
-CORNER_SE             = 3.64   # SE pavement corner across Bay               (SH 6.59)
-CORNER_SW             = 3.64   # SW pavement corner across Bay               (SH 6.59)
-GRATE_BAY_AVE_UPSTREAM = 3.64  # upstream grate (low-point ref; uneven 3.64-3.78) (SH 6.59)
-GUTTER_WALKWAY        = 3.78   # street-curb interface at walkway            (SH 6.73)
-GRATE_NE              = 3.80   # user's corner grate (was CORNER_GRATE=3.91 in v0.6) (SH 6.75)
-GRATE_NW              = 3.80   # NW corner grate across Central              (SH 6.75)
-CORNER_NE             = 3.91   # NE pavement corner (not the grate)          (SH 6.86)
-CORNER_NW             = 3.91   # NW pavement corner (not the grate)          (SH 6.86)
-CURB_TOP              = 4.16   # Bay Ave side at walkway                     (SH 7.11)
-ROAD_MIDDLE           = 4.36   # Bay Ave centerline at user's spot           (SH 7.31)
-INTERSECTION_HIGHPOINT = 4.54  # Bay+Central intersection (local high)       (SH 7.49)
-LAWN_STEP             = 4.58   # walkway step (inferred; cross-fit todo)     (SH 7.53)
-FRONT_PORCH_STEP      = 5.08   # ~6" above lawn step                         (SH 8.03)
+# Sandy Hook MLLW threshold for each = landmark + 2.82
+# (= +2.82 datum offset − 0.00 local enhancement; v0.8 promotion 2026-06-16).
+GRATE_SW              = 3.52   # SW distal grate across Bay (lowest grate)   (SH 6.34)
+GRATE_SE              = 3.60   # SE proximal grate across Bay                (SH 6.42)
+CORNER_SE             = 3.64   # SE pavement corner across Bay               (SH 6.46)
+CORNER_SW             = 3.64   # SW pavement corner across Bay               (SH 6.46)
+GRATE_BAY_AVE_UPSTREAM = 3.64  # upstream grate (low-point ref; uneven 3.64-3.78) (SH 6.46)
+GUTTER_WALKWAY        = 3.78   # street-curb interface at walkway            (SH 6.60)
+GRATE_NE              = 3.80   # user's corner grate                         (SH 6.62)
+GRATE_NW              = 3.80   # NW corner grate across Central              (SH 6.62)
+CORNER_NE             = 3.91   # NE pavement corner (not the grate)          (SH 6.73)
+CORNER_NW             = 3.91   # NW pavement corner (not the grate)          (SH 6.73)
+CURB_TOP              = 4.16   # Bay Ave side at walkway                     (SH 6.98)
+SIDEWALK_UNDER_LAWN_STEP = 4.33 # Sidewalk where it meets the lawn-step face (SH 7.15)
+ROAD_MIDDLE           = 4.36   # Bay Ave centerline at user's spot           (SH 7.18)
+INTERSECTION_HIGHPOINT = 4.54  # Bay+Central intersection (local high)       (SH 7.36)
+LAWN_STEP             = 4.58   # walkway step (inferred; cross-fit todo)     (SH 7.40)
+FRONT_PORCH_STEP      = 5.08   # ~6" above lawn step                         (SH 7.90)
 
 # Stratified landmarks (ascending severity). First several are sub-curb
 # sentinels for early-warning visual check + parking decisions. SH
-# thresholds are recomputed under v0.7 enhancement (-0.13).
+# thresholds are recomputed under v0.8 enhancement (0.00).
 LANDMARKS = [
-    ("grate_SW",              "SW distal grate across Bay",       GRATE_SW,              6.47),
-    ("grate_SE",              "SE proximal grate across Bay",     GRATE_SE,              6.55),
-    ("corner_SE",             "SE corner across Bay",             CORNER_SE,             6.59),
-    ("corner_SW",             "SW corner across Bay",             CORNER_SW,             6.59),
-    ("grate_bay_ave_upstream", "Bay Ave upstream grate",          GRATE_BAY_AVE_UPSTREAM, 6.59),
-    ("gutter_walkway",        "Gutter / curb edge at walkway",    GUTTER_WALKWAY,        6.73),
-    ("grate_NE",              "Storm grate at user's corner (NE)", GRATE_NE,              6.75),
-    ("grate_NW",              "NW corner grate across Central",   GRATE_NW,              6.75),
-    ("corner_NE",             "NE corner pavement",               CORNER_NE,             6.86),
-    ("corner_NW",             "NW corner pavement",               CORNER_NW,             6.86),
-    ("curb",                  "Curb at walkway",                  CURB_TOP,              7.11),
-    ("road_middle",           "Bay Ave road middle",              ROAD_MIDDLE,           7.31),
-    ("intersection_highpoint", "Intersection high point",         INTERSECTION_HIGHPOINT, 7.49),
-    ("lawn_step",             "Lawn / walkway step",              LAWN_STEP,             7.53),
-    ("porch_step",            "Front porch first step",           FRONT_PORCH_STEP,      8.03),
+    ("grate_SW",              "SW distal grate across Bay",       GRATE_SW,              6.34),
+    ("grate_SE",              "SE proximal grate across Bay",     GRATE_SE,              6.42),
+    ("corner_SE",             "SE corner across Bay",             CORNER_SE,             6.46),
+    ("corner_SW",             "SW corner across Bay",             CORNER_SW,             6.46),
+    ("grate_bay_ave_upstream", "Bay Ave upstream grate",          GRATE_BAY_AVE_UPSTREAM, 6.46),
+    ("gutter_walkway",        "Gutter / curb edge at walkway",    GUTTER_WALKWAY,        6.60),
+    ("grate_NE",              "Storm grate at user's corner (NE)", GRATE_NE,              6.62),
+    ("grate_NW",              "NW corner grate across Central",   GRATE_NW,              6.62),
+    ("corner_NE",             "NE corner pavement",               CORNER_NE,             6.73),
+    ("corner_NW",             "NW corner pavement",               CORNER_NW,             6.73),
+    ("curb",                  "Curb at walkway",                  CURB_TOP,              6.98),
+    ("sidewalk_under_walkway_lawn_step", "Sidewalk under walkway lawn-step", SIDEWALK_UNDER_LAWN_STEP, 7.15),
+    ("road_middle",           "Bay Ave road middle",              ROAD_MIDDLE,           7.18),
+    ("intersection_highpoint", "Intersection high point",         INTERSECTION_HIGHPOINT, 7.36),
+    ("lawn_step",             "Lawn / walkway step",              LAWN_STEP,             7.40),
+    ("porch_step",            "Front porch first step",           FRONT_PORCH_STEP,      7.90),
 ]
 # Subset used for the "seasonality typical vs MTD" table — curb-and-up only.
 # Sub-curb landmarks would dominate the table (counts of 8-12 days/month
@@ -367,7 +372,7 @@ PREDICTIONS_LOG_FIELDS = [
     "regime_predicted",
     "cold_lockout",              # "true" | "false"
     "confidence_level",          # "high" | "medium" | "low" | ""
-    "model_version",             # current model spec version (currently v0.7)
+    "model_version",             # current model spec version (currently v0.8)
 ]
 
 
@@ -487,7 +492,20 @@ def update_forecast_accuracy():
     return _summarize_accuracy(last_n=30)
 
 
-CURRENT_MODEL_VERSION = "v0.7"
+CURRENT_MODEL_VERSION = "v0.8"
+
+# v0.8 wind-direction sectors for the storm-bump adjustment. Sandy Hook
+# Bay's SE corner (where Highlands sits) is piled when winds blow INTO
+# that corner — from the N/NE quadrant. Winds FROM the S/SW push water
+# OUT of the corner, reducing local enhancement.
+# Calibrated against 2026-06-14 (peak wind SSW → offshore → enh -0.13)
+# and 2026-06-15 (peak wind N/NNE → onshore → enh 0). The "main" model
+# (enhancement = 0) matches onshore peak conditions. Forecast offshore
+# peak conditions get reported as an "expected actual" line that's
+# 0.13 ft lower than the main prediction.
+WIND_OFFSHORE_DIRECTIONS = {"S", "SSW", "SW", "WSW", "SSE"}
+WIND_ONSHORE_DIRECTIONS  = {"N", "NNE", "NE", "ENE", "E", "NNW"}
+WIND_OFFSHORE_ADJUSTMENT_FT = -0.13
 
 
 def append_predictions_log(forecast):
@@ -866,38 +884,127 @@ def fetch_nws_hourly_forecast():
 # ============================================================
 # Model
 # ============================================================
-def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
-                            cold_lockout=False):
-    """Apply v0.7 model. Returns dict of depths (inches) at each landmark.
+def compute_wind_adjustment(nws_hourly, peak_dt):
+    """v0.8 wind-direction-dependent enhancement adjustment.
 
-    v0.7 (2026-06-14) changes from v0.6:
-    - Enhancement constant: +0.40 → -0.13 (3-event mean across SH
-      6.17, 6.58, 7.13; see model/v0.7.md and
-      assets/observations/2026-06-14/README.md for full analysis).
+    Looks up forecast wind direction at the NWS hourly period closest
+    to `peak_dt`. Returns a dict suitable for display alongside the
+    main prediction as a SEPARATE "expected actual" estimate.
+
+    Calibrated against:
+      - 2026-06-14 peak (wind SSW at 12-16 kt) → offshore → enh -0.13
+      - 2026-06-15 peak (wind N/NNE at 8-10 kt) → onshore → enh ~0
+
+    Main model uses enhancement = 0 (matches onshore peak conditions
+    or "unknown wind" — the safer / over-predict default per user
+    preference). This function returns the OFFSHORE adjustment when
+    forecast winds at peak would push water away from the bay corner.
+
+    Returns dict with:
+      sector: "offshore" | "onshore" | "neither" | "unknown"
+      adjustment_ft: 0 (default) or WIND_OFFSHORE_ADJUSTMENT_FT (offshore)
+      wind_dir_at_peak: e.g. "SSW", "N"
+      wind_speed_at_peak: NWS forecast string e.g. "10 mph"
+      note: human-readable explanation
+    """
+    if peak_dt is None or not nws_hourly:
+        return None
+    closest = None
+    closest_delta = None
+    for p in nws_hourly[:96]:
+        try:
+            tt = parse_iso(p["startTime"])
+        except Exception:
+            continue
+        delta = abs((tt - peak_dt).total_seconds())
+        if closest is None or delta < closest_delta:
+            closest = p
+            closest_delta = delta
+    if closest is None:
+        return None
+    wind_dir = closest.get("windDirection") or ""
+    wind_speed = closest.get("windSpeed") or ""
+    if wind_dir in WIND_OFFSHORE_DIRECTIONS:
+        sector = "offshore"
+        adjustment = WIND_OFFSHORE_ADJUSTMENT_FT
+        note = (
+            f"Forecast wind at peak ({wind_dir} at {wind_speed}) is in "
+            f"the offshore sector — water at 342 Bay is typically "
+            f"~{abs(WIND_OFFSHORE_ADJUSTMENT_FT*12):.1f}\" lower than the "
+            f"main prediction because bay-corner water is being pushed "
+            f"away from Highlands. Expect actual closer to this "
+            f"wind-adjusted estimate."
+        )
+    elif wind_dir in WIND_ONSHORE_DIRECTIONS:
+        sector = "onshore"
+        adjustment = 0.0
+        note = (
+            f"Forecast wind at peak ({wind_dir} at {wind_speed}) is in "
+            f"the onshore sector — water gets piled into the bay corner "
+            f"where Highlands sits. Main prediction applies."
+        )
+    else:
+        sector = "neither" if wind_dir else "unknown"
+        adjustment = 0.0
+        note = (
+            f"Forecast wind at peak ({wind_dir or 'unknown'} at "
+            f"{wind_speed or '?'}) is cross-shore or unspecified — "
+            f"defaulting to main prediction (no wind adjustment)."
+        )
+    return {
+        "sector": sector,
+        "adjustment_ft": adjustment,
+        "wind_dir_at_peak": wind_dir,
+        "wind_speed_at_peak": wind_speed,
+        "note": note,
+    }
+
+
+def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
+                            cold_lockout=False, enhancement_override=None):
+    """Apply v0.8 model. Returns dict of depths (inches) at each landmark.
+
+    v0.8 (2026-06-16) changes from v0.7:
+    - Enhancement constant: -0.13 → 0.00. The 2026-06-15 storm-condition
+      event (SH 7.289, peak winds N/NNE) cleanly fit a 0 enhancement
+      across 4-grate cross-fit, while the 3 prior tape-measured events
+      (5/18, 5/31, 6/14, all with offshore peak winds) fit -0.13. v0.8
+      takes the conservative (over-predict) value of 0 as the main
+      model. The wind-adjustment function (compute_wind_adjustment)
+      reports a -0.13 ft "expected actual" line when forecast wind at
+      peak is in the offshore sector — calibrated to S/SW peak
+      conditions like 6/14.
+    - 16 landmarks (was 15): added `sidewalk_under_walkway_lawn_step`
+      at 4.33 NAVD88 (cross-fit from the 6/15 measurements; the
+      sidewalk surface where it meets the lawn-step face on the
+      user's walkway).
+    - SH landmark thresholds shift by -0.13 ft uniformly (everything
+      activates 1.5" earlier than v0.7).
+
+    Inherited from v0.7:
     - Single-water-level math: rain adds to a shared water level
       (dZ_rain = 8·tanh(rate)/12 ft); per-landmark shedding constants
-      removed. The heat-map already used this; v0.7 makes the depth
-      function agree.
-    - Expanded landmark set: 15 landmarks (was 9). 5 grates,
-      4 pavement corners, gutter, curb, road middle, intersection
-      high-point, lawn step, porch step.
+      removed.
+    - Cold-lockout demoted from override to advisory (parameter
+      retained for caller-API stability but no longer applied).
 
-    Cold-lockout demoted from override to advisory (2026-05-19);
-    parameter retained for caller-API stability but no longer applied
-    as a zero-override. See history/reports/cold_weather_retrospective.md.
+    `enhancement_override` (v0.8): if not None, overrides
+    `LOCAL_ENHANCEMENT_FT` for this call. Used by the report renderer
+    to compute the wind-adjusted secondary prediction alongside the
+    main one.
 
-    Rain-term calibration: re-evaluated 2026-06-15. v0.7 fits the
-    Oct 30 2025 anchor (SH 7.57 + 1.45 in/hr → ~12" curb observed,
-    water at lawn step minimum) within 0.7" at curb without retuning.
-    The earlier "v0.7 will under-predict rain events" claim was
-    based on a flawed mental calculation. v0.6's +0.40 enhancement
-    was over-fit to noisy memory-based depth observations of Apr 17,
-    Apr 18, Dec 19 (all pre-spot-check). Open question: whether the
-    saturating form `8·tanh(rate)` holds at lower rain rates (e.g.
-    Dec 19's 0.44 in/hr observation, which doesn't fit). v0.8 9d.2.
+    Rain-term calibration: fits Oct 30 2025 anchor (SH 7.63 + 1.45
+    in/hr → water 5.27 NAVD88 from photo cross-fit) within 0.4" at
+    curb. v0.7→v0.8 enhancement change of +0.13 ft also bumps Oct 30
+    prediction by 0.13 ft (now 5.41 NAVD88 vs photo lower bound 5.25
+    — over by 1.9", which is the price of moving to the conservative
+    constant). v0.8 9d.3 (open) is whether antecedent moisture or
+    accumulated rain at modest rates explains Dec 19's remaining
+    mismatch.
     """
+    enh = enhancement_override if enhancement_override is not None else LOCAL_ENHANCEMENT_FT
     # Tide-driven water level at 342 Bay (NAVD88, ft).
-    water_navd88 = sandy_hook_peak_mllw + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+    water_navd88 = sandy_hook_peak_mllw + enh + MLLW_TO_NAVD88_OFFSET
 
     # Rain adds to the shared water level (water-is-level model).
     # 8·tanh(rate) is the v0.6 rain magnitude (inches) preserved
@@ -1280,8 +1387,19 @@ def build_forecast():
                     off_h = (tt - peak_dt).total_seconds() / 3600.0
                     rain_window.append((off_h, rate))
 
-        # Depth at landmarks for this tide
+        # Depth at landmarks for this tide (main prediction)
         depths = predict_landmark_depths(forecast_peak, peak_rain_rate, cold)
+
+        # v0.8 wind-direction adjustment: compute a secondary "expected
+        # actual" prediction when forecast wind at peak is offshore.
+        # Reported alongside the main prediction; does NOT replace it.
+        wind_adj = compute_wind_adjustment(nws_hourly, peak_dt)
+        depths_wind_adjusted = None
+        if wind_adj is not None and wind_adj["adjustment_ft"] != 0.0:
+            depths_wind_adjusted = predict_landmark_depths(
+                forecast_peak, peak_rain_rate, cold,
+                enhancement_override=LOCAL_ENHANCEMENT_FT + wind_adj["adjustment_ft"],
+            )
 
         # Hours from "now" to this tide's peak (positive = future, negative
         # = already passed). Used by the JS duration toggle (HANDOFF 9b.2
@@ -1306,6 +1424,8 @@ def build_forecast():
             "rain_window_3h": sorted(rain_window),  # (offset_h, in/hr) pairs
             "source": source,
             "depths_in": depths,
+            "depths_in_wind_adjusted": depths_wind_adjusted,
+            "wind_adjustment": wind_adj,
             "hours_from_now": hours_from_now,
         })
 
@@ -1372,6 +1492,8 @@ def build_forecast():
         "temp_avg_72h_f": temp_avg,
         "cold_lockout": cold,
         "depths_in": worst["depths_in"],
+        "depths_in_wind_adjusted": worst.get("depths_in_wind_adjusted"),
+        "wind_adjustment": worst.get("wind_adjustment"),
         "surge_source": worst["source"],
         "nws_status": nws_status,
         # New: full breakdown of all high tides in next 24h
@@ -2406,7 +2528,7 @@ def _render_recent_history_html(forecast):
         '<p class="note">From NOAA Sandy Hook water_level (6-min product, '
         'preliminary). <b>Rel</b> = inches above the lowest landmark '
         '(SW grate, 3.52 NAVD88), always positive or negative. '
-        '"Highest landmark" applies the −0.13 ft local enhancement (v0.7) '
+        '"Highest landmark" applies the 0.00 ft local enhancement (v0.8) '
         'to the observed peak.</p>'
         '</section>'
     )
@@ -3053,7 +3175,7 @@ Regime glossary (subject-line label, based on water depth at the curb):
   severe       : {REGIME_GLOSSARY['severe']}
   cold_lockout : {REGIME_GLOSSARY['cold_lockout']}
 
-Model: v0.7. Local enhancement -0.13 ft (3-event calibration).
+Model: v0.8. Local enhancement 0.00 ft (4-event calibration, conservative).
 """
 
     bg = {"dry": "#e8f5e9", "street": "#e3f2fd", "light": "#fff8e1",
@@ -3130,7 +3252,7 @@ Model: v0.7. Local enhancement -0.13 ft (3-event calibration).
 {low_html}
 {lookahead_html}
 <p style="font-size:small;color:#666">
-Model v0.7. Local enhancement -0.13 ft (3-event mean). Rain term saturates at 8".
+Model v0.8. Local enhancement 0.00 ft (conservative; v0.8 promotion 2026-06-16). Rain term saturates at 8".
 Surge persistence is a rough proxy; for active coastal storms, check NWS
 Coastal Flood Statement directly.
 </p>
@@ -3142,8 +3264,8 @@ def _oscillation_chart_data(forecast):
     """Build data points for the home-page oscillation chart (HANDOFF 9b.4(b)).
 
     Axis: y is Sandy Hook peak (ft MLLW) — a pure observation, not
-    model-derived. v0.7 enhancement = -0.13, so landmark threshold
-    (MLLW) = landmark_NAVD88 + 2.82 - (-0.13) = landmark_NAVD88 + 2.95.
+    model-derived. v0.8 enhancement = 0.00, so landmark threshold
+    (MLLW) = landmark_NAVD88 + 2.82 - 0.00 = landmark_NAVD88 + 2.82.
     The chart shows SH peaks observed at the gauge plus the SH-MLLW
     threshold lines at which v0.7 predicts water reaches each
     landmark.
@@ -3203,6 +3325,39 @@ def _oscillation_chart_data(forecast):
             })
 
     return {"points": points, "landmarks": landmark_lines}
+
+
+def _render_wind_adjustment_html(forecast):
+    """v0.8 wind-direction adjustment block — rendered as a separate
+    "expected actual" line in the worst-case detail section. Only
+    shown when forecast wind at peak is in the offshore sector
+    (currently the only sector that yields a non-zero adjustment).
+
+    Empty string when no adjustment applies (onshore or unknown
+    winds → main prediction stands).
+    """
+    wind_adj = forecast.get("wind_adjustment") or {}
+    adjusted_depths = forecast.get("depths_in_wind_adjusted")
+    if not wind_adj or wind_adj.get("adjustment_ft", 0) == 0 or not adjusted_depths:
+        return ""
+    main_depths = forecast.get("depths_in") or {}
+    main_curb = main_depths.get("curb", 0)
+    adj_curb = adjusted_depths.get("curb", 0)
+    adj_regime = adjusted_depths.get("regime", "?")
+    main_regime = main_depths.get("regime", "?")
+    return (
+        '<section class="wind-adjustment-advisory">'
+        '<h3>Wind adjustment — expected actual</h3>'
+        f'<p class="note">{wind_adj.get("note", "")}</p>'
+        f'<p><b>Wind-adjusted curb depth:</b> {adj_curb:+.1f}&Prime; '
+        f'(regime: <b>{adj_regime}</b>) &mdash; vs. main prediction of '
+        f'{main_curb:+.1f}&Prime; ({main_regime}). The main prediction '
+        f'errs on the safer / over-predict side; the wind-adjusted '
+        f'value is the v0.8 calibrated estimate for the forecast wind '
+        f'sector. <i>v0.8 calibration anchor: 2026-06-14 (offshore peak '
+        f'wind, enh -0.13) vs 2026-06-15 (onshore peak wind, enh 0).</i></p>'
+        '</section>'
+    )
 
 
 def _render_cold_advisory_html(forecast):
@@ -4838,6 +4993,7 @@ def render_html_page(forecast):
       <dt>72h mean temp</dt><dd>{forecast['temp_avg_72h_f']:.1f}&deg;F</dd>
       <dt>Cold conditions</dt><dd>{'<b>YES</b> — ice-lock hypothesis met; <i>no longer actively applied</i> (see <a href="https://github.com/JohnUrban/barnacle/blob/main/history/reports/cold_weather_retrospective.md">retrospective</a>)' if cold else 'no'}</dd>
     </dl>
+{_render_wind_adjustment_html(forecast)}
     <p class="note">Per-tide detail pages live under <code>tides/&lt;date&gt;T&lt;HH-MM&gt;/</code>
        (one per upcoming high tide; click any time in the rollup table above
        to open one). They contain a tide-specific heat-map, a slider that
