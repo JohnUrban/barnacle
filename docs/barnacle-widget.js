@@ -251,7 +251,9 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
   // hours flagged burst-capable (PoP/thunderstorm wording), not the
   // whole window. A zone, not a level.
   if (potIn) {
-    ctx.setFillColor(new Color("#0b3d6b", 0.18));
+    // Fill strong enough to read at widget size, plus a solid navy
+    // ceiling stroke across each active segment.
+    ctx.setFillColor(new Color("#0b3d6b", 0.30));
     const flags = series.map(p => !!p.burst_risk);
     const anyFlag = flags.some(Boolean);
     const stripW = Math.max(2, plotW / times.length);
@@ -260,6 +262,20 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
       const xi = x(times[i].getTime());
       ctx.fillRect(new Rect(xi - stripW / 2, y(potIn), stripW, y(0) - y(potIn)));
     }
+    ctx.setStrokeColor(new Color("#0b3d6b", 0.95));
+    ctx.setLineWidth(1.5);
+    let zseg = null;
+    for (let i = 0; i < times.length; i++) {
+      const active = !anyFlag || flags[i];
+      if (active) {
+        const pt = new Point(x(times[i].getTime()), y(potIn));
+        if (zseg) zseg.addLine(pt);
+        else { zseg = new Path(); zseg.move(pt); }
+      } else if (zseg) {
+        ctx.addPath(zseg); ctx.strokePath(); zseg = null;
+      }
+    }
+    if (zseg) { ctx.addPath(zseg); ctx.strokePath(); }
   }
 
   // Landmark reference lines — SHARED PALETTE with the website chart

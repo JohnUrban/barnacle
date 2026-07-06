@@ -4031,9 +4031,12 @@ def _render_water_series_section(forecast):
             "label": f"rain-burst potential zone (up to +{pot_in}″, storm-capable hours)",
             "data": zone_data,
             "fill": {"target": {"value": 0}},
-            "backgroundColor": "rgba(11, 61, 107, 0.14)",
-            "borderColor": "rgba(11, 61, 107, 0)",
-            "pointRadius": 0, "borderWidth": 0, "spanGaps": False,
+            # Strong enough to see even when the potential is small
+            # (a +3" zone is a thin sliver of the standard frame) —
+            # solid navy top edge marks the ceiling crisply.
+            "backgroundColor": "rgba(11, 61, 107, 0.32)",
+            "borderColor": "rgba(11, 61, 107, 0.9)",
+            "pointRadius": 0, "borderWidth": 1.5, "spanGaps": False,
         })
     cfg = {
         "type": "line",
