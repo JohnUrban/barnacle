@@ -66,8 +66,15 @@ CURB_TOP              = 4.16   # Bay Ave side at walkway                     (SH
 SIDEWALK_UNDER_LAWN_STEP = 4.33 # Sidewalk where it meets the lawn-step face (SH 7.15)
 ROAD_MIDDLE           = 4.36   # Bay Ave centerline at user's spot           (SH 7.18)
 INTERSECTION_HIGHPOINT = 4.54  # Bay+Central intersection (local high)       (SH 7.36)
-LAWN_STEP             = 4.58   # walkway step (inferred; cross-fit todo)     (SH 7.40)
-FRONT_PORCH_STEP      = 5.08   # ~6" above lawn step                         (SH 7.90)
+# v0.9 porch ladder (2026-07-06): lawn step + porch geometry re-anchored
+# from the 7/6 pluvial event (photo-timeline interpolation + user's
+# ordering constraint) + taped riser heights (assets/porch-measurements.txt).
+# The old FRONT_PORCH_STEP=5.08 corresponded to no physical feature — it
+# was fabricated in v0.5.1 as lawn_step(4.58)+6"; both inputs were wrong.
+LAWN_STEP             = 4.66   # lawn-step top (was 4.58 inferred)           (SH 7.48)
+PORCH_STEP_BASE       = 4.68   # walkway at the bottom porch step            (SH 7.50)
+PORCH_STEP1_TOP       = 5.41   # top of first porch step (8.75" riser)       (SH 8.23)
+PORCH_DECK            = 8.08   # porch platform (5 risers, 40.75" total)     (SH 10.90)
 
 # Stratified landmarks (ascending severity). First several are sub-curb
 # sentinels for early-warning visual check + parking decisions. SH
@@ -87,14 +94,27 @@ LANDMARKS = [
     ("sidewalk_under_walkway_lawn_step", "Sidewalk under walkway lawn-step", SIDEWALK_UNDER_LAWN_STEP, 7.15),
     ("road_middle",           "Bay Ave road middle",              ROAD_MIDDLE,           7.18),
     ("intersection_highpoint", "Intersection high point",         INTERSECTION_HIGHPOINT, 7.36),
-    ("lawn_step",             "Lawn / walkway step",              LAWN_STEP,             7.40),
-    ("porch_step",            "Front porch first step",           FRONT_PORCH_STEP,      7.90),
+    ("lawn_step",             "Lawn / walkway step",              LAWN_STEP,             7.48),
+    ("porch_step_base",       "Bottom of porch steps",            PORCH_STEP_BASE,       7.50),
+    ("porch_step1_top",       "Top of first porch step",          PORCH_STEP1_TOP,       8.23),
+    ("porch_deck",            "Porch deck (platform)",            PORCH_DECK,           10.90),
 ]
 # Subset used for the "seasonality typical vs MTD" table — curb-and-up only.
 # Sub-curb landmarks would dominate the table (counts of 8-12 days/month
 # in recent decades); they're shown in the daily depth table instead.
 SEASONALITY_LANDMARK_KEYS = {"curb", "road_middle", "intersection_highpoint",
-                             "lawn_step", "porch_step"}
+                             "lawn_step", "porch_step_base"}
+# Seasonality CSV (history project) still uses v0.6 keys/thresholds;
+# alias new keys to CSV keys for the display join. The CSV's baked-in
+# thresholds are stale relative to v0.8/v0.9 (+2.82 vs +2.42) — flagged
+# for the annual analytics refresh (HANDOFF section 9 backlog).
+SEASONALITY_KEY_ALIASES = {
+    "intersection_highpoint": "intersection",
+    "porch_step_base":        "porch_step",
+    "grate_SE":               "lowest_sentinel_grate",
+    "grate_NE":               "corner_grate",
+    "corner_SE":              "lowest_road_corner",
+}
 # Curated landmarks for the oscillation chart on the home page (9b.4(b)).
 # Five entries — fewer than the full landmark set — so labels don't crowd
 # each other on the chart's y-axis. Updated for v0.7 (2026-06-14).
@@ -102,8 +122,8 @@ OSCILLATION_LANDMARK_KEYS = {
     "grate_SE",               # 3.60 — SE proximal grate (was lowest_sentinel_grate)
     "grate_NE",               # 3.80 — user's corner grate (was corner_grate at 3.91)
     "curb",                   # 4.16 — curb at walkway
-    "lawn_step",              # 4.58 — lawn / walkway step
-    "porch_step",             # 5.08 — front porch first step
+    "lawn_step",              # 4.66 — lawn / walkway step
+    "porch_step1_top",        # 5.41 — top of first porch step
 }
 
 MLLW_TO_NAVD88_OFFSET = -2.82  # NAVD88 = MLLW + offset
@@ -429,7 +449,7 @@ PREDICTIONS_LOG_FIELDS = [
     "regime_predicted",
     "cold_lockout",              # "true" | "false"
     "confidence_level",          # "high" | "medium" | "low" | ""
-    "model_version",             # current model spec version (currently v0.8)
+    "model_version",             # current model spec version (currently v0.9)
 ]
 
 
@@ -549,7 +569,7 @@ def update_forecast_accuracy():
     return _summarize_accuracy(last_n=30)
 
 
-CURRENT_MODEL_VERSION = "v0.8"
+CURRENT_MODEL_VERSION = "v0.9"
 
 # v0.8 wind-direction sectors for the storm-bump adjustment. Sandy Hook
 # Bay's SE corner (where Highlands sits) is piled when winds blow INTO
@@ -704,11 +724,13 @@ LOOKAHEAD_DAYS = 45
 # Thresholds for flagging an upcoming high tide. Each entry is
 # (sh_mllw_threshold, label_for_user, css_severity_class). Sorted high to
 # low; the FIRST threshold a tide crosses defines its row's styling.
+# Recomputed for v0.9 thresholds (landmark + 2.82); the old values
+# (7.00/6.58/6.20) were v0.6-era and never updated through v0.7-v0.9.
 LOOKAHEAD_THRESHOLDS = [
-    (7.00, "would cross lawn step (no surge needed)",       "watch-severe"),
-    (6.58, "would cross curb (no surge needed)",             "watch-moderate"),
-    (6.20, "would reach gutter (no surge needed)",           "watch-light"),
-    (6.00, "elevated tide — flooding likely with any surge", "watch-minor"),
+    (7.48, "would cross lawn step (no surge needed)",       "watch-severe"),
+    (6.98, "would cross curb (no surge needed)",             "watch-moderate"),
+    (6.60, "would reach gutter (no surge needed)",           "watch-light"),
+    (6.34, "would reach the lowest grate (SW) — street water", "watch-minor"),
 ]
 
 
@@ -2724,7 +2746,9 @@ LANDMARK_SHORT_LABELS = {
     "road_middle":           "Road middle",
     "intersection_highpoint": "Intersection",
     "lawn_step":             "Lawn step",
-    "porch_step":            "Porch step",
+    "porch_step_base":       "Porch base",
+    "porch_step1_top":       "Porch step 1",
+    "porch_deck":            "Porch deck",
 }
 
 
@@ -2926,7 +2950,8 @@ def _unified_landmark_rows(forecast):
 
     out = []
     for key, label, elev, sh in LANDMARKS:
-        season = season_by_key.get(key, {})
+        season = season_by_key.get(
+            key, season_by_key.get(SEASONALITY_KEY_ALIASES.get(key), {})) or {}
         mtd_row = mtd_by_thresh.get(sh, {})
         out.append({
             "key":         key,
@@ -3347,9 +3372,10 @@ Regime: {regime_display(regime)} — {REGIME_GLOSSARY.get(regime, '')}
   7.15    : water on sidewalk under the walkway lawn step
   7.18    : Bay Ave road middle covered
   7.36    : intersection high point submerged
-  7.40    : water at lawn / walkway step
-  7.90    : water at front porch first step
-  8.0+    : severe (well past porch)
+  7.48    : water at lawn / walkway step
+  7.50    : water at bottom of porch steps
+  8.23    : water over the first porch step
+  10.90   : water at the porch deck (Sandy-class)
 
 Regime glossary (subject-line label, based on water depth at the curb):
   no flooding  : {REGIME_GLOSSARY['dry']}
@@ -5341,9 +5367,10 @@ def render_html_page(forecast):
       <li>7.15 ft — water on sidewalk under the walkway lawn step</li>
       <li>7.18 ft — Bay Ave road middle covered</li>
       <li>7.36 ft — intersection high point submerged</li>
-      <li>7.40 ft — water at lawn / walkway step</li>
-      <li>7.90 ft — water at front porch first step</li>
-      <li>&ge; 8.0 ft — severe (well past porch)</li>
+      <li>7.48 ft — water at lawn / walkway step</li>
+      <li>7.50 ft — water at bottom of porch steps</li>
+      <li>8.23 ft — water over the first porch step</li>
+      <li>10.90 ft — water at the porch deck (Sandy-class)</li>
     </ul>
   </section>
 

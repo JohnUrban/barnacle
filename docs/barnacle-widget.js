@@ -55,8 +55,10 @@ const LANDMARKS = [
   ["sidewalk_under_walkway_lawn_step",  "Sidewalk",       4.33],
   ["road_middle",                       "Road middle",    4.36],
   ["intersection_highpoint",            "Intersection",   4.54],
-  ["lawn_step",                         "Lawn step",      4.58],
-  ["porch_step",                        "Porch step",     5.08],
+  ["lawn_step",                         "Lawn step",      4.66],
+  ["porch_step_base",                   "Porch base",     4.68],
+  ["porch_step1_top",                   "Porch step 1",   5.41],
+  ["porch_deck",                        "Porch deck",     8.08],
 ];
 const LOWEST_ELEV = 3.52;      // grate_SW — first water appears here
 const CURB_ELEV   = 4.16;      // flood onset at the property
