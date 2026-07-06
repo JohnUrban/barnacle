@@ -148,6 +148,30 @@ function nextWatchDate(forecast) {
   return `Next watch ${moStr} (${r.mllw.toFixed(2)})`;
 }
 
+function fmtClock(s) {
+  // "2026-07-06 16:40" -> "4:40P"
+  const m = s && s.match(/ (\d{2}):(\d{2})/);
+  if (!m) return "";
+  let h = Number(m[1]); const mi = m[2];
+  const ap = h >= 12 ? "P" : "A"; h = (h % 12) || 12;
+  return mi === "00" ? `${h}${ap}` : `${h}:${mi}${ap}`;
+}
+
+function todayWindowLine(forecast) {
+  // One-line flood window for the highest landmark crossed today,
+  // e.g. "SW grate wet ~4:40–7:10P (2.5h)". Null when nothing floods.
+  const hc = forecast.today_highest_crossed;
+  const fw = forecast.flood_windows || {};
+  if (!hc || !fw[hc.key] || !fw[hc.key].length) return null;
+  const label = (LANDMARKS.find(l => l[0] === hc.key) || [null, hc.key])[1];
+  const ep = fw[hc.key][0];
+  if (ep.grazing) return `${label}: may briefly touch`;
+  const start = fmtClock(ep.start);
+  const end = ep.end ? fmtClock(ep.end) : "…";
+  const dur = ep.duration_h != null ? ` (${ep.duration_h.toFixed(1)}h)` : "";
+  return `${label} wet ~${start}–${end}${dur}`;
+}
+
 // ---- tide-curve chart (medium widget) ----
 // Draws forecast.water_series (model-predicted water NAVD88, 30-min
 // steps, now-2h → now+24h) as a line chart with:
@@ -155,7 +179,7 @@ function nextWatchDate(forecast) {
 //   - dashed reference line at CURB_ELEV (flood onset)
 //   - vertical "now" marker
 //   - shaded fill where the curve exceeds LOWEST_ELEV
-function drawTideChart(series, width, height, styleText) {
+function drawTideChart(series, width, height, styleText, rainPotential) {
   const ctx = new DrawContext();
   ctx.size = new Size(width, height);
   ctx.opaque = false;
@@ -167,7 +191,7 @@ function drawTideChart(series, width, height, styleText) {
 
   // Y range: include reference lines with a little headroom
   let yMin = Math.min(...vals, LOWEST_ELEV) - 0.3;
-  let yMax = Math.max(...vals, CURB_ELEV) + 0.3;
+  let yMax = Math.max(...vals, CURB_ELEV, rainPotential || 0) + 0.3;
   const t0 = times[0].getTime();
   const t1 = times[times.length - 1].getTime();
 
@@ -205,6 +229,10 @@ function drawTideChart(series, width, height, styleText) {
   }
   dashedLine(y(LOWEST_ELEV), new Color("#4a90d9", 0.8));  // first water
   dashedLine(y(CURB_ELEV), new Color("#c0392b", 0.8));    // flood onset
+  // Rain-burst potential (rain-DNA): the level a 7/6-analog burst
+  // would reach. Drawn as a level, not a bump — convective timing is
+  // unknowable, magnitude isn't.
+  if (rainPotential) dashedLine(y(rainPotential), new Color("#d97706", 0.9));
 
   // Water curve
   ctx.setStrokeColor(new Color("#1a5fa8"));
@@ -235,6 +263,10 @@ function drawTideChart(series, width, height, styleText) {
   ctx.drawText("curb", new Point(width - 26, y(CURB_ELEV) - 9));
   ctx.setTextColor(new Color("#1a5fa8"));
   ctx.drawText("1st water", new Point(width - 40, y(LOWEST_ELEV) + 1));
+  if (rainPotential) {
+    ctx.setTextColor(new Color("#d97706"));
+    ctx.drawText("rain potential", new Point(2, y(rainPotential) - 9));
+  }
 
   // Time labels: start / now / end along the bottom
   ctx.setTextColor(new Color("#777777"));
@@ -269,8 +301,18 @@ function makeErrorWidget(err) {
 
 function makeWidget(forecast, family) {
   const w = new ListWidget();
-  const regime = (forecast.depths_in && forecast.depths_in.regime) || "dry";
-  const style = REGIME_STYLES[regime] || REGIME_STYLES.dry;
+  // TODAY drives the widget color (2026-07-06 redesign): the regime
+  // from the next-26h water series (which includes rain), upgraded
+  // one step visually when pluvial risk is elevated. The 72h worst
+  // tide is a labeled secondary line, no longer the headline.
+  const worstRegime = (forecast.depths_in && forecast.depths_in.regime) || "dry";
+  let todayRegime = forecast.today_regime || worstRegime;
+  const pluvialLevel = (forecast.pluvial_risk && forecast.pluvial_risk.level) || null;
+  let styleKey = todayRegime;
+  if (pluvialLevel === "elevated" && (styleKey === "dry" || styleKey === "street")) {
+    styleKey = "light";  // amber-ish background when rain risk dominates
+  }
+  const style = REGIME_STYLES[styleKey] || REGIME_STYLES.dry;
   w.backgroundColor = new Color(style.bg);
 
   const peakFt = forecast.peak_forecast_observed_mllw;
@@ -310,50 +352,62 @@ function makeWidget(forecast, family) {
     const left = row.addStack();
     left.layoutVertically();
 
-    const regLabel = left.addText(regimeDisplay(regime));
-    regLabel.font = Font.boldSystemFont(regimeDisplay(regime).length > 8 ? 16 : 22);
+    // ---- TODAY block (the headline) ----
+    const hdr = left.addText("TODAY");
+    hdr.font = Font.mediumSystemFont(9);
+    hdr.textColor = new Color("#777");
+
+    const regLabel = left.addText(regimeDisplay(todayRegime));
+    regLabel.font = Font.boldSystemFont(regimeDisplay(todayRegime).length > 8 ? 15 : 20);
     regLabel.textColor = new Color(style.text);
     regLabel.lineLimit = 1;
     regLabel.minimumScaleFactor = 0.6;
     addPluvialLine(left);
 
-    left.addSpacer(2);
-    const peakLine = left.addText(
-      peakFt != null ? `${peakFt.toFixed(2)} ft` : "—"
-    );
-    peakLine.font = Font.semiboldSystemFont(15);
-    peakLine.textColor = new Color("#222");
-
-    const timeLine = left.addText(formatTimeShort(peakTime));
-    timeLine.font = Font.systemFont(10);
-    timeLine.textColor = new Color("#555");
-
-    if (hToPeak != null) {
-      const htp = left.addText(formatHoursToPeak(hToPeak));
-      htp.font = Font.systemFont(9);
-      htp.textColor = new Color("#666");
+    // Flood window for the highest landmark crossed today, or the
+    // rel-to-SW-grate peak (the standard mental unit).
+    const winLine = todayWindowLine(forecast);
+    if (winLine) {
+      const t = left.addText(winLine);
+      t.font = Font.semiboldSystemFont(10);
+      t.textColor = new Color(style.text);
+      t.lineLimit = 2;
+      t.minimumScaleFactor = 0.7;
+    }
+    const relToday = forecast.today_rel_grate_sw_in;
+    if (relToday != null) {
+      const t = left.addText(
+        `peak ${relToday >= 0 ? "+" : ""}${relToday.toFixed(1)}″ vs SW grate` +
+        (forecast.today_peak_time ? ` @${fmtClock(forecast.today_peak_time)}` : ""));
+      t.font = Font.systemFont(9);
+      t.textColor = new Color("#555");
+      t.lineLimit = 1;
+      t.minimumScaleFactor = 0.7;
     }
 
-    left.addSpacer(3);
-    if (exceeded) {
-      const landLine = left.addText(`★ ${exceeded.label} +${exceeded.depth.toFixed(1)}″`);
-      landLine.font = Font.semiboldSystemFont(11);
-      landLine.textColor = new Color(style.text);
-      landLine.lineLimit = 1;
-      landLine.minimumScaleFactor = 0.7;
-    } else if (rel != null) {
-      const relLine = left.addText(
-        `${rel >= 0 ? "+" : ""}${rel.toFixed(1)}″ vs SW grate`
-      );
-      relLine.font = Font.systemFont(10);
-      relLine.textColor = new Color("#666");
-    }
+    left.addSpacer(4);
+    // ---- 72h worst (secondary, clearly labeled) ----
+    const worstStyle = REGIME_STYLES[worstRegime] || REGIME_STYLES.dry;
+    const wHdr = left.addText("WORST 72H");
+    wHdr.font = Font.mediumSystemFont(9);
+    wHdr.textColor = new Color("#777");
+    const wLine1 = left.addText(
+      `● ${peakFt != null ? peakFt.toFixed(2) : "—"} · ${regimeDisplay(worstRegime).toLowerCase()}`);
+    wLine1.font = Font.semiboldSystemFont(11);
+    wLine1.textColor = new Color(worstStyle.text);
+    wLine1.lineLimit = 1;
+    const wLine2 = left.addText(
+      formatTimeShort(peakTime) + (hToPeak != null ? ` · ${formatHoursToPeak(hToPeak)}` : ""));
+    wLine2.font = Font.systemFont(8);
+    wLine2.textColor = new Color("#666");
+    wLine2.lineLimit = 1;
+    wLine2.minimumScaleFactor = 0.7;
     if (conf) {
       const confTxt = confUnc != null
         ? `${conf.toUpperCase()} ±${confUnc.toFixed(2)}`
         : conf.toUpperCase();
       const confLine = left.addText(confTxt);
-      confLine.font = Font.systemFont(9);
+      confLine.font = Font.systemFont(8);
       confLine.textColor = new Color("#555");
     }
     if (cold) {
@@ -361,17 +415,14 @@ function makeWidget(forecast, family) {
       coldLine.font = Font.systemFont(8);
       coldLine.textColor = new Color("#3a5b88");
     }
-    if (watchStr) {
-      const wLine = left.addText(watchStr);
-      wLine.font = Font.systemFont(8);
-      wLine.textColor = new Color("#666");
-    }
 
     // Right: the 24-h model water-level curve
     const right = row.addStack();
     right.layoutVertically();
+    const rainPotential = (forecast.pluvial_risk &&
+                           forecast.pluvial_risk.potential_low_tide_navd88) || null;
     const img = series.length >= 4
-      ? drawTideChart(series, 190, 110, style.text)
+      ? drawTideChart(series, 190, 110, style.text, rainPotential)
       : null;
     if (img) {
       const wi = right.addImage(img);
@@ -385,44 +436,41 @@ function makeWidget(forecast, family) {
     }
   } else {
     // Small widget — single column, key info (no chart; too small)
-    const regLabel = w.addText(regimeDisplay(regime));
-    regLabel.font = Font.boldSystemFont(regimeDisplay(regime).length > 8 ? 15 : 20);
+    const hdrS = w.addText("TODAY");
+    hdrS.font = Font.mediumSystemFont(8);
+    hdrS.textColor = new Color("#777");
+    const regLabel = w.addText(regimeDisplay(todayRegime));
+    regLabel.font = Font.boldSystemFont(regimeDisplay(todayRegime).length > 8 ? 14 : 18);
     regLabel.textColor = new Color(style.text);
     regLabel.lineLimit = 1;
     regLabel.minimumScaleFactor = 0.6;
     addPluvialLine(w);
-    w.addSpacer(4);
-    const peakLine = w.addText(
-      peakFt != null ? `${peakFt.toFixed(2)} ft` : "—"
-    );
-    peakLine.font = Font.semiboldSystemFont(16);
-    peakLine.textColor = new Color("#222");
-    const timeLine = w.addText(formatTimeShort(peakTime));
-    timeLine.font = Font.systemFont(10);
-    timeLine.textColor = new Color("#555");
-    if (hToPeak != null) {
-      const htp = w.addText(formatHoursToPeak(hToPeak));
-      htp.font = Font.systemFont(9);
-      htp.textColor = new Color("#666");
+    const winLineS = todayWindowLine(forecast);
+    if (winLineS) {
+      const t = w.addText(winLineS);
+      t.font = Font.semiboldSystemFont(9);
+      t.textColor = new Color(style.text);
+      t.lineLimit = 2;
+      t.minimumScaleFactor = 0.7;
     }
-    w.addSpacer(4);
-    if (exceeded) {
-      const landLine = w.addText(`★ ${exceeded.label}`);
-      landLine.font = Font.semiboldSystemFont(11);
-      landLine.textColor = new Color(style.text);
-      const depthLine = w.addText(`+${exceeded.depth.toFixed(1)}″`);
-      depthLine.font = Font.systemFont(11);
-      depthLine.textColor = new Color("#444");
-    } else if (rel != null) {
-      const relLine = w.addText(
-        `${rel >= 0 ? "+" : ""}${rel.toFixed(1)}″ vs SW grate`
-      );
-      relLine.font = Font.systemFont(10);
-      relLine.textColor = new Color("#666");
+    const relTodayS = forecast.today_rel_grate_sw_in;
+    if (relTodayS != null) {
+      const t = w.addText(
+        `pk ${relTodayS >= 0 ? "+" : ""}${relTodayS.toFixed(1)}″ vs SW grate`);
+      t.font = Font.systemFont(9);
+      t.textColor = new Color("#555");
     }
+    w.addSpacer(3);
+    const worstStyleS = REGIME_STYLES[worstRegime] || REGIME_STYLES.dry;
+    const wl = w.addText(
+      `72h: ● ${peakFt != null ? peakFt.toFixed(2) : "—"} ${formatTimeShort(peakTime)}`);
+    wl.font = Font.systemFont(8);
+    wl.textColor = new Color(worstStyleS.text);
+    wl.lineLimit = 1;
+    wl.minimumScaleFactor = 0.6;
     if (cold) {
       const coldLine = w.addText("Cold (hyp. open)");
-      coldLine.font = Font.systemFont(9);
+      coldLine.font = Font.systemFont(8);
       coldLine.textColor = new Color("#3a5b88");
     }
   }

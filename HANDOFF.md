@@ -34,7 +34,20 @@ next 24 hours**, plus a publicly-readable web page at
 
 The model is small but earned: every parameter is grounded in either
 surveyed engineering elevations from a Borough PDF, or in empirical fit
-across four labeled flood events the user observed firsthand.
+across labeled flood events the user observed and tape-measured
+firsthand.
+
+**RAIN-DNA DOCTRINE (user directive 2026-07-06 — binding on all
+future work):** rain modeling is Barnacle's core value-add over the
+numerous tide apps (the user runs three of them). Rain effects are
+NEVER deferred to a future version: ship crude, honest,
+directionally-right rain models now and recalibrate with each event.
+If a plan says "rain term deferred to vNext," the plan is wrong —
+implement the simplest version instead. Context: heavy rain floods
+this intersection with zero tidal contribution (7/6/2026), and
+rain+tide compound events are the worst on record (Oct 30 2025); a
+previous assistant repeatedly pushed rain modeling into the future
+across v0.6–v0.8 and the user explicitly rejects that pattern.
 
 ---
 
@@ -73,6 +86,7 @@ across four labeled flood events the user observed firsthand.
 | v0.7 model spec promotion | ✅ **Shipped 2026-06-15.** Bundles: corrected grate elevations + 5-grate set (NE/NW=3.80; SE=3.60; SW=3.52; upstream=3.64 low-point); new corner landmarks (corner_NE/NW=3.91; corner_SE/SW=3.64); renames (`corner_grate`→`grate_NE`, `lowest_sentinel_grate`→`grate_SE`, `lowest_road_corner`→`corner_SE`, `intersection`→`intersection_highpoint`); **enhancement = constant −0.13 ft** (3-event mean — 6/14 disproved the original piecewise heuristic at high SH); single-water-level math (drops per-landmark rain shedding); negative-surge clip removed; rain window before-biased [−90 min, +15 min]. **Re-evaluated 2026-06-15**: v0.7 actually fits Oct 30 2025 within 0.7″ at curb without retuning — the v0.6 rain term (`8·tanh(rate)`) applied as water-is-level rise is correctly calibrated. The earlier "rain-flood under-predicts" caveat I wrote was based on a flawed mental calculation. The remaining open question is whether the pre-spot-check Apr/Dec events (which give implied enhancement ~+0.4) reflect memory imprecision or a real storm-condition amplification. See `model/v0.7.md` for the full calibration table. |
 | v0.8 model spec promotion | ✅ **Shipped 2026-06-16.** Same-night reaction to 2026-06-15 PM storm-condition event (SH 7.289, peak winds N/NNE, v0.7 under by 1.3″ structural / 3.5″ operational at curb). Changes: enhancement constant −0.13 → 0.00 (conservative; matches storm condition, errs +1.5″ on regular tides — within tape precision); **NEW wind-direction adjustment** (`compute_wind_adjustment()`) reports a −0.13 ft "expected actual" line when forecast wind at peak is in offshore sector (S/SSW/SW/WSW/SSE) — calibrated against 6/14 (offshore peak, enh −0.13) vs 6/15 (onshore peak, enh 0); NEW landmark `sidewalk_under_walkway_lawn_step` at 4.33 NAVD88 (cross-fit from 3 measurements). SH thresholds all shift −0.13 ft uniformly. See `model/v0.8.md` and `assets/observations/2026-06-15/README.md` for the full anchor. |
 | v0.9 model spec promotion | ✅ **Shipped 2026-07-06** (the pluvial flash-flood day; three same-day commits). Bundles: (a) **QPF input fix** — rain had been silently 0.0 in every production run ever (NWS moved QPF to the gridpoint endpoint); (b) **pluvial advisory banner** with v0.9-alpha scenario depths (`estimate_pluvial_water`, two-regime, calibrated on 7/6 + Oct 30); (c) **porch ladder re-anchored**: `lawn_step` 4.58→4.66, fictitious `porch_step` 5.08 removed, NEW `porch_step_base` 4.68 / `porch_step1_top` 5.41 / `porch_deck` 8.08 (18 landmarks total); (d) lookahead thresholds recomputed (were v0.6-era); (e) seasonality display join aliased (CSV keys/thresholds stale — annual refresh). See `model/v0.9.md`. |
+| Series-first architecture + flood windows + TODAY-first widget | ✅ **Shipped 2026-07-06 (evening).** Rain-DNA build: (a) QPF rain layer IN `water_series` (deterministic layer; sustained rain renders as curve bumps); (b) rain-burst *potential level* on charts (amber dashed — analog-scaled burst magnitude without fake timing); (c) `compute_flood_windows()` — start/end/duration/peak per landmark from series crossings (grazing episodes phrased "may briefly touch"); (d) `today_*` forecast fields (regime/peak/rel-to-SW-grate — the standard mental unit); (e) widget redesigned TODAY-first (today colors the widget; 72h-worst is a labeled secondary line); (f) home-page water-level chart + flooding-windows table; (g) email "Today" line. |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
 | v0.6 model-spec promotion + 9th landmark added | ✅ Live (2026-05-18). model/v0.6.md canonical; v0.5 archived. New lowest sentinel at 3.60 NAVD88 (SH 6.02). |

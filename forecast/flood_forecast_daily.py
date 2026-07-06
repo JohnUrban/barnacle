@@ -228,8 +228,8 @@ def fetch_tides_24h():
     }
 
 
-def build_water_series(surge_ft, hours_back=2, hours_forward=24,
-                       interval_min=30):
+def build_water_series(surge_ft, qpf_hourly=None, hours_back=2,
+                       hours_forward=24, interval_min=30):
     """Model-predicted water level at 342 Bay over a continuous window
     — the data behind the widget tide-curve chart (user request
     2026-07-06: "show 12-24 hours of the expected height over time
@@ -245,13 +245,19 @@ def build_water_series(surge_ft, hours_back=2, hours_forward=24,
     - `surge_ft` (persisted surge or NWS value) is applied as a
       CONSTANT across the window — same assumption the per-tide
       forecast makes. Fine near-term, increasingly wrong further out.
-    - The rain term is NOT in this series yet. The model's rain term
-      is keyed to tide peaks, not to arbitrary timestamps; a proper
-      time-resolved rain overlay comes with the pluvial work. The
-      series is the tide+surge backbone the rain bump will ride on.
+    - RAIN IS IN THE SERIES (2026-07-06 — the rain-DNA directive:
+      rain modeling is Barnacle's value-add over tide apps and is
+      never deferred). Each timestep gets the v0.9-alpha pluvial
+      water estimate driven by that hour's QPF rate; the series shows
+      max(tide water, pluvial water). Crude and directionally right:
+      QPF smears convective bursts, so series rain bumps understate
+      cells (the pluvial banner's analog-scaled scenarios carry the
+      burst case); sustained/stratiform rain renders honestly.
+      Every rain event recalibrates this.
 
-    Returns list of {"time": local str, "water_navd88": float} or []
-    on any fetch failure (widget falls back to no-chart).
+    Returns list of {"time": local str, "water_navd88": float (total),
+    "tide_navd88": float (tide+surge only)} or [] on fetch failure.
+    `rain_navd88_lift` is included when nonzero.
 
     Timezone fix 2026-07-06: begin/end must be STATION-LOCAL (the
     widget chart's hour labels came out +4 h before this).
@@ -276,14 +282,38 @@ def build_water_series(surge_ft, hours_back=2, hours_forward=24,
         )
     except Exception:
         return []
+    # Index QPF hourly rates by STATION-LOCAL hour for the rain layer.
+    # qpf_hourly carries tz-aware UTC datetimes.
+    qpf_by_local_hour = {}
+    for tt, rate in (qpf_hourly or []):
+        try:
+            local = tt.astimezone(STATION_TZ).replace(tzinfo=None)
+        except Exception:
+            continue
+        qpf_by_local_hour[local.replace(minute=0, second=0, microsecond=0)] = rate
     out = []
     for p in data.get("predictions", []) or []:
         try:
             astro = float(p["v"])
+            t_local = dt.datetime.strptime(p["t"], "%Y-%m-%d %H:%M")
         except (TypeError, ValueError):
             continue
-        water = astro + (surge_ft or 0.0) + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
-        out.append({"time": p["t"], "water_navd88": round(water, 3)})
+        tide_water = astro + (surge_ft or 0.0) + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+        # Rain layer: response-lagged effective rate = mean of this
+        # hour's and the previous hour's QPF (the street pool takes
+        # ~15-45 min to build/drain per 7/6 timing data).
+        h0 = t_local.replace(minute=0, second=0, microsecond=0)
+        r_now = qpf_by_local_hour.get(h0, 0.0)
+        r_prev = qpf_by_local_hour.get(h0 - dt.timedelta(hours=1), 0.0)
+        rate_eff = (r_now + r_prev) / 2.0
+        water = tide_water
+        if rate_eff > 0.1:
+            water = max(tide_water, estimate_pluvial_water(rate_eff, tide_water))
+        point = {"time": p["t"], "water_navd88": round(water, 3),
+                 "tide_navd88": round(tide_water, 3)}
+        if water > tide_water:
+            point["rain_navd88_lift"] = round(water - tide_water, 3)
+        out.append(point)
     return out
 
 
@@ -1659,6 +1689,17 @@ def build_forecast():
         pluvial_risk_level = "elevated"
     elif cumulative_rain_24h >= 1.0 or (pluvial_max_pop >= 70 and cumulative_rain_24h >= 0.5):
         pluvial_risk_level = "possible"
+    # Analog burst estimate + the "rain burst potential" water level —
+    # the level a 7/6-analog burst would reach at low tide. Charts draw
+    # this as a dashed line: rain potential belongs ON the primary
+    # surfaces (rain-DNA directive) but a convective burst has no
+    # knowable clock time, so it renders as a level, not a bump.
+    burst_est = peak_rain_rate_24h
+    if pluvial_convective:
+        analog = 1.7 * (max_6h_accum / 0.55) if max_6h_accum > 0 else 1.7
+        burst_est = max(burst_est, min(analog, 3.0))
+    potential_low_tide = (estimate_pluvial_water(burst_est, 2.5)
+                          if burst_est > 0.1 else None)
     pluvial_risk = {
         "level": pluvial_risk_level,     # None | "possible" | "elevated"
         "peak_rain_rate_24h_in_hr": round(peak_rain_rate_24h, 3),
@@ -1666,6 +1707,9 @@ def build_forecast():
         "max_6h_accum_in": round(max_6h_accum, 2),
         "max_pop_24h_pct": pluvial_max_pop,
         "convective_wording": pluvial_convective,
+        "burst_est_in_hr": round(burst_est, 2),
+        "potential_low_tide_navd88": (round(potential_low_tide, 2)
+                                      if potential_low_tide else None),
     }
 
     # Confidence indicator inputs
@@ -1693,7 +1737,34 @@ def build_forecast():
     # chart (2026-07-06). Uses the worst tide's surge as the constant
     # surge across the window — same persistence assumption as the
     # per-tide forecasts.
-    water_series = build_water_series(worst["surge_ft"])
+    water_series = build_water_series(worst["surge_ft"], qpf_hourly)
+
+    # Flood windows + "today" summary derived from the series
+    # (2026-07-06 — start/end/duration, not just peak instants; and
+    # "today" reflects rain because rain is IN the series).
+    flood_windows = compute_flood_windows(water_series)
+    today_peak_water = None
+    today_peak_time = None
+    for p in water_series:
+        try:
+            w = float(p["water_navd88"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if today_peak_water is None or w > today_peak_water:
+            today_peak_water = w
+            today_peak_time = p.get("time")
+    today_regime = (classify_regime_from_water(today_peak_water)
+                    if today_peak_water is not None else None)
+    # Highest landmark crossed in the series window
+    today_highest_crossed = None
+    if today_peak_water is not None:
+        for key, label, elev, _sh in LANDMARKS:
+            if key in FLOOD_WINDOW_KEYS and today_peak_water > elev:
+                today_highest_crossed = {"key": key, "label": label,
+                                         "elev": elev}
+    # Standard mental unit: inches relative to the lowest grate (SW)
+    today_rel_grate_sw_in = (round((today_peak_water - GRATE_SW) * 12, 1)
+                             if today_peak_water is not None else None)
 
     return {
         # Headline fields (worst-case tide)
@@ -1730,9 +1801,18 @@ def build_forecast():
             {"time": t, "value_mllw": v} for t, v in live_gauge_24h
         ],
         # Model-predicted water level (NAVD88) at 30-min steps,
-        # now-2h → now+24h. Tide+surge backbone for the widget chart;
-        # rain term not yet time-resolved (2026-07-06).
+        # now-2h → now+24h. Tide + surge + QPF rain layer (rain-DNA
+        # directive 2026-07-06: rain is in the series, not deferred).
         "water_series": water_series,
+        # Flood windows (start/end/duration/peak per landmark) derived
+        # from the series, + the "today" summary the widget leads with.
+        "flood_windows": flood_windows,
+        "today_peak_water_navd88": (round(today_peak_water, 3)
+                                    if today_peak_water is not None else None),
+        "today_peak_time": today_peak_time,
+        "today_regime": today_regime,
+        "today_highest_crossed": today_highest_crossed,
+        "today_rel_grate_sw_in": today_rel_grate_sw_in,
     }
 
 
@@ -3401,6 +3481,7 @@ Worst case detail:
 
 {rain_block}{_landmarks_section_text(forecast)}
 Regime: {regime_display(regime)} — {REGIME_GLOSSARY.get(regime, '')}
+Today (next 24h): {regime_display(forecast.get('today_regime') or regime)}; peak water {forecast.get('today_rel_grate_sw_in', 0) or 0:+.1f}" vs SW grate{f" at {forecast['today_peak_time'][-5:]}" if forecast.get('today_peak_time') else ""}
 
 {recap_block}{accuracy_block}{low_block}{lookahead_block}Reference scale (Sandy Hook obs MLLW; {CURRENT_MODEL_VERSION} thresholds = landmark + 2.82):
   < 6.34  : no flooding (nothing visible)
@@ -3622,6 +3703,257 @@ def estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88):
     return base + lift
 
 
+# Landmarks eligible for flood-window computation. The high porch
+# features are excluded (windows there would only matter in
+# Sandy-class events where this UI is not the tool you'd be using).
+FLOOD_WINDOW_KEYS = [
+    "grate_SW", "grate_SE", "corner_SE", "corner_SW",
+    "grate_bay_ave_upstream", "gutter_walkway", "grate_NE", "grate_NW",
+    "corner_NE", "corner_NW", "curb", "sidewalk_under_walkway_lawn_step",
+    "road_middle", "intersection_highpoint", "lawn_step",
+    "porch_step_base",
+]
+
+
+def compute_flood_windows(series):
+    """Flood start/end/duration per landmark, derived from the water
+    series (2026-07-06 — user: "not just what will happen at the very
+    top of the peak"). Linear interpolation between the 30-min samples
+    gives crossing times.
+
+    Returns {landmark_key: [episode, ...]} where episode =
+      {"start", "end", "duration_h", "peak_time", "peak_depth_in",
+       "grazing": bool}
+    `end` is None when the series ends while still flooded. `grazing`
+    is True when the episode's peak clears the landmark by < 0.1 ft —
+    surge error can easily erase or double those windows, so callers
+    should phrase them as "may briefly touch" rather than quoting
+    times. Times are station-local strings matching the series.
+
+    Honest limitation: crossings are symmetric level-crossings of the
+    predicted series. Observed drain-down lags the gauge slightly
+    (falling-limb hysteresis, 6/15 data) and retention pockets hold
+    water for hours after — end times are the optimistic edge.
+    """
+    elev_by_key = {k: e for k, _l, e, _s in LANDMARKS}
+    pts = []
+    for p in series or []:
+        try:
+            t = dt.datetime.strptime(p["time"], "%Y-%m-%d %H:%M")
+            pts.append((t, float(p["water_navd88"])))
+        except (KeyError, ValueError, TypeError):
+            continue
+    out = {}
+    if len(pts) < 2:
+        return out
+    for key in FLOOD_WINDOW_KEYS:
+        elev = elev_by_key.get(key)
+        if elev is None:
+            continue
+        episodes = []
+        cur = None   # {"start": dt, "peak": (t, depth)}
+        for (t0, w0), (t1, w1) in zip(pts, pts[1:]):
+            if cur is None and w0 <= elev < w1:
+                # Rising crossing between t0 and t1
+                frac = (elev - w0) / (w1 - w0)
+                cur = {"start": t0 + (t1 - t0) * frac,
+                       "peak": (t1, w1 - elev)}
+            elif cur is not None:
+                if w1 - elev > cur["peak"][1]:
+                    cur["peak"] = (t1, w1 - elev)
+                if w1 <= elev:
+                    frac = (w0 - elev) / (w0 - w1) if w0 != w1 else 0
+                    end = t0 + (t1 - t0) * frac
+                    episodes.append((cur, end))
+                    cur = None
+        if cur is not None:
+            episodes.append((cur, None))
+        # Handle "already flooded at series start"
+        if pts[0][1] > elev:
+            first_end = None
+            peak = (pts[0][0], pts[0][1] - elev)
+            for (t0, w0), (t1, w1) in zip(pts, pts[1:]):
+                if w1 - elev > peak[1]:
+                    peak = (t1, w1 - elev)
+                if w1 <= elev:
+                    frac = (w0 - elev) / (w0 - w1) if w0 != w1 else 0
+                    first_end = t0 + (t1 - t0) * frac
+                    break
+            lead = ({"start": pts[0][0], "peak": peak}, first_end)
+            episodes.insert(0, lead)
+        fmt = "%Y-%m-%d %H:%M"
+        rows = []
+        for cur, end in episodes:
+            dur = ((end - cur["start"]).total_seconds() / 3600.0
+                   if end else None)
+            rows.append({
+                "start": cur["start"].strftime(fmt),
+                "end": end.strftime(fmt) if end else None,
+                "duration_h": round(dur, 2) if dur is not None else None,
+                "peak_time": cur["peak"][0].strftime(fmt),
+                "peak_depth_in": round(cur["peak"][1] * 12, 1),
+                "grazing": cur["peak"][1] < 0.1,
+            })
+        if rows:
+            out[key] = rows
+    return out
+
+
+def classify_regime_from_water(water_navd88):
+    """Regime label from a water level (NAVD88) — same bands as
+    predict_landmark_depths but usable on series maxima (for the
+    'today' summary, which must reflect rain too, not just tide
+    peaks)."""
+    curb_depth = (water_navd88 - CURB_TOP) * 12
+    if curb_depth >= ALERT_SEVERE:
+        return "severe"
+    if curb_depth >= ALERT_MODERATE:
+        return "moderate"
+    if curb_depth > 0:
+        return "light"
+    if water_navd88 > GRATE_SW:
+        return "street"
+    return "dry"
+
+
+def _render_water_series_section(forecast):
+    """Home-page water-level chart (2026-07-06) — the widget's
+    tide-curve, promoted to the site. Continuous predicted water at
+    342 Bay for now−2h → now+24h (tide + surge + QPF rain layer),
+    with landmark reference lines and the rain-burst potential level
+    when pluvial risk is active."""
+    series = forecast.get("water_series") or []
+    if len(series) < 4:
+        return ""
+    labels = [p["time"][-5:] for p in series]
+    total = [p.get("water_navd88") for p in series]
+    tide = [p.get("tide_navd88", p.get("water_navd88")) for p in series]
+    has_rain_layer = any(p.get("rain_navd88_lift") for p in series)
+    pr = forecast.get("pluvial_risk") or {}
+    potential = pr.get("potential_low_tide_navd88")
+    datasets = [
+        {"label": "Predicted water (tide+surge+rain)", "data": total,
+         "borderColor": "#1a5fa8", "backgroundColor": "rgba(74,144,217,0.15)",
+         "fill": True, "pointRadius": 0, "borderWidth": 2, "tension": 0.35},
+    ]
+    if has_rain_layer:
+        datasets.append(
+            {"label": "Tide+surge only", "data": tide,
+             "borderColor": "#8aa8c8", "borderDash": [6, 4], "fill": False,
+             "pointRadius": 0, "borderWidth": 1.5, "tension": 0.35})
+    annotations = {
+        "firstWater": {"type": "line", "yMin": GRATE_SW, "yMax": GRATE_SW,
+                       "borderColor": "#4a90d9", "borderWidth": 1,
+                       "borderDash": [5, 4],
+                       "label": {"display": True, "content": "first water (SW grate)",
+                                 "position": "start", "font": {"size": 10},
+                                 "backgroundColor": "rgba(255,255,255,0.7)",
+                                 "color": "#1a5fa8"}},
+        "curb": {"type": "line", "yMin": CURB_TOP, "yMax": CURB_TOP,
+                 "borderColor": "#c0392b", "borderWidth": 1,
+                 "borderDash": [5, 4],
+                 "label": {"display": True, "content": "curb (flood onset)",
+                           "position": "start", "font": {"size": 10},
+                           "backgroundColor": "rgba(255,255,255,0.7)",
+                           "color": "#c0392b"}},
+    }
+    if potential:
+        annotations["rainPotential"] = {
+            "type": "line", "yMin": potential, "yMax": potential,
+            "borderColor": "#d97706", "borderWidth": 1.5, "borderDash": [3, 3],
+            "label": {"display": True,
+                      "content": f"rain-burst potential ({potential:.2f})",
+                      "position": "end", "font": {"size": 10},
+                      "backgroundColor": "rgba(255,255,255,0.7)",
+                      "color": "#9a4c00"}}
+    cfg = {
+        "type": "line",
+        "data": {"labels": labels, "datasets": datasets},
+        "options": {
+            "responsive": True,
+            "plugins": {
+                "legend": {"display": has_rain_layer,
+                           "labels": {"boxWidth": 18, "font": {"size": 10}}},
+                "annotation": {"annotations": annotations},
+            },
+            "scales": {
+                "y": {"title": {"display": True, "text": "ft NAVD88"}},
+                "x": {"ticks": {"maxTicksLimit": 9, "font": {"size": 10}}},
+            },
+        },
+    }
+    note_bits = []
+    if has_rain_layer:
+        note_bits.append("The solid curve includes the QPF rain layer; "
+                         "the dashed grey curve is tide+surge only.")
+    if potential:
+        note_bits.append(
+            "The amber line is the level a convective burst could reach "
+            "(7/6-analog scaling) — bursts have no forecastable clock "
+            "time, so it renders as a potential level, not a bump.")
+    note_bits.append("Windows below are derived from this curve.")
+    return f"""
+  <section class="water-series">
+    <h2>Predicted water level — next 24 hours</h2>
+    <canvas id="water-series-chart" width="800" height="300"
+            style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
+    <p class="note">{' '.join(note_bits)}</p>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script>
+      new Chart(document.getElementById('water-series-chart'),
+                {json.dumps(cfg)});
+    </script>
+  </section>
+"""
+
+
+def _render_flood_windows_html(forecast):
+    """Flood start/end/duration table (2026-07-06 — "not just what
+    will happen at the very top of the peak"). Only landmarks with
+    episodes in the series window appear; grazing episodes render as
+    "may briefly touch"."""
+    fw = forecast.get("flood_windows") or {}
+    if not fw:
+        return ""
+    label_by_key = {k: l for k, l, _e, _s in LANDMARKS}
+    elev_by_key = {k: e for k, _l, e, _s in LANDMARKS}
+    rows = ""
+    for key in FLOOD_WINDOW_KEYS:      # ascending elevation order
+        for ep in fw.get(key, []):
+            label = label_by_key.get(key, key)
+            if ep.get("grazing"):
+                when = f"~{ep['peak_time'][-5:]} — may briefly touch"
+                dur = "—"
+                peak = f"&lt;1.2&Prime;"
+            else:
+                end = ep["end"][-5:] if ep.get("end") else "beyond window"
+                when = f"~{ep['start'][-5:]} &rarr; {end}"
+                dur = (f"{ep['duration_h']:.1f} h"
+                       if ep.get("duration_h") is not None else "ongoing")
+                peak = f"+{ep['peak_depth_in']:.1f}&Prime; at {ep['peak_time'][-5:]}"
+            rows += (f"<tr><td>{label}</td><td>{elev_by_key.get(key, '')}</td>"
+                     f"<td>{when}</td><td>{dur}</td><td>{peak}</td></tr>")
+    if not rows:
+        return ""
+    return f"""
+  <section class="flood-windows">
+    <h2>Flooding windows (next 24 h)</h2>
+    <table class="tide-table">
+      <thead><tr><th>Landmark</th><th>NAVD88</th><th>Wet window</th>
+      <th>Duration</th><th>Peak</th></tr></thead>
+      <tbody>{rows}</tbody>
+    </table>
+    <p class="note">Derived from the predicted water curve above
+       (tide + surge + rain layer). Times are approximate (&sim;10–20
+       min); end times are the optimistic edge — water drains slightly
+       slower than the gauge falls, and the retention pockets hold
+       water for hours after. Convective bursts can flood outside
+       these windows entirely (see the rain-risk banner).</p>
+  </section>
+"""
+
+
 def _render_pluvial_advisory_html(forecast):
     """Pluvial flood-risk banner (v0.9 first step, 2026-07-06).
 
@@ -3662,11 +3994,7 @@ def _render_pluvial_advisory_html(forecast):
     # both were baked into the 7/6 anchor. One-anchor calibration —
     # every future rain event tightens or breaks it; the bot archives
     # pluvial_risk + QPF daily so the training set builds itself.
-    burst = pr.get("peak_rain_rate_24h_in_hr", 0) or 0
-    if pr.get("convective_wording"):
-        accum6 = pr.get("max_6h_accum_in", 0) or 0
-        analog_burst = 1.7 * (accum6 / 0.55) if accum6 > 0 else 1.7
-        burst = max(burst, min(analog_burst, 3.0))
+    burst = pr.get("burst_est_in_hr", 0) or 0
     low_tide_water = estimate_pluvial_water(burst, 2.5)
     worst_peak = forecast.get("peak_forecast_observed_mllw")
     scenario_html = ""
@@ -5322,6 +5650,9 @@ def render_html_page(forecast):
     <div class="regime-label">{regime_display(regime).upper()}</div>
     <div class="regime-summary">{REGIME_GLOSSARY.get(regime, '')}. Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}.</div>
   </section>
+
+{_render_water_series_section(forecast)}
+{_render_flood_windows_html(forecast)}
 
   <section class="tides">
     <h2>Upcoming high tides</h2>
