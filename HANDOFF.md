@@ -2169,30 +2169,39 @@ Read these for context if needed:
   - Evolution CSV + log-status block
   - Prev/next tide navigation in header
 
-### Next likely sessions
+### Next likely sessions (refreshed 2026-07-06, post v0.9 + rain-DNA build)
 
-1. **Mode 2 + lead-time accuracy fill in** once predictions_log
-   accumulates a few days of past-tide data (mode 2 needs
-   labeled_observations rows; lead-time needs past tides).
-2. **Self-calibrated confidence ± uncertainty** activates once
-   the accuracy log has ≥3 rows per confidence band.
-3. **Next high-SH event (SH ≥ 7.5)** — opportunistic v0.8 9d.1
-   sanity check: confirm the −0.13 enhancement constant still holds
-   above the SH 7.13 we've measured. Not blocking.
-4. **Cold-conditions data collection**: every cold-conditions-met
-   event observed at 342 Bay going forward becomes a new
-   validation data point for the cold-lockout hypothesis.
-5. **Next tape-measured rain-flood event** — gates v0.8 9d.2.
-   v0.7 fits Oct 30 within 0.7″ at curb without retuning, so the
-   rain term *magnitude* may already be right. The open question is
-   whether it works at lower rain rates (Dec 19's 0.44 in/hr case
-   gave 7–9″ observed vs 0″ predicted, but that observation was
-   memory-based pre-spot-check). One tape-measured rain event at a
-   different rate would clarify.
-6. **v0.8 model promotion** when 9d.1 + 9d.2 have enough data.
-   Spec is section 9d.
+1. **MRMS radar work (9e.2)** — the substantive next modeling step:
+   gridded radar rain for (a) pinning the exact 7/6 burst rate over
+   the 342 catchment (validates/refits the 1.7 in/hr analog anchor,
+   currently mid-band of observed 1.5–3 regional rates) and (b) an
+   eventual nowcast input ("cell inbound" beats QPF for bursts).
+2. **Next rain event of any size** — free calibration: every event
+   tightens the analog scaling; a light-steady-rain day also tests
+   the 0.25 in/hr series gate (user: check whether sustained ~0.3+
+   in/hr ponds over the SW grate).
+3. **Pluvial burst TIMING** (9e.1 final) — still categorical;
+   stage-storage curve to unify the pluvial regimes.
+4. **Drainage map** — user emails Stephen Winters
+   (swinters@highlandsnj.gov); would confirm the NE-trunk-line
+   hypothesis from the 7/6 drainage-asymmetry observation.
+5. **Local flood reanalysis** (someday, 9e.4-adjacent) — join
+   historical precip to the tide record; modeled local water per
+   event over the century.
+6. **Passive collectors**: high-SH event ≥7.5 (enhancement check),
+   cold-conditions events (hypothesis open), NWS surge-parser
+   first-event validation, accuracy-log confidence calibration.
+7. **Housekeeping**: SMTP migration (Gmail account aging);
+   docs/icons/map_annotated.png regeneration (map_points changed in
+   v0.9); flood_history_report.md carries a dated-snapshot banner
+   (deeper curation optional).
 
-v0.7 shipped 2026-06-15 (commit + push completed). All section 9c
-items landed in one promotion commit. Production now runs v0.7.
+**State as of compaction 2026-07-06 (late night)**: v0.9 live and
+green; QPF fixed; pluvial model + banner + scenario depths live;
+rain-DNA architecture shipped (series/windows/TODAY-first widget +
+site chart, final design grammar in the section-2 table row);
+"How flooding works here" plain-English section live; seasonality
+CSVs at v0.9 thresholds; Actions bumped + verified; user's widget
+current and approved. Working tree clean, all pushed.
 
 End of handoff.
