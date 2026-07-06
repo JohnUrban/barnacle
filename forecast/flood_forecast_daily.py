@@ -1738,6 +1738,32 @@ def build_forecast():
     # per-tide forecasts.
     water_series = build_water_series(worst["surge_ft"], qpf_hourly)
 
+    # Mark burst-capable hours on the series points (user 2026-07-06:
+    # the rain-burst zone should only span the hours when a burst is
+    # actually plausible, not the whole window). An hour qualifies if
+    # the NWS hourly forecast has PoP >= 60% with thunder/heavy-rain
+    # wording, PoP >= 80% alone, or QPF rate >= 0.15 in/hr.
+    burst_hours = set()
+    for p in nws_hourly[:36]:
+        try:
+            tt = parse_iso(p["startTime"]).astimezone(STATION_TZ)
+        except Exception:
+            continue
+        pop = ((p.get("probabilityOfPrecipitation") or {}).get("value")) or 0
+        sf = (p.get("shortForecast") or "").lower()
+        if ((pop >= 60 and ("thunder" in sf or "heavy rain" in sf))
+                or pop >= 80):
+            burst_hours.add(tt.strftime("%Y-%m-%d %H"))
+    for tt, rate in qpf_hourly:
+        if rate >= 0.15:
+            try:
+                burst_hours.add(tt.astimezone(STATION_TZ).strftime("%Y-%m-%d %H"))
+            except Exception:
+                pass
+    for p in water_series:
+        if p["time"][:13] in burst_hours:
+            p["burst_risk"] = True
+
     # Flood windows + "today" summary derived from the series
     # (2026-07-06 — start/end/duration, not just peak instants; and
     # "today" reflects rain because rain is IN the series).
@@ -3996,13 +4022,18 @@ def _render_water_series_section(forecast):
         # legend then shows a colored square with the label at top —
         # no more label collisions on the crowded left edge. Water-navy
         # fill (user: amber read poorly; blue = water).
+        zone_data = [pot_in if p.get("burst_risk") else None
+                     for p in series]
+        if not any(v is not None for v in zone_data):
+            zone_data = [pot_in] * len(labels)   # risk fired but no hour
+                                                 # qualified — show full
         datasets.append({
-            "label": f"rain-burst potential zone (up to +{pot_in}″)",
-            "data": [pot_in] * len(labels),
+            "label": f"rain-burst potential zone (up to +{pot_in}″, storm-capable hours)",
+            "data": zone_data,
             "fill": {"target": {"value": 0}},
             "backgroundColor": "rgba(11, 61, 107, 0.14)",
             "borderColor": "rgba(11, 61, 107, 0)",
-            "pointRadius": 0, "borderWidth": 0,
+            "pointRadius": 0, "borderWidth": 0, "spanGaps": False,
         })
     cfg = {
         "type": "line",
@@ -4034,9 +4065,11 @@ def _render_water_series_section(forecast):
             "fine and draws no line.")
     if potential:
         note_bits.append(
-            "The dashed amber level is what a convective burst could "
-            "reach (7/6-analog scaling) — bursts have no forecastable "
-            "clock time, so it renders as a potential, not a bump.")
+            "The shaded navy zone is what a convective burst could "
+            "reach (7/6-analog scaling), drawn only across the hours "
+            "when burst-capable weather is in the forecast — bursts "
+            "have estimable magnitude but no exact clock time, so the "
+            "zone marks possibility, not a prediction of a bump.")
     note_bits.append("Windows below are derived from these curves.")
     return f"""
   <section class="water-series">

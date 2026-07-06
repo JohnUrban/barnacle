@@ -247,12 +247,19 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
   }
 
   // Rain-burst possibility ZONE: water-navy band from ground (0″) up
-  // to the analog-scaled burst potential (user: amber read poorly on
-  // the widget; blue = water). A zone, not a level — bursts have
-  // magnitude but no forecastable timing. No ceiling line.
+  // to the analog-scaled burst potential — drawn only across the
+  // hours flagged burst-capable (PoP/thunderstorm wording), not the
+  // whole window. A zone, not a level.
   if (potIn) {
     ctx.setFillColor(new Color("#0b3d6b", 0.18));
-    ctx.fillRect(new Rect(PAD_L, y(potIn), plotW, y(0) - y(potIn)));
+    const flags = series.map(p => !!p.burst_risk);
+    const anyFlag = flags.some(Boolean);
+    const stripW = Math.max(2, plotW / times.length);
+    for (let i = 0; i < times.length; i++) {
+      if (anyFlag && !flags[i]) continue;
+      const xi = x(times[i].getTime());
+      ctx.fillRect(new Rect(xi - stripW / 2, y(potIn), stripW, y(0) - y(potIn)));
+    }
   }
 
   // Landmark reference lines — SHARED PALETTE with the website chart
