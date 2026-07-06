@@ -281,7 +281,8 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
   }
   if (seg) { ctx.addPath(seg); ctx.strokePath(); }
 
-  // "Now" marker (solid vertical line)
+  // "Now" marker: vertical line + filled dot ON the curve at the
+  // current time (user request — makes "you are here" unmissable).
   const nowT = Date.now();
   if (nowT >= t0 && nowT <= t1) {
     ctx.setStrokeColor(new Color("#555555", 0.9));
@@ -291,6 +292,27 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
     np.addLine(new Point(x(nowT), PAD_T + plotH));
     ctx.addPath(np);
     ctx.strokePath();
+    // Interpolate the tide value at now and dot it
+    let i1 = times.findIndex(t => t.getTime() >= nowT);
+    if (i1 > 0) {
+      const ta = times[i1 - 1].getTime(), tb = times[i1].getTime();
+      const frac = (nowT - ta) / (tb - ta);
+      const vNow = tideIn[i1 - 1] + (tideIn[i1] - tideIn[i1 - 1]) * frac;
+      const cx = x(nowT), cy = y(vNow), r = 3.5;
+      ctx.setFillColor(new Color("#ffffff"));
+      ctx.fillEllipse(new Rect(cx - r - 1.5, cy - r - 1.5, 2 * (r + 1.5), 2 * (r + 1.5)));
+      ctx.setFillColor(new Color("#1a5fa8"));
+      ctx.fillEllipse(new Rect(cx - r, cy - r, 2 * r, 2 * r));
+      // If the rain line is active at now, dot it too (amber)
+      if (pluvIn[i1 - 1] != null && pluvIn[i1] != null) {
+        const pNow = pluvIn[i1 - 1] + (pluvIn[i1] - pluvIn[i1 - 1]) * frac;
+        const py = y(pNow);
+        ctx.setFillColor(new Color("#ffffff"));
+        ctx.fillEllipse(new Rect(cx - r - 1.5, py - r - 1.5, 2 * (r + 1.5), 2 * (r + 1.5)));
+        ctx.setFillColor(new Color("#d97706"));
+        ctx.fillEllipse(new Rect(cx - r, py - r, 2 * r, 2 * r));
+      }
+    }
   }
 
   // Reference labels (with inches — SW grate is the 0 of the axis)
