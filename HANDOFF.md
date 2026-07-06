@@ -719,12 +719,16 @@ Same surge information the Borough's emergency management is looking at.
 13. **Verify Phase 1 reconstruction status.** If the road has been
     rebuilt to design (4.20 NAVD88), all thresholds shift up ~0.04 ft
     (sub-inch).
-14. **Pluvial-only flooding test.** Does heavy rain at low tide flood
-    342 Bay? No event in the dataset confirms or denies. **Spot-check
-    prompt now calls this out when conditions match** (≥0.25" rain
-    forecast over 24 h AND no high tide reaches the lowest sentinel)
-    — ✅ wired 2026-05-18. One good observation in that regime would
-    resolve the question.
+14. ~~**Pluvial-only flooding test.**~~ ✅ **ANSWERED 2026-07-06 —
+    emphatically yes.** Convective flash flood put ~7.3″ at the curb
+    (~4.77 NAVD88) at 11:34 AM, ~1.5 h before high tide, with the bay
+    more than a foot below the lowest grate throughout (rain excess
+    +10 to +25″ at every one of 20 measurements). Water reached the
+    bottom porch step +1–2″. NWS QPF forecast for the day was 0.0″ —
+    total input miss on the convective cell — and the model
+    architecture can't represent off-peak flooding anyway. See
+    `assets/observations/2026-07-06/README.md` and the v0.9 agenda
+    (section 9e).
 15. **Borough drainage map.** Email Stephen Winters (Floodplain Admin,
     swinters@highlandsnj.gov) for the storm sewer map. Would clarify
     Pathway B outfall locations.
@@ -1645,15 +1649,79 @@ vs. (b) without a few events.
 
 ### 9d.X — Open bucket
 
-This section can grow between now and v0.8 ship. Anything new that
-surfaces (new landmark category, new term, a feature for which the
-design isn't settled, a behavior we'd like to add but don't have data
-for) lands here as a numbered subsection. When v0.8 has enough scope
-+ enough new event data to be worth shipping, we promote.
+(v0.8 shipped 2026-06-16; new items now accumulate in section 9e.)
 
-Candidates that may end up here as the project evolves:
+---
 
-- *(none yet — placeholder)*
+## 9e. v0.9 agenda (seeded by the 2026-07-06 pluvial event)
+
+The 2026-07-06 flash flood (see
+`assets/observations/2026-07-06/README.md`) answered HANDOFF item 14
+— heavy rain floods 342 Bay with zero tidal contribution — and
+exposed the two failure modes that define the v0.9 work:
+
+### 9e.1 — Pluvial prediction pathway (the architectural gap)
+
+The model predicts only at high-tide timestamps. The 7/6 flood peaked
+~1.5 h before high tide; no version of the current architecture could
+have flagged it regardless of inputs. v0.9 needs a rain-driven
+prediction path with sub-daily timing.
+
+**Candidate unifying frame** (from the 7/6 + Oct 30 contrast):
+flood level ≈ f(rain input rate, drainage capacity(bay level)).
+
+- 7/6: bay LOW → drains working → flood tracked rain input; abated
+  within ~30 min of rain slowing even against an incoming tide.
+- Oct 30 2025: bay HIGH (SH 7.63) → drains blocked → same rain class
+  stacked on top of the tide → biggest flood on record.
+
+The existing tide+rain term and pure-pluvial flooding are plausibly
+two limits of that one model. If the same convective cell from 7/6
+had landed at a 7+ ft tide, we plausibly get another Oct 30.
+
+### 9e.2 — Rain input beyond QPF
+
+NWS QPF forecast 0.0″ for 7/6 — convective cells are exactly what
+QPF misses. Candidate supplemental inputs: radar nowcast (MRMS),
+NJDEP/Rutgers mesonet RABCH022 "Highlands" (hourly, was the v0.1
+rain source), NWS convective watches/warnings as a categorical
+banner. Even "QPF says dry but a cell is inbound on radar" would
+have beaten the 7/6 forecast.
+
+### 9e.3 — Drainage asymmetry: tide floods vs. rain floods (observed 7/6)
+
+Different spatial signatures, first documented during the 7/6
+drain-down (1:05–1:12 PM):
+
+- **Tide floods**: water enters via SE/SW grates first (lowest
+  openings, 3.52/3.60 — backflow surfaces there) and those areas
+  stay wettest.
+- **Rain floods**: NE/NW side dominates late-stage. The NE grate was
+  **jetting water upward** (pressurized outflow) while the SW grate
+  was accepting inflow and the SE grate sat inactive; the north side
+  of Bay took on water while the south side drained.
+
+User's hypothesis (verbatim in the event README): the NE grate sits
+on/near the main trunk line toward the outfall; converging forward
+drainage pressurizes it. Predicts rain floods persist longest around
+NE/NW; tide floods around SE/SW. Cross-reference item 15 (borough
+drainage map request) — the map would confirm the trunk topology.
+
+### 9e.4 — `lawn_step` elevation revision candidate: 4.58 → ≈ 4.67
+
+Two independent anchors at 7/6 11:43–44 (NE grate → 4.654, sidewalk
+→ 4.659, agreeing to 0.005 ft) coincided with the user's observation
+"water approximately level with but just under the lawn step" →
+lawn_step top ≈ 4.67 ± 0.02, not the 4.58 placeholder (whose 4.54–
+4.63 inferred range was already flagged unreliable in item 7.4).
+Corroborated by the 7/6 peak (4.77 → ~1″ over the step, matching
+"reached the bottom porch step and went up it 1–2″").
+
+Hold for one clean tide-flood anchor at the step edge (tide floods
+are more reliably level) before changing the model constant. Also
+needs: pin down what the `porch_step` 5.08 landmark actually refers
+to (base vs. top of first step) — the 7/6 "bottom porch step + 1–2″"
+at 4.77 implies the step base is ~4.6–4.7, well below 5.08.
 
 ---
 
