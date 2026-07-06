@@ -251,9 +251,11 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
   // hours flagged burst-capable (PoP/thunderstorm wording), not the
   // whole window. A zone, not a level.
   if (potIn) {
-    // Band RIDES the tide curve (matches the website): bottom = tide,
-    // top = tide + potential lift, only across burst-capable hours.
-    // Knowingly non-literal — chosen for readable boundaries.
+    // Band: bottom = tide curve, top = FLAT absolute burst-potential
+    // level (matches the website) — a burst could fill street water
+    // to ~that level at any point in the storm window; thickness is
+    // the rain's headroom over the tide. Clamps to zero where the
+    // tide already exceeds the potential.
     ctx.setFillColor(new Color("#0b3d6b", 0.30));
     const flags = series.map(p => !!p.burst_risk);
     const anyFlag = flags.some(Boolean);
@@ -261,8 +263,8 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
     for (let i = 0; i < times.length; i++) {
       if (anyFlag && !flags[i]) continue;
       const xi = x(times[i].getTime());
-      const topY = y(tideIn[i] + potIn);
-      ctx.fillRect(new Rect(xi - stripW / 2, topY, stripW, y(tideIn[i]) - topY));
+      const topV = Math.max(potIn, tideIn[i]);
+      ctx.fillRect(new Rect(xi - stripW / 2, y(topV), stripW, y(tideIn[i]) - y(topV)));
     }
     ctx.setStrokeColor(new Color("#0b3d6b", 0.95));
     ctx.setLineWidth(1.5);
@@ -270,7 +272,7 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
     for (let i = 0; i < times.length; i++) {
       const active = !anyFlag || flags[i];
       if (active) {
-        const pt = new Point(x(times[i].getTime()), y(tideIn[i] + potIn));
+        const pt = new Point(x(times[i].getTime()), y(Math.max(potIn, tideIn[i])));
         if (zseg) zseg.addLine(pt);
         else { zseg = new Path(); zseg.move(pt); }
       } else if (zseg) {

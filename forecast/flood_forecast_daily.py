@@ -3953,12 +3953,7 @@ def _render_water_series_section(forecast):
     # (a Sandy-class forecast should not be clipped).
     all_vals = ([v for v in tide if v is not None]
                 + [v for v in pluv if v is not None]
-                # The rain band rides the tide, so its top can reach
-                # max(tide) + potential lift — include it so the
-                # standard frame expands rather than clipping the band.
-                + ([to_in(potential) +
-                    max([v for v in tide if v is not None] or [0])]
-                   if potential else []))
+                + ([to_in(potential)] if potential else []))
     y_min = min(-60, (min(all_vals) - 3) if all_vals else -60)
     y_max = max(36, (max(all_vals) + 3) if all_vals else 36)
     # Two lines, two surfaces (user design 2026-07-06): bay/tide water
@@ -4017,21 +4012,21 @@ def _render_water_series_section(forecast):
         if not any(flags):
             flags = [True] * len(labels)   # risk fired but no hour
                                            # qualified — show full width
-        # Band RIDES the tide curve (user design: "start the rain
-        # burst coloring on top of the tide line ... it will make the
-        # boundaries more obvious" — knowingly non-literal; the burst
-        # estimate itself is an absolute street level, stated in the
-        # label). Fill from this dataset down to dataset 0 (the tide).
-        zone_data = [round(tide[i] + pot_in, 1) if flags[i] else None
+        # Band: bottom = the tide curve, top = the FLAT absolute burst
+        # potential level (user correction 2026-07-06: the burst can
+        # bring street water to ~the same absolute level at any point
+        # in the storm window — thickness IS the rain's headroom,
+        # biggest at low tide). Where the tide already exceeds the
+        # potential, thickness clamps to zero.
+        zone_data = [round(max(pot_in, tide[i]), 1) if flags[i] else None
                      for i in range(len(labels))]
         datasets.append({
-            "label": f"rain-burst potential (+{pot_in}″ of lift, storm-capable hours)",
+            "label": f"rain-burst potential (up to +{pot_in}″, storm-capable hours)",
             "data": zone_data,
             "fill": 0,
             "backgroundColor": "rgba(11, 61, 107, 0.30)",
             "borderColor": "rgba(11, 61, 107, 0.9)",
             "pointRadius": 0, "borderWidth": 1.5, "spanGaps": False,
-            "tension": 0.35,
         })
     datasets.extend(landmark_datasets)
     cfg = {
@@ -4065,12 +4060,13 @@ def _render_water_series_section(forecast):
             "fine and draws no line.")
     if potential:
         note_bits.append(
-            "The navy band is the rain-burst potential (7/6-analog "
-            "scaling), drawn riding on top of the tide curve for "
-            "readability and only across the hours when burst-capable "
-            "weather is in the forecast. Bursts have estimable "
-            "magnitude but no exact clock time — the band marks "
-            "possibility, not a predicted bump.")
+            "The navy band spans from the tide curve up to the "
+            "rain-burst potential level (7/6-analog scaling) across "
+            "the hours when burst-capable weather is in the forecast "
+            "— a burst could fill street water to roughly that level "
+            "at any point in the band; its thickness is the rain's "
+            "headroom over the tide. Bursts have estimable magnitude "
+            "but no exact clock time.")
     note_bits.append("Windows below are derived from these curves.")
     return f"""
   <section class="water-series">
