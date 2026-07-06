@@ -200,8 +200,12 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
 
   const CURB_IN = toIn(CURB_ELEV);          // ≈ +7.7″
   const potIn = rainPotential ? toIn(rainPotential) : null;
-  let yMin = Math.min(...tideIn, 0) - 4;
-  let yMax = Math.max(...combined, CURB_IN, potIn || 0) + 4;
+  // Standard frame (user 2026-07-06): same y-limits every day so the
+  // eye calibrates — normal tides swing −55″..+5″, measured floods
+  // peak ~+21″. Expands only when data exceeds it (never clip a
+  // Sandy-class forecast).
+  let yMin = Math.min(-60, Math.min(...tideIn, 0) - 3);
+  let yMax = Math.max(36, Math.max(...combined, CURB_IN, potIn || 0) + 3);
   const t0 = times[0].getTime();
   const t1 = times[times.length - 1].getTime();
 

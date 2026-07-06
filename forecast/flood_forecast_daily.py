@@ -3920,12 +3920,22 @@ def _render_water_series_section(forecast):
     pr = forecast.get("pluvial_risk") or {}
     potential = pr.get("potential_low_tide_navd88")
     curb_in = round((CURB_TOP - GRATE_SW) * 12, 1)
+    # Standard y-limits (user 2026-07-06): the same frame every day so
+    # the eye calibrates — normal tides swing roughly −55″..+5″ and
+    # measured floods have peaked ~+21″ (Oct 30). [−60, +36] holds all
+    # of that; the frame expands only if data/reference lines exceed it
+    # (a Sandy-class forecast should not be clipped).
+    all_vals = ([v for v in tide if v is not None]
+                + [v for v in pluv if v is not None]
+                + ([to_in(potential)] if potential else []))
+    y_min = min(-60, (min(all_vals) - 3) if all_vals else -60)
+    y_max = max(36, (max(all_vals) + 3) if all_vals else 36)
     # Two lines, two surfaces (user design 2026-07-06): bay/tide water
     # and rain street-water are plotted separately, never spliced.
     datasets = [
         {"label": "Tide + surge (bay water)", "data": tide,
-         "borderColor": "#1a5fa8", "backgroundColor": "rgba(74,144,217,0.15)",
-         "fill": True, "pointRadius": 0, "borderWidth": 2, "tension": 0.35},
+         "borderColor": "#1a5fa8",
+         "fill": False, "pointRadius": 0, "borderWidth": 2, "tension": 0.35},
     ]
     if has_rain_layer:
         datasets.append(
@@ -3984,7 +3994,8 @@ def _render_water_series_section(forecast):
             },
             "scales": {
                 "y": {"title": {"display": True,
-                                "text": "inches vs SW grate (± = above/below)"}},
+                                "text": "inches vs SW grate (± = above/below)"},
+                      "min": y_min, "max": y_max},
                 "x": {"ticks": {"maxTicksLimit": 9, "font": {"size": 10}}},
             },
         },
@@ -4014,8 +4025,35 @@ def _render_water_series_section(forecast):
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <script>
-      new Chart(document.getElementById('water-series-chart'),
-                {json.dumps(cfg)});
+      (function() {{
+        var cfg = {json.dumps(cfg)};
+        var seriesTimes = {json.dumps([p["time"] for p in series])};
+        var tideVals = {json.dumps(tide)};
+        // "Now" marker computed at VIEW time (page regenerates hourly,
+        // but a viewer may load it mid-cycle): vertical line + filled
+        // dot on the tide curve, mirroring the widget.
+        var now = new Date();
+        var best = -1, bestD = Infinity;
+        for (var i = 0; i < seriesTimes.length; i++) {{
+          var m = seriesTimes[i].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/);
+          if (!m) continue;
+          var t = new Date(+m[1], m[2]-1, +m[3], +m[4], +m[5]);
+          var d = Math.abs(t - now);
+          if (d < bestD) {{ bestD = d; best = i; }}
+        }}
+        if (best >= 0 && bestD < 45*60*1000 && tideVals[best] != null) {{
+          cfg.options.plugins.annotation.annotations.nowLine = {{
+            type: 'line', xMin: best, xMax: best,
+            borderColor: '#555555', borderWidth: 1
+          }};
+          cfg.options.plugins.annotation.annotations.nowDot = {{
+            type: 'point', xValue: best, yValue: tideVals[best],
+            radius: 5, backgroundColor: '#1a5fa8',
+            borderColor: '#ffffff', borderWidth: 2
+          }};
+        }}
+        new Chart(document.getElementById('water-series-chart'), cfg);
+      }})();
     </script>
   </section>
 """
