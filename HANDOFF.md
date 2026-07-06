@@ -1679,14 +1679,37 @@ The existing tide+rain term and pure-pluvial flooding are plausibly
 two limits of that one model. If the same convective cell from 7/6
 had landed at a 7+ ft tide, we plausibly get another Oct 30.
 
-### 9e.2 — Rain input beyond QPF
+### 9e.2 — Rain input beyond QPF (PARTIALLY DONE 2026-07-06 same-day)
 
-NWS QPF forecast 0.0″ for 7/6 — convective cells are exactly what
-QPF misses. Candidate supplemental inputs: radar nowcast (MRMS),
-NJDEP/Rutgers mesonet RABCH022 "Highlands" (hourly, was the v0.1
-rain source), NWS convective watches/warnings as a categorical
-banner. Even "QPF says dry but a cell is inbound on radar" would
-have beaten the 7/6 forecast.
+**Root cause found — it was our bug, not (only) a QPF miss.** The
+NWS `forecastHourly` periods no longer carry
+`quantitativePrecipitation` at all (verified live: 0 of 156 periods
+have it); our code read that field → always None → **rain was
+silently 0.0 in every production run ever**. The user's iPhone
+showing rain all week while our forecast said 0.0 is what exposed it.
+
+**Fixed same-day**: `fetch_nws_qpf()` pulls QPF from the raw
+gridpoint endpoint (`forecastGridData` →
+`quantitativePrecipitation.values`, mm over ISO-8601 intervals),
+expands to hourly in/hr buckets. Per-tide rain windows + cumulative
+24h rain now use it. Verified live: cumulative 0.74″, nonzero
+per-tide rates, banner firing.
+
+**Also added: pluvial flood-risk banner** (first deliverable of
+9e.1). Categorical advisory (`possible` / `elevated`) triggered by
+peak QPF rate ≥ 0.30 in/hr, OR PoP ≥ 60% + thunderstorm/heavy-rain
+wording (convective), OR cumulative ≥ 1.0″ (or ≥ 0.5″ with PoP ≥
+70%). Renders on the home page (amber banner) + text email +
+`pluvial_risk` field in forecast.json. Honesty note baked into the
+banner: QPF's ~6-h buckets smear convective bursts (7/6's
+flood-producing cell averaged 0.09 in/hr in QPF), so the PoP +
+wording triggers carry the weight for cells. Thresholds are
+first-guess; calibrate as pluvial events accumulate.
+
+**Still open**: radar nowcast (MRMS); Rutgers mesonet RABCH022 as an
+*observed*-rain input; an actual pluvial depth model (9e.1 — needs
+rain-rate→depth calibration, which needs the observed rain rates for
+7/6; check Rutgers/NJDEP records for the 7/6 storm).
 
 ### 9e.3 — Drainage asymmetry: tide floods vs. rain floods (observed 7/6)
 

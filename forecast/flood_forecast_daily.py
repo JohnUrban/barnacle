@@ -21,6 +21,7 @@ Optional:
 """
 
 import os
+import re
 import csv
 import math
 import json
@@ -930,11 +931,75 @@ def fetch_temperature_72h_mean():
 
 def fetch_nws_hourly_forecast():
     """NWS hourly forecast for Highlands. Returns list of dicts with
-    startTime, temperature, probabilityOfPrecipitation, etc."""
+    startTime, temperature, probabilityOfPrecipitation, etc.
+
+    NOTE (2026-07-06): these periods do NOT contain
+    quantitativePrecipitation — NWS only publishes QPF in the raw
+    gridpoint endpoint. Use fetch_nws_qpf() for rain. This function
+    remains the source for wind (compute_wind_adjustment) and
+    probabilityOfPrecipitation / shortForecast (pluvial advisory)."""
     pts = _get(f"https://api.weather.gov/points/{HIGHLANDS_LAT},{HIGHLANDS_LON}")
     forecast_url = pts["properties"]["forecastHourly"]
     fc = _get(forecast_url)
     return fc["properties"]["periods"]
+
+
+def _parse_iso_duration_hours(dur):
+    """Parse the ISO-8601 durations NWS uses in gridpoint validTime
+    strings ("PT6H", "PT2H", "P1D", "P1DT6H"). Returns float hours.
+    Minutes appear rarely ("PT30M"); handled. Anything unparsable
+    returns None."""
+    m = re.match(r"^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$", dur)
+    if not m or dur == "P":
+        return None
+    days, hours, minutes = (int(g) if g else 0 for g in m.groups())
+    total = days * 24 + hours + minutes / 60.0
+    return total if total > 0 else None
+
+
+def fetch_nws_qpf():
+    """Hourly rain-rate buckets (in/hr, UTC) from the NWS gridpoint
+    QPF data — THE fix for the bug where rain read 0.0 forever
+    (discovered 2026-07-06, the pluvial flash flood the model called
+    "dry"): forecastHourly periods stopped carrying
+    quantitativePrecipitation, so every read returned None → 0.0.
+    The raw gridpoint endpoint still has QPF, in mm over ISO-8601
+    intervals (typically PT6H).
+
+    Expands each interval into per-hour buckets at the interval's
+    AVERAGE rate. Honesty note: a convective cell dumping 1+ in/hr
+    for 40 min inside a 6-h bucket averages to ~0.1 in/hr — QPF
+    resolution structurally understates convective peaks. That's why
+    the pluvial advisory (2026-07-06) also triggers on
+    probabilityOfPrecipitation + thunderstorm wording, not just QPF.
+
+    Returns list of (bucket_start_utc_datetime, rate_in_per_hr),
+    hour-aligned, sorted. Empty list on failure.
+    """
+    try:
+        pts = _get(f"https://api.weather.gov/points/{HIGHLANDS_LAT},{HIGHLANDS_LON}")
+        grid_url = pts["properties"]["forecastGridData"]
+        grid = _get(grid_url)
+        values = grid["properties"]["quantitativePrecipitation"]["values"]
+    except Exception:
+        return []
+    out = []
+    for v in values:
+        try:
+            start_str, dur = v["validTime"].split("/")
+            start = parse_iso(start_str)
+            hours = _parse_iso_duration_hours(dur)
+            mm = float(v["value"]) if v["value"] is not None else 0.0
+        except Exception:
+            continue
+        if not hours:
+            continue
+        rate_in_hr = (mm / 25.4) / hours
+        n_buckets = max(1, int(round(hours)))
+        for i in range(n_buckets):
+            out.append((start + dt.timedelta(hours=i), rate_in_hr))
+    out.sort(key=lambda x: x[0])
+    return out
 
 
 # ============================================================
@@ -1355,6 +1420,10 @@ def build_forecast():
     temp_avg = fetch_temperature_72h_mean()
     cold = (temp_avg is not None and temp_avg < COLD_LOCKOUT_F)
     nws_hourly = fetch_nws_hourly_forecast()
+    # QPF from the gridpoint endpoint — the ONLY place NWS publishes
+    # it (2026-07-06 fix; forecastHourly periods carry no QPF and the
+    # old read silently returned 0.0 forever).
+    qpf_hourly = fetch_nws_qpf()   # list of (utc_dt, in/hr)
 
     # NWS Coastal Flood projections (if any active event)
     nws_active = False
@@ -1417,6 +1486,9 @@ def build_forecast():
         # tide-time uncertainty (observed flooding has lagged the
         # predicted peak by up to ~30 min). Wider ±3h hourly profile
         # for the email's rain-timing block is unchanged.
+        # 2026-07-06: source switched from forecastHourly periods
+        # (which no longer carry QPF — the read was silently 0.0
+        # forever) to the gridpoint QPF buckets in qpf_hourly.
         peak_rain_rate = 0.0
         rain_window = []  # list of (hours_offset_from_high_tide, rain_rate_in_hr)
         peak_rain_offset_h = None
@@ -1425,16 +1497,7 @@ def build_forecast():
             window_end   = peak_dt + dt.timedelta(minutes=15)
             wider_start  = peak_dt - dt.timedelta(hours=3)
             wider_end    = peak_dt + dt.timedelta(hours=3)
-            for p in nws_hourly[:96]:
-                try:
-                    tt = parse_iso(p["startTime"])
-                except Exception:
-                    continue
-                qp = p.get("quantitativePrecipitation") or {}
-                val = qp.get("value")
-                if val is None:
-                    continue
-                rate = float(val)
+            for tt, rate in qpf_hourly:
                 if window_start <= tt <= window_end:
                     if rate > peak_rain_rate:
                         peak_rain_rate = rate
@@ -1503,19 +1566,44 @@ def build_forecast():
     # Cumulative rain over the next 24h (from NWS hourly forecast). Used in
     # the rain-timing block.
     cumulative_rain_24h = 0.0
+    peak_rain_rate_24h = 0.0      # max hourly QPF rate anywhere in next 24h
     now_utc = dt.datetime.now(dt.timezone.utc)
     cutoff = now_utc + dt.timedelta(hours=24)
-    for p in nws_hourly[:48]:
-        try:
-            tt = parse_iso(p["startTime"])
-        except Exception:
-            continue
+    for tt, rate in qpf_hourly:
         if tt < now_utc or tt > cutoff:
             continue
-        qp = p.get("quantitativePrecipitation") or {}
-        val = qp.get("value")
-        if val is not None:
-            cumulative_rain_24h += float(val)
+        cumulative_rain_24h += rate  # rate (in/hr) × 1 h bucket = inches
+        if rate > peak_rain_rate_24h:
+            peak_rain_rate_24h = rate
+
+    # Pluvial flood risk (v0.9 first step — 2026-07-06 flash flood
+    # proved rain alone floods the intersection; see
+    # assets/observations/2026-07-06/README.md). This is a CATEGORICAL
+    # advisory, not a depth prediction: QPF's ~6-h buckets smear
+    # convective peaks (the 7/6 cell averaged ~0.09 in/hr in QPF while
+    # actually producing a 7.3-in-at-curb flood), so the trigger also
+    # uses probabilityOfPrecipitation + thunderstorm wording from the
+    # hourly forecast.
+    pluvial_max_pop = 0
+    pluvial_convective = False
+    for p in nws_hourly[:24]:
+        pop = ((p.get("probabilityOfPrecipitation") or {}).get("value")) or 0
+        pluvial_max_pop = max(pluvial_max_pop, pop)
+        sf = (p.get("shortForecast") or "").lower()
+        if pop >= 60 and ("thunder" in sf or "heavy rain" in sf):
+            pluvial_convective = True
+    pluvial_risk_level = None
+    if peak_rain_rate_24h >= 0.30 or pluvial_convective:
+        pluvial_risk_level = "elevated"
+    elif cumulative_rain_24h >= 1.0 or (pluvial_max_pop >= 70 and cumulative_rain_24h >= 0.5):
+        pluvial_risk_level = "possible"
+    pluvial_risk = {
+        "level": pluvial_risk_level,     # None | "possible" | "elevated"
+        "peak_rain_rate_24h_in_hr": round(peak_rain_rate_24h, 3),
+        "cumulative_rain_24h_in": round(cumulative_rain_24h, 2),
+        "max_pop_24h_pct": pluvial_max_pop,
+        "convective_wording": pluvial_convective,
+    }
 
     # Confidence indicator inputs
     surge_swing = fetch_surge_swing_6h()
@@ -1566,6 +1654,8 @@ def build_forecast():
         "seasonal_context": seasonal_context,
         # Rain summary across next 24h
         "cumulative_rain_24h_in": cumulative_rain_24h,
+        # Pluvial flood risk advisory (v0.9 first step, 2026-07-06)
+        "pluvial_risk": pluvial_risk,
         # Confidence indicator inputs (level computed below after assembly)
         "surge_swing_6h_ft": surge_swing,
         # Recent observed peaks for the recap block
@@ -3204,6 +3294,17 @@ def render_email(forecast):
     summary_block = ("\n".join(summary_lines) + "\n\n") if summary_lines else ""
     rain_lines = _render_rain_timing_text(forecast)
     rain_block = ("\n".join(rain_lines) + "\n\n") if rain_lines else ""
+    pr = forecast.get("pluvial_risk") or {}
+    if pr.get("level"):
+        rain_block = (
+            f"*** PLUVIAL FLOOD RISK ({pr['level'].upper()}) — independent of tide ***\n"
+            f"  Peak QPF {pr.get('peak_rain_rate_24h_in_hr', 0):.2f} in/hr, "
+            f"cumulative {pr.get('cumulative_rain_24h_in', 0):.2f}\", "
+            f"max PoP {pr.get('max_pop_24h_pct', 0)}%"
+            + (", thunderstorm wording" if pr.get("convective_wording") else "")
+            + ".\n  Heavy rain alone floods the intersection (see 2026-07-06"
+            " event); tide-keyed predictions below do not capture this.\n\n"
+        ) + rain_block
     recap_lines = _render_recent_history_text(forecast)
     recap_block = ("\n".join(recap_lines) + "\n\n") if recap_lines else ""
     low_lines = _render_low_tides_text(forecast)
@@ -3408,6 +3509,46 @@ def _oscillation_chart_data(forecast):
             })
 
     return {"points": points, "landmarks": landmark_lines}
+
+
+def _render_pluvial_advisory_html(forecast):
+    """Pluvial flood-risk banner (v0.9 first step, 2026-07-06).
+
+    Rain alone floods the intersection — proven by the 7/6 flash
+    flood (7.3" at curb, 1.5 h before high tide, bay below all
+    grates). The tide-keyed model cannot predict that event class,
+    so this banner surfaces the risk CATEGORICALLY whenever forecast
+    rain conditions resemble it. Empty string when no risk."""
+    pr = forecast.get("pluvial_risk") or {}
+    level = pr.get("level")
+    if not level:
+        return ""
+    heading = ("ELEVATED pluvial flood risk" if level == "elevated"
+               else "Possible pluvial flooding")
+    details = (
+        f"Next 24 h: peak QPF rate {pr.get('peak_rain_rate_24h_in_hr', 0):.2f} in/hr, "
+        f"cumulative {pr.get('cumulative_rain_24h_in', 0):.2f}\", "
+        f"max precip probability {pr.get('max_pop_24h_pct', 0)}%"
+        + (", thunderstorm/heavy-rain wording in the NWS forecast"
+           if pr.get("convective_wording") else "")
+        + "."
+    )
+    return (
+        '<section class="pluvial-advisory">'
+        f'<h3>&#9888; {heading} — independent of the tide</h3>'
+        f'<p>{details}</p>'
+        '<p class="note">Heavy rain can flood the Bay+Central '
+        'intersection with no tidal contribution at all — the '
+        '2026-07-06 flash flood put ~7&Prime; of water at the curb '
+        '1.5 hours <i>before</i> high tide with the bay a foot below '
+        'the lowest grate. The tide-keyed predictions below do not '
+        'capture this event class. NWS rain amounts (QPF) also smear '
+        'short convective bursts, so treat any thunderstorm cell as '
+        'capable of more than the numbers suggest. If heavy rain '
+        'coincides with a high tide, expect compound flooding '
+        '(Oct 30 2025 class).</p>'
+        '</section>'
+    )
 
 
 def _render_wind_adjustment_html(forecast):
@@ -5085,6 +5226,7 @@ def render_html_page(forecast):
        the heat-map redraw), and a convergence chart showing how the peak
        forecast for that tide evolved.</p>
   </section>
+{_render_pluvial_advisory_html(forecast)}
 {_render_cold_advisory_html(forecast)}
 {_render_live_gauge_section(forecast)}
 {map_section}
