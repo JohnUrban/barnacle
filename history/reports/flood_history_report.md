@@ -2,6 +2,22 @@
 
 *Built from 116 years of NOAA Sandy Hook gauge observations (station 8531680, 1910-01-01 through 2026-05-17). Hyperlocal to 342 Bay Avenue using the v0.5 model (LOCAL_ENHANCEMENT = +0.40 ft, NAVD88 = MLLW − 2.82). Flood-onset threshold at this address: Sandy Hook 6.58 ft MLLW (water reaches the curb at the walkway).*
 
+> **⚠ DATED SNAPSHOT — written 2026-05-18 under model v0.5/v0.6.**
+> The analysis below was computed with the v0.5 transform
+> (enhancement **+0.40**, curb onset **SH 6.58**) — both since
+> superseded. Under **v0.9** (2026-07-06): enhancement **0.00**
+> (tape-measured across 4 events), curb onset **SH 6.98**, 18
+> landmarks, and a pluvial pathway (rain floods this corner with no
+> tidal contribution at all — invisible to everything in this
+> report, which is tide-gauge-only). Event *counts* here therefore
+> **overstate** curb flooding by using the lower old threshold, and
+> depth columns run ~0.40 ft high. The regenerated CSVs in
+> `history/data/` (refreshed 2026-07-06 at v0.9 thresholds) are the
+> numbers to act on; current spec: `model/v0.9.md`. The narrative
+> below is preserved as-written — it's part of the project's
+> reasoning record.
+
+
 ---
 
 ## Plain-language summary
@@ -89,9 +105,9 @@ The HANDOFF described the dashboard as using a "7.20 ft Minor" threshold. **That
 | Dec | 1.97 | 2.10 |
 | **Total** | **25.0** | **25.4** |
 
-These match within rounding. The dashboard's "Minor 7.20 ft" label appears to be mislabeled — the underlying threshold is the NWS standard 6.7 ft MLLW for Sandy Hook minor coastal flooding. (Reassuringly, this 6.7 ft NWS threshold sits just 0.12 ft above your empirical 6.58 ft flood onset at the curb — the dashboard frequency would only modestly understate yours.)
+These match within rounding. The dashboard's "Minor 7.20 ft" label appears to be mislabeled — the underlying threshold is the NWS standard 6.7 ft MLLW for Sandy Hook minor coastal flooding. (Reassuringly, this 6.7 ft NWS threshold sits just 0.12 ft above the v0.5-era 6.58 ft flood-onset estimate — **[superseded: v0.9 puts curb onset at 6.98, i.e. 0.28 ft ABOVE the NWS minor threshold — the dashboard frequency now modestly OVERSTATES curb flooding at 342]**.)
 
-At your house's actual flood-onset threshold (6.58 ft), the **same recent window (1996–2025) gives ~30 events/year** — about 20% higher than the dashboard.
+At the v0.5-era flood-onset threshold (6.58 ft), the **same recent window (1996–2025) gives ~30 events/year**. **[Superseded: at the v0.9 curb threshold (6.98) the regenerated CSVs give materially fewer curb events/year; sub-curb street-water events (SW grate, 6.34) are far more frequent — see `seasonality_recent.csv`.]**
 
 Full data: `history/data/seasonality_by_threshold.csv`.
 
@@ -281,7 +297,7 @@ To regenerate everything from scratch: `python scripts/pull_sandy_hook_history.p
 
 1. **Hourly is not the instantaneous max.** NOAA's `hourly_height` product is a centered-hour value. Storm peaks reported here (e.g., Sandy 12.03 ft) will be lower than the 6-minute instantaneous max (Sandy 13.31 ft). The GEV fit is on annual hourly maxima, so the return-level numbers are also in that frame; multiply by ~1.05–1.10 for instantaneous-equivalent at the very extreme tail.
 2. **Pre-1932 data is sparse.** Only 7 usable years 1910–1929 in this pull. They're included but don't drive the SLR fit (the post-1932 trends are the load-bearing ones).
-3. **`+0.40 ft` local enhancement is treated as constant.** All depth-at-landmark numbers in this report assume this is a fixed offset. The v0.5 spec notes it may vary ±0.05 ft with wind/pressure conditions; that uncertainty propagates linearly to each depth column.
+3. **`+0.40 ft` local enhancement is treated as constant.** All depth-at-landmark numbers in this report assume this is a fixed offset. **[Superseded 2026-06: four tape-measured events showed the enhancement is ~0.00 (the +0.40 was over-fit to memory-based observations); every depth column in this report runs ~0.40 ft (≈5″) high. See model/v0.9.md.]**
 4. **The cold-weather override is not applied here.** Section 3e counts every above-threshold event as a flood. The model spec says cold events with `SH < 8.0` and `temp_72h < 32°F` don't actually flood the property because the storm drain backflow pathway is ice-locked. Without historical temperature data joined into this dataset, I don't filter those out — so a small fraction of cold-snap events counted here may not have produced any visible flooding at the house.
 5. **Hurricane Sandy as a ~5000-year event.** This is the GEV fit's verdict, not a physical claim. Sandy was a tropical-extratropical hybrid whose particular geometry (left-of-track to Sandy Hook, full-moon spring tide, right-angle land approach) is not well represented by 98 ordinary annual maxima. The CI on the 500-yr level alone already runs to 14 ft. Treat anything past the 100-yr level as a planning floor, not a probability statement.
 
