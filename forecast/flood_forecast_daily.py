@@ -181,6 +181,62 @@ def fetch_tides_24h():
     }
 
 
+def build_water_series(surge_ft, hours_back=2, hours_forward=24,
+                       interval_min=30):
+    """Model-predicted water level at 342 Bay over a continuous window
+    — the data behind the widget tide-curve chart (user request
+    2026-07-06: "show 12-24 hours of the expected height over time
+    given our model. It would mostly look like sinusoidal tide charts").
+
+    Pulls NOAA astronomical predictions at `interval_min` resolution
+    and applies the v0.8 transform at each step:
+
+        water_navd88 = astro_pred + surge + LOCAL_ENHANCEMENT_FT
+                       + MLLW_TO_NAVD88_OFFSET
+
+    Notes / honest limitations:
+    - `surge_ft` (persisted surge or NWS value) is applied as a
+      CONSTANT across the window — same assumption the per-tide
+      forecast makes. Fine near-term, increasingly wrong further out.
+    - The rain term is NOT in this series yet. The model's rain term
+      is keyed to tide peaks, not to arbitrary timestamps; a proper
+      time-resolved rain overlay comes with the pluvial work. The
+      series is the tide+surge backbone the rain bump will ride on.
+
+    Returns list of {"time": local str, "water_navd88": float} or []
+    on any fetch failure (widget falls back to no-chart).
+    """
+    now = dt.datetime.now(dt.timezone.utc)
+    start = now - dt.timedelta(hours=hours_back)
+    end = now + dt.timedelta(hours=hours_forward)
+    try:
+        data = _get(
+            "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+            {
+                "station": NOAA_STATION,
+                "product": "predictions",
+                "datum": "MLLW",
+                "time_zone": "lst_ldt",
+                "units": "english",
+                "interval": str(interval_min),
+                "begin_date": start.strftime("%Y%m%d %H:%M"),
+                "end_date": end.strftime("%Y%m%d %H:%M"),
+                "format": "json",
+            },
+        )
+    except Exception:
+        return []
+    out = []
+    for p in data.get("predictions", []) or []:
+        try:
+            astro = float(p["v"])
+        except (TypeError, ValueError):
+            continue
+        water = astro + (surge_ft or 0.0) + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+        out.append({"time": p["t"], "water_navd88": round(water, 3)})
+    return out
+
+
 def fetch_high_tides_24h():
     """Backwards-compatible wrapper returning only high tides as a list."""
     return fetch_tides_24h()["high"]
@@ -1482,6 +1538,12 @@ def build_forecast():
     except Exception:
         live_gauge_24h = []
 
+    # Model-predicted water level series for the widget tide-curve
+    # chart (2026-07-06). Uses the worst tide's surge as the constant
+    # surge across the window — same persistence assumption as the
+    # per-tide forecasts.
+    water_series = build_water_series(worst["surge_ft"])
+
     return {
         # Headline fields (worst-case tide)
         "peak_predicted_mllw": worst["predicted_mllw"],
@@ -1514,6 +1576,10 @@ def build_forecast():
         "live_gauge_24h": [
             {"time": t, "value_mllw": v} for t, v in live_gauge_24h
         ],
+        # Model-predicted water level (NAVD88) at 30-min steps,
+        # now-2h → now+24h. Tide+surge backbone for the widget chart;
+        # rain term not yet time-resolved (2026-07-06).
+        "water_series": water_series,
     }
 
 
@@ -2733,13 +2799,28 @@ def format_date_short(date_str):
 
 # Regime glossary for inline annotation and the email/HTML footer.
 REGIME_GLOSSARY = {
-    "dry":          "no visible water at any landmark",
-    "street":       "water on the street at sub-curb landmarks; curb still dry",
+    "dry":          "no visible flood water at any landmark",
+    "street":       "water on the street at sub-curb landmarks; curb still clear",
     "light":        "water at curb (0–4 inches)",
     "moderate":     "water at curb (4–8 inches)",
     "severe":       "water past lawn step / bulkhead overtopping territory",
     "cold_lockout": "cold conditions met but rule no longer actively applied (see retrospective)",
 }
+
+# User-facing display names for regimes. The internal keys (esp. "dry")
+# are frozen — they're baked into predictions_log.csv (~5k rows), CSS
+# classes, and the accuracy-log comparisons. Display-only mapping.
+# Why: "DRY" reads ridiculous on a rainy day with no flooding (user,
+# 2026-07-06). What the regime actually means is "no flooding".
+REGIME_DISPLAY = {
+    "dry":          "no flooding",
+    "cold_lockout": "cold lockout",
+}
+
+
+def regime_display(regime):
+    """User-facing label for an internal regime key."""
+    return REGIME_DISPLAY.get(regime, regime)
 
 
 def _unified_landmark_rows(forecast):
@@ -3085,7 +3166,7 @@ def render_email(forecast):
     all_tides = forecast.get("all_tides", [])
 
     subject_short, subject_above, _ = landmark_summary(d, peak_ft)
-    subject = (f"[342 Bay] {regime.upper()}: forecast {peak_ft:.2f} ft "
+    subject = (f"[342 Bay] {regime_display(regime).upper()}: forecast {peak_ft:.2f} ft "
                f"at {format_time_short(peak_t)} "
                f"({subject_short} {subject_above:+.1f}\")")
 
@@ -3115,7 +3196,7 @@ def render_email(forecast):
     tide_block += (
         "\n  Above = inches above the highest exceeded landmark (negative "
         "= water below the lowest landmark).\n"
-        "  Rel = inches above the lowest landmark (lowest road corner, "
+        "  Rel = inches above the lowest landmark (SW grate across Bay, "
         "3.64 NAVD88) — always."
     )
 
@@ -3152,28 +3233,30 @@ Worst case detail:
   Cold conditions: {'YES — ice-lock hypothesis met but no longer applied (see retrospective)' if forecast['cold_lockout'] else 'no'}
 
 {rain_block}{_landmarks_section_text(forecast)}
-Regime: {regime} — {REGIME_GLOSSARY.get(regime, '')}
+Regime: {regime_display(regime)} — {REGIME_GLOSSARY.get(regime, '')}
 
-{recap_block}{accuracy_block}{low_block}{lookahead_block}Reference scale (Sandy Hook obs MLLW):
-  < 6.02  : dry (nothing visible)
-  6.02    : water emerges from lowest storm grate (Central Ave south)
-  6.06    : lowest road corner across Bay first wets (visible from window)
-  6.20    : water at gutter / curb edge — don't park there
-  6.33    : water emerges from corner storm grate at Bay+Central (Pathway B)
-  6.58    : water at curb top — flood onset at property
-  6.78    : Bay Ave road middle covered
-  7.49    : intersection high point submerged
-  7.00    : water at lawn / walkway step
-  7.50    : water at front porch first step
-  7.9+    : severe (well past porch)
+{recap_block}{accuracy_block}{low_block}{lookahead_block}Reference scale (Sandy Hook obs MLLW; v0.8 thresholds = landmark + 2.82):
+  < 6.34  : no flooding (nothing visible)
+  6.34    : water emerges from SW grate across Bay (lowest grate)
+  6.42    : SE grate across Bay emerges
+  6.46    : SE/SW pavement corners wet; Bay Ave upstream grate emerges
+  6.60    : water at gutter / curb edge at walkway — don't park there
+  6.62    : NE (user's corner) + NW grates emerge (Pathway B)
+  6.98    : water at curb top — flood onset at property
+  7.15    : water on sidewalk under the walkway lawn step
+  7.18    : Bay Ave road middle covered
+  7.36    : intersection high point submerged
+  7.40    : water at lawn / walkway step
+  7.90    : water at front porch first step
+  8.0+    : severe (well past porch)
 
 Regime glossary (subject-line label, based on water depth at the curb):
-  dry          : {REGIME_GLOSSARY['dry']}
+  no flooding  : {REGIME_GLOSSARY['dry']}
   street       : {REGIME_GLOSSARY['street']}
   light        : {REGIME_GLOSSARY['light']}
   moderate     : {REGIME_GLOSSARY['moderate']}
   severe       : {REGIME_GLOSSARY['severe']}
-  cold_lockout : {REGIME_GLOSSARY['cold_lockout']}
+  cold lockout : {REGIME_GLOSSARY['cold_lockout']}
 
 Model: v0.8. Local enhancement 0.00 ft (4-event calibration, conservative).
 """
@@ -3198,7 +3281,7 @@ Model: v0.8. Local enhancement 0.00 ft (4-event calibration, conservative).
             f'<td>{short}</td>'
             f'<td align="right">{above_in:+.1f}&Prime;</td>'
             f'<td align="right">{rel_in:+.1f}&Prime;</td>'
-            f'<td>{td["regime"]}</td>'
+            f'<td>{regime_display(td["regime"])}</td>'
             f'</tr>'
         )
 
@@ -3222,7 +3305,7 @@ Model: v0.8. Local enhancement 0.00 ft (4-event calibration, conservative).
 </table>
 <p style="font-size:small;color:#666">Highlighted row = worst-case tide, headlined below.
 <b>Above</b> = inches above the highest exceeded landmark (negative when water is below the lowest landmark).
-<b>Rel</b> = inches above the lowest landmark (lowest road corner across Bay, 3.64 NAVD88).</p>
+<b>Rel</b> = inches above the lowest landmark (SW grate across Bay, 3.52 NAVD88).</p>
 
 <p><b>Worst case:</b> {format_time_full(peak_t)}<br>
 <b>Forecast peak (obs):</b> {peak_ft:.2f} ft MLLW Sandy Hook
@@ -3235,16 +3318,16 @@ Model: v0.8. Local enhancement 0.00 ft (4-event calibration, conservative).
 {rain_html}
 {_landmarks_section_html(forecast, wrapper='inline')}
 
-<p><b>Regime: {regime}</b> &mdash; <span style="color:#666;font-size:13px">{REGIME_GLOSSARY.get(regime, '')}</span></p>
+<p><b>Regime: {regime_display(regime)}</b> &mdash; <span style="color:#666;font-size:13px">{REGIME_GLOSSARY.get(regime, '')}</span></p>
 
 <h3>Regime glossary</h3>
 <table border="1" cellpadding="6" style="border-collapse:collapse;background:white;font-size:13px">
-<tr><td><b>dry</b></td><td>{REGIME_GLOSSARY['dry']}</td></tr>
+<tr><td><b>no flooding</b></td><td>{REGIME_GLOSSARY['dry']}</td></tr>
 <tr><td><b>street</b></td><td>{REGIME_GLOSSARY['street']}</td></tr>
 <tr><td><b>light</b></td><td>{REGIME_GLOSSARY['light']}</td></tr>
 <tr><td><b>moderate</b></td><td>{REGIME_GLOSSARY['moderate']}</td></tr>
 <tr><td><b>severe</b></td><td>{REGIME_GLOSSARY['severe']}</td></tr>
-<tr><td><b>cold_lockout</b></td><td>{REGIME_GLOSSARY['cold_lockout']}</td></tr>
+<tr><td><b>cold lockout</b></td><td>{REGIME_GLOSSARY['cold_lockout']}</td></tr>
 </table>
 
 {recap_html}
@@ -4092,7 +4175,8 @@ def _render_equation_widget_html(forecast, wrapper="section"):
           else if (depth > 0)  regime = 'light';
           else                 regime = 'dry';
           var rEl = document.getElementById('eq-regime');
-          rEl.textContent = '(' + regime + ')';
+          // 'dry' is the internal key; display as 'no flooding'
+          rEl.textContent = '(' + (regime === 'dry' ? 'no flooding' : regime) + ')';
           rEl.className = 'eqn-regime regime-' + regime;
         }}
         ids.forEach(function(id) {{
@@ -4447,10 +4531,10 @@ def render_per_tide_page(tide, forecast,
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tide {time_str} — Bay Ave Barnacle</title>
 <link rel="stylesheet" href="../../style.css">
-<meta name="description" content="Bay Ave Barnacle — high tide at {format_time_full(time_str)}: {regime.upper()} regime, peak {tide['forecast_peak_mllw']:.2f} ft MLLW Sandy Hook.">
+<meta name="description" content="Bay Ave Barnacle — high tide at {format_time_full(time_str)}: {regime_display(regime).upper()} regime, peak {tide['forecast_peak_mllw']:.2f} ft MLLW Sandy Hook.">
 <!-- Open Graph — W -->
 <meta property="og:title" content="High tide {format_time_full(time_str)} — Bay Ave Barnacle">
-<meta property="og:description" content="{regime.upper()} regime. Forecast peak {tide['forecast_peak_mllw']:.2f} ft MLLW Sandy Hook.">
+<meta property="og:description" content="{regime_display(regime).upper()} regime. Forecast peak {tide['forecast_peak_mllw']:.2f} ft MLLW Sandy Hook.">
 <meta property="og:image" content="https://johnurban.github.io/barnacle/icons/icon-512.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
@@ -4467,7 +4551,7 @@ def render_per_tide_page(tide, forecast,
   </header>
 
   <section class="regime regime-{regime}">
-    <div class="regime-label">{regime.upper()}</div>
+    <div class="regime-label">{regime_display(regime).upper()}</div>
     <div class="regime-summary">{REGIME_GLOSSARY.get(regime, '')}.
        Peak forecast: <b>{tide['forecast_peak_mllw']:.2f} ft MLLW</b> Sandy Hook.</div>
   </section>
@@ -4828,7 +4912,7 @@ def render_html_page(forecast):
             f'<td>{short}</td>'
             f'<td>{above_in:+.1f}&Prime;</td>'
             f'<td>{rel_in:+.1f}&Prime;</td>'
-            f'<td>{td["regime"]}</td>'
+            f'<td>{regime_display(td["regime"])}</td>'
             f'</tr>'
         )
 
@@ -4849,9 +4933,9 @@ def render_html_page(forecast):
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Barnacle">
 <meta name="theme-color" content="#0f4064">
-<meta name="description" content="Bay Ave Barnacle — {regime.upper()} regime. Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ.">
+<meta name="description" content="Bay Ave Barnacle — {regime_display(regime).upper()} regime. Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ.">
 <!-- Open Graph (link previews) — W -->
-<meta property="og:title" content="Bay Ave Barnacle — {regime.upper()}">
+<meta property="og:title" content="Bay Ave Barnacle — {regime_display(regime).upper()}">
 <meta property="og:description" content="Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ.">
 <meta property="og:image" content="https://johnurban.github.io/barnacle/icons/icon-512.png">
 <meta property="og:url" content="https://johnurban.github.io/barnacle/">
@@ -4931,7 +5015,7 @@ def render_html_page(forecast):
   {_render_summary_html(forecast)}
 
   <section class="regime regime-{regime}">
-    <div class="regime-label">{regime.upper()}</div>
+    <div class="regime-label">{regime_display(regime).upper()}</div>
     <div class="regime-summary">{REGIME_GLOSSARY.get(regime, '')}. Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}.</div>
   </section>
 
@@ -5020,38 +5104,40 @@ def render_html_page(forecast):
 
   <section class="reference">
     <h2>Reference scale</h2>
-    <p>Sandy Hook observed water level (MLLW):</p>
+    <p>Sandy Hook observed water level (MLLW; v0.8 thresholds = landmark elevation + 2.82):</p>
     <ul>
-      <li>&lt; 6.02 ft — dry, nothing visible</li>
-      <li>6.02 ft — water emerges from lowest storm grate (Central Ave south)</li>
-      <li>6.06 ft — lowest road corner across Bay first wets (visible from window)</li>
-      <li>6.20 ft — water at gutter / curb edge (don't park there)</li>
-      <li>6.33 ft — water emerges from corner storm grate at Bay+Central (Pathway B)</li>
-      <li>6.58 ft — water tops curb at walkway (flood onset at property)</li>
-      <li>6.78 ft — Bay Ave road middle covered</li>
-      <li>7.49 ft — intersection high point submerged</li>
-      <li>7.00 ft — water at lawn / walkway step</li>
-      <li>7.50 ft — water at front porch first step</li>
-      <li>&ge; 7.9 ft — severe (well past porch)</li>
+      <li>&lt; 6.34 ft — no flooding, nothing visible</li>
+      <li>6.34 ft — water emerges from SW grate across Bay (lowest grate)</li>
+      <li>6.42 ft — SE grate across Bay emerges</li>
+      <li>6.46 ft — SE/SW pavement corners wet; Bay Ave upstream grate emerges</li>
+      <li>6.60 ft — water at gutter / curb edge at walkway (don't park there)</li>
+      <li>6.62 ft — NE (user's corner) + NW grates emerge (Pathway B)</li>
+      <li>6.98 ft — water tops curb at walkway (flood onset at property)</li>
+      <li>7.15 ft — water on sidewalk under the walkway lawn step</li>
+      <li>7.18 ft — Bay Ave road middle covered</li>
+      <li>7.36 ft — intersection high point submerged</li>
+      <li>7.40 ft — water at lawn / walkway step</li>
+      <li>7.90 ft — water at front porch first step</li>
+      <li>&ge; 8.0 ft — severe (well past porch)</li>
     </ul>
   </section>
 
   <section class="reference">
     <h2>Regime glossary</h2>
-    <p>The single word in the subject line (DRY / STREET / LIGHT / MODERATE / SEVERE) summarises severity based on water depth at the curb.</p>
+    <p>The label in the subject line (NO FLOODING / STREET / LIGHT / MODERATE / SEVERE) summarises severity based on water depth at the curb.</p>
     <ul>
-      <li><b>dry</b> — {REGIME_GLOSSARY['dry']}</li>
+      <li><b>no flooding</b> — {REGIME_GLOSSARY['dry']}</li>
       <li><b>street</b> — {REGIME_GLOSSARY['street']}</li>
       <li><b>light</b> — {REGIME_GLOSSARY['light']}</li>
       <li><b>moderate</b> — {REGIME_GLOSSARY['moderate']}</li>
       <li><b>severe</b> — {REGIME_GLOSSARY['severe']}</li>
-      <li><b>cold_lockout</b> — {REGIME_GLOSSARY['cold_lockout']}</li>
+      <li><b>cold lockout</b> — {REGIME_GLOSSARY['cold_lockout']}</li>
     </ul>
   </section>
 
   <footer>
-    <p>Model v0.7. Local enhancement -0.13 ft (3-event mean, 2026-06-14). Rain term saturates at 8&Prime;.
-       Updated daily at 5 AM ET.</p>
+    <p>Model v0.8. Local enhancement 0.00 ft (conservative, 2026-06-16). Rain term saturates at 8&Prime;.
+       Updated hourly (best-effort) via GitHub Actions.</p>
     <p><a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a> &middot;
        <a href="archive/">Past daily archives</a> &middot;
        <a href="tides/">Per-tide archive</a> &middot;

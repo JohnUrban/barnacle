@@ -77,7 +77,8 @@ across four labeled flood events the user observed firsthand.
 | v0.6 model-spec promotion + 9th landmark added | ✅ Live (2026-05-18). model/v0.6.md canonical; v0.5 archived. New lowest sentinel at 3.60 NAVD88 (SH 6.02). |
 | SMS/push alerts for moderate/severe (Twilio/Pushover) | ⏸ Next-turn item |
 | iOS Stage-1 Web Clip (Add to Home Screen) | ✅ Live (2026-05-18). manifest.json + apple-touch-icon + meta tags |
-| iOS Stage-2 Scriptable widget | ✅ Live (2026-05-18). Script at docs/barnacle-widget.js |
+| iOS Stage-2 Scriptable widget | ✅ Live (2026-05-18). Script at docs/barnacle-widget.js. **Rebuilt 2026-07-06**: v0.8 landmark set (old v0.6 keys had silently broken highestExceeded since the v0.7 promotion), enhancement 0.00 (was hardcoded +0.40), "dry"→"NO FLOODING" display, and a NEW 24-h model water-level tide-curve chart (medium widget) fed by the `water_series` field now emitted into forecast.json (30-min steps, now−2h→now+24h, tide+surge backbone; rain term not yet time-resolved). |
+| "DRY" → "no flooding" display language | ✅ Done 2026-07-06. Internal regime key `dry` frozen (predictions_log continuity); display-only mapping via `REGIME_DISPLAY` + `regime_display()`. Applied: subject line, regime banners, tide tables, meta tags, glossaries, equation widget, Scriptable widget. Also refreshed the stale v0.6-era reference scales (email text + home page) to v0.8 thresholds, and fixed a footer still claiming v0.7. |
 | iOS Stage-3 PWA push notifications | ⏸ Next-turn item |
 | iOS Stage-4 native iOS app | ⏸ Multi-session, requires Apple Developer Program |
 | Live NOAA gauge link/embed on Pages site | ⏸ Next-turn item |
