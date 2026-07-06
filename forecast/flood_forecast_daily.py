@@ -300,13 +300,18 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=2,
         r_now = qpf_by_local_hour.get(h0, 0.0)
         r_prev = qpf_by_local_hour.get(h0 - dt.timedelta(hours=1), 0.0)
         rate_eff = (r_now + r_prev) / 2.0
+        # Two-line design (user, 2026-07-06 evening): tide water and
+        # rain street-water are DIFFERENT SURFACES — emit both, never
+        # splice them into one curve (the old max() splice drew a
+        # misleading "tabletop"). pluvial_navd88 is only present when
+        # the rain layer is active; charts draw it as its own line.
+        point = {"time": p["t"], "tide_navd88": round(tide_water, 3)}
         water = tide_water
-        if rate_eff > 0.1:
-            water = max(tide_water, estimate_pluvial_water(rate_eff, tide_water))
-        point = {"time": p["t"], "water_navd88": round(water, 3),
-                 "tide_navd88": round(tide_water, 3)}
-        if water > tide_water:
-            point["rain_navd88_lift"] = round(water - tide_water, 3)
+        if rate_eff >= PLUVIAL_SERIES_RATE_MIN:
+            pluv = estimate_pluvial_water(rate_eff, tide_water)
+            point["pluvial_navd88"] = round(pluv, 3)
+            water = max(tide_water, pluv)
+        point["water_navd88"] = round(water, 3)
         out.append(point)
     return out
 
@@ -3681,9 +3686,17 @@ def _oscillation_chart_data(forecast):
 # already-elevated bay level spread across the whole flooded plain.
 # Same volume, different container width. A proper stage-storage curve
 # unifies these in v0.9; this closed form is the alpha.
-PLUVIAL_STREET_BASE = 3.52       # grate_SW — bottom of the intersection bowl
+PLUVIAL_STREET_BASE = 3.52       # grate_SW — the low point the model keys on
 PLUVIAL_FREE_LIFT_FT = 1.40      # saturation lift, drains functional
 PLUVIAL_FREE_RATE_SCALE = 1.2    # in/hr
+# Minimum smeared QPF rate for the SERIES rain layer to activate.
+# User ground truth (2026-07-06 evening): "When it is lightly raining,
+# the drains work fine" — light steady rain is wet pavement anywhere,
+# not street water; the old 0.1 in/hr gate painted a false street-water
+# tabletop through every drizzly evening. 0.25 in/hr keeps the layer
+# for sustained-heavy rain (tropical/stalled systems); convective
+# bursts are carried by the rain-potential level, not this line.
+PLUVIAL_SERIES_RATE_MIN = 0.25
 
 
 def estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88):
@@ -3898,44 +3911,64 @@ def _render_water_series_section(forecast):
     series = forecast.get("water_series") or []
     if len(series) < 4:
         return ""
+    def to_in(v):
+        return None if v is None else round((v - GRATE_SW) * 12, 1)
     labels = [p["time"][-5:] for p in series]
-    total = [p.get("water_navd88") for p in series]
-    tide = [p.get("tide_navd88", p.get("water_navd88")) for p in series]
-    has_rain_layer = any(p.get("rain_navd88_lift") for p in series)
+    tide = [to_in(p.get("tide_navd88")) for p in series]
+    pluv = [to_in(p.get("pluvial_navd88")) for p in series]
+    has_rain_layer = any(v is not None for v in pluv)
     pr = forecast.get("pluvial_risk") or {}
     potential = pr.get("potential_low_tide_navd88")
+    curb_in = round((CURB_TOP - GRATE_SW) * 12, 1)
+    # Two lines, two surfaces (user design 2026-07-06): bay/tide water
+    # and rain street-water are plotted separately, never spliced.
     datasets = [
-        {"label": "Predicted water (tide+surge+rain)", "data": total,
+        {"label": "Tide + surge (bay water)", "data": tide,
          "borderColor": "#1a5fa8", "backgroundColor": "rgba(74,144,217,0.15)",
          "fill": True, "pointRadius": 0, "borderWidth": 2, "tension": 0.35},
     ]
     if has_rain_layer:
         datasets.append(
-            {"label": "Tide+surge only", "data": tide,
-             "borderColor": "#8aa8c8", "borderDash": [6, 4], "fill": False,
-             "pointRadius": 0, "borderWidth": 1.5, "tension": 0.35})
+            {"label": "Rain street-water (sustained-rain estimate)",
+             "data": pluv, "borderColor": "#d97706",
+             "fill": False, "spanGaps": False,
+             "pointRadius": 0, "borderWidth": 2, "tension": 0.2})
     annotations = {
-        "firstWater": {"type": "line", "yMin": GRATE_SW, "yMax": GRATE_SW,
+        "firstWater": {"type": "line", "yMin": 0, "yMax": 0,
                        "borderColor": "#4a90d9", "borderWidth": 1,
                        "borderDash": [5, 4],
-                       "label": {"display": True, "content": "first water (SW grate)",
+                       "label": {"display": True,
+                                 "content": "0″ — SW grate (first water)",
                                  "position": "start", "font": {"size": 10},
                                  "backgroundColor": "rgba(255,255,255,0.7)",
                                  "color": "#1a5fa8"}},
-        "curb": {"type": "line", "yMin": CURB_TOP, "yMax": CURB_TOP,
+        "curb": {"type": "line", "yMin": curb_in, "yMax": curb_in,
                  "borderColor": "#c0392b", "borderWidth": 1,
                  "borderDash": [5, 4],
-                 "label": {"display": True, "content": "curb (flood onset)",
+                 "label": {"display": True,
+                           "content": f"+{curb_in}″ — curb (flood onset)",
                            "position": "start", "font": {"size": 10},
                            "backgroundColor": "rgba(255,255,255,0.7)",
                            "color": "#c0392b"}},
     }
+    # Day-boundary line at midnight
+    for idx, lab in enumerate(labels):
+        if lab == "00:00":
+            annotations[f"midnight{idx}"] = {
+                "type": "line", "xMin": idx, "xMax": idx,
+                "borderColor": "#999999", "borderWidth": 1,
+                "borderDash": [2, 3],
+                "label": {"display": True, "content": "12 AM",
+                          "position": "start", "font": {"size": 9},
+                          "backgroundColor": "rgba(255,255,255,0.7)",
+                          "color": "#777777"}}
     if potential:
+        pot_in = to_in(potential)
         annotations["rainPotential"] = {
-            "type": "line", "yMin": potential, "yMax": potential,
+            "type": "line", "yMin": pot_in, "yMax": pot_in,
             "borderColor": "#d97706", "borderWidth": 1.5, "borderDash": [3, 3],
             "label": {"display": True,
-                      "content": f"rain-burst potential ({potential:.2f})",
+                      "content": f"rain-burst potential (+{pot_in}″)",
                       "position": "end", "font": {"size": 10},
                       "backgroundColor": "rgba(255,255,255,0.7)",
                       "color": "#9a4c00"}}
@@ -3950,21 +3983,28 @@ def _render_water_series_section(forecast):
                 "annotation": {"annotations": annotations},
             },
             "scales": {
-                "y": {"title": {"display": True, "text": "ft NAVD88"}},
+                "y": {"title": {"display": True,
+                                "text": "inches vs SW grate (± = above/below)"}},
                 "x": {"ticks": {"maxTicksLimit": 9, "font": {"size": 10}}},
             },
         },
     }
-    note_bits = []
+    note_bits = [
+        "Y-axis is inches relative to the SW grate — the reference "
+        "point for all relative depths. Convert: ft NAVD88 = 3.52 + "
+        "inches/12; ft MLLW (Sandy Hook gauge) = 6.34 + inches/12."]
     if has_rain_layer:
-        note_bits.append("The solid curve includes the QPF rain layer; "
-                         "the dashed grey curve is tide+surge only.")
+        note_bits.append(
+            "The amber curve is estimated rain street-water during "
+            "sustained rain (≥0.25 in/hr smeared QPF) — a different "
+            "surface than the blue bay/tide water; light rain drains "
+            "fine and draws no line.")
     if potential:
         note_bits.append(
-            "The amber line is the level a convective burst could reach "
-            "(7/6-analog scaling) — bursts have no forecastable clock "
-            "time, so it renders as a potential level, not a bump.")
-    note_bits.append("Windows below are derived from this curve.")
+            "The dashed amber level is what a convective burst could "
+            "reach (7/6-analog scaling) — bursts have no forecastable "
+            "clock time, so it renders as a potential, not a bump.")
+    note_bits.append("Windows below are derived from these curves.")
     return f"""
   <section class="water-series">
     <h2>Predicted water level — next 24 hours</h2>

@@ -185,13 +185,23 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
   ctx.opaque = false;
   ctx.respectScreenScale = true;
 
-  const times = series.map(p => parseLocal(p.time)).filter(Boolean);
-  const vals = series.map(p => p.water_navd88);
+  // Y-axis: inches relative to the SW grate (the standard reference).
+  const toIn = (v) => (v - LOWEST_ELEV) * 12;
+  const times = [], tideIn = [], pluvIn = [];
+  for (const p of series) {
+    const t = parseLocal(p.time);
+    if (!t) continue;
+    times.push(t);
+    tideIn.push(toIn(p.tide_navd88 != null ? p.tide_navd88 : p.water_navd88));
+    pluvIn.push(p.pluvial_navd88 != null ? toIn(p.pluvial_navd88) : null);
+  }
   if (!times.length) return null;
+  const combined = tideIn.map((v, i) => Math.max(v, pluvIn[i] != null ? pluvIn[i] : -1e9));
 
-  // Y range: include reference lines with a little headroom
-  let yMin = Math.min(...vals, LOWEST_ELEV) - 0.3;
-  let yMax = Math.max(...vals, CURB_ELEV, rainPotential || 0) + 0.3;
+  const CURB_IN = toIn(CURB_ELEV);          // ≈ +7.7″
+  const potIn = rainPotential ? toIn(rainPotential) : null;
+  let yMin = Math.min(...tideIn, 0) - 4;
+  let yMax = Math.max(...combined, CURB_IN, potIn || 0) + 4;
   const t0 = times[0].getTime();
   const t1 = times[times.length - 1].getTime();
 
@@ -201,51 +211,77 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
   const x = (t) => PAD_L + plotW * ((t - t0) / (t1 - t0));
   const y = (v) => PAD_T + plotH * (1 - (v - yMin) / (yMax - yMin));
 
-  // Shaded exceedance fill above the lowest grate: draw thin vertical
-  // strips where water > LOWEST_ELEV (DrawContext has no polygon fill
-  // along a path, so strips approximate it).
+  // Exceedance fill: combined water above the SW grate (0″)
   ctx.setFillColor(new Color("#4a90d9", 0.25));
   for (let i = 0; i < times.length; i++) {
-    const v = vals[i];
-    if (v <= LOWEST_ELEV) continue;
+    const v = combined[i];
+    if (v <= 0) continue;
     const xi = x(times[i].getTime());
     const stripW = Math.max(2, plotW / times.length);
-    const topY = y(v);
-    const botY = y(LOWEST_ELEV);
-    ctx.fillRect(new Rect(xi - stripW / 2, topY, stripW, botY - topY));
+    ctx.fillRect(new Rect(xi - stripW / 2, y(v), stripW, y(0) - y(v)));
   }
 
-  // Reference lines (dashed effect: short segments)
-  function dashedLine(yPix, color) {
+  function dashedH(yPix, color) {
     ctx.setStrokeColor(color);
     ctx.setLineWidth(1);
     for (let xi = PAD_L; xi < width - PAD_R; xi += 8) {
       const p = new Path();
       p.move(new Point(xi, yPix));
       p.addLine(new Point(Math.min(xi + 4, width - PAD_R), yPix));
-      ctx.addPath(p);
-      ctx.strokePath();
+      ctx.addPath(p); ctx.strokePath();
     }
   }
-  dashedLine(y(LOWEST_ELEV), new Color("#4a90d9", 0.8));  // first water
-  dashedLine(y(CURB_ELEV), new Color("#c0392b", 0.8));    // flood onset
-  // Rain-burst potential (rain-DNA): the level a 7/6-analog burst
-  // would reach. Drawn as a level, not a bump — convective timing is
-  // unknowable, magnitude isn't.
-  if (rainPotential) dashedLine(y(rainPotential), new Color("#d97706", 0.9));
+  function dottedV(xPix, color) {
+    ctx.setStrokeColor(color);
+    ctx.setLineWidth(1);
+    for (let yi = PAD_T; yi < PAD_T + plotH; yi += 5) {
+      const p = new Path();
+      p.move(new Point(xPix, yi));
+      p.addLine(new Point(xPix, Math.min(yi + 2, PAD_T + plotH)));
+      ctx.addPath(p); ctx.strokePath();
+    }
+  }
 
-  // Water curve
+  dashedH(y(0), new Color("#4a90d9", 0.8));        // SW grate = 0″
+  dashedH(y(CURB_IN), new Color("#c0392b", 0.8));  // curb
+  if (potIn) dashedH(y(potIn), new Color("#d97706", 0.9));  // rain potential
+
+  // Day boundaries: dotted vertical line at each midnight in window
+  const mid = new Date(times[0]);
+  mid.setHours(24, 0, 0, 0);
+  while (mid.getTime() < t1) {
+    dottedV(x(mid.getTime()), new Color("#999999", 0.9));
+    mid.setHours(mid.getHours() + 24);
+  }
+
+  // Tide curve (bay water — blue)
   ctx.setStrokeColor(new Color("#1a5fa8"));
   ctx.setLineWidth(2);
-  const path = new Path();
-  path.move(new Point(x(times[0].getTime()), y(vals[0])));
+  let path = new Path();
+  path.move(new Point(x(times[0].getTime()), y(tideIn[0])));
   for (let i = 1; i < times.length; i++) {
-    path.addLine(new Point(x(times[i].getTime()), y(vals[i])));
+    path.addLine(new Point(x(times[i].getTime()), y(tideIn[i])));
   }
   ctx.addPath(path);
   ctx.strokePath();
 
-  // "Now" marker (vertical line)
+  // Rain street-water segments (amber) — separate surface, drawn as
+  // its own line only where the layer is active (two-line design).
+  ctx.setStrokeColor(new Color("#d97706"));
+  ctx.setLineWidth(2);
+  let seg = null;
+  for (let i = 0; i < times.length; i++) {
+    if (pluvIn[i] != null) {
+      const pt = new Point(x(times[i].getTime()), y(pluvIn[i]));
+      if (seg) { seg.addLine(pt); }
+      else { seg = new Path(); seg.move(pt); }
+    } else if (seg) {
+      ctx.addPath(seg); ctx.strokePath(); seg = null;
+    }
+  }
+  if (seg) { ctx.addPath(seg); ctx.strokePath(); }
+
+  // "Now" marker (solid vertical line)
   const nowT = Date.now();
   if (nowT >= t0 && nowT <= t1) {
     ctx.setStrokeColor(new Color("#555555", 0.9));
@@ -257,24 +293,38 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
     ctx.strokePath();
   }
 
-  // Tiny axis labels: reference-line names at right edge
-  ctx.setTextColor(new Color("#c0392b"));
+  // Reference labels (with inches — SW grate is the 0 of the axis)
   ctx.setFont(Font.systemFont(7));
-  ctx.drawText("curb", new Point(width - 26, y(CURB_ELEV) - 9));
+  ctx.setTextColor(new Color("#c0392b"));
+  ctx.drawText(`curb +${CURB_IN.toFixed(0)}″`, new Point(width - 44, y(CURB_IN) - 9));
   ctx.setTextColor(new Color("#1a5fa8"));
-  ctx.drawText("1st water", new Point(width - 40, y(LOWEST_ELEV) + 1));
-  if (rainPotential) {
+  ctx.drawText("SW grate 0″", new Point(width - 50, y(0) + 1));
+  if (potIn) {
     ctx.setTextColor(new Color("#d97706"));
-    ctx.drawText("rain potential", new Point(2, y(rainPotential) - 9));
+    ctx.drawText(`rain pot. +${potIn.toFixed(0)}″`, new Point(2, y(potIn) - 9));
   }
 
-  // Time labels: start / now / end along the bottom
+  // X ticks every 6 clock hours (0/6/12/18) + start/end labels
   ctx.setTextColor(new Color("#777777"));
   ctx.setFont(Font.systemFont(7));
   const fmtHr = (d) => {
     let h = d.getHours(); const ap = h >= 12 ? "P" : "A"; h = (h % 12) || 12;
     return `${h}${ap}`;
   };
+  const tick = new Date(times[0]);
+  tick.setMinutes(0, 0, 0);
+  tick.setHours(tick.getHours() + (6 - tick.getHours() % 6) % 6 || 6);
+  while (tick.getTime() < t1 - 3600e3) {
+    const xi = x(tick.getTime());
+    ctx.setStrokeColor(new Color("#999999", 0.8));
+    ctx.setLineWidth(1);
+    const tp = new Path();
+    tp.move(new Point(xi, PAD_T + plotH));
+    tp.addLine(new Point(xi, PAD_T + plotH + 3));
+    ctx.addPath(tp); ctx.strokePath();
+    ctx.drawText(fmtHr(tick), new Point(xi - 6, height - 10));
+    tick.setHours(tick.getHours() + 6);
+  }
   ctx.drawText(fmtHr(times[0]), new Point(PAD_L, height - 10));
   ctx.drawText(fmtHr(times[times.length - 1]), new Point(width - 18, height - 10));
 
