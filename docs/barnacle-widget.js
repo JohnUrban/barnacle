@@ -30,15 +30,16 @@
 // Source data: https://johnurban.github.io/barnacle/forecast.json
 // Refreshed each hourly GitHub Actions workflow run (HANDOFF 9b.1).
 //
-// Updated 2026-07-06: v0.8 landmark set (the old v0.6 keys had broken
-// highestExceeded silently), enhancement 0.00 (was hardcoded +0.40),
-// "dry" now displays as "NO FLOODING", added the tide-curve chart
-// fed by the new water_series field in forecast.json.
+// Updated 2026-07-06 (several passes): v0.9 landmark set (18, incl.
+// porch ladder), enhancement 0.00, "dry" displays as "NO FLOODING",
+// tide-curve chart fed by water_series, and a pluvial (rain-driven)
+// flood-risk line — rain floods this intersection independent of the
+// tide, so the tide-keyed regime label alone can mislead.
 
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
 // Landmark elevations (NAVD88). Match flood_forecast_daily.py LANDMARKS
-// (v0.8, 16 landmarks). Ascending elevation; highestExceeded scans in
+// (v0.9, 18 landmarks). Ascending elevation; highestExceeded scans in
 // order so the last exceeded entry wins.
 const LANDMARKS = [
   ["grate_SW",                          "SW grate",       3.52],
@@ -62,7 +63,7 @@ const LANDMARKS = [
 ];
 const LOWEST_ELEV = 3.52;      // grate_SW — first water appears here
 const CURB_ELEV   = 4.16;      // flood onset at the property
-const LOCAL_ENHANCEMENT = 0.00;  // v0.8
+const LOCAL_ENHANCEMENT = 0.00;  // v0.8+
 const MLLW_TO_NAVD88 = -2.82;
 
 // Background + text colors per regime, matching the email/Pages CSS.
@@ -283,6 +284,22 @@ function makeWidget(forecast, family) {
   const watchStr = nextWatchDate(forecast);
   const cold = forecast.cold_lockout === true;
   const series = forecast.water_series || [];
+  // Pluvial (rain-driven) flood risk is INDEPENDENT of the tide-keyed
+  // regime that colors this widget — heavy rain floods the
+  // intersection with no tidal contribution at all (2026-07-06 event).
+  // Without this line, a pluvial-risk day with benign tides would
+  // show "NO FLOODING", which is exactly backwards.
+  const pluvial = (forecast.pluvial_risk && forecast.pluvial_risk.level) || null;
+
+  function addPluvialLine(stack) {
+    if (!pluvial) return;
+    const t = stack.addText(
+      pluvial === "elevated" ? "⚠ RAIN FLOOD RISK" : "⚠ rain flood possible");
+    t.font = Font.boldSystemFont(pluvial === "elevated" ? 12 : 10);
+    t.textColor = new Color("#9a4c00");
+    t.lineLimit = 1;
+    t.minimumScaleFactor = 0.7;
+  }
 
   if (family === "medium") {
     // Left column: key numbers. Right: tide-curve chart.
@@ -298,6 +315,7 @@ function makeWidget(forecast, family) {
     regLabel.textColor = new Color(style.text);
     regLabel.lineLimit = 1;
     regLabel.minimumScaleFactor = 0.6;
+    addPluvialLine(left);
 
     left.addSpacer(2);
     const peakLine = left.addText(
@@ -372,6 +390,7 @@ function makeWidget(forecast, family) {
     regLabel.textColor = new Color(style.text);
     regLabel.lineLimit = 1;
     regLabel.minimumScaleFactor = 0.6;
+    addPluvialLine(w);
     w.addSpacer(4);
     const peakLine = w.addText(
       peakFt != null ? `${peakFt.toFixed(2)} ft` : "—"

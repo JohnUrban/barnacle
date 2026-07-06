@@ -27,6 +27,19 @@ import math
 import json
 import smtplib
 import datetime as dt
+from zoneinfo import ZoneInfo
+
+# NOAA CO-OPS queries with time_zone=lst_ldt interpret begin_date /
+# end_date as STATION-LOCAL time (US/Eastern for Sandy Hook). Passing
+# UTC-now strings shifts the window +4/5 h — caught 2026-07-06 when
+# the widget chart's hour labels came out 4 h late. Use this for any
+# begin/end sent to an lst_ldt query.
+STATION_TZ = ZoneInfo("America/New_York")
+
+
+def _station_local_now():
+    """Now in the Sandy Hook station's local timezone (naive)."""
+    return dt.datetime.now(STATION_TZ).replace(tzinfo=None)
 from email.message import EmailMessage
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
@@ -185,8 +198,13 @@ def fetch_tides_24h():
     [-PAST_TIDE_VISIBILITY_HOURS, +ROLLUP_WINDOW_HOURS] so the rollup
     can show very-recent past tides (still relevant for a few hours
     post-peak) alongside upcoming ones (HANDOFF 9b.2 part 2). Uses
-    NOAA's hilo product for exact tide times."""
-    now = dt.datetime.now(dt.timezone.utc)
+    NOAA's hilo product for exact tide times.
+
+    Timezone fix 2026-07-06: begin/end must be STATION-LOCAL for
+    lst_ldt queries. The old UTC-now version shifted the window +4 h,
+    which among other things silently negated the past-tide
+    visibility feature (the window never actually reached the past)."""
+    now = _station_local_now()
     start = now - dt.timedelta(hours=PAST_TIDE_VISIBILITY_HOURS)
     end = now + dt.timedelta(hours=ROLLUP_WINDOW_HOURS)
     data = _get(
@@ -234,8 +252,11 @@ def build_water_series(surge_ft, hours_back=2, hours_forward=24,
 
     Returns list of {"time": local str, "water_navd88": float} or []
     on any fetch failure (widget falls back to no-chart).
+
+    Timezone fix 2026-07-06: begin/end must be STATION-LOCAL (the
+    widget chart's hour labels came out +4 h before this).
     """
-    now = dt.datetime.now(dt.timezone.utc)
+    now = _station_local_now()
     start = now - dt.timedelta(hours=hours_back)
     end = now + dt.timedelta(hours=hours_forward)
     try:
@@ -777,7 +798,7 @@ def fetch_high_tides_lookahead(days=LOOKAHEAD_DAYS):
     """Pull NOAA `predictions` hilo for the next `days` days. Returns list of
     (time_str, mllw_ft) for high tides only. Astronomical only — no surge.
     Larger window than fetch_tides_24h; used for HANDOFF 9b.7."""
-    now = dt.datetime.now(dt.timezone.utc)
+    now = _station_local_now()
     end = now + dt.timedelta(days=days)
     try:
         data = _get(
@@ -1304,7 +1325,7 @@ def fetch_mtd_flood_events():
     Note: water_level is preliminary; values may shift by a few cm when later
     verified. Adequate for a count display."""
     thresholds = [t for _k, _l, _e, t in LANDMARKS]
-    now = dt.datetime.now(dt.timezone.utc)
+    now = _station_local_now()  # lst_ldt query; month boundary in ET
     start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     try:
         data = _get(
