@@ -3664,9 +3664,13 @@ def _oscillation_chart_data(forecast):
 #
 # Calibration (2 events):
 #   7/6/2026 pure pluvial: bay ~2.6, obs peak 4.77 (7.3" curb).
-#     Fits at an assumed convective burst of ~1.7 in/hr (observed rate
-#     unknown — QPF smeared it to 0.09 in/hr; the 1.7 is the fitted
-#     free parameter, flagged until we get observed rain data).
+#     Fits at a convective burst of ~1.7 in/hr. VALIDATED same-day
+#     against observed regional data: NWS flash-flood warning had
+#     1.5-2.5" fallen by 11:02 AM at the Bayshore (Sandy Hook named),
+#     radar-estimated rates up to 3 in/hr over the Monmouth corridor,
+#     "2 in/hr possible" per NWS media briefings. 1.7 sits mid-band;
+#     the exact rate over THIS catchment still awaits MRMS gridded
+#     data, but the anchor is no longer a bare invention.
 #   Oct 30 2025 compound: bay 4.81 (SH 7.63), rate 1.45 in/hr,
 #     obs peak >= 5.25. Model: 5.41 (~2" conservative).
 #

@@ -1732,10 +1732,20 @@ MOS-style / analog forecasting with n=1 anchor — every archived
 forecast.json (pluvial_risk + QPF fields) + every observed rain
 event grows the training set for a proper fit.
 
-**Still open**: radar nowcast (MRMS); Rutgers mesonet RABCH022 as an
-*observed*-rain input; observed rain rates for 7/6 to validate the
-anchor; more events → replace one-anchor linear scaling with a
-fitted curve (logistic or nearest-neighbor analog lookup).
+**7/6 anchor validated (same evening, web sources)**: NWS
+flash-flood warning reported 1.5–2.5″ fallen by 11:02 AM at the
+Bayshore with Sandy Hook explicitly named; radar-estimated rates up
+to 3 in/hr over the Monmouth corridor (heaviest south of Highlands —
+Neptune/Deal/Oakhurst; a BJ's roof collapsed at 11:15 AM); NWS
+messaging cited 2 in/hr. The model's fitted 1.7 in/hr burst sits
+mid-band → upgraded from "bare invention" to "consistent with
+observed regional rates." Exact rate over the 342 catchment still
+wants MRMS gridded data.
+
+**Still open**: radar nowcast (MRMS) for both nowcasting and pinning
+the 7/6 point rate; Rutgers mesonet RABCH022 as an *observed*-rain
+input; more events → replace one-anchor linear scaling with a fitted
+curve (logistic or nearest-neighbor analog lookup).
 
 ### 9e.3 — Drainage asymmetry: tide floods vs. rain floods (observed 7/6)
 
