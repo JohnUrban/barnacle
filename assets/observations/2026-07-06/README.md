@@ -145,6 +145,33 @@ Oct 30's "water at first porch step" memory + its ≥5.19 peak
 reconstruction suggests 5.08 does correspond to a real feature about
 6″ above the step base — plausibly the top of the first step.
 
+### Refinement via photo-timeline interpolation (added later same evening)
+
+User caution: 11:34 may not be THE peak (11:41 was already falling,
+so the crest is somewhere in 11:34–11:41). Photo review added two
+timeline anchors:
+
+- **11:21**: NO water at the porch-step base; water in the photo is
+  approximately LEVEL with the lawn step
+- **11:26**: a good 0.5″ of water at the porch-step base
+
+Rise rate from the sidewalk measurements (11:22 → 11:34: 4.25″ →
+5.25″) = 0.083 in/min. Interpolating:
+
+- Water at 11:21 ≈ 4.677; at 11:26 ≈ 4.712
+- **Porch-step base = 4.712 − 0.5″ = 4.670 NAVD88** (consistency:
+  at 11:21 that base would hold ~0.08″ — a film — matching "no
+  water") 
+- **Lawn-step top ≈ 4.68** (water level with it at 11:21, sidewalk
+  anchor) — independently agrees with the 11:43 "just under" note
+  (water 4.654, top ≈ 4.67)
+- **Walkway rise lawn step → porch base ≈ 0″ (≤ 0.5″)** —
+  effectively flat; the user's 1–2″ verbal gradient estimate revises
+  to ~zero
+- Peak bound: at measured 4.768 the porch base held 1.2″ ("1 inch or
+  so" ✓); the "2″ at most" bound caps any missed crest at ≈ 4.84.
+  **Peak ∈ [4.77, 4.84], most likely 4.78–4.80.**
+
 ## Drainage asymmetry — tide floods vs. rain floods (NEW)
 
 User observations at 1:05–1:12 PM (post-flood, during drain-down,
