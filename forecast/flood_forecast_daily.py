@@ -3851,27 +3851,36 @@ def _render_historical_floods_html():
        cross-checked against the ShorelySafe dashboard's top-ten and
        our own 1910&ndash;2026 hourly record — the event lists agree).
        Local columns apply the {CURRENT_MODEL_VERSION} transform
-       (water at 342 = SH &minus; 2.82 ft): <b>vs SW grate</b> is
-       inches above the lowest grate (3.52 NAVD88, where water first
-       appears); <b>highest landmark</b> uses the surveyed porch
-       ladder.</p>
+       (water at 342 = SH &minus; 2.82 ft) and are <b>tide-only
+       floors</b>: every event on this list also had rain, whose
+       local boost is unrecorded — actual water at 342 was at least
+       this high. <b>vs SW grate</b> is inches above the lowest grate
+       (3.52 NAVD88, where water first appears); <b>highest
+       landmark</b> uses the surveyed porch ladder.</p>
     <table class="tide-table">
       <thead><tr><th>#</th><th>Date</th><th>Event</th>
-      <th>Peak (ft MLLW)</th><th>Water at 342 (ft NAVD88)</th>
-      <th>vs SW grate</th><th>Highest landmark covered</th></tr></thead>
+      <th>Peak (ft MLLW)</th><th>Tide-only floor at 342 (ft NAVD88)</th>
+      <th>vs SW grate (floor)</th><th>Highest landmark covered (min)</th></tr></thead>
       <tbody>{rows}</tbody>
     </table>
-    <p class="note"><b>Every event on this list puts water on the porch
-       stairs</b> — the mildest reaches the top of the 1st step; Sandy
-       put ~3&frac12; feet over the porch deck. For scale: the worst
-       events measured since this project began — Oct 30 2025
-       (~5.27 NAVD88, +21&Prime; vs SW grate, just past the porch-step
-       base) and the 7/6/2026 flash flood (~4.8 NAVD88, +15&Prime;) —
-       would rank far below #10. Caveats: the local transform is
+    <p class="note"><b>Even at their tide-only floors, every event on
+       this list puts water on the porch stairs</b> — the mildest
+       reaches the top of the 1st step; Sandy put ~3&frac12; feet over
+       the porch deck <i>before counting its rain</i>. For scale: the
+       worst events measured since this project began — Oct 30 2025
+       (~5.27 NAVD88 measured, +21&Prime; vs SW grate, past the
+       porch-step base) and the 7/6/2026 flash flood (~4.8 NAVD88) —
+       sit far below these floors. <b>Epistemic honesty</b>: this
+       ranking is built from the tide gauge, which records no local
+       water and no rain. True local rankings are unknowable from it —
+       each event's rain boost is unrecorded, and pluvial-only floods
+       (like 7/6/2026, when the gauge read an unremarkable ~6.0) are
+       entirely invisible to it. 342 Bay has no historical flood
+       record; the spot-check log this project keeps is, as far as we
+       know, the first one. Other caveats: the local transform is
        calibrated on 2026 moderate events and extrapolates to
-       hurricane regimes; storm rainfall would add on top of these
-       tide-gauge numbers (all ten had rain); Sandy's 14.4 is the
-       estimated true peak (the gauge failed at 13.31).</p>
+       hurricane regimes; Sandy's 14.4 is the estimated true peak
+       (the gauge failed at 13.31).</p>
   </section>
 """
 

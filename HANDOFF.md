@@ -1756,6 +1756,25 @@ drainage pressurizes it. Predicts rain floods persist longest around
 NE/NW; tide floods around SE/SW. Cross-reference item 15 (borough
 drainage map request) — the map would confirm the trunk topology.
 
+### 9e.4-adjacent someday-project — local flood reanalysis (added 2026-07-06)
+
+The 116-year gauge record contains NO local flood history: it's
+tide-only, 4 miles away. Each historical event's local water at 342
+is only bounded below (tide floor via the transform); every storm's
+rain boost is unrecorded, and pluvial-only floods are entirely
+invisible to the gauge (7/6/2026 registered ~6.0 — unremarkable).
+The user's spot-check log is, as far as we know, the first local
+flood record this corner has ever had.
+
+**Project**: join historical hourly precipitation (Newark/coastal
+stations reach back to ~mid-century; NJ climate archives) to the
+tide record and run the compound/pluvial model over the century →
+*modeled* local water per event with stated error bars. Would (a)
+produce an honest local ranking to replace tide-only floors, (b)
+flag candidate historical pluvial events the gauge never saw, and
+(c) stress-test the rain term against many storms. Inherits all
+model uncertainty; label accordingly. Not scheduled — parked here.
+
 ### 9e.4 — `lawn_step` elevation revision candidate: 4.58 → ≈ 4.67
 
 Two independent anchors at 7/6 11:43–44 (NE grate → 4.654, sidewalk
