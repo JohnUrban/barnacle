@@ -246,9 +246,35 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
     }
   }
 
-  dashedH(y(0), new Color("#4a90d9", 0.8));        // SW grate = 0″
-  dashedH(y(CURB_IN), new Color("#c0392b", 0.8));  // curb
-  if (potIn) dashedH(y(potIn), new Color("#d97706", 0.9));  // rain potential
+  // Rain-burst possibility ZONE: faint amber band from ground (0″)
+  // up to the analog-scaled burst potential, dotted ceiling. A zone,
+  // not a level — bursts have magnitude but no forecastable timing.
+  if (potIn) {
+    ctx.setFillColor(new Color("#d97706", 0.10));
+    ctx.fillRect(new Rect(PAD_L, y(potIn), plotW, y(0) - y(potIn)));
+  }
+
+  // Landmark reference lines — SHARED PALETTE with the website chart
+  // (unlabeled here by design; learned by color):
+  //   solid black  = SW grate 0″ (ground level / axis datum)
+  //   green dashed = gutter +3.1″ (move the car)
+  //   red dashed   = curb +7.7″ (flood onset)
+  //   purple dashed= lawn step +13.7″
+  //   brown dashed = top of 1st porch step +22.7″ (Oct-30 class)
+  const GUTTER_IN = toIn(3.78), LAWN_IN = toIn(4.66), PORCH1_IN = toIn(5.41);
+  ctx.setStrokeColor(new Color("#222222", 0.9));
+  ctx.setLineWidth(1.5);
+  {
+    const gp = new Path();
+    gp.move(new Point(PAD_L, y(0)));
+    gp.addLine(new Point(width - PAD_R, y(0)));
+    ctx.addPath(gp); ctx.strokePath();
+  }
+  dashedH(y(GUTTER_IN), new Color("#2f8f5f", 0.85));
+  dashedH(y(CURB_IN), new Color("#c0392b", 0.85));
+  dashedH(y(LAWN_IN), new Color("#7c4dbc", 0.85));
+  dashedH(y(PORCH1_IN), new Color("#6d4c2f", 0.85));
+  if (potIn) dashedH(y(potIn), new Color("#d97706", 0.9));  // zone ceiling
 
   // Day boundaries: dotted vertical line at each midnight in window
   const mid = new Date(times[0]);
@@ -319,16 +345,12 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
     }
   }
 
-  // Reference labels (with inches — SW grate is the 0 of the axis)
+  // Unlabeled by design — the landmark palette is learned by color
+  // (labels + inches live on the website chart). Only the datum gets
+  // a tiny marker.
   ctx.setFont(Font.systemFont(7));
-  ctx.setTextColor(new Color("#c0392b"));
-  ctx.drawText(`curb +${CURB_IN.toFixed(0)}″`, new Point(width - 44, y(CURB_IN) - 9));
-  ctx.setTextColor(new Color("#1a5fa8"));
-  ctx.drawText("SW grate 0″", new Point(width - 50, y(0) + 1));
-  if (potIn) {
-    ctx.setTextColor(new Color("#d97706"));
-    ctx.drawText(`rain pot. +${potIn.toFixed(0)}″`, new Point(2, y(potIn) - 9));
-  }
+  ctx.setTextColor(new Color("#222222"));
+  ctx.drawText("0″", new Point(width - 12, y(0) + 1));
 
   // X ticks every 6 clock hours (0/6/12/18) + start/end labels
   ctx.setTextColor(new Color("#777777"));

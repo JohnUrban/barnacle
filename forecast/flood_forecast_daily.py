@@ -3943,23 +3943,38 @@ def _render_water_series_section(forecast):
              "data": pluv, "borderColor": "#d97706",
              "fill": False, "spanGaps": False,
              "pointRadius": 0, "borderWidth": 2, "tension": 0.2})
+    # Landmark reference lines — colors are the SHARED PALETTE with the
+    # widget chart (user 2026-07-06: widget lines go unlabeled, learned
+    # by color; the website labels them).
+    gutter_in = round((GUTTER_WALKWAY - GRATE_SW) * 12, 1)   # +3.1
+    lawn_in = round((LAWN_STEP - GRATE_SW) * 12, 1)          # +13.7
+    porch1_in = round((PORCH_STEP1_TOP - GRATE_SW) * 12, 1)  # +22.7
+    def _ref(y, color, text):
+        return {"type": "line", "yMin": y, "yMax": y,
+                "borderColor": color, "borderWidth": 1,
+                "borderDash": [5, 4],
+                "label": {"display": True, "content": text,
+                          "position": "start", "font": {"size": 10},
+                          "backgroundColor": "rgba(255,255,255,0.7)",
+                          "color": color}}
     annotations = {
+        # SW grate = 0″ is the bottom-most ground level / the axis
+        # datum — SOLID BLACK (user 2026-07-06), unlike the dashed
+        # landmark lines above it.
         "firstWater": {"type": "line", "yMin": 0, "yMax": 0,
-                       "borderColor": "#4a90d9", "borderWidth": 1,
-                       "borderDash": [5, 4],
+                       "borderColor": "#222222", "borderWidth": 1.5,
                        "label": {"display": True,
-                                 "content": "0″ — SW grate (first water)",
+                                 "content": "0″ — SW grate (ground level / first water)",
                                  "position": "start", "font": {"size": 10},
                                  "backgroundColor": "rgba(255,255,255,0.7)",
-                                 "color": "#1a5fa8"}},
-        "curb": {"type": "line", "yMin": curb_in, "yMax": curb_in,
-                 "borderColor": "#c0392b", "borderWidth": 1,
-                 "borderDash": [5, 4],
-                 "label": {"display": True,
-                           "content": f"+{curb_in}″ — curb (flood onset)",
-                           "position": "start", "font": {"size": 10},
-                           "backgroundColor": "rgba(255,255,255,0.7)",
-                           "color": "#c0392b"}},
+                                 "color": "#222222"}},
+        "gutter": _ref(gutter_in, "#2f8f5f",
+                       f"+{gutter_in}″ — gutter (move the car)"),
+        "curb": _ref(curb_in, "#c0392b",
+                     f"+{curb_in}″ — curb (flood onset)"),
+        "lawnStep": _ref(lawn_in, "#7c4dbc", f"+{lawn_in}″ — lawn step"),
+        "porchStep1": _ref(porch1_in, "#6d4c2f",
+                           f"+{porch1_in}″ — top of 1st porch step"),
     }
     # Day-boundary line at midnight
     for idx, lab in enumerate(labels):
@@ -3974,9 +3989,15 @@ def _render_water_series_section(forecast):
                           "color": "#777777"}}
     if potential:
         pot_in = to_in(potential)
-        annotations["rainPotential"] = {
+        # Possibility ZONE, not a level (user design): a burst could
+        # put street water anywhere in this band; dotted amber ceiling.
+        annotations["rainZone"] = {
+            "type": "box", "yMin": 0, "yMax": pot_in,
+            "backgroundColor": "rgba(217, 119, 6, 0.08)",
+            "borderWidth": 0}
+        annotations["rainCeiling"] = {
             "type": "line", "yMin": pot_in, "yMax": pot_in,
-            "borderColor": "#d97706", "borderWidth": 1.5, "borderDash": [3, 3],
+            "borderColor": "#d97706", "borderWidth": 1, "borderDash": [2, 3],
             "label": {"display": True,
                       "content": f"rain-burst potential (+{pot_in}″)",
                       "position": "end", "font": {"size": 10},
