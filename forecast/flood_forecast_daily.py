@@ -128,6 +128,14 @@ OSCILLATION_LANDMARK_KEYS = {
 
 MLLW_TO_NAVD88_OFFSET = -2.82  # NAVD88 = MLLW + offset
 
+# Derived SH-MLLW thresholds used across report sections. Audit
+# 2026-07-06 found the old v0.6 curb value (6.58) hardcoded in the
+# recent-history classifier, the SLR newly-wet band, and the near-miss
+# line — all silently stale through the v0.7-v0.9 promotions. Deriving
+# them here means the next landmark revision propagates automatically.
+SH_CURB_THRESHOLD  = round(CURB_TOP - MLLW_TO_NAVD88_OFFSET - LOCAL_ENHANCEMENT_FT, 2)   # 6.98
+SH_FIRST_WATER     = round(GRATE_SW - MLLW_TO_NAVD88_OFFSET - LOCAL_ENHANCEMENT_FT, 2)   # 6.34
+
 COLD_LOCKOUT_F = 32            # 72h mean below this = drains ice-locked
 RAIN_SATURATION_IN = 8.0       # max inches rain can add
 
@@ -445,7 +453,7 @@ PREDICTIONS_LOG_FIELDS = [
     "surge_source",              # "nws-coastal-flood-product" | "surge-persistence"
     "sh_peak_mllw_predicted",    # astronomical + surge (NOT cold-lockout aware)
     "peak_rain_in_hr_predicted",
-    "water_navd88_predicted",    # = sh_peak_mllw + 0.40 + (-2.82); empty if cold lockout
+    "water_navd88_predicted",    # = sh_peak_mllw + LOCAL_ENHANCEMENT_FT + (-2.82)
     "regime_predicted",
     "cold_lockout",              # "true" | "false"
     "confidence_level",          # "high" | "medium" | "low" | ""
@@ -1336,7 +1344,7 @@ def fetch_mtd_flood_events():
 
     # Also track the highest single 6-min reading + its time. The hourly
     # mean used above can mask brief curb-grazing events (e.g., a 15-20 min
-    # tide peak that crosses 6.58 but pulls the hourly mean back below).
+    # tide peak that crosses the curb threshold but pulls the hourly mean back below).
     # Surfacing these as "near-miss" context avoids the user wondering
     # whether MTD = 0 means "nothing happened" or "almost happened."
     raw_peak_v = float("-inf")
@@ -1349,7 +1357,7 @@ def fetch_mtd_flood_events():
             continue
         if v > raw_peak_v:
             raw_peak_v = v; raw_peak_t = t_str
-        if v >= 6.58:
+        if v >= SH_CURB_THRESHOLD:
             raw_minutes_above_curb += 6  # 6-min sample cadence
 
     # Pass through each threshold and tally events, flood days, hours.
@@ -1409,14 +1417,14 @@ def build_seasonal_context(forecast):
     except Exception:
         ctx["mtd"] = None
 
-    # SLR line shows only in the "newly-wet" band: today's peak crosses 6.58
-    # but would have been below curb in 1990 (i.e., < 6.58 + slr_since_1990).
+    # SLR line shows only in the "newly-wet" band: today's peak crosses the
+    # curb threshold but would have been below curb in 1990.
     # Also suppress in severe regime (>= 7.5 ft) — SLR isn't the story there.
     peak = ctx["slr_today_peak_ft"]
     slr = ctx["slr_ft_since_1990"]
     if peak is not None and slr is not None and slr > 0:
-        ceiling_today = 6.58 + slr
-        if 6.58 <= peak < min(ceiling_today, 7.5):
+        ceiling_today = SH_CURB_THRESHOLD + slr
+        if SH_CURB_THRESHOLD <= peak < min(ceiling_today, 7.5):
             ctx["show_slr_line"] = True
     return ctx
 
@@ -2074,7 +2082,7 @@ def _load_outcome_depth_rows():
 # 6.02 = lowest grate emerges (the earliest visible-water signal at the
 # property). Configurable later (HANDOFF 9b.8 mentions "threshold
 # configurable per view") — keeping it as a constant for now.
-FLOODED_THRESHOLD_SH_MLLW = 6.02
+FLOODED_THRESHOLD_SH_MLLW = SH_FIRST_WATER  # 6.34 under v0.9 (was hardcoded 6.02, the v0.6 value)
 
 
 # Observed-peak cache so the lead-time accuracy view doesn't hit NOAA
@@ -3058,16 +3066,16 @@ def _near_miss_text(mtd):
     if not mtd:
         return None
     curb_events = next((s["n_events"] for s in (mtd.get("strata") or [])
-                        if s["threshold_ft"] == 6.58), None)
+                        if s["threshold_ft"] == 6.58), None)  # 6.58 = the CSV's v0.6-era curb key; must match the stale seasonality CSV until the annual refresh regenerates it
     if curb_events is None or curb_events > 0:
         return None
     raw = mtd.get("peak_6min_mllw")
-    if raw is None or raw < 6.58 - 0.1:
+    if raw is None or raw < SH_CURB_THRESHOLD - 0.1:
         return None
     when = format_time_full(mtd.get("peak_6min_time") or "")
     mins = mtd.get("minutes_above_curb", 0)
-    if raw >= 6.58 and mins > 0:
-        return (f"Closest call: water touched 6.58 ft on the 6-min sensor "
+    if raw >= SH_CURB_THRESHOLD and mins > 0:
+        return (f"Closest call: water touched {SH_CURB_THRESHOLD} ft on the 6-min sensor "
                 f"for ~{mins} min ({when}, peaked at {raw:.2f} ft) — "
                 f"hourly mean stayed just under the curb threshold.")
     return (f"Closest call: 6-min sensor peaked at {raw:.2f} ft on "
@@ -3146,7 +3154,7 @@ def _high_value_calibration_callouts(forecast):
     # crossed the curb. Did the lockout hold?
     if forecast.get("cold_lockout"):
         peak = forecast.get("peak_forecast_observed_mllw") or 0
-        if peak >= 6.58:
+        if peak >= SH_CURB_THRESHOLD:
             callouts.append(
                 "  ★ COLD-LOCKOUT CALIBRATION OPPORTUNITY: cold-weather "
                 "override is active and today's tide would have crossed "
@@ -3361,7 +3369,7 @@ Worst case detail:
 {rain_block}{_landmarks_section_text(forecast)}
 Regime: {regime_display(regime)} — {REGIME_GLOSSARY.get(regime, '')}
 
-{recap_block}{accuracy_block}{low_block}{lookahead_block}Reference scale (Sandy Hook obs MLLW; v0.8 thresholds = landmark + 2.82):
+{recap_block}{accuracy_block}{low_block}{lookahead_block}Reference scale (Sandy Hook obs MLLW; {CURRENT_MODEL_VERSION} thresholds = landmark + 2.82):
   < 6.34  : no flooding (nothing visible)
   6.34    : water emerges from SW grate across Bay (lowest grate)
   6.42    : SE grate across Bay emerges
@@ -3818,10 +3826,10 @@ def _render_live_gauge_section(forecast):
                             font: {{ size: 10 }} }}
                 }},
                 grate: {{
-                  type: 'line', yMin: 6.02, yMax: 6.02,
+                  type: 'line', yMin: {SH_FIRST_WATER}, yMax: {SH_FIRST_WATER},
                   borderColor: 'rgba(31, 111, 235, 0.5)',
                   borderWidth: 1, borderDash: [3, 3],
-                  label: {{ display: true, content: 'lowest grate (6.02)',
+                  label: {{ display: true, content: 'lowest grate ({SH_FIRST_WATER})',
                             position: 'end',
                             backgroundColor: 'rgba(255,255,255,0.85)',
                             color: '#1f6feb',
@@ -4285,7 +4293,7 @@ def _render_equation_widget_html(forecast, wrapper="section"):
     return f"""
   {open_tag}
     <{hh}>The model, term by term</{hh}>
-    <p class="note">This is the actual v0.7 prediction math with this
+    <p class="note">This is the actual {CURRENT_MODEL_VERSION} prediction math with this
        forecast's numbers filled in. Edit any term to see how the
        prediction would change — then "Snap back" to return to the
        live forecast.</p>
@@ -4346,14 +4354,13 @@ def _render_equation_widget_html(forecast, wrapper="section"):
         tide plus any storm surge.</dd>
       <dt>Local enhancement ({LOCAL_ENHANCEMENT_FT:+.2f} ft)</dt>
       <dd>The residual after the datum conversion: how much water at
-        342 Bay differs from what the SH gauge reads. v0.7 sets this
-        to a constant <b>-0.13 ft</b> based on 3 tape-measured
-        spot-check events at SH 6.17, 6.58, and 7.13 that all give
-        the same value. The v0.6 constant +0.40 was over-fit to noisy
-        memory-based observations of older events (Apr 17, 18, Dec 19)
-        that pre-dated the spot-check protocol; whether those were
-        memory artifacts or a real storm-condition amplification is
-        still open.</dd>
+        342 Bay differs from what the SH gauge reads. v0.8+ sets this
+        to <b>0.00 ft</b> — the conservative value from 4 tape-measured
+        spot-check events (SH 6.17–7.29). Regular tides with offshore
+        peak winds run ~0.13 ft lower; the wind-adjustment line in the
+        worst-case detail reports that "expected actual" separately.
+        (The v0.6 constant +0.40 was over-fit to memory-based
+        observations that pre-dated the spot-check protocol.)</dd>
       <dt>MLLW&rarr;NAVD88 offset (&minus;2.82 ft)</dt>
       <dd>A pure datum conversion. The gauge reports heights in MLLW;
         the landmark elevations at the house were surveyed in NAVD88.
@@ -5355,7 +5362,7 @@ def render_html_page(forecast):
 
   <section class="reference">
     <h2>Reference scale</h2>
-    <p>Sandy Hook observed water level (MLLW; v0.8 thresholds = landmark elevation + 2.82):</p>
+    <p>Sandy Hook observed water level (MLLW; {CURRENT_MODEL_VERSION} thresholds = landmark elevation + 2.82):</p>
     <ul>
       <li>&lt; 6.34 ft — no flooding, nothing visible</li>
       <li>6.34 ft — water emerges from SW grate across Bay (lowest grate)</li>

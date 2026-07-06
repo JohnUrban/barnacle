@@ -91,66 +91,46 @@ across four labeled flood events the user observed firsthand.
 
 ---
 
-## 3. The model in one screen (v0.5)
+## 3. The model in one screen (v0.9 — see model/v0.9.md for the canonical spec)
 
-**Inputs:**
-- `high_tides_24h` = list of high tides in next 24 hours, each with predicted MLLW value and exact time (from NOAA hilo product)
-- `SH_peak` for each = forecast peak Sandy Hook total tide (ft MLLW), preferably from NWS Coastal Flood product if active, else predicted-tide + current-surge persistence
-- `peak_rain` for each = max NWS-forecast hourly precipitation rate in ±90 min of *that specific* high tide
-- `temp_72h` = mean air temp at Sandy Hook over past 72 h (single value, applies to all tides today)
+> **This section was stale from v0.5 through v0.8 (caught in the
+> 2026-07-06 audit).** To prevent recurrence it now holds only the
+> one-screen summary + a pointer; `model/v0.9.md` is authoritative.
 
-**Formula (applied per high tide):**
+**Formula (tide-keyed path, applied per high tide in next 24 h):**
 
 ```
-water_at_342_MLLW   = SH_peak + 0.40              # local enhancement
-water_at_342_NAVD88 = water_at_342_MLLW − 2.82    # datum convert
-depth(landmark)     = max(0, (water − landmark_NAVD88)) × 12   # inches
-
-# Rain term (Pathway C amplification)
-if peak_rain ≥ 0.1: depth += 8 × tanh(peak_rain)   # saturating, ≤8"
-                    (lawn and intersection shed more, get less)
-
-# Cold override (Pathway B suppression) — DEMOTED 2026-05-19
-# After the 19-event retrospective, this rule was demoted from
-# active override to advisory note. Predictions now go through
-# unchanged when conditions are met; a yellow banner explains
-# the hypothesis is open but not applied. See
-# history/reports/cold_weather_retrospective.md.
-# Old behavior (preserved here for the spec history):
-#   if temp_72h < 32°F and SH_peak < 8.0:  depth = 0
+water_at_342_NAVD88 = SH_peak_MLLW + 0.00 − 2.82
+if peak_rain ≥ 0.1 in/hr (in [−90 min, +15 min] of the peak):
+    water += 8·tanh(rate) / 12          # ft, uniform water-level rise
+depth(landmark) = max(0, water − landmark_NAVD88) × 12   # inches
 ```
 
-**Landmark elevations at 342 Bay Ave (ft NAVD88):**
+Plus, reported separately (not in the main number):
+- **Wind adjustment** (v0.8): offshore peak winds → "expected actual"
+  −0.13 ft line.
+- **Pluvial advisory + v0.9-alpha scenario depths** (v0.9): rain can
+  flood the intersection with no tide at all (2026-07-06 event);
+  `estimate_pluvial_water(rate, bay)` gives categorical scenario
+  estimates in the banner.
+- **Cold-lockout**: demoted to advisory 2026-05-19; never applied.
 
-| Landmark | NAVD88 | MLLW | Sandy Hook threshold |
-|---|---|---|---|
-| Lowest corner across Bay | 3.64 | 6.46 | **6.06** |
-| Gutter at walkway | 3.78 | 6.60 | 6.20 |
-| Storm inlet grate (lowest) | 3.91 | 6.73 | 6.33 |
-| **Curb top at walkway** | **4.16** | **6.98** | **6.58** ← flood onset |
-| Bay Ave road middle | 4.36 | 7.18 | 6.78 |
-| Intersection center | 4.54 | 7.36 | 6.96 |
-| **Lawn / walkway step** | **4.58** | **7.40** | **7.00** |
-| Road middle near driveway | 4.70 | 7.52 | 7.12 |
+**18 landmarks** (ft NAVD88 → SH threshold = +2.82): grate_SW 3.52 →
+6.34 (first water) · grate_SE 3.60 · corner_SE/SW 3.64 · upstream
+grate 3.64 (low-point; uneven to 3.78) · gutter_walkway 3.78 ·
+grate_NE/NW 3.80 · corner_NE/NW 3.91 · **curb 4.16 → 6.98 (flood
+onset)** · sidewalk_under_walkway_lawn_step 4.33 · road_middle 4.36 ·
+intersection_highpoint 4.54 · lawn_step 4.66 · porch_step_base 4.68 ·
+porch_step1_top 5.41 · porch_deck 8.08 → 10.90 (Sandy-class).
 
-Datum constants: `NAVD88 = MLLW − 2.82` at Sandy Hook (NOAA-published).
+**Hurricane Sandy reference:** 13.31 ft MLLW on the 6-min product,
+12.03 on hourly_height. A 12.0 on hourly IS Sandy-class.
 
-**Hurricane Sandy reference:** 13.31 ft MLLW on NOAA 6-min product
-(instantaneous peak), 12.03 ft on hourly_height (centered-hour average).
-The 6-min number is what historical accounts cite. A forecast hitting
-12.0 ft on hourly products IS a Sandy-class event — don't anchor
-expectations on the 13.31 number when comparing to hourly products.
-
-**Reference depths from labeled events:**
-
-| Event | Sandy Hook obs MLLW | Observed depth | Model predicted |
-|---|---|---|---|
-| Apr 17 2026 | 6.76 | ~2" light | 2.2" |
-| Apr 18 2026 | 7.32 | ~10" moderate | 10.8" |
-| Dec 19 2025 | 6.83 + 0.44"/hr rain | ~7–9" | ~6" (under-predicts rain term) |
-| Oct 30 2025 | 7.57 + 1.45"/hr rain | ~12" severe | ~14" |
-| Feb 22–23 2026 | 7.19 + cold | **No flood** | 0 (cold lockout) |
-| Aug 21 2025 | 6.93 + surge 1.4 ft (per historical pull) | unknown (user not home/didn't log?) | ~4–5" predicted |
+**Calibration events**: see `data/labeled_observations.csv` (92 rows,
+7 events) and the per-event READMEs under `assets/observations/`.
+Tape-measured anchors: 5/18, 5/31, 6/14, 6/15 (tide events, ±0.2–1.8″
+at curb); Oct 30 2025 + 7/6/2026 (rain events, the pluvial-model
+anchors).
 
 ---
 

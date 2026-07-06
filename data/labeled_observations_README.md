@@ -3,27 +3,30 @@
 Append-only log of empirical water-depth observations at named landmarks
 near 342 Bay Ave. Each row is "what John (or another observer) actually saw
 at a given time at a given landmark." Used to validate, calibrate, or
-refine the v0.5 flood model.
+refine the flood model (current spec: `model/v0.9.md`).
 
-## Why this exists
+## Why this exists (updated 2026-07-06; original rationale below is history)
 
-The v0.5 model's `+0.40 ft` local enhancement was calibrated from four
-flood events at the curb and above (Apr 17/18 2026, Dec 19 2025,
-Oct 30 2025). Whether the same enhancement applies at:
+This log is the calibration backbone of the model. It's what killed
+the v0.6 `+0.40` enhancement (three tape-measured events all implied
+~−0.13; a fourth storm event implied 0), what pinned the grate
+elevations by cross-fit, what re-anchored the porch ladder, and what
+calibrated the pluvial model. The workflow: measure depth at a
+landmark with a known elevation → implied water level → compare
+across landmarks (water is level in tide floods) and against the
+Sandy Hook gauge.
 
-- The lowest road corner across Bay (3.64 NAVD88 / SH 6.06) — across the
-  Bay, not on the user's property
-- The gutter at walkway (3.78 NAVD88 / SH 6.20) — sub-curb sentinel
-- The front porch first step (5.08 NAVD88 / SH 7.50) — above lawn
+Original v0.5-era rationale (preserved): the `+0.40 ft` enhancement
+was calibrated from four memory-based flood events; whether it
+applied at sub-curb sentinels was uncertain. (Resolved: it didn't
+apply anywhere — it was over-fit to memory-based depths. Enhancement
+is 0.00 as of v0.8.)
 
-...is genuinely uncertain. Each sentinel has its own micro-hydraulic
-context. This log accumulates empirical observations so we can:
+What the log enables:
 
-1. Verify the +0.40 enhancement applies at sub-curb / sentinel
-   landmarks (currently assumed but not validated)
-2. Catch systematic over- or under-prediction at any specific landmark
-3. Provide calibration data for future model refinements without
-   needing another major flood event
+1. Cross-fit elevation refinement for unsurveyed landmarks
+2. Catching systematic over-/under-prediction at any landmark
+3. Model recalibration without waiting for a survey crew
 
 ## What to record
 
@@ -52,7 +55,7 @@ fabricated ones. A few dozen observations over months would be plenty.
 `landmark_key` should match one of the keys defined in
 `forecast/flood_forecast_daily.py` LANDMARKS:
 `lowest_road_corner`, `gutter_walkway`, `curb`, `road_middle`,
-`intersection`, `lawn_step`, `porch_step`.
+`intersection_highpoint`, `lawn_step`, `porch_step_base`, etc. — see LANDMARKS in `forecast/flood_forecast_daily.py` for the current 18.
 
 ## How `sh_obs_mllw_actual` and `model_predicted_depth_in` get filled in
 
@@ -72,7 +75,7 @@ Then compute the model's prediction at this landmark using the actual
 gauge reading:
 
 ```python
-water_navd88 = sh_obs_mllw_actual + 0.40 - 2.82
+water_navd88 = sh_obs_mllw_actual + 0.00 - 2.82   # enhancement 0.00 since v0.8
 predicted = max(0, (water_navd88 - landmark_navd88)) * 12  # inches
 ```
 
