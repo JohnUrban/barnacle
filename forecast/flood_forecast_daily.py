@@ -1599,12 +1599,23 @@ def build_forecast():
     peak_rain_rate_24h = 0.0      # max hourly QPF rate anywhere in next 24h
     now_utc = dt.datetime.now(dt.timezone.utc)
     cutoff = now_utc + dt.timedelta(hours=24)
+    window_rates = []             # hourly (utc, rate) inside the 24h window
     for tt, rate in qpf_hourly:
         if tt < now_utc or tt > cutoff:
             continue
+        window_rates.append((tt, rate))
         cumulative_rain_24h += rate  # rate (in/hr) × 1 h bucket = inches
         if rate > peak_rain_rate_24h:
             peak_rain_rate_24h = rate
+    # Max rolling 6-h QPF accumulation in the window — the analog-model
+    # predictor (matches QPF's native bucket size, so it's the most
+    # trustworthy magnitude number QPF gives us).
+    max_6h_accum = 0.0
+    for i in range(len(window_rates)):
+        t0 = window_rates[i][0]
+        acc = sum(r for tt, r in window_rates
+                  if t0 <= tt < t0 + dt.timedelta(hours=6))
+        max_6h_accum = max(max_6h_accum, acc)
 
     # Pluvial flood risk (v0.9 first step — 2026-07-06 flash flood
     # proved rain alone floods the intersection; see
@@ -1631,6 +1642,7 @@ def build_forecast():
         "level": pluvial_risk_level,     # None | "possible" | "elevated"
         "peak_rain_rate_24h_in_hr": round(peak_rain_rate_24h, 3),
         "cumulative_rain_24h_in": round(cumulative_rain_24h, 2),
+        "max_6h_accum_in": round(max_6h_accum, 2),
         "max_pop_24h_pct": pluvial_max_pop,
         "convective_wording": pluvial_convective,
     }
@@ -3614,12 +3626,26 @@ def _render_pluvial_advisory_html(forecast):
     # v0.9-alpha scenario depths. Two scenarios:
     #  (a) burst at LOW tide (drains functional) — 7/6-class
     #  (b) burst at the worst HIGH tide (compound) — Oct 30-class
-    # Burst rate: max(QPF peak, 1.7 in/hr when convective wording) —
-    # QPF smears convective cells so the wording-based floor carries
-    # the weight (1.7 = the 7/6 fitted burst).
+    #
+    # Burst estimate — ANALOG SCALING (user proposal 2026-07-06: "use
+    # this and the October 2025 event as examples of what to expect").
+    # We can't know true convective rates, but we don't need to: the
+    # 7/6 event pins the mapping from QPF-as-forecast to observed
+    # flood. 7/6's max 6-h QPF bucket was ~0.55" and the flood fit a
+    # 1.7 in/hr effective burst. Scale linearly off that single
+    # anchor: burst ≈ 1.7 × (max_6h_accum / 0.55), clamped to
+    # [QPF peak rate, 3.0 in/hr]. The ratio absorbs both QPF's
+    # convective smearing AND the Highlands-hillside catchment
+    # amplification (rain on the ~200-ft hill drains to this low
+    # corner — local water input outruns local rainfall), because
+    # both were baked into the 7/6 anchor. One-anchor calibration —
+    # every future rain event tightens or breaks it; the bot archives
+    # pluvial_risk + QPF daily so the training set builds itself.
     burst = pr.get("peak_rain_rate_24h_in_hr", 0) or 0
     if pr.get("convective_wording"):
-        burst = max(burst, 1.7)
+        accum6 = pr.get("max_6h_accum_in", 0) or 0
+        analog_burst = 1.7 * (accum6 / 0.55) if accum6 > 0 else 1.7
+        burst = max(burst, min(analog_burst, 3.0))
     low_tide_water = estimate_pluvial_water(burst, 2.5)
     worst_peak = forecast.get("peak_forecast_observed_mllw")
     scenario_html = ""

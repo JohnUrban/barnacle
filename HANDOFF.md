@@ -1707,10 +1707,21 @@ flood-producing cell averaged 0.09 in/hr in QPF), so the PoP +
 wording triggers carry the weight for cells. Thresholds are
 first-guess; calibrate as pluvial events accumulate.
 
+**Analog scaling added (same day, user proposal)**: the burst
+estimate driving the scenario depths now scales off the forecast
+magnitude — burst ≈ 1.7 × (max_6h_QPF_accum / 0.55″), clamped to
+[QPF peak rate, 3.0], where 0.55″/1.7 is the 7/6 anchor. The ratio
+absorbs QPF's convective smearing AND the Highlands-hillside
+catchment amplification (rain on the ~200-ft hill drains to this
+low corner), because both are baked into the anchor event. This is
+MOS-style / analog forecasting with n=1 anchor — every archived
+forecast.json (pluvial_risk + QPF fields) + every observed rain
+event grows the training set for a proper fit.
+
 **Still open**: radar nowcast (MRMS); Rutgers mesonet RABCH022 as an
-*observed*-rain input; an actual pluvial depth model (9e.1 — needs
-rain-rate→depth calibration, which needs the observed rain rates for
-7/6; check Rutgers/NJDEP records for the 7/6 storm).
+*observed*-rain input; observed rain rates for 7/6 to validate the
+anchor; more events → replace one-anchor linear scaling with a
+fitted curve (logistic or nearest-neighbor analog lookup).
 
 ### 9e.3 — Drainage asymmetry: tide floods vs. rain floods (observed 7/6)
 
