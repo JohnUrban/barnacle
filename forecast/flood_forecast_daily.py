@@ -5971,6 +5971,33 @@ def render_html_page(forecast):
   {_render_lookahead_html(forecast)}
 
   <section class="reference">
+    <h2>How flooding works here (plain English)</h2>
+    <p><b>Tide floods.</b> When the bay at Sandy Hook climbs above the
+       storm-grate elevations (roughly 6.3&ndash;6.6 ft on the gauge),
+       bay water pushes backwards up the storm drains and surfaces in
+       the street — the SE and SW grates across Bay Ave go first, and
+       those areas stay wettest. No rain required.</p>
+    <p><b>Rain floods — the tide does not matter.</b> The drain system
+       can only push water out to the bay so fast. When rain gets
+       intense enough (violent downpours, roughly 1+ inch/hour
+       bursts), runoff pouring off the Highlands hillside arrives
+       faster than the outlet can discharge it. The water backs up and
+       behaves exactly as if a high tide were in — <b>even at dead low
+       tide</b>. This was proven on July 6, 2026: about 7&Prime; of
+       water at the curb while the bay sat more than a foot below the
+       lowest grate. In rain floods the backup concentrates around the
+       NE/NW grates (the drain trunk line) — the opposite corner from
+       tide floods. <b>Take-home: never judge flood risk here by the
+       tide chart alone.</b> Once the rain is hard enough, the tide
+       level is irrelevant to whether it floods.</p>
+    <p><b>Compound (the worst case).</b> The tide can't prevent a rain
+       flood, but it can raise its floor: heavy rain landing on a high
+       tide has nowhere to go at all. The biggest flood in this
+       project's records — October 30, 2025, water past the bottom
+       porch step — was exactly this combination.</p>
+  </section>
+
+  <section class="reference">
     <h2>Reference scale</h2>
     <p>Sandy Hook observed water level (MLLW; {CURRENT_MODEL_VERSION} thresholds = landmark elevation + 2.82):</p>
     <ul>

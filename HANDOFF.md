@@ -1675,6 +1675,18 @@ The existing tide+rain term and pure-pluvial flooding are plausibly
 two limits of that one model. If the same convective cell from 7/6
 had landed at a 7+ ft tide, we plausibly get another Oct 30.
 
+**THE PHYSICAL LESSON (user, 2026-07-06 evening — remember this):**
+above a certain rain rate, flooding here is a variable completely
+independent of tide height. The mechanism is OUTLET SATURATION: the
+drain system has a fixed discharge capacity; when hillside runoff
+exceeds it, water backs up at the low corner and "acts as if it's a
+high tide" — even at dead low tide (proven 7/6: ~7″ at curb, bay a
+foot below the lowest grate). The tide cannot gate a rain flood; it
+can only raise its floor (compound = Oct 30 2025 class). Corollary
+for all model/UI work: never let a low tide read as "no risk" when
+burst-capable rain is forecast. Stated in plain English on the site
+("How flooding works here").
+
 **v0.9-alpha SHIPPED same-day (2026-07-06 evening)**:
 `estimate_pluvial_water(rate, bay)` — two-regime closed form:
 
