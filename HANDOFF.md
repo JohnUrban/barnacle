@@ -1679,6 +1679,26 @@ The existing tide+rain term and pure-pluvial flooding are plausibly
 two limits of that one model. If the same convective cell from 7/6
 had landed at a 7+ ft tide, we plausibly get another Oct 30.
 
+**v0.9-alpha SHIPPED same-day (2026-07-06 evening)**:
+`estimate_pluvial_water(rate, bay)` — two-regime closed form:
+
+```
+base = max(bay_water, 3.52)              # street bowl bottom
+drains functional (bay < 3.52): lift = 1.40 · tanh(rate / 1.2)
+drains blocked   (bay ≥ 3.52): lift = 8 · tanh(rate) / 12   # v0.8 term
+```
+
+Fits 7/6 (4.76 vs obs 4.77 at an ASSUMED 1.7 in/hr burst — the free
+parameter, since observed rain rate is unknown) and Oct 30 (5.41 vs
+obs ≥ 5.25). Surfaced as scenario estimates in the pluvial banner
+(burst-at-low-tide + burst-at-worst-high-tide), NOT as a regime
+change — the tide-keyed architecture is unchanged. Known wart: the
+two regimes are discontinuous at bay = 3.52 (free-drain lift exceeds
+blocked-drain lift; defended by bowl-vs-plain geometry in the code
+comment, but a proper stage-storage curve should replace it in v0.9
+final). Also needed: observed rain rate for 7/6 (Rutgers/NJDEP
+records) to pin the 1.7; sub-daily *timing* still unsolved.
+
 ### 9e.2 — Rain input beyond QPF (PARTIALLY DONE 2026-07-06 same-day)
 
 **Root cause found — it was our bug, not (only) a QPF miss.** The
@@ -1745,6 +1765,16 @@ are more reliably level) before changing the model constant. Also
 needs: pin down what the `porch_step` 5.08 landmark actually refers
 to (base vs. top of first step) — the 7/6 "bottom porch step + 1–2″"
 at 4.77 implies the step base is ~4.6–4.7, well below 5.08.
+
+**Refinement (7/6 evening cross-fit)**: porch-step base = 4.60–4.68;
+combined with lawn_step ≈ 4.67, the walkway rise from lawn step to
+porch base is **≈ 0–1″** (user's verbal estimate was 1–2″; the base
+is essentially level with the lawn-step top). `porch_step` 5.08 was
+never measured — v0.5.1 estimated it as lawn_step + 6″; Oct 30's
+≥ 5.19 peak reconstruction suggests it corresponds to ~the top of
+the first step. **User has offered to tape the porch riser heights
+(each step, bottom → deck) — that plus the 4.33 sidewalk anchor
+rebuilds the entire vertical ladder and closes 9e.4.**
 
 ---
 

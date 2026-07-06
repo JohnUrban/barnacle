@@ -119,14 +119,31 @@ event observed at the step edge; a tide-flood measurement at the
 lawn step would confirm cleanly since tide floods are more reliably
 level. Also implies the sidewalk-to-lawn-step riser is ~4″, not 3″.
 
-Related open question: the model's `porch_step` (5.08) vs. today's
-"bottom porch step + 1–2″" at 4.77. The walkway slopes UP from the
-lawn step toward the porch; the bottom porch step's base is
-plausibly ~4.6–4.7. What exactly the 5.08 landmark refers to (base
-of first step? top of first step?) needs pinning with the user
-before the next revision. Oct 30's "water at first porch step"
-memory + peak reconstruction ≥5.19 suggests 5.08 is a real feature
-higher than today's water — but the definitions must be aligned.
+### Porch-step base cross-fit (added same evening, user-confirmed method)
+
+The model's `porch_step` (5.08) was never measured — the archives
+show it was estimated as lawn_step + 6″ in v0.5.1. Today's data pins
+the *base* of the bottom porch step for the first time:
+
+- Peak water = 4.77 NAVD88 (dual-anchored)
+- User: water went "1″ or so, 2″ at most" up the bottom porch step
+  at peak
+- → **bottom porch-step base = 4.60–4.68 NAVD88**
+
+Combined with the lawn-step revision (~4.67): **the walkway rise
+from lawn step to porch-step base is ≈ 0–1″, not the 1–2″ the user
+had verbally estimated** — the porch-step base is essentially level
+with the lawn-step top (or the peak crested slightly above 4.77
+between the 11:34 and 11:41 readings, which would restore up to an
+inch of gradient).
+
+What the 5.08 `porch_step` landmark physically refers to (top of
+first step? a higher step?) still needs pinning — user has offered
+to tape the riser heights (each porch step, bottom → deck), which
+would rebuild the full vertical ladder from the 4.33 sidewalk anchor.
+Oct 30's "water at first porch step" memory + its ≥5.19 peak
+reconstruction suggests 5.08 does correspond to a real feature about
+6″ above the step base — plausibly the top of the first step.
 
 ## Drainage asymmetry — tide floods vs. rain floods (NEW)
 

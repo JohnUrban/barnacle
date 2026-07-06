@@ -3511,6 +3511,50 @@ def _oscillation_chart_data(forecast):
     return {"points": points, "landmarks": landmark_lines}
 
 
+# v0.9-alpha pluvial depth model (2026-07-06, same-day as the flash
+# flood that motivated it). Two regimes split on whether the bay has
+# reached the street bowl (drains functional vs. backflowed):
+#
+#   base = max(bay_water_navd88, PLUVIAL_STREET_BASE)
+#   drains functional (bay < street): lift = 1.40 * tanh(rate / 1.2)
+#   drains blocked   (bay >= street): lift = 8 * tanh(rate) / 12
+#                                     (the v0.8 compound term, unchanged)
+#
+# Calibration (2 events):
+#   7/6/2026 pure pluvial: bay ~2.6, obs peak 4.77 (7.3" curb).
+#     Fits at an assumed convective burst of ~1.7 in/hr (observed rate
+#     unknown — QPF smeared it to 0.09 in/hr; the 1.7 is the fitted
+#     free parameter, flagged until we get observed rain data).
+#   Oct 30 2025 compound: bay 4.81 (SH 7.63), rate 1.45 in/hr,
+#     obs peak >= 5.25. Model: 5.41 (~2" conservative).
+#
+# Why the free-drain lift (1.25 ft at burst) EXCEEDS the blocked-drain
+# lift (0.60 ft max): geometry, not drainage paradox. Pure-pluvial
+# lift is measured from the narrow street bowl bottom where converging
+# watershed runoff concentrates; compound lift is measured from an
+# already-elevated bay level spread across the whole flooded plain.
+# Same volume, different container width. A proper stage-storage curve
+# unifies these in v0.9; this closed form is the alpha.
+PLUVIAL_STREET_BASE = 3.52       # grate_SW — bottom of the intersection bowl
+PLUVIAL_FREE_LIFT_FT = 1.40      # saturation lift, drains functional
+PLUVIAL_FREE_RATE_SCALE = 1.2    # in/hr
+
+
+def estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88):
+    """v0.9-alpha: estimated water at 342 Bay (NAVD88) for a given
+    rain rate and concurrent bay level. See calibration block above.
+    Returns the base level unchanged when rain is below threshold."""
+    base = max(bay_water_navd88, PLUVIAL_STREET_BASE)
+    if rain_rate_in_hr <= 0.1:
+        return base
+    if bay_water_navd88 >= PLUVIAL_STREET_BASE:
+        lift = RAIN_SATURATION_IN * math.tanh(rain_rate_in_hr) / 12.0
+    else:
+        lift = PLUVIAL_FREE_LIFT_FT * math.tanh(
+            rain_rate_in_hr / PLUVIAL_FREE_RATE_SCALE)
+    return base + lift
+
+
 def _render_pluvial_advisory_html(forecast):
     """Pluvial flood-risk banner (v0.9 first step, 2026-07-06).
 
@@ -3533,20 +3577,59 @@ def _render_pluvial_advisory_html(forecast):
            if pr.get("convective_wording") else "")
         + "."
     )
+    # v0.9-alpha scenario depths. Two scenarios:
+    #  (a) burst at LOW tide (drains functional) — 7/6-class
+    #  (b) burst at the worst HIGH tide (compound) — Oct 30-class
+    # Burst rate: max(QPF peak, 1.7 in/hr when convective wording) —
+    # QPF smears convective cells so the wording-based floor carries
+    # the weight (1.7 = the 7/6 fitted burst).
+    burst = pr.get("peak_rain_rate_24h_in_hr", 0) or 0
+    if pr.get("convective_wording"):
+        burst = max(burst, 1.7)
+    low_tide_water = estimate_pluvial_water(burst, 2.5)
+    worst_peak = forecast.get("peak_forecast_observed_mllw")
+    scenario_html = ""
+    if burst > 0.1:
+        lt_curb = (low_tide_water - 4.16) * 12
+        scenario_html = (
+            f'<p><b>Scenario estimates (v0.9-alpha, burst '
+            f'{burst:.1f} in/hr):</b><br>'
+            f'&bull; Burst at LOW tide (drains working): water ≈ '
+            f'{low_tide_water:.2f} NAVD88 '
+            f'({"%+.1f" % lt_curb}&Prime; at curb) — 7/6-class flash flood.<br>'
+        )
+        if worst_peak is not None:
+            bay_at_high = worst_peak + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+            compound_water = estimate_pluvial_water(burst, bay_at_high)
+            cp_curb = (compound_water - 4.16) * 12
+            oct30_tag = (" — Oct 30 2025 class"
+                         if compound_water >= 5.0 else "")
+            scenario_html += (
+                f'&bull; Burst at the worst HIGH tide '
+                f'({forecast.get("peak_time_local", "")}): water ≈ '
+                f'{compound_water:.2f} NAVD88 '
+                f'({"%+.1f" % cp_curb}&Prime; at curb) — compound '
+                f'rain+tide{oct30_tag}.</p>'
+            )
+        else:
+            scenario_html += '</p>'
     return (
         '<section class="pluvial-advisory">'
         f'<h3>&#9888; {heading} — independent of the tide</h3>'
         f'<p>{details}</p>'
+        f'{scenario_html}'
         '<p class="note">Heavy rain can flood the Bay+Central '
         'intersection with no tidal contribution at all — the '
         '2026-07-06 flash flood put ~7&Prime; of water at the curb '
         '1.5 hours <i>before</i> high tide with the bay a foot below '
         'the lowest grate. The tide-keyed predictions below do not '
-        'capture this event class. NWS rain amounts (QPF) also smear '
-        'short convective bursts, so treat any thunderstorm cell as '
-        'capable of more than the numbers suggest. If heavy rain '
-        'coincides with a high tide, expect compound flooding '
-        '(Oct 30 2025 class).</p>'
+        'capture this event class. NWS rain amounts (QPF) smear '
+        'short convective bursts, so the scenario estimates assume a '
+        '7/6-class burst whenever thunderstorms are in the forecast. '
+        'The v0.9-alpha pluvial model is calibrated on TWO events '
+        '(7/6/2026 pure-pluvial, Oct 30 2025 compound) with the 7/6 '
+        'burst rate itself estimated — treat depths as &plusmn;3&Prime; '
+        'class estimates, not measurements.</p>'
         '</section>'
     )
 
