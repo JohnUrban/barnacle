@@ -3953,7 +3953,12 @@ def _render_water_series_section(forecast):
     # (a Sandy-class forecast should not be clipped).
     all_vals = ([v for v in tide if v is not None]
                 + [v for v in pluv if v is not None]
-                + ([to_in(potential)] if potential else []))
+                # The rain band rides the tide, so its top can reach
+                # max(tide) + potential lift — include it so the
+                # standard frame expands rather than clipping the band.
+                + ([to_in(potential) +
+                    max([v for v in tide if v is not None] or [0])]
+                   if potential else []))
     y_min = min(-60, (min(all_vals) - 3) if all_vals else -60)
     y_max = max(36, (max(all_vals) + 3) if all_vals else 36)
     # Two lines, two surfaces (user design 2026-07-06): bay/tide water
@@ -3975,36 +3980,22 @@ def _render_water_series_section(forecast):
     gutter_in = round((GUTTER_WALKWAY - GRATE_SW) * 12, 1)   # +3.1
     lawn_in = round((LAWN_STEP - GRATE_SW) * 12, 1)          # +13.7
     porch1_in = round((PORCH_STEP1_TOP - GRATE_SW) * 12, 1)  # +22.7
-    def _ref(y, color, text):
-        return {"type": "line", "yMin": y, "yMax": y,
-                "borderColor": color, "borderWidth": 1,
-                "borderDash": [5, 4],
-                "label": {"display": True, "content": text,
-                          "position": "start", "font": {"size": 10},
-                          "backgroundColor": "rgba(255,255,255,0.7)",
-                          "color": color}}
-    # Low-cluster labels (0/+3.1/+7.7) are staggered along the x-axis
-    # so their white backing boxes can't overlap (user 2026-07-06).
-    annotations = {
-        # SW grate = 0″ is the bottom-most ground level / the axis
-        # datum — SOLID BLACK, unlike the dashed landmark lines.
-        "firstWater": {"type": "line", "yMin": 0, "yMax": 0,
-                       "borderColor": "#222222", "borderWidth": 1.5,
-                       "label": {"display": True,
-                                 "content": "0″ — SW grate (ground)",
-                                 "position": "start", "font": {"size": 10},
-                                 "backgroundColor": "rgba(255,255,255,0.7)",
-                                 "color": "#222222"}},
-        "gutter": {**_ref(gutter_in, "#2f8f5f",
-                          f"+{gutter_in}″ — gutter (move the car)")},
-        "curb": {**_ref(curb_in, "#c0392b",
-                        f"+{curb_in}″ — curb (flood onset)")},
-        "lawnStep": _ref(lawn_in, "#7c4dbc", f"+{lawn_in}″ — lawn step"),
-        "porchStep1": _ref(porch1_in, "#6d4c2f",
-                           f"+{porch1_in}″ — top of 1st porch step"),
-    }
-    annotations["gutter"]["label"]["position"] = "35%"
-    annotations["curb"]["label"]["position"] = "70%"
+    # Landmark lines live as constant DATASETS (2026-07-06 final
+    # design): the legend above the plot carries each colored segment
+    # + label, so no white label boxes ever sit on the data.
+    def _landmark_ds(y, color, text, solid=False):
+        return {"label": text, "data": [y] * len(labels),
+                "borderColor": color, "borderWidth": 1.5 if solid else 1.2,
+                "borderDash": [] if solid else [6, 5],
+                "fill": False, "pointRadius": 0}
+    landmark_datasets = [
+        _landmark_ds(0, "#222222", "SW grate 0″ (ground)", solid=True),
+        _landmark_ds(gutter_in, "#2f8f5f", f"gutter +{gutter_in}″ (move the car)"),
+        _landmark_ds(curb_in, "#c0392b", f"curb +{curb_in}″ (flood onset)"),
+        _landmark_ds(lawn_in, "#7c4dbc", f"lawn step +{lawn_in}″"),
+        _landmark_ds(porch1_in, "#6d4c2f", f"1st porch step top +{porch1_in}″"),
+    ]
+    annotations = {}
     # Day-boundary line at midnight
     for idx, lab in enumerate(labels):
         if lab == "00:00":
@@ -4022,30 +4013,36 @@ def _render_water_series_section(forecast):
         # legend then shows a colored square with the label at top —
         # no more label collisions on the crowded left edge. Water-navy
         # fill (user: amber read poorly; blue = water).
-        zone_data = [pot_in if p.get("burst_risk") else None
-                     for p in series]
-        if not any(v is not None for v in zone_data):
-            zone_data = [pot_in] * len(labels)   # risk fired but no hour
-                                                 # qualified — show full
+        flags = [bool(p.get("burst_risk")) for p in series]
+        if not any(flags):
+            flags = [True] * len(labels)   # risk fired but no hour
+                                           # qualified — show full width
+        # Band RIDES the tide curve (user design: "start the rain
+        # burst coloring on top of the tide line ... it will make the
+        # boundaries more obvious" — knowingly non-literal; the burst
+        # estimate itself is an absolute street level, stated in the
+        # label). Fill from this dataset down to dataset 0 (the tide).
+        zone_data = [round(tide[i] + pot_in, 1) if flags[i] else None
+                     for i in range(len(labels))]
         datasets.append({
-            "label": f"rain-burst potential zone (up to +{pot_in}″, storm-capable hours)",
+            "label": f"rain-burst potential (+{pot_in}″ of lift, storm-capable hours)",
             "data": zone_data,
-            "fill": {"target": {"value": 0}},
-            # Strong enough to see even when the potential is small
-            # (a +3" zone is a thin sliver of the standard frame) —
-            # solid navy top edge marks the ceiling crisply.
-            "backgroundColor": "rgba(11, 61, 107, 0.32)",
+            "fill": 0,
+            "backgroundColor": "rgba(11, 61, 107, 0.30)",
             "borderColor": "rgba(11, 61, 107, 0.9)",
             "pointRadius": 0, "borderWidth": 1.5, "spanGaps": False,
+            "tension": 0.35,
         })
+    datasets.extend(landmark_datasets)
     cfg = {
         "type": "line",
         "data": {"labels": labels, "datasets": datasets},
         "options": {
             "responsive": True,
             "plugins": {
-                "legend": {"display": bool(has_rain_layer or potential),
-                           "labels": {"boxWidth": 18, "font": {"size": 10}}},
+                "legend": {"display": True,
+                           "labels": {"boxWidth": 22, "boxHeight": 2,
+                                      "font": {"size": 10}}},
                 "annotation": {"annotations": annotations},
             },
             "scales": {
@@ -4068,11 +4065,12 @@ def _render_water_series_section(forecast):
             "fine and draws no line.")
     if potential:
         note_bits.append(
-            "The shaded navy zone is what a convective burst could "
-            "reach (7/6-analog scaling), drawn only across the hours "
-            "when burst-capable weather is in the forecast — bursts "
-            "have estimable magnitude but no exact clock time, so the "
-            "zone marks possibility, not a prediction of a bump.")
+            "The navy band is the rain-burst potential (7/6-analog "
+            "scaling), drawn riding on top of the tide curve for "
+            "readability and only across the hours when burst-capable "
+            "weather is in the forecast. Bursts have estimable "
+            "magnitude but no exact clock time — the band marks "
+            "possibility, not a predicted bump.")
     note_bits.append("Windows below are derived from these curves.")
     return f"""
   <section class="water-series">
