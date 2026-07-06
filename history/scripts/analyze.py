@@ -29,17 +29,18 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-# ----- model constants (must match build_dataset.py) -----
-LOCAL_ENHANCEMENT_FT = 0.40
+# ----- model constants (v0.9, refreshed 2026-07-06; SH threshold =
+# landmark NAVD88 + 2.82 with enhancement 0.00) -----
+LOCAL_ENHANCEMENT_FT = 0.00
 MLLW_TO_NAVD88 = -2.82
 CURB_TOP = 4.16
 ROAD_MIDDLE = 4.36
 INTERSECTION = 4.54
-LAWN_STEP = 4.58
+LAWN_STEP = 4.66
 
 THRESHOLDS_FT = {
-    "6.58 (curb / flood onset)": 6.58,
-    "7.00 (lawn)":               7.00,
+    "6.98 (curb / flood onset)": 6.98,
+    "7.48 (lawn)":               7.48,
     "7.20 (dashboard Minor)":    7.20,
     "7.70 (NWS Moderate)":       7.70,
     "8.70 (NWS Major)":          8.70,
@@ -222,7 +223,7 @@ def section_3b(df: pd.DataFrame, out: Path, figdir: Path) -> dict:
     ax.axhline(HURRICANE_SANDY_MLLW, color="#d2444a", lw=1, ls=":",
                label=f"Hurricane Sandy 2012 ({HURRICANE_SANDY_MLLW} ft)")
     # Landmark thresholds
-    for label, sh in [("curb 6.58", 6.58), ("road 6.78", 6.78), ("lawn 7.00", 7.00)]:
+    for label, sh in [("curb 6.98", 6.98), ("road 7.18", 7.18), ("lawn 7.48", 7.48)]:
         ax.axhline(sh, color="#444", lw=0.7, alpha=0.5)
         ax.text(450, sh + 0.05, label, fontsize=8, ha="right", color="#444")
     ax.set_xscale("log")
@@ -322,7 +323,7 @@ def section_3c(df: pd.DataFrame, out: Path, figdir: Path) -> dict:
     dec_df = pd.DataFrame(decade_rows)
     dec_df.to_csv(out / "decadal_threshold_crossings.csv", index=False)
 
-    # Plot the 6.58 ft (curb) threshold crossings per decade
+    # Plot the curb-threshold crossings per decade
     fig, ax = plt.subplots(figsize=(8.5, 4.8))
     for label, thresh in THRESHOLDS_FT.items():
         sub = dec_df[dec_df["threshold_ft"] == thresh].sort_values("decade")
@@ -351,7 +352,7 @@ def section_3c(df: pd.DataFrame, out: Path, figdir: Path) -> dict:
 # 3d — Hour-of-day and day-of-year patterns
 # ============================================================
 def section_3d(df: pd.DataFrame, out: Path, figdir: Path) -> None:
-    threshold = 6.58
+    threshold = 6.98
     events = detect_events_at(df, threshold)
     if events.empty:
         return
@@ -394,7 +395,7 @@ def section_3d(df: pd.DataFrame, out: Path, figdir: Path) -> None:
 # 3e — Storm vs nuisance events
 # ============================================================
 def section_3e(df: pd.DataFrame, out: Path, figdir: Path) -> dict:
-    events = detect_events_at(df, 6.58)
+    events = detect_events_at(df, 6.98)
     if events.empty:
         return {}
     def classify(row):
@@ -416,7 +417,7 @@ def section_3e(df: pd.DataFrame, out: Path, figdir: Path) -> dict:
     by_year.plot(kind="bar", stacked=True, ax=ax,
                  color=["#a6c8ff", "#1f6feb", "#0b1f3a"], width=0.95)
     ax.set_xlabel("Year"); ax.set_ylabel("Number of events")
-    ax.set_title("Flood events per year at 342 Bay (curb threshold 6.58 ft MLLW)")
+    ax.set_title("Flood events per year at 342 Bay (curb threshold 6.98 ft MLLW)")
     # thin x labels
     xt = ax.get_xticks()
     yrs_all = by_year.index.tolist()
@@ -466,16 +467,16 @@ def section_3f(df: pd.DataFrame, out: Path) -> dict:
     out_df = pd.DataFrame(rows)
     out_df.to_csv(out / "calibration_check.csv", index=False)
 
-    # Sep 1 2025 -- May 17 2026 audit (hours above 6.58 ft)
+    # Sep 1 2025 -- May 17 2026 audit (hours above the curb threshold)
     win_start = pd.Timestamp("2025-09-01")
     win_end = pd.Timestamp("2026-05-17 23:59:59")
     win = df[(df["timestamp"] >= win_start) & (df["timestamp"] <= win_end)]
-    hours_above = int((win["observed_mllw"] >= 6.58).sum())
-    events_window = detect_events_at(win, 6.58)
+    hours_above = int((win["observed_mllw"] >= 6.98).sum())
+    events_window = detect_events_at(win, 6.98)
     return {
         "window_start": str(win_start.date()),
         "window_end": str(win_end.date()),
-        "hours_above_6.58": hours_above,
+        "hours_above_curb": hours_above,
         "events_in_window": int(len(events_window)),
         "peak_in_window_mllw": float(win["observed_mllw"].max()) if not win.empty else None,
     }
@@ -517,7 +518,7 @@ def main():
     hours_per_yr = df_h.groupby("year")["observed_mllw"].count()
     good = hours_per_yr[hours_per_yr >= 7000].index
     df_h = df_h[df_h["year"].isin(good)]
-    flood_hours = df_h[df_h["observed_mllw"] >= 6.58]
+    flood_hours = df_h[df_h["observed_mllw"] >= 6.98]
     days_per_year = flood_hours.groupby("year")["date"].nunique()
     days_per_year.to_csv(out / "flood_days_per_year.csv", header=["flood_days"])
 
@@ -529,17 +530,27 @@ def main():
     n_years_recent = recent["year"].nunique()
 
     # Stratification thresholds and landmark labels (in ascending order
-    # of severity). Sandy Hook MLLW = landmark NAVD88 + 2.42 ft.
+    # of severity). Sandy Hook MLLW = landmark NAVD88 + 2.82 ft
+    # (v0.9 landmark set, refreshed 2026-07-06).
     strata = [
-        ("lowest_sentinel_grate", "Lowest storm grate (Central Ave)", 6.02),
-        ("lowest_road_corner",    "Lowest road corner across Bay",    6.06),
-        ("gutter_walkway",        "Gutter / curb edge at walkway",    6.20),
-        ("corner_grate",          "Storm grate at Bay+Central",       6.33),
-        ("curb",                  "Curb at walkway",                  6.58),
-        ("road_middle",           "Bay Ave road middle",              6.78),
-        ("intersection",          "Intersection center",              6.96),
-        ("lawn_step",             "Lawn / walkway step",              7.00),
-        ("porch_step",            "Front porch first step",           7.50),
+        ("grate_SW",              "SW distal grate across Bay",       6.34),
+        ("grate_SE",              "SE proximal grate across Bay",     6.42),
+        ("corner_SE",             "SE corner across Bay",             6.46),
+        ("corner_SW",             "SW corner across Bay",             6.46),
+        ("grate_bay_ave_upstream", "Bay Ave upstream grate",          6.46),
+        ("gutter_walkway",        "Gutter / curb edge at walkway",    6.60),
+        ("grate_NE",              "Storm grate at user's corner (NE)", 6.62),
+        ("grate_NW",              "NW corner grate across Central",   6.62),
+        ("corner_NE",             "NE corner pavement",               6.73),
+        ("corner_NW",             "NW corner pavement",               6.73),
+        ("curb",                  "Curb at walkway",                  6.98),
+        ("sidewalk_under_walkway_lawn_step", "Sidewalk under walkway lawn-step", 7.15),
+        ("road_middle",           "Bay Ave road middle",              7.18),
+        ("intersection_highpoint", "Intersection high point",         7.36),
+        ("lawn_step",             "Lawn / walkway step",              7.48),
+        ("porch_step_base",       "Bottom of porch steps",            7.50),
+        ("porch_step1_top",       "Top of first porch step",          8.23),
+        ("porch_deck",            "Porch deck (platform)",            10.90),
     ]
     rows = []
     for key, label, thresh in strata:
@@ -566,7 +577,9 @@ def main():
     # strata), descriptors are empty strings.
     descriptors = []
     for key, label, thresh in strata:
-        sub = rec_df[rec_df["threshold_ft"] == thresh].sort_values("month")
+        # Filter by KEY, not threshold — v0.9 landmarks share thresholds
+        # (corner_SE/corner_SW/upstream all at 6.46, etc.)
+        sub = rec_df[rec_df["landmark_key"] == key].sort_values("month")
         days = sub["avg_flood_days_per_month"].values
         if days.max() == 0:
             descriptors.extend([""] * 12)

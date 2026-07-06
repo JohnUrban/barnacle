@@ -117,17 +117,11 @@ LANDMARKS = [
 # in recent decades); they're shown in the daily depth table instead.
 SEASONALITY_LANDMARK_KEYS = {"curb", "road_middle", "intersection_highpoint",
                              "lawn_step", "porch_step_base"}
-# Seasonality CSV (history project) still uses v0.6 keys/thresholds;
-# alias new keys to CSV keys for the display join. The CSV's baked-in
-# thresholds are stale relative to v0.8/v0.9 (+2.82 vs +2.42) — flagged
-# for the annual analytics refresh (HANDOFF section 9 backlog).
-SEASONALITY_KEY_ALIASES = {
-    "intersection_highpoint": "intersection",
-    "porch_step_base":        "porch_step",
-    "grate_SE":               "lowest_sentinel_grate",
-    "grate_NE":               "corner_grate",
-    "corner_SE":              "lowest_road_corner",
-}
+# Seasonality CSV regenerated 2026-07-06 with v0.9 keys + thresholds
+# (analyze.py refresh) — the alias shim from earlier that day is now
+# empty. Keep the mechanism: it protects the display join across any
+# future rename until the next annual refresh lands.
+SEASONALITY_KEY_ALIASES = {}
 # Curated landmarks for the oscillation chart on the home page (9b.4(b)).
 # Five entries — fewer than the full landmark set — so labels don't crowd
 # each other on the chart's y-axis. Updated for v0.7 (2026-06-14).
@@ -3179,7 +3173,7 @@ def _near_miss_text(mtd):
     if not mtd:
         return None
     curb_events = next((s["n_events"] for s in (mtd.get("strata") or [])
-                        if s["threshold_ft"] == 6.58), None)  # 6.58 = the CSV's v0.6-era curb key; must match the stale seasonality CSV until the annual refresh regenerates it
+                        if s["threshold_ft"] == SH_CURB_THRESHOLD), None)  # CSV regenerated 2026-07-06 with v0.9 thresholds
     if curb_events is None or curb_events > 0:
         return None
     raw = mtd.get("peak_6min_mllw")
