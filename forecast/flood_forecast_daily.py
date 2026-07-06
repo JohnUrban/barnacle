@@ -3810,6 +3810,72 @@ def classify_regime_from_water(water_navd88):
     return "dry"
 
 
+TOP10_FLOODS_PATH = os.path.join(_REPO_ROOT, "history", "data",
+                                 "top10_floods.csv")
+
+
+def _render_historical_floods_html():
+    """Bottom-of-page historical context (user request 2026-07-06):
+    the 10 worst floods of the last ~100 years at Sandy Hook, in both
+    standard datums AND 342 Bay terms (inches above the SW grate — the
+    standard mental unit — plus the highest landmark covered under the
+    v0.9 transform). "This would give an idea of how bad it can get at
+    342 Bay Ave."
+
+    Data: history/data/top10_floods.csv — verified NOAA peaks
+    cross-referenced against the ShorelySafe Sandy Hook dashboard's
+    top-ten list and our own 1910–2026 hourly parquet (both sources
+    agree on the event set). Static; regenerate only if NOAA revises
+    verified peaks or the landmark ladder changes."""
+    try:
+        with open(TOP10_FLOODS_PATH) as f:
+            events = list(csv.DictReader(f))
+    except Exception:
+        return ""
+    if not events:
+        return ""
+    rows = ""
+    for i, e in enumerate(events, 1):
+        rows += (
+            f"<tr><td>{i}</td><td>{e['date']}</td><td>{e['event']}</td>"
+            f"<td>{float(e['peak_mllw_ft']):.2f}</td>"
+            f"<td>{float(e['water_navd88_ft']):.2f}</td>"
+            f"<td>+{float(e['rel_sw_grate_in']):.0f}&Prime;</td>"
+            f"<td>{e['highest_landmark_covered']} "
+            f"(+{float(e['inches_over_highest']):.0f}&Prime;)</td></tr>"
+        )
+    return f"""
+  <section class="reference historical-floods">
+    <h2>How bad can it get? The 10 worst floods of the last century</h2>
+    <p class="note">Verified Sandy Hook peaks (NOAA station 8531680;
+       cross-checked against the ShorelySafe dashboard's top-ten and
+       our own 1910&ndash;2026 hourly record — the event lists agree).
+       Local columns apply the {CURRENT_MODEL_VERSION} transform
+       (water at 342 = SH &minus; 2.82 ft): <b>vs SW grate</b> is
+       inches above the lowest grate (3.52 NAVD88, where water first
+       appears); <b>highest landmark</b> uses the surveyed porch
+       ladder.</p>
+    <table class="tide-table">
+      <thead><tr><th>#</th><th>Date</th><th>Event</th>
+      <th>Peak (ft MLLW)</th><th>Water at 342 (ft NAVD88)</th>
+      <th>vs SW grate</th><th>Highest landmark covered</th></tr></thead>
+      <tbody>{rows}</tbody>
+    </table>
+    <p class="note"><b>Every event on this list puts water on the porch
+       stairs</b> — the mildest reaches the top of the 1st step; Sandy
+       put ~3&frac12; feet over the porch deck. For scale: the worst
+       events measured since this project began — Oct 30 2025
+       (~5.27 NAVD88, +21&Prime; vs SW grate, just past the porch-step
+       base) and the 7/6/2026 flash flood (~4.8 NAVD88, +15&Prime;) —
+       would rank far below #10. Caveats: the local transform is
+       calibrated on 2026 moderate events and extrapolates to
+       hurricane regimes; storm rainfall would add on top of these
+       tide-gauge numbers (all ten had rain); Sandy's 14.4 is the
+       estimated true peak (the gauge failed at 13.31).</p>
+  </section>
+"""
+
+
 def _render_water_series_section(forecast):
     """Home-page water-level chart (2026-07-06) — the widget's
     tide-curve, promoted to the site. Continuous predicted water at
@@ -5766,8 +5832,10 @@ def render_html_page(forecast):
     </ul>
   </section>
 
+{_render_historical_floods_html()}
+
   <footer>
-    <p>Model v0.8. Local enhancement 0.00 ft (conservative, 2026-06-16). Rain term saturates at 8&Prime;.
+    <p>Model {CURRENT_MODEL_VERSION}. Local enhancement {LOCAL_ENHANCEMENT_FT:+.2f} ft. Rain term saturates at 8&Prime;.
        Updated hourly (best-effort) via GitHub Actions.</p>
     <p><a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a> &middot;
        <a href="archive/">Past daily archives</a> &middot;
