@@ -1677,9 +1677,13 @@ had landed at a 7+ ft tide, we plausibly get another Oct 30.
 
 **THE PHYSICAL LESSON (user, 2026-07-06 evening — remember this):**
 above a certain rain rate, flooding here is a variable completely
-independent of tide height. The mechanism is OUTLET SATURATION: the
-drain system has a fixed discharge capacity; when hillside runoff
-exceeds it, water backs up at the low corner and "acts as if it's a
+independent of tide height. The mechanism is CATCHMENT-AMPLIFIED
+OUTLET SATURATION — two factors, not one: (a) the ~200-ft bluffs
+directly above funnel the ENTIRE hillside's rainfall downhill onto
+this low shelf within minutes, so the local rainfall rate understates
+the actual water input by a large multiple; (b) the drain system has
+a fixed discharge capacity. When the amplified inflow exceeds the
+outlet, water backs up at the low corner and "acts as if it's a
 high tide" — even at dead low tide (proven 7/6: ~7″ at curb, bay a
 foot below the lowest grate). The tide cannot gate a rain flood; it
 can only raise its floor (compound = Oct 30 2025 class). Corollary
