@@ -68,10 +68,11 @@
   }
 
   function depthToAlpha(t) {
-    // Alpha rises from 0 (dry edge) to ~0.85 (saturated deep).
-    // Matches the matplotlib renderer's BluesAlpha colormap so the
-    // client-side map looks like the existing pre-rendered PNGs.
-    return Math.min(0.85, t * 0.85);
+    // Alpha floor (2026-07-06, user: "I always wish the water was
+    // more obvious sooner — it might start out too transparent"):
+    // any wet pixel is immediately ~0.38 opaque, ramping to 0.85.
+    if (t <= 0) return 0;
+    return Math.min(0.85, 0.38 + t * 0.47);
   }
 
   function loadImage(url) {
@@ -132,7 +133,10 @@
       var lutA = new Float32Array(LUT_SIZE);
       for (var ii = 0; ii < LUT_SIZE; ii++) {
         var tt = ii / (LUT_SIZE - 1);
-        var rgb_i = depthToRGB(tt);
+        // Color ramp starts 25% into the Blues map (matching
+        // render_map.py's linspace(0.25, 1.0)) so shallow water is
+        // clearly BLUE, not near-white (same 2026-07-06 request).
+        var rgb_i = depthToRGB(0.25 + 0.75 * tt);
         lutR[ii] = rgb_i[0];
         lutG[ii] = rgb_i[1];
         lutB[ii] = rgb_i[2];

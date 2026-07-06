@@ -246,11 +246,12 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
     }
   }
 
-  // Rain-burst possibility ZONE: faint amber band from ground (0″)
-  // up to the analog-scaled burst potential, dotted ceiling. A zone,
-  // not a level — bursts have magnitude but no forecastable timing.
+  // Rain-burst possibility ZONE: water-navy band from ground (0″) up
+  // to the analog-scaled burst potential (user: amber read poorly on
+  // the widget; blue = water). A zone, not a level — bursts have
+  // magnitude but no forecastable timing. No ceiling line.
   if (potIn) {
-    ctx.setFillColor(new Color("#d97706", 0.10));
+    ctx.setFillColor(new Color("#0b3d6b", 0.18));
     ctx.fillRect(new Rect(PAD_L, y(potIn), plotW, y(0) - y(potIn)));
   }
 
@@ -274,7 +275,6 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
   dashedH(y(CURB_IN), new Color("#c0392b", 0.85));
   dashedH(y(LAWN_IN), new Color("#7c4dbc", 0.85));
   dashedH(y(PORCH1_IN), new Color("#6d4c2f", 0.85));
-  if (potIn) dashedH(y(potIn), new Color("#d97706", 0.9));  // zone ceiling
 
   // Day boundaries: dotted vertical line at each midnight in window
   const mid = new Date(times[0]);
@@ -339,7 +339,7 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
         const py = y(pNow);
         ctx.setFillColor(new Color("#ffffff"));
         ctx.fillEllipse(new Rect(cx - r - 1.5, py - r - 1.5, 2 * (r + 1.5), 2 * (r + 1.5)));
-        ctx.setFillColor(new Color("#d97706"));
+        ctx.setFillColor(new Color("#0b3d6b"));
         ctx.fillEllipse(new Rect(cx - r, py - r, 2 * r, 2 * r));
       }
     }

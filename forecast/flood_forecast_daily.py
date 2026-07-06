@@ -3957,25 +3957,28 @@ def _render_water_series_section(forecast):
                           "position": "start", "font": {"size": 10},
                           "backgroundColor": "rgba(255,255,255,0.7)",
                           "color": color}}
+    # Low-cluster labels (0/+3.1/+7.7) are staggered along the x-axis
+    # so their white backing boxes can't overlap (user 2026-07-06).
     annotations = {
         # SW grate = 0″ is the bottom-most ground level / the axis
-        # datum — SOLID BLACK (user 2026-07-06), unlike the dashed
-        # landmark lines above it.
+        # datum — SOLID BLACK, unlike the dashed landmark lines.
         "firstWater": {"type": "line", "yMin": 0, "yMax": 0,
                        "borderColor": "#222222", "borderWidth": 1.5,
                        "label": {"display": True,
-                                 "content": "0″ — SW grate (ground level / first water)",
+                                 "content": "0″ — SW grate (ground)",
                                  "position": "start", "font": {"size": 10},
                                  "backgroundColor": "rgba(255,255,255,0.7)",
                                  "color": "#222222"}},
-        "gutter": _ref(gutter_in, "#2f8f5f",
-                       f"+{gutter_in}″ — gutter (move the car)"),
-        "curb": _ref(curb_in, "#c0392b",
-                     f"+{curb_in}″ — curb (flood onset)"),
+        "gutter": {**_ref(gutter_in, "#2f8f5f",
+                          f"+{gutter_in}″ — gutter (move the car)")},
+        "curb": {**_ref(curb_in, "#c0392b",
+                        f"+{curb_in}″ — curb (flood onset)")},
         "lawnStep": _ref(lawn_in, "#7c4dbc", f"+{lawn_in}″ — lawn step"),
         "porchStep1": _ref(porch1_in, "#6d4c2f",
                            f"+{porch1_in}″ — top of 1st porch step"),
     }
+    annotations["gutter"]["label"]["position"] = "35%"
+    annotations["curb"]["label"]["position"] = "70%"
     # Day-boundary line at midnight
     for idx, lab in enumerate(labels):
         if lab == "00:00":
@@ -3989,27 +3992,25 @@ def _render_water_series_section(forecast):
                           "color": "#777777"}}
     if potential:
         pot_in = to_in(potential)
-        # Possibility ZONE, not a level (user design): a burst could
-        # put street water anywhere in this band; dotted amber ceiling.
-        annotations["rainZone"] = {
-            "type": "box", "yMin": 0, "yMax": pot_in,
-            "backgroundColor": "rgba(217, 119, 6, 0.08)",
-            "borderWidth": 0}
-        annotations["rainCeiling"] = {
-            "type": "line", "yMin": pot_in, "yMax": pot_in,
-            "borderColor": "#d97706", "borderWidth": 1, "borderDash": [2, 3],
-            "label": {"display": True,
-                      "content": f"rain-burst potential (+{pot_in}″)",
-                      "position": "end", "font": {"size": 10},
-                      "backgroundColor": "rgba(255,255,255,0.7)",
-                      "color": "#9a4c00"}}
+        # Possibility ZONE as a DATASET (not an annotation): the chart
+        # legend then shows a colored square with the label at top —
+        # no more label collisions on the crowded left edge. Water-navy
+        # fill (user: amber read poorly; blue = water).
+        datasets.append({
+            "label": f"rain-burst potential zone (up to +{pot_in}″)",
+            "data": [pot_in] * len(labels),
+            "fill": {"target": {"value": 0}},
+            "backgroundColor": "rgba(11, 61, 107, 0.14)",
+            "borderColor": "rgba(11, 61, 107, 0)",
+            "pointRadius": 0, "borderWidth": 0,
+        })
     cfg = {
         "type": "line",
         "data": {"labels": labels, "datasets": datasets},
         "options": {
             "responsive": True,
             "plugins": {
-                "legend": {"display": has_rain_layer,
+                "legend": {"display": bool(has_rain_layer or potential),
                            "labels": {"boxWidth": 18, "font": {"size": 10}}},
                 "annotation": {"annotations": annotations},
             },
@@ -4699,13 +4700,19 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
     if show_depth_slider:
         slider_html = f"""
     <div class="depth-slider">
-      <label for="depth-slider-input">Explore at depth:</label>
+      <label for="depth-slider-input">Explore water level:</label>
       <input type="range" id="depth-slider-input"
              min="3.0" max="7.5" step="0.05"
              value="{water_with_rain:.2f}"
              data-current="{water_with_rain:.4f}">
       <span id="depth-slider-value">{water_with_rain:.2f} ft NAVD88</span>
       <button type="button" id="depth-slider-reset">Snap to current forecast</button>
+    </div>
+    <div class="depth-slider unit-toggle">
+      <span class="note">Units:</span>
+      <label><input type="radio" name="depth-unit" value="in" checked> &Prime; vs SW grate</label>
+      <label><input type="radio" name="depth-unit" value="navd88"> ft NAVD88</label>
+      <label><input type="radio" name="depth-unit" value="mllw"> ft MLLW</label>
     </div>
     <div class="depth-slider rain-slider">
       <label for="rain-slider-input">Extra rain:</label>
@@ -4732,6 +4739,29 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         if (!dSlider || !canvas) return;
         var defaultWater = parseFloat(dSlider.getAttribute('data-current'));
         var RAIN_SAT_IN = {RAIN_SATURATION_IN};  // matches v0.6 model
+        // Unit toggle (2026-07-06): display in inches-vs-SW-grate
+        // (default — the project's standard reference), ft NAVD88, or
+        // ft MLLW. The slider itself always runs in NAVD88 (model
+        // space); only the display converts. Choice persists locally.
+        var GRATE_SW = 3.52, MLLW_OFF = 2.82;
+        var unit = 'in';
+        try {{ unit = localStorage.getItem('barnacle-depth-unit') || 'in'; }} catch (e) {{}}
+        var unitRadios = document.querySelectorAll('input[name="depth-unit"]');
+        unitRadios.forEach(function(r) {{
+          r.checked = (r.value === unit);
+          r.addEventListener('change', function() {{
+            unit = r.value;
+            try {{ localStorage.setItem('barnacle-depth-unit', unit); }} catch (e) {{}}
+            rerender();
+          }});
+        }});
+        function fmtWater(v) {{
+          if (unit === 'navd88') return v.toFixed(2) + ' ft NAVD88';
+          if (unit === 'mllw')   return (v + MLLW_OFF).toFixed(2) + ' ft MLLW';
+          var inches = (v - GRATE_SW) * 12;
+          return (inches >= 0 ? '+' : '') + inches.toFixed(1)
+                 + '\u2033 vs SW grate';
+        }}
         // Rain rate (in/hr) -> water-level rise (ft). Same saturating
         // tanh the model uses; divided by 12 for feet.
         function rainAddFt(rate) {{
@@ -4744,7 +4774,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           var w = base + extraFt;
           var atDefault = (Math.abs(base - defaultWater) < 0.005
                            && rate < 0.001);
-          dLabel.textContent = base.toFixed(2) + ' ft NAVD88'
+          dLabel.textContent = fmtWater(base)
             + (Math.abs(base - defaultWater) < 0.005 ? ' (current forecast)' : '');
           rLabel.innerHTML = rate.toFixed(2) + ' in/hr \\u2192 +'
             + (extraFt * 12).toFixed(1) + '\\u2033';
@@ -4753,7 +4783,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             points: window.barnaclePoints,
             waterNavd88: w,
             baseMapUrl: {json.dumps(base_map_url)},
-            title: 'Water level — ' + w.toFixed(2) + ' ft NAVD88'
+            title: 'Water level — ' + fmtWater(w)
               + (rate > 0.001 ? ' (incl. +' + (extraFt * 12).toFixed(1)
                                  + '\\u2033 extra rain)' : '')
               + (atDefault ? '' : '  (exploration)')
