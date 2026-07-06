@@ -159,17 +159,26 @@ Rise rate from the sidewalk measurements (11:22 → 11:34: 4.25″ →
 5.25″) = 0.083 in/min. Interpolating:
 
 - Water at 11:21 ≈ 4.677; at 11:26 ≈ 4.712
-- **Porch-step base = 4.712 − 0.5″ = 4.670 NAVD88** (consistency:
-  at 11:21 that base would hold ~0.08″ — a film — matching "no
-  water") 
-- **Lawn-step top ≈ 4.68** (water level with it at 11:21, sidewalk
-  anchor) — independently agrees with the 11:43 "just under" note
-  (water 4.654, top ≈ 4.67)
-- **Walkway rise lawn step → porch base ≈ 0″ (≤ 0.5″)** —
-  effectively flat; the user's 1–2″ verbal gradient estimate revises
-  to ~zero
-- Peak bound: at measured 4.768 the porch base held 1.2″ ("1 inch or
-  so" ✓); the "2″ at most" bound caps any missed crest at ≈ 4.84.
+
+**Ordering constraint (user, watching in real time)**: the porch-step
+base is *definitely* higher than the lawn-step top — water visibly
+"climbs" the walkway toward the porch after topping the lawn step; it
+does not spill straight across. Any fit must satisfy
+porch_base > lawn_top. Constrained solution:
+
+- **Porch-step base ≈ 4.68 NAVD88** (dry at 11:21 water 4.677 →
+  base ≥ 4.68; holding "a good ½″" at 11:26 water 4.712 → base
+  ≈ 4.67–4.68)
+- **Lawn-step top ≈ 4.66–4.67** (the 11:43 "level with but just
+  under" note at water 4.654 puts the top just above that; the
+  11:21 "approximately level" frame at 4.677 reads as water already
+  a hair past the top, starting its walkway advance)
+- **Walkway rise lawn step → porch base ≈ ¼″ (band 0.1–0.5″)** —
+  small but strictly positive; over the walkway's length this
+  produces exactly the visible slow "climb" the user watched. The
+  original 1–2″ verbal estimate revises down to ~¼″.
+- Peak bound: at 4.77–4.84 the porch base (4.68) held 1.1–1.9″ —
+  inside the user's "1 inch or so, 2″ at most."
   **Peak ∈ [4.77, 4.84], most likely 4.78–4.80.**
 
 ## Drainage asymmetry — tide floods vs. rain floods (NEW)

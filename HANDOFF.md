@@ -1766,14 +1766,17 @@ needs: pin down what the `porch_step` 5.08 landmark actually refers
 to (base vs. top of first step) — the 7/6 "bottom porch step + 1–2″"
 at 4.77 implies the step base is ~4.6–4.7, well below 5.08.
 
-**Refinement (7/6 evening, photo-timeline interpolation)**: photos
-added two anchors — 11:21 porch base DRY with water level with the
-lawn step; 11:26 porch base holding 0.5″. With the measured rise
-rate (0.083 in/min): **porch-step base = 4.670 NAVD88; lawn-step
-top ≈ 4.68; walkway rise between them ≈ 0″ (≤ 0.5″) — effectively
-flat** (user's 1–2″ verbal gradient revises to ~zero). Peak water
-bounded to [4.77, 4.84], most likely 4.78–4.80 (11:34 reading may
-have missed the crest; the "2″ at most up the step" memory caps it).
+**Refinement (7/6 evening, photo-timeline interpolation +
+user's ordering constraint)**: photos added two anchors — 11:21
+porch base DRY with water level with the lawn step; 11:26 porch base
+holding 0.5″. User constraint from watching in real time: porch base
+is STRICTLY higher than lawn-step top (water visibly "climbs" the
+walkway; it doesn't spill straight across). Constrained fit:
+**lawn-step top ≈ 4.66–4.67; porch-step base ≈ 4.68; walkway rise
+≈ ¼″ (0.1–0.5″)** — user's 1–2″ verbal gradient revises to ~¼″.
+Peak water bounded to [4.77, 4.84], most likely 4.78–4.80 (11:34
+reading may have missed the crest; the "2″ at most up the step"
+memory caps it).
 `porch_step` 5.08 was never measured — v0.5.1 estimated it as
 lawn_step + 6″; Oct 30's ≥ 5.19 peak reconstruction suggests it
 corresponds to ~the top of the first step. **User has offered to
