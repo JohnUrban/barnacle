@@ -46,8 +46,28 @@ DEFAULT_IMG = REPO_ROOT / "docs" / "icons" / "map_raw.png"
 LANDMARK_COLOR     = "#1f6feb"   # blue  — canonical model landmarks
 EXTRA_COLOR        = "#d2444a"   # red   — surveyed extra topography
 APPROXIMATED_COLOR = "#e08a1e"   # amber — best-guess / approximated points
+FLOOD_EDGE_COLOR   = "#0d9488"   # teal  — edge-of-water photo locations
 PENDING_COLOR      = "#ff9800"   # not currently used; reserved for future
 FIELDS = ["label", "value", "category", "x", "y"]
+
+# Location hints shown in the picker title for pending points, so a
+# click session doesn't require digging through observation READMEs.
+# Sourced from assets/observations/2026-06-14/README.md + the porch
+# ladder records (2026-07-06).
+HINTS = {
+    "porch_step_base": "bottom of the porch steps, on the walkway",
+    "porch_step1_top": "top of the 8.75\u2033 first porch riser",
+    "porch_deck": "the porch platform itself",
+    "fire_hydrant_central": "Central Ave, house side, between NE corner and the driveway",
+    "driveway_central": "driveway on Central Ave (middle of its width), house side",
+    "NE_central_ave_edge": "6/14 wet/dry line up Central Ave, NE side",
+    "NW_bay_ave_edge": "6/14 wet/dry line on Bay Ave, NW side",
+    "SW_bay_ave_edge": "6/14 wet/dry line on Bay Ave, SW side",
+    "NW_central_edge_cross_central_neighbors_driveway":
+        "6/14 wet/dry line at the neighbors' driveway across Central",
+    "bay_ave_farther_upstream_edge":
+        "6/14 wet/dry line farther upstream (west) on Bay Ave",
+}
 
 
 def category_color(cat):
@@ -56,6 +76,8 @@ def category_color(cat):
         return LANDMARK_COLOR
     if cat == "approximated":
         return APPROXIMATED_COLOR
+    if cat == "flood_edge":
+        return FLOOD_EDGE_COLOR
     return EXTRA_COLOR
 
 
@@ -157,9 +179,11 @@ def main():
         if 0 <= idx < len(rows):
             r = rows[idx]
             label = r["label"]; value = r["value"]; cat = r["category"]
+            hint = HINTS.get(label, "")
             return (f"NEXT: {label}  ({value} {cat})    "
                     f"|  SPACE=place  U=undo  ESC=quit"
-                    + (f"     |  {msg}" if msg else ""))
+                    + (f"     |  {msg}" if msg else "")
+                    + (f"\n{hint}" if hint else ""))
         return (f"Add extras (no more pre-seeded rows)    "
                 f"|  SPACE=place + prompt  U=undo  ESC=quit"
                 + (f"     |  {msg}" if msg else ""))

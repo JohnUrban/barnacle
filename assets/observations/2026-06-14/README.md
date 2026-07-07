@@ -212,17 +212,16 @@ The 6/14 event was supposed to be the high-surge unblocker for v0.8
 
 ## Open todos from this event (2026-06-15 session — backlog)
 
-- [ ] Add 3 new landmarks to `assets/map_points.csv` (after user
-      points at locations on the map):
-      `fire_hydrant_central`, `driveway_central`,
-      `cross_central_driveway`. Elevations to be derived from
-      cross-fit with concurrent grate readings — *not* tape-measured.
-- [ ] Add `flood_edge` category to `pick_coords.py` /
-      `render_map.py` color scheme. Mark all edge-photo locations
-      (`NE-central-ave-edge`, `NW-bay-ave-edge`, `SW-bay-ave-edge`,
-      `NW-central-edge-cross-central-neigbors-driveway`,
-      `bay-ave-farther-upstream`) on the map. Each carries an
-      implied ground elevation from the concurrent water level.
+- [x] **STAGED 2026-07-07** — `fire_hydrant_central` (3.85, cross-fit
+      6/14+6/15, used 7/6) and `driveway_central` (4.11) added to
+      `assets/map_points.csv` with empty x/y; `pick_coords.py`
+      prompts for them (with location hints). `cross_central_driveway`
+      was never given a measurement — the flood-edge point at the
+      neighbors' driveway covers that location instead.
+- [x] **STAGED 2026-07-07** — `flood_edge` category (teal) added to
+      `pick_coords.py` + `render_map.py`; all five edge-photo
+      locations staged in the CSV at ~4.15 NAVD88 (the 6/14 water
+      band), awaiting user clicks.
 - [ ] Establish a permanent reference point on
       `grate_bay_ave_upstream` for future tape measurements (low-point
       convention agreed 6/14).

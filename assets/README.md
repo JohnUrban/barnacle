@@ -28,11 +28,16 @@ extra_corner_1,4.20,extra,234.5,567.8
 - `label`: machine-readable identifier (snake_case)
 - `value`: human-readable label that appears on the map (typically the
   NAVD88 elevation as a string, e.g. `"3.60"`)
-- `category`: one of three —
+- `category`: one of four —
   - `landmark` — a canonical project landmark (rendered **blue**).
     Limited to the model's exclusive landmarks.
   - `extra` — an additional **surveyed** topography point / spot
     height (rendered **red**). A real measured elevation.
+  - `flood_edge` — an **edge-of-water photo location** (rendered
+    **teal**). The ground elevation is implied by the concurrent
+    measured water level at photo time (a wet/dry line is a free
+    elevation survey). First five points: the 2026-06-14 event's
+    edge photos, all ≈4.15 NAVD88 (the 6/14 water band).
   - `approximated` — a **best-guess** point placed to shape the
     heat-map surface (rendered **amber**). NOT a real measurement —
     e.g. points along a street's crowned centerline (middle higher

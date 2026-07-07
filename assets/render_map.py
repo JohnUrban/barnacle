@@ -41,6 +41,9 @@ DEFAULT_OUT = REPO_ROOT / "docs" / "icons" / "map_annotated.png"
 LANDMARK_COLOR     = "#1f6feb"   # blue  — canonical model landmarks
 EXTRA_COLOR        = "#d2444a"   # red   — extra surveyed topography points
 APPROXIMATED_COLOR = "#e08a1e"   # amber — best-guess / approximated points
+FLOOD_EDGE_COLOR   = "#0d9488"   # teal  — edge-of-water photo locations;
+                                 #         elevation implied by the water
+                                 #         level at photo time (6/14 backlog)
 
 
 def _category_color(cat):
@@ -56,6 +59,8 @@ def _category_color(cat):
         return LANDMARK_COLOR
     if cat == "approximated":
         return APPROXIMATED_COLOR
+    if cat == "flood_edge":
+        return FLOOD_EDGE_COLOR
     return EXTRA_COLOR
 
 
@@ -145,6 +150,7 @@ def main():
     n_landmark = 0
     n_extra = 0
     n_approx = 0
+    n_edge = 0
     n_skipped = 0
     for r in rows:
         try:
@@ -157,6 +163,8 @@ def main():
             n_landmark += 1
         elif cat == "approximated":
             n_approx += 1
+        elif cat == "flood_edge":
+            n_edge += 1
         else:
             n_extra += 1
         if not draw_labels:
@@ -177,7 +185,8 @@ def main():
     plt.close(fig)
     print(f"Wrote {args.out}")
     print(f"  {n_landmark} landmarks (blue) + {n_extra} extras (red) + "
-          f"{n_approx} approximated (amber); "
+          f"{n_approx} approximated (amber) + "
+          f"{n_edge} flood-edge (teal); "
           f"{n_skipped} rows skipped (no coords yet)"
           + ("" if draw_labels else " — labels HIDDEN (heat-map mode)"))
     if args.water_level is not None:
