@@ -4984,6 +4984,23 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
     slider_html = ""
     slider_script = ""
     if show_depth_slider:
+        # v0.9-gamma: the extra-rain slider runs the REAL pluvial
+        # pathway client-side (head-dependent drainage + dual input
+        # models + stage-storage fill), replacing the legacy
+        # 8·tanh(rate) uniform bump. Embed the curve + constants;
+        # null -> the JS keeps the legacy bump as fallback.
+        _c = _load_stage_curve()
+        rain_pathway_js = "null"
+        if _c and PLUVIAL_VOLUME_K and PLUVIAL_POW_K:
+            rain_pathway_js = json.dumps({
+                "curve": [[c[0], round(c[1], 1)] for c in _c],
+                "kpow": round(PLUVIAL_POW_K, 1),
+                "gamma": round(PLUVIAL_POW_GAMMA, 4),
+                "vk": round(PLUVIAL_VOLUME_K, 1),
+                "drain": PLUVIAL_DRAIN_RATE,
+                "knee": PLUVIAL_DRAIN_FULL_BELOW,
+                "base": PLUVIAL_STREET_BASE,
+                "scale": PLUVIAL_FREE_RATE_SCALE})
         slider_html = f"""
     <div class="depth-slider">
       <label for="depth-slider-input">Explore water level:</label>
@@ -5003,15 +5020,27 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
     <div class="depth-slider rain-slider">
       <label for="rain-slider-input">Extra rain:</label>
       <input type="range" id="rain-slider-input"
-             min="0" max="2.0" step="0.05" value="0">
+             min="0" max="4.0" step="0.05" value="0">
       <span id="rain-slider-value">0.00 in/hr &rarr; +0.0&Prime;</span>
       <button type="button" id="rain-slider-reset">Reset extra rain</button>
     </div>
-    <p class="note">The depth slider sets a base water level; the extra-rain
-       slider adds on top of it via the model's rain term
-       (8&middot;tanh(rate) inches, applied uniformly per HANDOFF 9b.5).
-       "Extra" because rain may already be in the current forecast's
-       water level — this explores additional rain beyond that.</p>
+    <div class="depth-slider rain-model-toggle">
+      <span class="note">Rain model:</span>
+      <label><input type="radio" name="rain-model" value="power" checked>
+        power-law (primary)</label>
+      <label><input type="radio" name="rain-model" value="tanh">
+        saturating tanh</label>
+    </div>
+    <p class="note">The depth slider sets the base (tide-set) water
+       level; the extra-rain slider runs the v0.9-gamma pluvial
+       pathway on top of it — drains absorb up to 0.25 in/hr
+       (less as the base level backwaters the outfall toward the
+       grate tops at 3.52), the surviving rate becomes a volume via
+       the selected input model, and that volume fills the measured
+       stage-storage curve of the intersection. The two models agree
+       below ~2 in/hr and diverge for violent bursts. "Extra" because
+       rain may already be in the current forecast's water level —
+       this explores additional rain beyond that.</p>
 """
         slider_script = f"""
       (function() {{
@@ -5024,7 +5053,51 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         var canvas  = document.getElementById('heatmap-canvas');
         if (!dSlider || !canvas) return;
         var defaultWater = parseFloat(dSlider.getAttribute('data-current'));
-        var RAIN_SAT_IN = {RAIN_SATURATION_IN};  // matches v0.6 model
+        var RAIN_SAT_IN = {RAIN_SATURATION_IN};  // legacy fallback only
+        // v0.9-gamma pluvial pathway (null -> legacy 8·tanh bump)
+        var RP = {rain_pathway_js};
+        var rainModel = 'power';
+        try {{
+          rainModel = localStorage.getItem('barnacle-rain-model') || 'power';
+        }} catch (e) {{}}
+        var modelRadios = document.querySelectorAll('input[name="rain-model"]');
+        modelRadios.forEach(function(r) {{
+          r.checked = (r.value === rainModel);
+          r.addEventListener('change', function() {{
+            rainModel = r.value;
+            try {{ localStorage.setItem('barnacle-rain-model', rainModel); }} catch (e) {{}}
+            rerender();
+          }});
+        }});
+        // Mirrors estimate_pluvial_water(): head-dependent drainage,
+        // selected input model, stage-storage fill from the base.
+        function rainWater(baseW, rate) {{
+          if (!RP) return baseW + (RAIN_SAT_IN * Math.tanh(rate)) / 12.0;
+          var b = Math.max(baseW, RP.base);
+          var fracOpen = Math.min(1, Math.max(0,
+            (RP.base - baseW) / (RP.base - RP.knee)));
+          var net = rate - RP.drain * fracOpen;
+          if (net <= 0) return b;
+          var budget = rainModel === 'tanh'
+            ? RP.vk * Math.tanh(net / RP.scale)
+            : RP.kpow * Math.pow(net, RP.gamma);
+          var baseStage = Math.max(0, (b - RP.base) * 12);
+          var stage = baseStage;
+          var C = RP.curve;
+          for (var i = 1; i < C.length; i++) {{
+            var s = C[i][0], a = C[i][1];
+            if (s <= baseStage) continue;
+            var step = a * (s - C[i-1][0]);
+            if (budget < step) {{
+              stage = a > 0 ? C[i-1][0] + budget / a : s;
+              budget = 0; break;
+            }}
+            budget -= step; stage = s;
+          }}
+          if (budget > 0 && C[C.length-1][1] > 0)
+            stage += budget / C[C.length-1][1];
+          return RP.base + stage / 12.0;
+        }}
         // Unit toggle (2026-07-06): display in inches-vs-SW-grate
         // (default — the project's standard reference), ft NAVD88, or
         // ft MLLW. The slider itself always runs in NAVD88 (model
@@ -5048,11 +5121,6 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           return (inches >= 0 ? '+' : '') + inches.toFixed(1)
                  + '\u2033 vs SW grate';
         }}
-        // Rain rate (in/hr) -> water-level rise (ft). Same saturating
-        // tanh the model uses; divided by 12 for feet.
-        function rainAddFt(rate) {{
-          return (RAIN_SAT_IN * Math.tanh(rate)) / 12.0;
-        }}
         // Initialize the readout in the active unit (fix 2026-07-07:
         // the server-rendered label said "ft NAVD88" while the unit
         // toggle defaults to inches-vs-SW-grate; the label was only
@@ -5062,14 +5130,17 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         function rerender() {{
           var base = parseFloat(dSlider.value);
           var rate = parseFloat(rSlider.value);
-          var extraFt = rainAddFt(rate);
-          var w = base + extraFt;
+          var w = rate > 0.001 ? Math.max(base, rainWater(base, rate))
+                               : base;
+          var extraFt = w - base;
           var atDefault = (Math.abs(base - defaultWater) < 0.005
                            && rate < 0.001);
           dLabel.textContent = fmtWater(base)
             + (Math.abs(base - defaultWater) < 0.005 ? ' (current forecast)' : '');
           rLabel.innerHTML = rate.toFixed(2) + ' in/hr \\u2192 +'
-            + (extraFt * 12).toFixed(1) + '\\u2033';
+            + (extraFt * 12).toFixed(1) + '\\u2033'
+            + (RP ? (rainModel === 'tanh' ? ' (tanh)' : ' (power-law)')
+                  : ' (legacy)');
           BarnacleMap.render({{
             canvas: canvas,
             points: window.barnaclePoints,
@@ -5144,6 +5215,138 @@ def _render_equation_widget_html(forecast, wrapper="section"):
     """
     sh_peak = forecast.get("peak_forecast_observed_mllw", 0.0) or 0.0
     rain_rate = forecast.get("peak_rain_rate_in_hr", 0.0) or 0.0
+
+    # Rain-pathway interactive calculator (v0.9-gamma): embed the
+    # stage-storage curve + fitted constants so the client mirrors
+    # estimate_pluvial_water() exactly, step by step.
+    _curve = _load_stage_curve()
+    pluv_calc_html = ""
+    if _curve and PLUVIAL_VOLUME_K and PLUVIAL_POW_K:
+        _v76 = _curve_fill_volume(_curve, 0.0, 15.4)
+        _pr = forecast.get("pluvial_risk") or {}
+        _rate_default = _pr.get("burst_est_in_hr") or 1.7
+        _bay_default = 2.5
+        _curve_js = json.dumps([[c[0], round(c[1], 1)] for c in _curve])
+        pluv_calc_html = f"""
+    <div class="eqn-line">
+      <span class="eqn-lhs">Rain burst</span>
+      <input type="number" id="pv-rate" step="0.05" min="0" max="6"
+             value="{_rate_default:.2f}" data-default="{_rate_default:.4f}">
+      <span class="eqn-termname">in/hr &mdash; effective sustained rate</span>
+    </div>
+    <div class="eqn-line">
+      <span class="eqn-lhs">Bay level</span>
+      <input type="number" id="pv-bay" step="0.05" min="2.0" max="5.5"
+             value="{_bay_default:.2f}" data-default="{_bay_default:.4f}">
+      <span class="eqn-termname">ft NAVD88 &mdash; sets the base AND the
+        drain capacity (grate tops = 3.52)</span>
+    </div>
+    <div class="eqn-result">
+      &rarr; Drains absorb <b id="pv-drain">&mdash;</b> in/hr
+      <span id="pv-drainnote" class="eqn-termname"></span><br>
+      &rarr; Net rain filling the bowl = <b id="pv-net">&mdash;</b> in/hr<br>
+      &rarr; Water volume &asymp; <b id="pv-volpow">&mdash;</b>&times;
+      the 7/6 flood <span class="eqn-termname">(power-law; tanh model:
+      <span id="pv-voltanh">&mdash;</span>&times;)</span><br>
+      &rarr; Street water: <b id="pv-outpow">&mdash;</b>
+      <span class="eqn-termname">power-law</span> /
+      <b id="pv-outtanh">&mdash;</b>
+      <span class="eqn-termname">tanh</span>
+      <span id="pv-spreadnote" class="eqn-termname"></span>
+    </div>
+    <button type="button" id="pv-reset">Snap back to forecast burst</button>
+
+    <script>
+      (function() {{
+        var CURVE = {_curve_js};
+        var K_POW = {PLUVIAL_POW_K:.1f}, GAMMA = {PLUVIAL_POW_GAMMA:.4f};
+        var V_K = {PLUVIAL_VOLUME_K:.1f}, V76 = {_v76:.1f};
+        var DRAIN = {PLUVIAL_DRAIN_RATE}, KNEE = {PLUVIAL_DRAIN_FULL_BELOW};
+        var BASE = {PLUVIAL_STREET_BASE}, SCALE = {PLUVIAL_FREE_RATE_SCALE};
+        var GRATE = 3.52;
+        var rIn = document.getElementById('pv-rate');
+        var bIn = document.getElementById('pv-bay');
+        if (!rIn || !bIn) return;
+        function fillCurve(baseStage, budget) {{
+          var stage = baseStage;
+          for (var i = 1; i < CURVE.length; i++) {{
+            var s = CURVE[i][0], a = CURVE[i][1];
+            if (s <= baseStage) continue;
+            var step = a * (s - CURVE[i-1][0]);
+            if (budget < step) {{
+              stage = a > 0 ? CURVE[i-1][0] + budget / a : s;
+              budget = 0; break;
+            }}
+            budget -= step; stage = s;
+          }}
+          if (budget > 0 && CURVE[CURVE.length-1][1] > 0)
+            stage += budget / CURVE[CURVE.length-1][1];
+          return stage;
+        }}
+        function fmt(w) {{
+          var inches = (w - GRATE) * 12;
+          return w.toFixed(2) + ' ft NAVD88 ('
+            + (inches >= 0 ? '+' : '') + inches.toFixed(1)
+            + '\\u2033 vs SW grate)';
+        }}
+        function recompute() {{
+          var rate = parseFloat(rIn.value) || 0;
+          var bay = parseFloat(bIn.value) || 0;
+          var base = Math.max(bay, BASE);
+          var fracOpen = Math.min(1, Math.max(0,
+            (BASE - bay) / (BASE - KNEE)));
+          var drain = DRAIN * fracOpen;
+          var net = rate - drain;
+          document.getElementById('pv-drain').textContent =
+            drain.toFixed(2);
+          document.getElementById('pv-drainnote').textContent =
+            fracOpen >= 1 ? '(outfall clear \\u2014 full capacity)'
+            : fracOpen <= 0 ? '(bay at the grate tops \\u2014 outfall blocked)'
+            : '(bay is backwatering the outfall \\u2014 '
+              + Math.round(fracOpen * 100) + '% capacity)';
+          var netEl = document.getElementById('pv-net');
+          if (net <= 0) {{
+            netEl.textContent = '0 (drains keep up)';
+            document.getElementById('pv-volpow').textContent = '0';
+            document.getElementById('pv-voltanh').textContent = '0';
+            document.getElementById('pv-outpow').textContent = fmt(base);
+            document.getElementById('pv-outtanh').textContent = fmt(base);
+            document.getElementById('pv-spreadnote').textContent =
+              '\\u2014 no rain lift; water = the tide-set base.';
+            return;
+          }}
+          netEl.textContent = net.toFixed(2);
+          var vPow = K_POW * Math.pow(net, GAMMA);
+          var vTanh = V_K * Math.tanh(net / SCALE);
+          document.getElementById('pv-volpow').textContent =
+            (vPow / V76).toFixed(2);
+          document.getElementById('pv-voltanh').textContent =
+            (vTanh / V76).toFixed(2);
+          var baseStage = Math.max(0, (base - BASE) * 12);
+          var wPow = BASE + fillCurve(baseStage, vPow) / 12;
+          var wTanh = BASE + fillCurve(baseStage, vTanh) / 12;
+          document.getElementById('pv-outpow').textContent = fmt(wPow);
+          document.getElementById('pv-outtanh').textContent = fmt(wTanh);
+          var spread = Math.abs(wPow - wTanh) * 12;
+          document.getElementById('pv-spreadnote').textContent =
+            spread < 0.5
+              ? '\\u2014 the two models agree here (calibrated range).'
+              : '\\u2014 models differ by ' + spread.toFixed(1)
+                + '\\u2033: extrapolation territory; the spread is the '
+                + 'honest uncertainty.';
+        }}
+        rIn.addEventListener('input', recompute);
+        bIn.addEventListener('input', recompute);
+        document.getElementById('pv-reset')
+          .addEventListener('click', function() {{
+            rIn.value = rIn.getAttribute('data-default');
+            bIn.value = bIn.getAttribute('data-default');
+            recompute();
+          }});
+        recompute();
+      }})();
+    </script>
+"""
 
     # v0.7 single-water-level math: rain adds to a shared water level,
     # not per-landmark with shedding constants. Each landmark's `shed`
@@ -5276,7 +5479,7 @@ def _render_equation_widget_html(forecast, wrapper="section"):
        pluvial), Oct 30 2025 (compound), Dec 19 2025 (moderate,
        drains tide-blocked) — all with MRMS-radar-measured rain
        forcing.</p>
-
+{pluv_calc_html}
     <script>
       (function() {{
         var L = {landmarks_js};
