@@ -6028,7 +6028,12 @@ def render_html_page(forecast):
        flood, but it can raise its floor: heavy rain landing on a high
        tide has nowhere to go at all. The biggest flood in this
        project's records — October 30, 2025, water past the bottom
-       porch step — was exactly this combination.</p>
+       porch step — was exactly this combination. The two add
+       <i>sub-linearly</i>, though: the deeper the water, the larger
+       the area it covers, so each additional inch takes more water
+       than the last. The same rain that raises a low-tide street
+       pool by a foot might add only a few inches on top of a high
+       tide — but those inches start from a much higher floor.</p>
   </section>
 
   <section class="reference">

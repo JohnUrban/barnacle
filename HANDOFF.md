@@ -1691,6 +1691,37 @@ for all model/UI work: never let a low tide read as "no risk" when
 burst-capable rain is forecast. Stated in plain English on the site
 ("How flooding works here").
 
+**REFINEMENT (user, 2026-07-07): "independent" is two claims, one
+right and one needing care.** OCCURRENCE is independent — rain can
+flood at any tide (stands as stated). DEPTH is NOT — it is
+base level + rain volume pushed through the **stage-storage curve**:
+as depth rises, the inundated area grows, so each additional inch
+needs more volume. "Tidal depth + X inches of rain" is therefore
+wrong arithmetic; rain landing on an existing tide flood adds fewer
+inches than the same rain at low tide. This is exactly why the 7/6
+rain lift (1.25 ft, narrow street bowl) exceeded Oct 30's (~0.5 ft,
+riding a high tide across the whole flooded plain).
+
+**Stage-storage curve COMPUTED (2026-07-07)** from the 96-point
+heat-map elevation surface (`history/data/stage_storage_curve.csv`,
+0.1″ steps): wet area at curb stage (+8″ vs SW grate) is ~13× the
+area just over the grates (+2″); at lawn-step stage (+14″) it's
+~35×. I.e., an inch of rise at lawn-step level takes ~35× the water
+volume of an inch at grate level. Caveats: relative units (map
+pixels, not ft²); surveyed region only, so a LOWER bound above
+~+16″ where real flooding extends past the mapped area (7/6 went 3
+driveways up Central); ignores storage inside the drain network.
+
+**Empirical validation route (user proposal, 2026-07-07)**: the
+event time series (7/6 has 20 points; 5/31, 6/14, 6/15 have
+multi-grate sweeps) encode depth-rise deceleration. Normalize/align
+the series (user suggests dynamic time warping) and fit the
+dh/dt-vs-stage curve; compare against the geometric curve above.
+Honest caveat: observed dh/dt confounds input-rate variation with
+geometry — with ~5 series, DTW risks overfitting; grows feasible as
+events accumulate. The geometric curve is the prior; the time
+series test it.
+
 **v0.9-alpha SHIPPED same-day (2026-07-06 evening)**:
 `estimate_pluvial_water(rate, bay)` — two-regime closed form:
 
