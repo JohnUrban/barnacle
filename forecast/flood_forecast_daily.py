@@ -4934,12 +4934,16 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
     script_render = (
         "BarnacleMap.render({{ canvas: document.getElementById('heatmap-canvas'), "
         f"points: window.barnaclePoints, waterNavd88: {water_with_rain:.4f}, "
-        f"baseMapUrl: '{base_map_url}', title: {json.dumps(title_with)} }});"
+        f"baseMapUrl: '{base_map_url}', title: {json.dumps(title_with)}, "
+        "style: window.barnacleMapStyle }});"
     ).replace("{{", "{").replace("}}", "}")
     intro_note = (
-        '<p class="note">Blue overlay shows predicted tidal water depth across '
-        'nearby topography. Darker blue = deeper. No meaningful rain forecast — '
-        'overlay is tide-only.</p>'
+        '<p class="note">Overlay shows predicted tidal water depth across '
+        'nearby topography. Classic shading: darker blue = deeper '
+        '(saturates at 2 ft); depth bands: labeled physical ranges '
+        '(splash / ankle / knee / waist / first floor / over head) '
+        'that stay informative up to Sandy class. No meaningful rain '
+        'forecast — overlay is tide-only.</p>'
     )
 
     if water_no_rain is not None:
@@ -4962,13 +4966,15 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             f"points: window.barnaclePoints, "
             f"waterNavd88: {water_no_rain:.4f}, "
             f"baseMapUrl: {json.dumps(base_map_url)}, "
-            f"title: {json.dumps(title_no_rain)} }});"
+            f"title: {json.dumps(title_no_rain)}, "
+            "style: window.barnacleMapStyle }});"
         )
         script_render += no_rain_render
         intro_note = (
-            '<p class="note">Blue overlay shows predicted water depth across '
-            'nearby topography. Darker blue = deeper. Toggle between '
-            'including the forecast rain bonus or tide-only (HANDOFF 9b.5).</p>'
+            '<p class="note">Overlay shows predicted water depth across '
+            'nearby topography (classic blue or labeled depth bands — '
+            'see the shading toggle). Toggle between including the '
+            'forecast rain bonus or tide-only (HANDOFF 9b.5).</p>'
         )
 
     toggle_script = ""
@@ -5162,6 +5168,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             canvas: canvas,
             points: window.barnaclePoints,
             waterNavd88: w,
+            style: window.barnacleMapStyle,
             baseMapUrl: {json.dumps(base_map_url)},
             title: 'Water level — ' + fmtWater(w)
               + (rate > 0.001 ? ' (incl. +' + (extraFt * 12).toFixed(1)
@@ -5171,6 +5178,8 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         }}
         dSlider.addEventListener('input', rerender);
         rSlider.addEventListener('input', rerender);
+        // Shading toggle re-runs the current exploration state
+        window.barnacleRerender = rerender;
         dBtn.addEventListener('click', function() {{
           dSlider.value = String(defaultWater);
           rerender();
@@ -5182,10 +5191,34 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
       }})();
 """
 
+    shading_html = """
+    <div class="heatmap-toggle shading-toggle">
+      <span class="note">Shading:</span>
+      <label><input type="radio" name="heatmap-shading" value="classic"
+        checked> classic blue (saturates at 2&nbsp;ft)</label>
+      <label><input type="radio" name="heatmap-shading" value="bands">
+        depth bands (labeled, Sandy-ready)</label>
+    </div>"""
+    shading_script = """
+      (function() {
+        var style = 'classic';
+        try { style = localStorage.getItem('barnacle-map-shading') || 'classic'; } catch (e) {}
+        window.barnacleMapStyle = style;
+        var radios = document.querySelectorAll('input[name="heatmap-shading"]');
+        radios.forEach(function(r) {
+          r.checked = (r.value === style);
+          r.addEventListener('change', function() {
+            window.barnacleMapStyle = r.value;
+            try { localStorage.setItem('barnacle-map-shading', r.value); } catch (e) {}
+            if (window.barnacleRerender) window.barnacleRerender();
+            if (window.barnacleRenderAll) window.barnacleRenderAll();
+          });
+        });
+      })();"""
     return f"""
   <section class="{container_class}">
     <{hh}>Predicted water depth (worst tide)</{hh}>
-    {intro_note}{toggle_html}
+    {intro_note}{toggle_html}{shading_html}
     <canvas id="heatmap-canvas" style="{canvas_styles}"></canvas>{second_canvas_html}
     {slider_html}
     <script>
@@ -5194,7 +5227,12 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
     <script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6"></script>
     <script src="{_relpath_to_map_render_js(base_map_url)}"></script>
     <script>
-      {script_render}{toggle_script}{slider_script}
+      {shading_script}
+      window.barnacleRenderAll = function() {{
+      {script_render}
+      }};
+      window.barnacleRenderAll();
+      {toggle_script}{slider_script}
     </script>
   </section>
 """
@@ -6003,6 +6041,7 @@ def render_per_tide_page(tide, forecast,
               canvas: canvas,
               points: window.barnaclePoints,
               waterNavd88: parseFloat(r.water_navd88_predicted),
+              style: window.barnacleMapStyle || 'classic',
               baseMapUrl: '../../icons/map_raw.png',
               title: 'As predicted at ' + fmtTime(r.prediction_made_at),
             }});

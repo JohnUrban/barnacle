@@ -25,6 +25,9 @@
 //     waterNavd88: <ft>,
 //     baseMapUrl: '../icons/map_raw.png',
 //     title: 'optional title',  // drawn on the canvas
+//     style: 'classic' | 'bands',  // classic = blue gradient
+//              (saturates at 2 ft); bands = labeled depth bands with
+//              an on-canvas legend (informative at Sandy-class levels)
 //   })
 //   .then(() => { /* render complete */ });
 
@@ -43,6 +46,26 @@
   // ~1966 px width) was the sweet spot — 12+ started looking mushy.
   // Set to 0 to disable.
   var OVERLAY_BLUR_PX = 7;
+
+  // Depth BANDS for style:'bands' — each band maps a physically
+  // meaningful depth range to one flat color (2026-07-08, user:
+  // classic blue saturates at 2 ft, so extreme levels only differ by
+  // extent; bands stay informative up to Sandy class). Thresholds in
+  // ft; label carries the human meaning.
+  var BANDS = [
+    { max: 0.33, rgb: [158, 202, 225], label: '<4\u2033 splash' },
+    { max: 1.0,  rgb: [66, 146, 198],  label: '4\u2033\u20131\u2032 ankle\u2013shin' },
+    { max: 2.0,  rgb: [8, 81, 156],    label: '1\u20132\u2032 knee' },
+    { max: 3.0,  rgb: [106, 81, 163],  label: '2\u20133\u2032 waist / cars float' },
+    { max: 5.0,  rgb: [203, 24, 29],   label: '3\u20135\u2032 chest / 1st floor' },
+    { max: 1e9,  rgb: [103, 0, 13],    label: '>5\u2032 over head' }
+  ];
+  function depthToBand(depthFt) {
+    for (var i = 0; i < BANDS.length; i++) {
+      if (depthFt <= BANDS[i].max) return i;
+    }
+    return BANDS.length - 1;
+  }
 
   // matplotlib Blues colormap, sampled. Each row [r, g, b]; alpha is
   // applied separately based on normalized depth.
@@ -90,6 +113,7 @@
     var points = opts.points || [];
     var waterNavd88 = opts.waterNavd88;
     var title = opts.title || '';
+    var style = opts.style === 'bands' ? 'bands' : 'classic';
 
     if (points.length < 3) {
       return Promise.reject(new Error('Need at least 3 points for triangulation'));
@@ -165,7 +189,11 @@
       var px1 = maxX0 + bboxW * pad;
       var py0 = minY0 - bboxH * pad;
       var py1 = maxY0 + bboxH * pad;
-      var phantomElev = 6.0;  // well above any realistic water level
+      // Phantom elevation must exceed the slider's Sandy-class max
+      // (11.6 NAVD88) or the boundary points go "underwater" and the
+      // overlay floods the canvas rim (bug found 2026-07-08 when the
+      // depth slider was extended from 7.5 to 11.6).
+      var phantomElev = 20.0;
       var allPoints = points.slice();
       [
         [px0, py0], [(px0 + px1) / 2, py0], [px1, py0],
@@ -215,16 +243,27 @@
             var depthFt = waterNavd88 - elev;
             if (depthFt <= 0) continue;
 
-            var t = depthFt / MAX_DEPTH_FT;
-            if (t > 1) t = 1;
-            var li = (t * (LUT_SIZE - 1)) | 0;  // bitwise OR for fast trunc
             var idx = (y * w + x) * 4;
-            // Write the RAW overlay color + alpha into the separate
-            // buffer (no compositing here — that happens after blur).
-            data[idx]     = lutR[li];
-            data[idx + 1] = lutG[li];
-            data[idx + 2] = lutB[li];
-            data[idx + 3] = (lutA[li] * 255) | 0;
+            if (style === 'bands') {
+              var bi = depthToBand(depthFt);
+              var band = BANDS[bi];
+              data[idx]     = band.rgb[0];
+              data[idx + 1] = band.rgb[1];
+              data[idx + 2] = band.rgb[2];
+              // slightly more opaque as bands deepen; base map stays
+              // readable underneath
+              data[idx + 3] = ((0.52 + 0.04 * bi) * 255) | 0;
+            } else {
+              var t = depthFt / MAX_DEPTH_FT;
+              if (t > 1) t = 1;
+              var li = (t * (LUT_SIZE - 1)) | 0;  // fast trunc
+              // Write the RAW overlay color + alpha into the separate
+              // buffer (no compositing — that happens after blur).
+              data[idx]     = lutR[li];
+              data[idx + 1] = lutG[li];
+              data[idx + 2] = lutB[li];
+              data[idx + 3] = (lutA[li] * 255) | 0;
+            }
           }
         }
       }
@@ -234,13 +273,16 @@
       // back with a Gaussian blur filter so the triangle-edge creases
       // and angular flood boundary soften into something water-like.
       // The base map (already drawn above) is untouched by the blur.
-      if (OVERLAY_BLUR_PX > 0) {
+      // Bands mode uses a lighter blur: the hard band edges ARE the
+      // information (they are depth contours); just soften mesh creases.
+      var blurPx = style === 'bands' ? 3 : OVERLAY_BLUR_PX;
+      if (blurPx > 0) {
         var off = document.createElement('canvas');
         off.width = w;
         off.height = h;
         off.getContext('2d').putImageData(imageData, 0, 0);
         ctx.save();
-        ctx.filter = 'blur(' + OVERLAY_BLUR_PX + 'px)';
+        ctx.filter = 'blur(' + blurPx + 'px)';
         ctx.drawImage(off, 0, 0);
         ctx.restore();
       } else {
@@ -252,8 +294,42 @@
         off0.getContext('2d').putImageData(imageData, 0, 0);
         ctx.drawImage(off0, 0, 0);
       }
+      if (style === 'bands') drawBandLegend(ctx, w, h, waterNavd88);
       if (title) drawTitle(ctx, title, w);
     });
+  }
+
+  function drawBandLegend(ctx, w, h, waterNavd88) {
+    // Only list bands that can actually occur at this water level
+    // (depth anywhere <= water - lowest ground on the map, but keep it
+    // simple: show all bands up to the first whose LOWER edge exceeds
+    // the max possible depth over the SW grate at 3.52).
+    var maxDepth = waterNavd88 - 3.52;
+    var rows = [];
+    for (var i = 0; i < BANDS.length; i++) {
+      var lower = i === 0 ? 0 : BANDS[i - 1].max;
+      if (lower >= maxDepth && i > 0) break;
+      rows.push(BANDS[i]);
+    }
+    var pad = 10, chip = 22, lineH = 30, fs = 16;
+    var boxW = 340, boxH = pad * 2 + rows.length * lineH;
+    var x0 = 12, y0 = h - boxH - 12;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,0.88)';
+    ctx.fillRect(x0, y0, boxW, boxH);
+    ctx.strokeStyle = '#999';
+    ctx.strokeRect(x0, y0, boxW, boxH);
+    ctx.font = 'bold ' + fs + 'px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    for (var i = 0; i < rows.length; i++) {
+      var cy = y0 + pad + i * lineH + lineH / 2;
+      ctx.fillStyle = 'rgba(' + rows[i].rgb.join(',') + ',0.85)';
+      ctx.fillRect(x0 + pad, cy - chip / 2, chip, chip);
+      ctx.fillStyle = '#222';
+      ctx.fillText(rows[i].label, x0 + pad + chip + 10, cy);
+    }
+    ctx.restore();
   }
 
   function drawTitle(ctx, text, width) {
