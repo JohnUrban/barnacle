@@ -275,3 +275,39 @@ observations above.
 - `model/v0.8.md` — current model; does not cover this event class
 - HANDOFF 9d.3 — antecedent moisture / accumulation questions, now
   joined by the pluvial pathway
+
+## Measured rainfall (MRMS radar, added 2026-07-07)
+
+Pulled from the Iowa State mtarchive with
+`history/scripts/mrms_point_rain.py` (PrecipRate 2-min instantaneous
++ MultiSensor_QPE_01H_Pass2 gauge-corrected hourly, at the house
+point and a ~1.5 km hillside box).
+
+| ET | point (in/hr) | hill-box max |
+|---|---:|---:|
+| 10:40 | 0.34 | 0.94 |
+| 10:44 | 0.99 | 1.71 |
+| 10:52 | 1.32 | 1.91 |
+| 11:04 | 1.61 | 1.86 |
+| 11:08 | 1.43 | 2.48 |
+| **11:12** | **2.95** | 2.95 |
+| 11:16 | 2.37 | **3.06** |
+| 11:20 | 2.07 | 2.43 |
+| 11:28 | 0.78 | 1.55 |
+| 11:36 | 0.23 | 0.41 |
+
+Hourly QPE at the point: 0.08″ (hr ending 10:00), 0.51″ (11:00),
+**0.94″ (12:00)**, 0.06″ (13:00) → storm total **1.60″**.
+
+Findings:
+- **Peak rate 2.95 in/hr at 11:12 ET** — top of the regional 1.5–3
+  band; the flood-producing core DID sit on the hillside, not just
+  south of us. ~2 in/hr sustained 11:04–11:20.
+- **~20-min catchment lag**: measured water peak 11:34 vs rain peak
+  11:12 — the hillside concentration time, directly observed.
+- **Catchment amplification ≥ ~13×** (lower bound): filling the
+  street bowl to +15.4″ takes ≈5.9″ of rain-equivalent over the
+  peak wetted footprint (stage-storage curve), but only ≈0.45″ fell
+  during the 39-min rise. The bluffs supplied the rest.
+- Water appeared (~10:55) after ~0.5″ had accumulated with rates
+  crossing ~1 in/hr — a first empirical onset threshold.

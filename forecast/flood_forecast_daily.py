@@ -3776,7 +3776,26 @@ PLUVIAL_SERIES_RATE_MIN = 0.25
 # tiny net volumes reality is disconnected puddles (pocket + grate
 # depressions fill first), so small-rate outputs overstate "street
 # water." Bounded by the drainage floor; scenarios stay ±3″-class.
-PLUVIAL_DRAIN_RATE = 0.25        # in/hr the drains absorb before pooling
+# Drain absorption rate: a JUDGMENT NUMBER, not measured (user
+# 2026-07-07: "somewhat guided by evidence and somewhat arbitrarily
+# — let's not put too much weight on it, nor on the assumption that
+# we can simply subtract it"; V_K calibration partially absorbs the
+# error). Bracketing evidence is weak: 0.09-smeared QPF didn't pool,
+# 0.44 in/hr with blocked drains flooded.
+PLUVIAL_DRAIN_RATE = 0.25        # in/hr, full drain capacity (judgment)
+# HEAD-DEPENDENT DRAINAGE (2026-07-07): drain capacity is not
+# constant — it collapses as the bay submerges the outfall. Constant
+# subtraction double-counted drainage on Oct 30 (drains were blocked,
+# yet we subtracted 0.25 from its rate). Provisional form: full
+# capacity with the bay below 3.0 NAVD88, ramping linearly to ZERO
+# at 3.52 (grate tops = outfall backwatered). The 3.0 knee is itself
+# a placeholder — the drainage map / more events will refine it.
+PLUVIAL_DRAIN_FULL_BELOW = 3.0   # bay level below which drains are full-capacity
+# NOTE: the 1.2 in/hr tanh scale is a PLACEHOLDER (set by assumption
+# at v0.9-alpha, never independently identified — needs testing as
+# rain events accumulate). Michaelis-Menten is a candidate
+# replacement form (capacity-limited throughput; user interest
+# 2026-07-07).
 PLUVIAL_VOLUME_K = None          # lazily calibrated from the curve
 _STAGE_CURVE = None              # [(stage_in, area_cells), ...]
 
@@ -3804,6 +3823,8 @@ def _load_stage_curve():
             s, a = curve[i]
             if 0 < s <= 15.4:
                 v_anchor += a * (s - curve[i-1][0])
+        # 7/6 anchor had bay ~2.6 < 3.0 -> drains at full capacity,
+        # so the anchor's net rate is (1.7 - 0.25) unchanged.
         PLUVIAL_VOLUME_K = v_anchor / math.tanh(
             (1.7 - PLUVIAL_DRAIN_RATE) / PLUVIAL_FREE_RATE_SCALE)
     return curve
@@ -3815,11 +3836,13 @@ def estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88):
     Falls back to the v0.9-alpha two-regime closed form when the
     curve file is unavailable."""
     base = max(bay_water_navd88, PLUVIAL_STREET_BASE)
-    # Drainage floor: the drains eat the first ~0.25 in/hr (user
-    # ground truth — light steady rain is wet pavement anywhere, not
-    # street water; matches the water_series gate). Net input rate
-    # is what fills the bowl.
-    net_rate = rain_rate_in_hr - PLUVIAL_DRAIN_RATE
+    # Head-dependent drainage: capacity declines as the bay submerges
+    # the outfall (full below 3.0 NAVD88 -> zero at grate tops 3.52).
+    span = PLUVIAL_STREET_BASE - PLUVIAL_DRAIN_FULL_BELOW
+    frac_open = min(1.0, max(0.0,
+        (PLUVIAL_STREET_BASE - bay_water_navd88) / span))
+    drain = PLUVIAL_DRAIN_RATE * frac_open
+    net_rate = rain_rate_in_hr - drain
     if net_rate <= 0:
         return base
     curve = _load_stage_curve()

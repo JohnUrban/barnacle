@@ -1715,12 +1715,21 @@ driveways up Central); ignores storage inside the drain network.
 **IMPLEMENTED 2026-07-07 (v0.9-beta pluvial)**: the volume-fill
 model replaced the two-regime closed form in
 `estimate_pluvial_water()` the same day — rain volume
-(`V_K·tanh((rate−0.25)/1.2)`; drains eat the first 0.25 in/hr)
-fills the stage-storage curve from the tide-set base. Two-source
-principle: bay = infinite reservoir → tide stays level-driven
-(tide-keyed path untouched); rain = finite source → volume-filled.
-Anchors: 7/6 exact (calibration), Oct 30 within ~0.5–0.8″
-(alpha was 2″ over). Discontinuity gone. Alpha form retained as
+(`V_K·tanh((rate−D)/1.2)`) fills the stage-storage curve from the
+tide-set base. Two-source principle: bay = infinite reservoir →
+tide stays level-driven (tide-keyed path untouched); rain = finite
+source → volume-filled. **Head-dependent drainage added same
+session (user directive)**: D is not constant — full 0.25 in/hr
+with the bay below 3.0 NAVD88, linear ramp to zero at 3.52 (grate
+tops = outfall backwatered); fixes the Oct 30 drain double-count.
+Parameter honesty (user-corrected wording): V_K is the ONLY fitted
+parameter; 0.25 is a judgment number (weak brackets, V_K partially
+absorbs its error); 1.2 is a placeholder (Michaelis–Menten a
+candidate replacement); 3.0 knee is a placeholder (drainage map
+would refine). Validation: 7/6 exact (calibration); Oct 30 5.24 vs
+obs ≥5.25–5.27; **Dec 19 4.51 vs landmark band [4.36, 4.54] —
+inside, with zero additional fitting** (the event every prior
+version failed on). Discontinuity gone. Alpha form retained as
 fallback if the curve CSV is missing.
 
 **Empirical validation route (user proposal, 2026-07-07)**: the
@@ -1790,6 +1799,23 @@ low corner), because both are baked into the anchor event. This is
 MOS-style / analog forecasting with n=1 anchor — every archived
 forecast.json (pluvial_risk + QPF fields) + every observed rain
 event grows the training set for a proper fit.
+
+**MRMS pipeline WORKING (2026-07-07) — the 7/6 burst is now
+MEASURED, not inferred.** `history/scripts/mrms_point_rain.py`
+pulls gzipped GRIB2 from the Iowa State mtarchive
+(`mtarchive.geol.iastate.edu/YYYY/MM/DD/mrms/ncep/…`): PrecipRate
+(2-min instantaneous, EVEN minutes only) and
+MultiSensor_QPE_01H_Pass2 (gauge-corrected hourly). Decoding needs
+xarray+cfgrib+eccodes (pip into the venv works; eccodes wheels
+bundle the C lib). 7/6 result at the house point: peak 2-min rate
+**2.95 in/hr @ 11:12 ET** (hill-box max 3.06), ~2 in/hr sustained
+11:04–11:20, hour ending noon 0.94″, storm total 1.60″; measured
+water peak 11:34 = **~20-min catchment lag** behind peak rain.
+Catchment math checked absolutely: bowl fill to +15.4″ ≈ 5.9″
+rain-equivalent over the peak footprint vs 0.45″ fallen during the
+rise → **≥ ~13× hillside amplification** (lower bound). This
+unlocks the explicit rate×duration form V = C·(R−D)·T (C now
+fittable) and, later, MRMS-based nowcasting ("cell inbound").
 
 **7/6 anchor validated (same evening, web sources)**: NWS
 flash-flood warning reported 1.5–2.5″ fallen by 11:02 AM at the
@@ -2213,11 +2239,13 @@ Read these for context if needed:
 
 ### Next likely sessions (refreshed 2026-07-06, post v0.9 + rain-DNA build)
 
-1. **MRMS radar work (9e.2)** — the substantive next modeling step:
-   gridded radar rain for (a) pinning the exact 7/6 burst rate over
-   the 342 catchment (validates/refits the 1.7 in/hr analog anchor,
-   currently mid-band of observed 1.5–3 regional rates) and (b) an
-   eventual nowcast input ("cell inbound" beats QPF for bursts).
+1. **MRMS follow-through (9e.2)** — the pipeline works and the 7/6
+   burst is measured (2.95 peak / ~2 sustained / 1.60″ total; ≥13×
+   catchment amplification; see 9e.2). Next: fit V = C·(R−D)·T on
+   true rates+durations vs the tanh proxy (Michaelis–Menten also a
+   candidate); pull MRMS for Oct 30 2025 + Dec 19 2025 to put all
+   three rain anchors on measured forcing; eventual MRMS nowcast
+   ("cell inbound" beats QPF for bursts).
 2. **Next rain event of any size** — free calibration: every event
    tightens the analog scaling; a light-steady-rain day also tests
    the 0.25 in/hr series gate (user: check whether sustained ~0.3+
