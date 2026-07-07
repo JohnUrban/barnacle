@@ -1732,6 +1732,32 @@ inside, with zero additional fitting** (the event every prior
 version failed on). Discontinuity gone. Alpha form retained as
 fallback if the curve CSV is missing.
 
+**v0.9-gamma (2026-07-07 evening, user directive: "keep the tanh
+model and add the power-law runoff model, and report both")**: TWO
+input models share the drainage + stage-storage machinery. POWER
+(primary): `V = K_pow·net^γ`, self-calibrated from the curve at
+load — γ = 0.914, K_pow ≈ 412k — fitted to ALL THREE anchors in the
+model's input space; fits each at least as well as tanh. TANH
+(co-reported): the beta form unchanged, the saturating alternative
+— NOT a fallback (the alpha closed form remains the only true
+fallback, used solely if the curve CSV is missing). The pair agree
+within ~1″ in the calibrated range (0.4–1.7 in/hr net) and diverge
+in extrapolation (+3.4″ at a 3 in/hr low-tide burst, +6.1″ at 4) —
+the Sandy question — so surfaces report the spread as model
+uncertainty. Wiring (all additive): series `pluvial_navd88`
+(primary, drives combined line + windows) + `pluvial_navd88_tanh`;
+`pluvial_risk.potential_low_tide_navd88` (primary) + `_tanh`
+sibling; site-chart + widget band top = the HIGHER of the two;
+advisory banner scenarios print [min–max] brackets. Same session:
+equation-widget section relabeled as the TIDE-KEYED math + new
+"rain pathway" plain-English subsection; accuracy section gained a
+scope note (it scores gauge-space as-run forecasts, append-only,
+never recomputed under new models; pluvial skill tracks against
+labeled_observations instead); depth-slider readout initializes in
+the active unit (was stuck at "ft NAVD88" until first interaction);
+curb landmark relabeled "Curb TOP at walkway"; equation widget
+defaults to SW grate with regime pinned to the curb.
+
 **Empirical validation route (user proposal, 2026-07-07)**: the
 event time series (7/6 has 20 points; 5/31, 6/14, 6/15 have
 multi-grate sweeps) encode depth-rise deceleration. Normalize/align

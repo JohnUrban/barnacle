@@ -562,8 +562,13 @@ function makeWidget(forecast, family) {
     // Right: the 24-h model water-level curve
     const right = row.addStack();
     right.layoutVertically();
-    const rainPotential = (forecast.pluvial_risk &&
-                           forecast.pluvial_risk.potential_low_tide_navd88) || null;
+    // v0.9-gamma dual models: band top = the higher of the power-law
+    // (primary) and tanh (saturating) potential estimates. Old JSONs
+    // lack the _tanh field; Math.max with 0 handles both.
+    const prisk = forecast.pluvial_risk || {};
+    const rainPotential = Math.max(
+      prisk.potential_low_tide_navd88 || 0,
+      prisk.potential_low_tide_navd88_tanh || 0) || null;
     const img = series.length >= 4
       ? drawTideChart(series, 190, 110, style.text, rainPotential)
       : null;
