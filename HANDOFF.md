@@ -1817,6 +1817,42 @@ rise → **≥ ~13× hillside amplification** (lower bound). This
 unlocks the explicit rate×duration form V = C·(R−D)·T (C now
 fittable) and, later, MRMS-based nowcasting ("cell inbound").
 
+**ALL THREE rain anchors on measured forcing + full event-day sweep
+(2026-07-07 follow-up).** Caching added after archive 404 storms
+(the mtarchive load balancer intermittently 404s files that exist):
+raw GRIB2 → `history/data/mrms/raw/` (gitignored), every extracted
+value → `history/data/mrms/mrms_extracted.csv` (committed; doubles
+as permanent cache — reruns never re-download).
+- **Oct 30 2025 measured**: burst 14:40–15:05 ET, peak 2.71 in/hr
+  at 14:50 — **4 minutes before the 14:54 tide peak**; hill-box max
+  4.18 in/hr (strongest cell measured over the catchment to date).
+  Worst-case-timed compound, on record. (Logged "1.45 peak hourly"
+  ≈ MRMS hourly 1.19 — good log.)
+- **Dec 19 2025 measured**: 1.83 in/hr spike at 07:00 ET, then
+  steady 0.2–0.45 through the 08:12 observation (~0.85″ in 3 h).
+- **V = C·(R−D)·T fit** (fill volume from the stage curve vs
+  integrated MRMS net input, hand-chosen rise windows): C = 614k
+  (7/6) / 449k (Oct 30) / 210k (Dec 19) cell-units. Order-stable —
+  all ≫ the ~95k-cell footprint, so amplification is confirmed in
+  every event — but NOT constant: **C grows with rain intensity**
+  (light rain partly soaks into the hillside; violent rain runs off
+  wholesale — intensity-dependent runoff coefficient). Implication:
+  constant-C linear is not the upgrade path, and Michaelis–Menten
+  (saturating) bends the WRONG way for hillside delivery at these
+  intensities; a threshold/power-law runoff fraction is the better
+  candidate. The tanh proxy stays serviceable meanwhile (V_K
+  calibrated at the violent end; all three events fit in stage
+  space). Caveats: n=3, 10–20-min sampling, Dec 19's base was
+  tide-moving.
+- **Every OTHER event day is MRMS-dry** (< 0.02″ every pulled
+  hour): 5/18, 5/19, 5/30, 5/31+6/1, 6/14, 6/15+6/16 (tape-measured
+  tide events — the −0.13/0.00 wind-split calibration is
+  unconfounded by rain); **Apr 17+18 2026 dry → rain does NOT
+  rescue the 2–8″ under-prediction vs memory depths, strengthening
+  the inflated-memory interpretation** (landmark-anchor lesson);
+  Aug 21 2025 dry (tide+surge only); Feb 22–23 2026 dry (cold
+  no-flood mystery stays cold/wind, not rain-masked).
+
 **7/6 anchor validated (same evening, web sources)**: NWS
 flash-flood warning reported 1.5–2.5″ fallen by 11:02 AM at the
 Bayshore with Sandy Hook explicitly named; radar-estimated rates up
@@ -2239,13 +2275,14 @@ Read these for context if needed:
 
 ### Next likely sessions (refreshed 2026-07-06, post v0.9 + rain-DNA build)
 
-1. **MRMS follow-through (9e.2)** — the pipeline works and the 7/6
-   burst is measured (2.95 peak / ~2 sustained / 1.60″ total; ≥13×
-   catchment amplification; see 9e.2). Next: fit V = C·(R−D)·T on
-   true rates+durations vs the tanh proxy (Michaelis–Menten also a
-   candidate); pull MRMS for Oct 30 2025 + Dec 19 2025 to put all
-   three rain anchors on measured forcing; eventual MRMS nowcast
-   ("cell inbound" beats QPF for bursts).
+1. **Pluvial input model, next iteration (9e.2)** — all three rain
+   anchors now sit on measured MRMS forcing and the C·(R−D)·T fit
+   says C grows with intensity (see 9e.2). Candidate replacement
+   for the tanh proxy: intensity-dependent runoff fraction
+   (threshold/power-law — NOT Michaelis–Menten, which saturates the
+   wrong way). Also still open: eventual MRMS nowcast ("cell
+   inbound" beats QPF for bursts); pluvial burst TIMING (the 7/6
+   ~20-min catchment lag is the first timing constant).
 2. **Next rain event of any size** — free calibration: every event
    tightens the analog scaling; a light-steady-rain day also tests
    the 0.25 in/hr series gate (user: check whether sustained ~0.3+

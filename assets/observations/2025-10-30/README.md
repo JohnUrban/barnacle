@@ -236,3 +236,30 @@ within tape precision.
   `assets/observations/2026-06-14/README.md`
 - Tape-reading reference:
   `assets/observations/0-measuring-tape/README.md`
+
+## Measured rainfall (MRMS radar, added 2026-07-07)
+
+Pulled from the Iowa State mtarchive via
+`history/scripts/mrms_point_rain.py` (10-min PrecipRate samples +
+hourly MultiSensor QPE; values cached in
+`history/data/mrms/mrms_extracted.csv`).
+
+| ET | point (in/hr) | hill-box max |
+|---|---:|---:|
+| 13:30–14:35 | 0.14–0.37 | ≤0.6 |
+| 14:40 | 0.89 | 2.70 |
+| **14:50** | **2.71** | **4.18** |
+| 15:00 | 2.35 | 2.63 |
+| 15:10 | 0.15 | 0.73 |
+
+Hourly QPE at the point: 0.36″ (hr ending 14:00), **1.19″ (15:00)**,
+0.15″ (16:00). The contemporaneous log's "1.45 in/hr peak hourly"
+was close (MRMS hourly 1.19; the true 10-min peak was 2.71).
+
+**The headline: the rain burst hit at 14:40–15:05 ET — peak rate at
+14:50, FOUR MINUTES before the 14:54 tide peak (7.63 MLLW).** This
+event wasn't just compound; it was worst-case-timed compound. The
+hill-box max of 4.18 in/hr is the strongest cell measured over the
+catchment in any event to date (7/6/2026 maxed at 3.06). "The same
+convective cell at a 7+ ft tide = another Oct 30" — Oct 30 literally
+was that scenario.
