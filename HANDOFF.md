@@ -1756,7 +1756,16 @@ never recomputed under new models; pluvial skill tracks against
 labeled_observations instead); depth-slider readout initializes in
 the active unit (was stuck at "ft NAVD88" until first interaction);
 curb landmark relabeled "Curb TOP at walkway"; equation widget
-defaults to SW grate with regime pinned to the curb.
+defaults to SW grate with regime pinned to the curb. Site-wide
+staleness audit (user request): "Sandy Hook peak over time" note
+rewritten (was v0.7-era claims), outcome-depth accuracy note now
+flags its rows as as-logged v0.7-era history (append-only, not
+current skill), cold-advisory text de-garbled + advisory-status
+noted, module docstring un-v0.4'd, heat-map extra-rain slider runs
+the REAL pluvial pathway with a power-law/tanh toggle (was legacy
+8·tanh bump), and the term-by-term section gained an interactive
+rain-pathway calculator (JS/python parity verified on all three
+anchors).
 
 **Empirical validation route (user proposal, 2026-07-07)**: the
 event time series (7/6 has 20 points; 5/31, 6/14, 6/15 have

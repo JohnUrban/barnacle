@@ -3,8 +3,10 @@
 Daily flood forecast for 342 Bay Ave, Highlands NJ.
 
 Pulls Sandy Hook tide forecast, current observed water level (for surge),
-NWS rainfall and temperature forecast for Highlands, applies the v0.4
-flood model, and sends an email report.
+NWS rainfall + QPF and temperature forecasts for Highlands, applies the
+current flood model (see CURRENT_MODEL_VERSION + model/ docs: tide-keyed
+level path + v0.9-gamma dual pluvial pathway), renders the website,
+widget JSON, and per-tide pages, and sends an email report.
 
 Run daily (cron, GitHub Actions, etc).
 
@@ -2515,8 +2517,14 @@ def _render_accuracy_html(forecast):
             f'<tbody>{rows_html}</tbody></table>'
             f'<p class="note">Compares each user-logged observation in '
             f'<code>data/labeled_observations.csv</code> to the model\'s '
-            f'predicted depth at the same landmark at the same time. '
-            f'Sparse but each row is a real observation with real depth.</p>'
+            f'predicted depth at the same landmark at the same time, '
+            f'<b>as logged at observation time</b> — an append-only '
+            f'record of the model version that was live that day, kept '
+            f'unrevised on purpose. The large early over-predictions '
+            f'(2026-05-18, offshore-wind event) are v0.7-era rows that '
+            f'motivated the v0.8 wind adjustment; they are history, not '
+            f'current-model skill. Sparse but each row is a real '
+            f'observation with real depth.</p>'
             f'</div>'
         )
 
@@ -2874,7 +2882,7 @@ def _render_recent_history_html(forecast):
         '<p class="note">From NOAA Sandy Hook water_level (6-min product, '
         'preliminary). <b>Rel</b> = inches above the lowest landmark '
         '(SW grate, 3.52 NAVD88), always positive or negative. '
-        '"Highest landmark" applies the 0.00 ft local enhancement (v0.8) '
+        '"Highest landmark" applies the 0.00 ft local enhancement (v0.8, carried in v0.9) '
         'to the observed peak.</p>'
         '</section>'
     )
@@ -4555,10 +4563,11 @@ def _render_cold_advisory_html(forecast):
         '\n  <section class="cold-advisory">\n'
         '    <h2>Cold-conditions advisory</h2>\n'
         f'    <p>72-h mean temperature at Sandy Hook is <b>{temp_str}</b> '
-        '(below the 32°F cold-lockout threshold). The v0.6 model previously (now v0.7) '
+        '(below the 32°F cold-lockout threshold). Through v0.6 the model '
         'forced predicted flooding to zero in this regime, on the theory '
         'that storm-drain outfalls become ice-locked and block bay → street '
-        'backflow (Pathway B).</p>\n'
+        'backflow (Pathway B); since 2026-05-19 the rule is advisory-only '
+        '(hypothesis open, evidence: one event).</p>\n'
         '    <p>The 19-event historical retrospective '
         '(<a href="https://github.com/JohnUrban/barnacle/blob/main/history/reports/cold_weather_retrospective.md">'
         'cold_weather_retrospective.md</a>) found web evidence that ~3 of '
@@ -4707,15 +4716,15 @@ def _render_oscillation_section(forecast):
   <section class="oscillation">
     <h2>Sandy Hook peak over time</h2>
     <p class="note">Observed (■) past peaks and predicted (●) upcoming peaks,
-       plotted as <b>Sandy Hook MLLW</b> (the actual NOAA gauge reading) —
-       not as inferred water at 342 Bay, which would embed the v0.7 model's
-       still-uncertain storm-surge enhancement. Horizontal lines are the
-       SH-MLLW thresholds at which the v0.7 model predicts water reaches
-       each landmark. <b>Caveat</b>: a peak crossing a line means the v0.7
-       model would predict that landmark wet — actual observation at 342
-       Bay may differ on storm-condition events; v0.7 is calibrated on
-       regular high tides + Oct 30 2025 (heavy rain), not yet on
-       tape-measured storm-surge events.</p>
+       plotted as <b>Sandy Hook MLLW</b> (the actual NOAA gauge reading).
+       Horizontal lines are the SH-MLLW thresholds at which the
+       {CURRENT_MODEL_VERSION} model (enhancement 0.00, calibrated on
+       4 tape-measured events, SH 6.17&ndash;7.29) predicts water
+       reaches each landmark. <b>Caveats</b>: offshore peak winds run
+       ~0.13 ft lower (see the wind adjustment); the 0.00 enhancement
+       is untested by tape above SH ~7.3 (storm-surge extrapolation);
+       and these are TIDE thresholds — rain floods ignore them
+       entirely (see the rain pathway / burst band above).</p>
     <canvas id="oscillation-chart" width="800" height="380"
             style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
