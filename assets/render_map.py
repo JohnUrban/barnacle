@@ -82,7 +82,7 @@ def load_points(csv_path):
             rows.append(r)
             try:
                 x = float(r["x"]); y = float(r["y"])
-                v = float(r["value"])
+                v = float(str(r["value"]).lstrip("~"))  # "~" = inferred elev
             except (ValueError, TypeError, KeyError):
                 continue
             points_xy.append((x, y))

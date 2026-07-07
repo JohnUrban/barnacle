@@ -4866,7 +4866,9 @@ def _load_map_points_for_js():
             try:
                 x = float(row["x"])
                 y = float(row["y"])
-                v = float(row["value"])
+                # "~4.15" = inferred elevation (flood_edge event marks);
+                # the ~ is honest display, not a parse obstacle
+                v = float(str(row["value"]).lstrip("~"))
             except (TypeError, ValueError, KeyError):
                 continue
             out.append({"x": x, "y": y, "navd88": v})
