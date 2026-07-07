@@ -5194,15 +5194,15 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
     shading_html = """
     <div class="heatmap-toggle shading-toggle">
       <span class="note">Shading:</span>
-      <label><input type="radio" name="heatmap-shading" value="classic"
-        checked> classic blue (saturates at 2&nbsp;ft)</label>
-      <label><input type="radio" name="heatmap-shading" value="bands">
-        depth bands (labeled, Sandy-ready)</label>
+      <label><input type="radio" name="heatmap-shading" value="bands"
+        checked> depth bands (labeled, Sandy-ready)</label>
+      <label><input type="radio" name="heatmap-shading" value="classic">
+        classic blue (saturates at 2&nbsp;ft)</label>
     </div>"""
     shading_script = """
       (function() {
-        var style = 'classic';
-        try { style = localStorage.getItem('barnacle-map-shading') || 'classic'; } catch (e) {}
+        var style = 'bands';
+        try { style = localStorage.getItem('barnacle-map-shading') || 'bands'; } catch (e) {}
         window.barnacleMapStyle = style;
         var radios = document.querySelectorAll('input[name="heatmap-shading"]');
         radios.forEach(function(r) {
@@ -6041,7 +6041,7 @@ def render_per_tide_page(tide, forecast,
               canvas: canvas,
               points: window.barnaclePoints,
               waterNavd88: parseFloat(r.water_navd88_predicted),
-              style: window.barnacleMapStyle || 'classic',
+              style: window.barnacleMapStyle || 'bands',
               baseMapUrl: '../../icons/map_raw.png',
               title: 'As predicted at ' + fmtTime(r.prediction_made_at),
             }});

@@ -113,7 +113,7 @@
     var points = opts.points || [];
     var waterNavd88 = opts.waterNavd88;
     var title = opts.title || '';
-    var style = opts.style === 'bands' ? 'bands' : 'classic';
+    var style = opts.style === 'classic' ? 'classic' : 'bands';  // bands = default (user 2026-07-08)
 
     if (points.length < 3) {
       return Promise.reject(new Error('Need at least 3 points for triangulation'));
