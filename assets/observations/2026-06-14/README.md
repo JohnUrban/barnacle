@@ -215,7 +215,13 @@ The 6/14 event was supposed to be the high-surge unblocker for v0.8
 - [x] **STAGED 2026-07-07** — `fire_hydrant_central` (3.85, cross-fit
       6/14+6/15, used 7/6) and `driveway_central` (4.11) added to
       `assets/map_points.csv` with empty x/y; `pick_coords.py`
-      prompts for them (with location hints). `cross_central_driveway`
+      prompts for them (with location hints). NOTE the naming
+      convention: `fire_hydrant_central` measures the STREET surface
+      next to the sidewalk where the hydrant stands (3.85 NAVD88 =
+      road elevation) — the hydrant itself is only the locator that
+      makes the spot findable and repeatable. Same idea for
+      `driveway_central` (4.11 = road at the driveway's mid-width,
+      not the driveway apron). `cross_central_driveway`
       was never given a measurement — the flood-edge point at the
       neighbors' driveway covers that location instead.
 - [x] **STAGED 2026-07-07** — `flood_edge` category (teal) added to
