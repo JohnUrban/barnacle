@@ -3744,19 +3744,115 @@ PLUVIAL_FREE_RATE_SCALE = 1.2    # in/hr
 PLUVIAL_SERIES_RATE_MIN = 0.25
 
 
+# ---- v0.9-beta pluvial: volume-based, stage-storage unified ----
+# (2026-07-07, user theory → same-day implementation.) The two-regime
+# closed form is REPLACED by one continuous model: a burst delivers a
+# saturating net VOLUME, and depth follows by filling the measured
+# stage-storage curve (history/data/stage_storage_curve.csv — wet
+# area vs stage from the 96-point heat-map elevation surface) from
+# the event's base level. This removes the regime discontinuity at
+# bay = 3.52 and makes compound flooding correctly SUB-LINEAR: the
+# same rain adds fewer inches from a higher base because the area is
+# larger there.
+#
+# Calibration: V_K set so a 1.7 in/hr burst from an empty bowl fills
+# to +15.4″ (the 7/6 anchor). Zero further parameters. Cross-check
+# on Oct 30 2025 (base = bay 4.81, rate 1.45): predicts peak
+# ≈ 5.22–5.24 NAVD88 vs observed ≥ 5.25–5.27 — within ~0.5″
+# (the old two-regime form was +2″ over). One-model consistency of
+# the two events' fill volumes: within 11% before known biases.
+#
+# Above the curve's top (+24″, where the surveyed region saturates)
+# the fill extrapolates with the last marginal area — conservative
+# (real area keeps growing, so real rise is slower than modeled).
+#
+# TWO-SOURCE PRINCIPLE (user, 2026-07-07): the bay is an effectively
+# INFINITE reservoir — tidal flooding is LEVEL-driven and never uses
+# this curve (the tide-keyed path stays pure level arithmetic). Rain
+# is a FINITE source — only the rain contribution is volume-filled
+# through the curve, starting from the level the tide has set.
+#
+# Known low-volume caveat: the model assumes one connected pool; at
+# tiny net volumes reality is disconnected puddles (pocket + grate
+# depressions fill first), so small-rate outputs overstate "street
+# water." Bounded by the drainage floor; scenarios stay ±3″-class.
+PLUVIAL_DRAIN_RATE = 0.25        # in/hr the drains absorb before pooling
+PLUVIAL_VOLUME_K = None          # lazily calibrated from the curve
+_STAGE_CURVE = None              # [(stage_in, area_cells), ...]
+
+
+def _load_stage_curve():
+    global _STAGE_CURVE, PLUVIAL_VOLUME_K
+    if _STAGE_CURVE is not None:
+        return _STAGE_CURVE
+    path = os.path.join(_REPO_ROOT, "history", "data",
+                        "stage_storage_curve.csv")
+    curve = []
+    try:
+        with open(path) as f:
+            for r in csv.DictReader(f):
+                curve.append((float(r["stage_in_vs_sw_grate"]),
+                              float(r["wet_area_cells"])))
+    except Exception:
+        curve = []
+    _STAGE_CURVE = curve
+    if curve:
+        # Calibrate V_K: volume to fill 0 → +15.4″ (the 7/6 anchor)
+        # = tanh((1.7 − R_DRAIN)/1.2) · V_K
+        v_anchor = 0.0
+        for i in range(1, len(curve)):
+            s, a = curve[i]
+            if 0 < s <= 15.4:
+                v_anchor += a * (s - curve[i-1][0])
+        PLUVIAL_VOLUME_K = v_anchor / math.tanh(
+            (1.7 - PLUVIAL_DRAIN_RATE) / PLUVIAL_FREE_RATE_SCALE)
+    return curve
+
+
 def estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88):
-    """v0.9-alpha: estimated water at 342 Bay (NAVD88) for a given
-    rain rate and concurrent bay level. See calibration block above.
-    Returns the base level unchanged when rain is below threshold."""
+    """v0.9-beta: water at 342 Bay (NAVD88) for a rain rate and
+    concurrent bay level, via volume-fill of the stage-storage curve.
+    Falls back to the v0.9-alpha two-regime closed form when the
+    curve file is unavailable."""
     base = max(bay_water_navd88, PLUVIAL_STREET_BASE)
-    if rain_rate_in_hr <= 0.1:
+    # Drainage floor: the drains eat the first ~0.25 in/hr (user
+    # ground truth — light steady rain is wet pavement anywhere, not
+    # street water; matches the water_series gate). Net input rate
+    # is what fills the bowl.
+    net_rate = rain_rate_in_hr - PLUVIAL_DRAIN_RATE
+    if net_rate <= 0:
         return base
-    if bay_water_navd88 >= PLUVIAL_STREET_BASE:
-        lift = RAIN_SATURATION_IN * math.tanh(rain_rate_in_hr) / 12.0
-    else:
-        lift = PLUVIAL_FREE_LIFT_FT * math.tanh(
-            rain_rate_in_hr / PLUVIAL_FREE_RATE_SCALE)
-    return base + lift
+    curve = _load_stage_curve()
+    if not curve or not PLUVIAL_VOLUME_K:
+        # v0.9-alpha fallback
+        if bay_water_navd88 >= PLUVIAL_STREET_BASE:
+            lift = RAIN_SATURATION_IN * math.tanh(rain_rate_in_hr) / 12.0
+        else:
+            lift = PLUVIAL_FREE_LIFT_FT * math.tanh(
+                rain_rate_in_hr / PLUVIAL_FREE_RATE_SCALE)
+        return base + lift
+    base_stage = max(0.0, (base - PLUVIAL_STREET_BASE) * 12)
+    budget = PLUVIAL_VOLUME_K * math.tanh(
+        net_rate / PLUVIAL_FREE_RATE_SCALE)
+    stage = base_stage
+    for i in range(1, len(curve)):
+        s, a = curve[i]
+        if s <= base_stage:
+            continue
+        step_v = a * (s - curve[i-1][0])
+        if budget < step_v:
+            stage = s - (curve[i-1][0] and 0) + 0  # partial step below
+            stage = curve[i-1][0] + (budget / a) if a > 0 else s
+            budget = 0
+            break
+        budget -= step_v
+        stage = s
+    if budget > 0:
+        # Past the curve top: extrapolate with the last marginal area
+        last_area = curve[-1][1]
+        if last_area > 0:
+            stage += budget / last_area
+    return PLUVIAL_STREET_BASE + stage / 12.0
 
 
 # Landmarks eligible for flood-window computation. The high porch

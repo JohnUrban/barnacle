@@ -1712,6 +1712,17 @@ pixels, not ft²); surveyed region only, so a LOWER bound above
 ~+16″ where real flooding extends past the mapped area (7/6 went 3
 driveways up Central); ignores storage inside the drain network.
 
+**IMPLEMENTED 2026-07-07 (v0.9-beta pluvial)**: the volume-fill
+model replaced the two-regime closed form in
+`estimate_pluvial_water()` the same day — rain volume
+(`V_K·tanh((rate−0.25)/1.2)`; drains eat the first 0.25 in/hr)
+fills the stage-storage curve from the tide-set base. Two-source
+principle: bay = infinite reservoir → tide stays level-driven
+(tide-keyed path untouched); rain = finite source → volume-filled.
+Anchors: 7/6 exact (calibration), Oct 30 within ~0.5–0.8″
+(alpha was 2″ over). Discontinuity gone. Alpha form retained as
+fallback if the curve CSV is missing.
+
 **Empirical validation route (user proposal, 2026-07-07)**: the
 event time series (7/6 has 20 points; 5/31, 6/14, 6/15 have
 multi-grate sweeps) encode depth-rise deceleration. Normalize/align
