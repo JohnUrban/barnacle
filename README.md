@@ -12,9 +12,11 @@ tape-measured flood observations (see `model/v0.9.md` and
 flood advisory — heavy rain floods this intersection with no tidal
 contribution at all.
 
-The system is in production. GitHub Actions runs the forecast each
-morning, delivers an email via SMTP, publishes an HTML snapshot to
-GitHub Pages, and archives both HTML + JSON copies under `docs/archive/`.
+The system is in production. GitHub Actions runs the forecast hourly
+(best-effort — GHA throttles to ~62% of slots), refreshing the site,
+forecast.json, and per-tide pages; the 09:00 UTC run also delivers the
+daily email via SMTP and archives HTML + JSON copies under
+`docs/archive/`.
 
 **For state-of-the-project / model spec / future work, start with
 [HANDOFF.md](HANDOFF.md).** It's the authoritative document; this

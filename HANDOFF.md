@@ -7,7 +7,8 @@ the model, the architecture, what works, what didn't and why, what's
 next, and all design context worth carrying into future work.
 
 If anything anywhere disagrees with this document, **assume the file
-with the higher version number wins** (currently model spec v0.5).
+with the higher version number wins** (currently model spec v0.9 —
+`model/v0.9.md`; older specs live in `model/archive/`).
 
 **Status: PRODUCTION.** The system is deployed, scheduled, and
 self-publishing. Daily forecasts arrive by email; daily reports
@@ -26,11 +27,14 @@ that misses the user's specific property in two directions: false
 positives (predicted flooding that doesn't materialize at this house)
 and false negatives (actual flooding without sufficient warning).
 
-The project produces a **daily morning email** with predicted water
-depth at four named landmarks at 342 Bay Ave — curb, road middle,
-intersection high point, and lawn step — for **both high tides in the
-next 24 hours**, plus a publicly-readable web page at
-[johnurban.github.io/barnacle](https://johnurban.github.io/barnacle/).
+The project produces a **daily morning email** plus an
+**hourly-updated interactive site** at
+[johnurban.github.io/barnacle](https://johnurban.github.io/barnacle/)
+(water-level chart, flood windows, heat-map, per-tide deep-link
+pages, forecast.json for the iOS widget), predicting water depth at
+**18 surveyed landmarks** at 342 Bay Ave — from the SW grate (first
+water) up the porch ladder to the deck — via two pathways: a
+tide-keyed level model and a volume-based pluvial (rain) model.
 
 The model is small but earned: every parameter is grounded in either
 surveyed engineering elevations from a Borough PDF, or in empirical fit
@@ -55,11 +59,11 @@ across v0.6–v0.8 and the user explicitly rejects that pattern.
 
 | Component | State |
 |---|---|
-| Model v0.6 specification (9 landmarks, formal spec) | ✅ Complete, validated against 4-6 events. Old v0.5 in model/archive/ |
+| Model v0.9 specification (18 landmarks; tide-keyed + v0.9-gamma dual pluvial pathway) | ✅ Current — `model/v0.9.md`; v0.1–v0.8 in model/archive/ |
 | Daily forecast script (`forecast/flood_forecast_daily.py`) | ✅ In production, runs daily via GitHub Actions |
 | Multi-tide forecast (both high tides per day) | ✅ Live since 2026-05-18 |
 | NWS surge parser (`forecast/nws_surge_parser.py`) | ✅ Self-test passes; awaits first live event |
-| GitHub Actions workflow | ✅ Scheduled daily 09:00 UTC (5 AM EDT / 4 AM EST) |
+| GitHub Actions workflow | ✅ Hourly (best-effort ~62% under GHA throttling); email sends on the 09:00 UTC run |
 | Email delivery (Gmail SMTP) | ✅ Working from personal Gmail |
 | GitHub Pages site | ✅ Live at johnurban.github.io/barnacle/ |
 | Forecast archive (every day kept forever) | ✅ docs/archive/YYYY-MM-DD.html + .json |
@@ -93,14 +97,14 @@ across v0.6–v0.8 and the user explicitly rejects that pattern.
 | v0.6 model-spec promotion + 9th landmark added | ✅ Live (2026-05-18). model/v0.6.md canonical; v0.5 archived. New lowest sentinel at 3.60 NAVD88 (SH 6.02). |
 | SMS/push alerts for moderate/severe (Twilio/Pushover) | ⏸ Next-turn item |
 | iOS Stage-1 Web Clip (Add to Home Screen) | ✅ Live (2026-05-18). manifest.json + apple-touch-icon + meta tags |
-| iOS Stage-2 Scriptable widget | ✅ Live (2026-05-18). Script at docs/barnacle-widget.js. **Rebuilt 2026-07-06**: v0.8 landmark set (old v0.6 keys had silently broken highestExceeded since the v0.7 promotion), enhancement 0.00 (was hardcoded +0.40), "dry"→"NO FLOODING" display, and a NEW 24-h model water-level tide-curve chart (medium widget) fed by the `water_series` field now emitted into forecast.json (30-min steps, now−2h→now+24h, tide+surge backbone; rain term not yet time-resolved). |
+| iOS Stage-2 Scriptable widget | ✅ Live (2026-05-18). Script at docs/barnacle-widget.js. **Rebuilt 2026-07-06**: v0.8 landmark set (old v0.6 keys had silently broken highestExceeded since the v0.7 promotion), enhancement 0.00 (was hardcoded +0.40), "dry"→"NO FLOODING" display, and a NEW 24-h model water-level tide-curve chart (medium widget) fed by the `water_series` field now emitted into forecast.json (30-min steps, now−2h→now+24h, tide+surge backbone; pluvial line + burst band added later that evening — see the series-first row). |
 | "DRY" → "no flooding" display language | ✅ Done 2026-07-06. Internal regime key `dry` frozen (predictions_log continuity); display-only mapping via `REGIME_DISPLAY` + `regime_display()`. Applied: subject line, regime banners, tide tables, meta tags, glossaries, equation widget, Scriptable widget. Also refreshed the stale v0.6-era reference scales (email text + home page) to v0.8 thresholds, and fixed a footer still claiming v0.7. |
 | iOS Stage-3 PWA push notifications | ⏸ Next-turn item |
 | iOS Stage-4 native iOS app | ⏸ Multi-session, requires Apple Developer Program |
 | Live NOAA gauge link/embed on Pages site | ⏸ Next-turn item |
 | Stevens NYHOPS surge fallback | ⏸ Not investigated further |
 | ETSS direct fetch | ❌ Abandoned — network blocked from user's ISP |
-| Node.js 20 deprecation in workflow | ⏸ Bump action versions before June 2 2026 |
+| Node.js 20 deprecation in workflow | ✅ Done 2026-07-06 — checkout@v7 / setup-python@v6, verified green |
 
 ✅ done · ⏳ in progress · ⏸ backlog · ❌ ruled out
 
@@ -124,10 +128,12 @@ depth(landmark) = max(0, water − landmark_NAVD88) × 12   # inches
 Plus, reported separately (not in the main number):
 - **Wind adjustment** (v0.8): offshore peak winds → "expected actual"
   −0.13 ft line.
-- **Pluvial advisory + v0.9-alpha scenario depths** (v0.9): rain can
-  flood the intersection with no tide at all (2026-07-06 event);
-  `estimate_pluvial_water(rate, bay)` gives categorical scenario
-  estimates in the banner.
+- **Pluvial pathway (v0.9-gamma dual)**: rain can flood the
+  intersection with no tide at all (2026-07-06 event).
+  `estimate_pluvial_water(rate, bay, model)` — head-dependent
+  drainage, power-law (primary) or tanh (co-reported) input volume,
+  stage-storage fill. Drives the series rain line, burst band,
+  flood windows, and banner scenario brackets; see 9e.1.
 - **Cold-lockout**: demoted to advisory 2026-05-19; never applied.
 
 **18 landmarks** (ft NAVD88 → SH threshold = +2.82): grate_SW 3.52 →
@@ -234,12 +240,12 @@ barnacle/
 │   ├── nws_surge_parser.py
 │   └── smoke_test.sh
 ├── model/
-│   ├── v0.5.md                   # ★ CURRENT spec
+│   ├── v0.9.md                   # ★ CURRENT spec (tide-keyed + pluvial)
 │   ├── elevations.md             # surveyed landmark elevations
 │   ├── elevations.pdf
 │   ├── h2m_pdf_extracts.md       # extracted key text from Borough PDF
 │   ├── HLND2303-Road-Reconstruction-Supplement-Set-2024.05.06.pdf
-│   └── archive/                  # v0.1 - v0.4 specs
+│   └── archive/                  # v0.1 - v0.8 specs
 ├── data/
 │   ├── labeled_events.csv        # 6 flood events used for calibration
 │   ├── labeled_observations.csv  # ongoing log of user-observed depths at landmarks (see README)
@@ -261,6 +267,9 @@ barnacle/
 ├── docs/                         # GitHub Pages site
 │   ├── index.html                # today's forecast (auto-replaced)
 │   ├── forecast.json             # machine-readable today's forecast (auto-replaced)
+│   ├── barnacle-widget.js        # ★ iOS Scriptable widget (fetches forecast.json)
+│   ├── map-render.js             # client-side heat-map renderer
+│   ├── tides/                    # per-tide deep-link pages (+ index)
 │   ├── style.css
 │   └── archive/
 │       ├── index.html            # auto-regenerated list
@@ -274,8 +283,12 @@ barnacle/
 │   ├── scripts/
 │   │   ├── pull_sandy_hook_history.py   # NOAA puller (resumable)
 │   │   ├── build_dataset.py             # raw chunks → hourly parquet
-│   │   └── analyze.py                   # all derived analytics
+│   │   ├── analyze.py                   # all derived analytics
+│   │   ├── mrms_point_rain.py           # ★ MRMS radar rain at the catchment (cached)
+│   │   └── fit_crdt.py                  # V=C·(R−D)·T fit across rain anchors
 │   ├── data/
+│   │   ├── stage_storage_curve.csv      # ★ stage-storage curve (pluvial fill model)
+│   │   ├── mrms/mrms_extracted.csv      # ★ MRMS extractions (committed cache; raw/ gitignored)
 │   │   ├── summary_stats.json           # ★ headline numbers
 │   │   ├── calibration_check.csv        # ★ 4-event validation
 │   │   ├── seasonality_recent.csv       # ★ 1996-2025 8-stratum table, used by daily email

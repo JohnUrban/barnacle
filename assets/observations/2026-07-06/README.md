@@ -272,7 +272,7 @@ observations above.
 - HANDOFF item 14 (pluvial-only question) — answered by this event
 - `assets/observations/2025-10-30/README.md` — the compound (tide +
   rain) sibling event
-- `model/v0.8.md` — current model; does not cover this event class
+- `model/v0.9.md` — current model; the v0.9 pluvial pathway (alpha→beta→gamma) was built FROM this event (it is the primary calibration anchor)
 - HANDOFF 9d.3 — antecedent moisture / accumulation questions, now
   joined by the pluvial pathway
 
