@@ -2324,42 +2324,79 @@ Read these for context if needed:
   - Evolution CSV + log-status block
   - Prev/next tide navigation in header
 
-### Next likely sessions (refreshed 2026-07-06, post v0.9 + rain-DNA build)
+### ⚡ NEXT-FLOOD PLAYBOOK (the likely next session — user works
+### event-driven; written 2026-07-08 for a cold start)
 
-1. **Pluvial input model, next iteration (9e.2)** — all three rain
-   anchors now sit on measured MRMS forcing and the C·(R−D)·T fit
-   says C grows with intensity (see 9e.2). Candidate replacement
-   for the tanh proxy: intensity-dependent runoff fraction
-   (threshold/power-law — NOT Michaelis–Menten, which saturates the
-   wrong way). Also still open: eventual MRMS nowcast ("cell
-   inbound" beats QPF for bursts); pluvial burst TIMING (the 7/6
-   ~20-min catchment lag is the first timing constant).
-2. **Next rain event of any size** — free calibration: every event
-   tightens the analog scaling; a light-steady-rain day also tests
-   the 0.25 in/hr series gate (user: check whether sustained ~0.3+
-   in/hr ponds over the SW grate).
-3. **Pluvial burst TIMING** (9e.1 final) — still categorical;
-   stage-storage curve to unify the pluvial regimes.
-4. **Drainage map** — user emails Stephen Winters
-   (swinters@highlandsnj.gov); would confirm the NE-trunk-line
-   hypothesis from the 7/6 drainage-asymmetry observation.
-5. **Local flood reanalysis** (someday, 9e.4-adjacent) — join
-   historical precip to the tide record; modeled local water per
-   event over the century.
-6. **Passive collectors**: high-SH event ≥7.5 (enhancement check),
-   cold-conditions events (hypothesis open), NWS surge-parser
+**During the event (user, phone in hand):**
+1. Spot-check per the evolved protocol: notes-only tape readings,
+   landmark-anchored (which landmark, inches above it), timestamped,
+   fast cadence; mainly NE grate + sidewalk-under-lawn-step wall.
+   Even "no water" observations are calibration data.
+2. Photos are documentary: flood EXTENT (wet/dry lines!), drainage
+   behavior (grate jetting), timestamps matter more than framing.
+   Every wrack-line photo = a future `edge_YYYYMMDD_*` map point.
+
+**In the session after (Claude, cold start):**
+1. Read `model/v0.9.md` + HANDOFF §§1–3 + 9e; memory has the rest.
+2. Log observations → `data/labeled_observations.csv` (append-only);
+   write `assets/observations/YYYY-MM-DD/README.md` per prior events.
+3. Pull MRMS forcing: `history/scripts/mrms_point_rain.py`
+   (venv needs xarray+cfgrib+eccodes, pip works; extraction caches to
+   `history/data/mrms/mrms_extracted.csv`, committed; archive 404s
+   are transient — retry). PrecipRate = 2-min, even minutes;
+   MultiSensor_QPE_01H_Pass2 = hourly ending at stamp.
+4. Test the models against the event: `estimate_pluvial_water`
+   dual power-law/tanh — event #4 is the first real test of
+   γ = 0.914 vs tanh saturation (they diverge above ~2 in/hr net).
+   Refit per `history/scripts/fit_crdt.py` + the anchors block in
+   `_load_stage_curve()`. A violent event also tests the
+   intensity-dependent-runoff hypothesis (C grows with rate).
+5. Map: add `edge_YYYYMMDD_*` rows (flood_edge category, value =
+   that event's water level, `~` prefix) → user clicks via
+   `assets/pick_coords.py` (auto-opens the photos) →
+   `assets/render_map.py`.
+6. Update: event README, model doc addendum if constants move,
+   HANDOFF (lockstep, same commit), memory files.
+
+### Other likely sessions (refreshed 2026-07-08)
+
+1. **Pluvial input model, next iteration (9e.2)** — candidate
+   replacement for the tanh proxy: intensity-dependent runoff
+   fraction (threshold/power-law — NOT Michaelis–Menten, which
+   saturates the wrong way; the MRMS C·(R−D)·T fit says C GROWS
+   with intensity). Needs event #4+. Also open: MRMS nowcast
+   ("cell inbound" beats QPF for bursts); pluvial burst TIMING
+   (the 7/6 ~20-min catchment lag is the first timing constant);
+   Sandy-data saturation test (pre-2014, so Stage IV / gauge
+   archives, not MRMS).
+2. **Drainage map** — user emails Stephen Winters
+   (swinters@highlandsnj.gov); would refine the head-dependent
+   drainage knee (3.0 placeholder) + confirm the NE-trunk-line
+   hypothesis.
+3. **Local flood reanalysis** (someday) — join historical precip to
+   the tide record; modeled local water per event over the century.
+4. **Passive collectors**: high-SH event ≥7.5 (enhancement
+   extrapolation), cold-conditions events (cold-lockout hypothesis;
+   Feb 22–23 confirmed rain-free by MRMS), NWS surge-parser
    first-event validation, accuracy-log confidence calibration.
-7. **Housekeeping**: SMTP migration (Gmail account aging);
-   docs/icons/map_annotated.png regeneration (map_points changed in
-   v0.9); flood_history_report.md carries a dated-snapshot banner
-   (deeper curation optional).
+5. **Housekeeping**: SMTP migration (Gmail account aging); annual
+   seasonality refresh; DTW stage-curve validation as event
+   time-series accumulate.
 
-**State as of compaction 2026-07-06 (late night)**: v0.9 live and
-green; QPF fixed; pluvial model + banner + scenario depths live;
-rain-DNA architecture shipped (series/windows/TODAY-first widget +
-site chart, final design grammar in the section-2 table row);
-"How flooding works here" plain-English section live; seasonality
-CSVs at v0.9 thresholds; Actions bumped + verified; user's widget
-current and approved. Working tree clean, all pushed.
+**State as of 2026-07-08 (end of the two-day post-flood sessions)**:
+v0.9 live and green with the v0.9-gamma dual pluvial pathway
+(power-law γ=0.914 primary + tanh co-reported, head-dependent
+drainage, stage-storage fill); all three rain anchors on
+MRMS-measured forcing (7/6 burst 2.95 in/hr, ≥13× catchment
+amplification, ~20-min lag; Oct 30 burst 4 min before tide peak;
+Dec 19 inside the landmark band); every other observed event day
+MRMS-dry (tide calibration unconfounded; Apr 17/18 memory-depth gap
+NOT rain); site fully current (dual-model reporting, rain-pathway
+calculator, Sandy-range depth slider 11.6 NAVD88, depth-bands
+shading DEFAULT with classic blue optional, per-point provenance
+documented: red=PDF, amber=user interpolation, teal=dated event
+marks); map complete (all 18 landmarks + stations + 6/14 edge marks
+user-clicked); repo + memory staleness-audited. Working tree clean,
+all pushed.
 
 End of handoff.
