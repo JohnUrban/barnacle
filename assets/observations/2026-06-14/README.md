@@ -220,8 +220,12 @@ The 6/14 event was supposed to be the high-surge unblocker for v0.8
       next to the sidewalk where the hydrant stands (3.85 NAVD88 =
       road elevation) — the hydrant itself is only the locator that
       makes the spot findable and repeatable. Same idea for
-      `driveway_central` (4.11 = road at the driveway's mid-width,
-      not the driveway apron). `cross_central_driveway`
+      `driveway_central`: it measures the ROAD next to the sidewalk
+      at the driveway (taken at the driveway's mid-width); 4.11
+      NAVD88 = road elevation. The sidewalk is considerably LOWER
+      there than elsewhere (driveway cut — the 6/14 record shows the
+      lip only ~0.5″ above the road vs ~3.5″ at the
+      hydrant), which is why that sidewalk breached first at 20:29. `cross_central_driveway`
       was never given a measurement — the flood-edge point at the
       neighbors' driveway covers that location instead.
 - [x] **STAGED 2026-07-07** — `flood_edge` category (teal) added to

@@ -59,7 +59,7 @@ HINTS = {
     "porch_step1_top": "top of the 8.75\u2033 first porch riser",
     "porch_deck": "the porch platform itself",
     "fire_hydrant_central": "click the STREET surface beside the hydrant (3.85 = road elev; the hydrant is just the locator), Central Ave house side",
-    "driveway_central": "driveway on Central Ave (middle of its width), house side",
+    "driveway_central": "click the STREET beside the sidewalk at the driveway (mid-width of it), Central Ave house side; 4.11 = road elev",
     "NE_central_ave_edge": "6/14 wet/dry line up Central Ave, NE side",
     "NW_bay_ave_edge": "6/14 wet/dry line on Bay Ave, NW side",
     "SW_bay_ave_edge": "6/14 wet/dry line on Bay Ave, SW side",
