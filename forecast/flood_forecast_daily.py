@@ -5016,7 +5016,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
     <div class="depth-slider">
       <label for="depth-slider-input">Explore water level:</label>
       <input type="range" id="depth-slider-input"
-             min="3.0" max="7.5" step="0.05"
+             min="3.0" max="11.6" step="0.05"
              value="{water_with_rain:.2f}"
              data-current="{water_with_rain:.4f}">
       <span id="depth-slider-value">{water_with_rain:.2f} ft NAVD88</span>
@@ -5051,7 +5051,13 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
        stage-storage curve of the intersection. The two models agree
        below ~2 in/hr and diverge for violent bursts. "Extra" because
        rain may already be in the current forecast's water level —
-       this explores additional rain beyond that.</p>
+       this explores additional rain beyond that. The depth range
+       tops out at Sandy class: Hurricane Sandy's estimated true
+       peak (~14.4 ft MLLW; the gauge failed at 13.31) &asymp; 11.6
+       ft NAVD88 &asymp; +97&Prime; over the SW grate — nearly 3 ft
+       of water on the porch deck. Note the blue shading saturates
+       at 2 ft depth, so extreme levels differ in EXTENT more than
+       in shade.</p>
 """
         slider_script = f"""
       (function() {{
