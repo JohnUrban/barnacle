@@ -3083,6 +3083,24 @@ def regime_display(regime):
     return REGIME_DISPLAY.get(regime, regime)
 
 
+def headline_for(forecast, regime):
+    """(headline_text, css_regime_class) for banners/subjects.
+
+    Fixes the contradiction (user 2026-07-07) where a rainy no-tide
+    day read "NO FLOODING" right next to "RAIN FLOOD RISK": when the
+    tide-derived regime is dry but pluvial risk is live, the RAIN
+    message IS the headline and "no tidal flooding expected" becomes
+    the detail. CSS class shifts to 'light' (amber) so the banner
+    color matches the message."""
+    level = ((forecast.get("pluvial_risk") or {}).get("level")
+             if forecast else None)
+    if regime == "dry" and level:
+        text = ("RAIN FLOOD RISK" if level == "elevated"
+                else "POSSIBLE RAIN FLOODING")
+        return text, "light"
+    return regime_display(regime).upper(), regime
+
+
 def _unified_landmark_rows(forecast):
     """Build per-landmark row dicts used by both the text and HTML renderers.
     Each row has: key, label, elev_navd88, sh_threshold, today_in,
@@ -3427,7 +3445,8 @@ def render_email(forecast):
     all_tides = forecast.get("all_tides", [])
 
     subject_short, subject_above, _ = landmark_summary(d, peak_ft)
-    subject = (f"[342 Bay] {regime_display(regime).upper()}: forecast {peak_ft:.2f} ft "
+    headline, _ = headline_for(forecast, regime)
+    subject = (f"[342 Bay] {headline}: forecast {peak_ft:.2f} ft "
                f"at {format_time_short(peak_t)} "
                f"({subject_short} {subject_above:+.1f}\")")
 
@@ -4087,7 +4106,7 @@ def _render_water_series_section(forecast):
         var now = new Date();
         var best = -1, bestD = Infinity;
         for (var i = 0; i < seriesTimes.length; i++) {{
-          var m = seriesTimes[i].match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/);
+          var m = seriesTimes[i].match(/(\\d+)-(\\d+)-(\\d+) (\\d+):(\\d+)/);
           if (!m) continue;
           var t = new Date(+m[1], m[2]-1, +m[3], +m[4], +m[5]);
           var d = Math.abs(t - now);
@@ -5724,6 +5743,17 @@ def render_html_page(forecast):
     """
     d = forecast["depths_in"]
     regime = d["regime"]
+    # Headline resolves the "NO FLOODING" vs "RAIN FLOOD RISK"
+    # contradiction (2026-07-07): rain risk takes the banner when the
+    # tide-derived regime is dry.
+    headline_text, headline_class = headline_for(forecast, regime)
+    if headline_class == regime:
+        headline_summary = f"{REGIME_GLOSSARY.get(regime, '')}."
+    else:
+        headline_summary = ("No tidal flooding expected, but heavy "
+                            "rain could flood the intersection "
+                            "independently of the tide — see the "
+                            "rain-risk banner below.")
     peak_t = forecast["peak_time_local"]
     peak_ft = forecast["peak_forecast_observed_mllw"]
     today = dt.date.today().isoformat()
@@ -5797,9 +5827,9 @@ def render_html_page(forecast):
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Barnacle">
 <meta name="theme-color" content="#0f4064">
-<meta name="description" content="Bay Ave Barnacle — {regime_display(regime).upper()} regime. Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ.">
+<meta name="description" content="Bay Ave Barnacle — {headline_text}. Worst-case tide peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ.">
 <!-- Open Graph (link previews) — W -->
-<meta property="og:title" content="Bay Ave Barnacle — {regime_display(regime).upper()}">
+<meta property="og:title" content="Bay Ave Barnacle — {headline_text}">
 <meta property="og:description" content="Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ.">
 <meta property="og:image" content="https://johnurban.github.io/barnacle/icons/icon-512.png">
 <meta property="og:url" content="https://johnurban.github.io/barnacle/">
@@ -5878,9 +5908,9 @@ def render_html_page(forecast):
 
   {_render_summary_html(forecast)}
 
-  <section class="regime regime-{regime}">
-    <div class="regime-label">{regime_display(regime).upper()}</div>
-    <div class="regime-summary">{REGIME_GLOSSARY.get(regime, '')}. Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}.</div>
+  <section class="regime regime-{headline_class}">
+    <div class="regime-label">{headline_text}</div>
+    <div class="regime-summary">{headline_summary} Worst-case tide peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}.</div>
   </section>
 
 {_render_water_series_section(forecast)}

@@ -433,6 +433,19 @@ function makeWidget(forecast, family) {
   const worstRegime = (forecast.depths_in && forecast.depths_in.regime) || "dry";
   let todayRegime = forecast.today_regime || worstRegime;
   const pluvialLevel = (forecast.pluvial_risk && forecast.pluvial_risk.level) || null;
+  // Resolve the "NO FLOODING" + "RAIN FLOOD RISK" contradiction
+  // (2026-07-07): when the tide-derived regime is dry but rain risk
+  // is live, the rain message IS the headline; "no tidal flooding"
+  // becomes the detail line and the separate warning line is
+  // suppressed as redundant.
+  let todayLabel = regimeDisplay(todayRegime);
+  let todaySub = null;
+  let showPluvialLine = !!pluvialLevel;
+  if (pluvialLevel && todayRegime === "dry") {
+    todayLabel = pluvialLevel === "elevated" ? "RAIN FLOOD RISK" : "RAIN POSSIBLE";
+    todaySub = "no tidal flooding expected";
+    showPluvialLine = false;
+  }
   let styleKey = todayRegime;
   if (pluvialLevel === "elevated" && (styleKey === "dry" || styleKey === "street")) {
     styleKey = "light";  // amber-ish background when rain risk dominates
@@ -482,12 +495,17 @@ function makeWidget(forecast, family) {
     hdr.font = Font.mediumSystemFont(9);
     hdr.textColor = new Color("#777");
 
-    const regLabel = left.addText(regimeDisplay(todayRegime));
-    regLabel.font = Font.boldSystemFont(regimeDisplay(todayRegime).length > 8 ? 15 : 20);
+    const regLabel = left.addText(todayLabel);
+    regLabel.font = Font.boldSystemFont(todayLabel.length > 8 ? 15 : 20);
     regLabel.textColor = new Color(style.text);
     regLabel.lineLimit = 1;
     regLabel.minimumScaleFactor = 0.6;
-    addPluvialLine(left);
+    if (todaySub) {
+      const s = left.addText(todaySub);
+      s.font = Font.systemFont(9);
+      s.textColor = new Color("#555");
+    }
+    if (showPluvialLine) addPluvialLine(left);
 
     // Flood window for the highest landmark crossed today, or the
     // rel-to-SW-grate peak (the standard mental unit).
@@ -564,12 +582,17 @@ function makeWidget(forecast, family) {
     const hdrS = w.addText("TODAY");
     hdrS.font = Font.mediumSystemFont(8);
     hdrS.textColor = new Color("#777");
-    const regLabel = w.addText(regimeDisplay(todayRegime));
-    regLabel.font = Font.boldSystemFont(regimeDisplay(todayRegime).length > 8 ? 14 : 18);
+    const regLabel = w.addText(todayLabel);
+    regLabel.font = Font.boldSystemFont(todayLabel.length > 8 ? 14 : 18);
     regLabel.textColor = new Color(style.text);
     regLabel.lineLimit = 1;
     regLabel.minimumScaleFactor = 0.6;
-    addPluvialLine(w);
+    if (todaySub) {
+      const s = w.addText(todaySub);
+      s.font = Font.systemFont(8);
+      s.textColor = new Color("#555");
+    }
+    if (showPluvialLine) addPluvialLine(w);
     const winLineS = todayWindowLine(forecast);
     if (winLineS) {
       const t = w.addText(winLineS);
