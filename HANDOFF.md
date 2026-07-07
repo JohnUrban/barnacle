@@ -948,13 +948,16 @@ Same surge information the Borough's emergency management is looking at.
 
     **The `approximated` map-point category (added 2026-05-19).**
     `map_points.csv` `category` now has a third value:
-    `landmark` / `extra` / `approximated`. `approximated` points are
-    best-guess elevations the user places to *shape* the heat-map
+    `landmark` / `extra` / `approximated` (+ `flood_edge` since
+    2026-07-07). `approximated` points *shape* the heat-map
     surface — street-crown centerlines, curb/sidewalk/lawn boundary
-    lines — where a height can be inferred from nearby known points
-    but wasn't surveyed. Rendered amber on the base map (vs blue
-    landmark / red surveyed-extra) so guesses are never mistaken for
-    measurements. All three categories feed the heat-map triangulation
+    lines. Provenance clarified 2026-07-08 (user): the red `extra`
+    values were read from the H2M design drawings; the amber points
+    were then INTERPOLATED by the user between those anchors using
+    known local gradients — anchored interpolation, not free
+    guesses. Rendered amber on the base map (vs blue landmark / red
+    surveyed-extra) so inferred values are never mistaken for
+    direct measurements. All three categories feed the heat-map triangulation
     equally. **This is the practical mechanism for most of the
     polish items below** — rather than build geometry-aware
     interpolation, the user encodes the domain knowledge as

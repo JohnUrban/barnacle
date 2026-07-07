@@ -32,19 +32,28 @@ extra_corner_1,4.20,extra,234.5,567.8
   - `landmark` — a canonical project landmark (rendered **blue**).
     Limited to the model's exclusive landmarks.
   - `extra` — an additional **surveyed** topography point / spot
-    height (rendered **red**). A real measured elevation.
+    height (rendered **red**). A real measured elevation — in
+    practice mostly TC/BC (top/bottom of curb) and spot values read
+    from the H2M road-reconstruction drawings
+    (`model/h2m_pdf_extracts.md`; PS&S field survey April 2024),
+    plus tape-verified points. Caveat: the PDF values are DESIGN
+    grades; tape reconciliation of the grates suggests as-built
+    matches, but Bay Ave was outside the plan's Phase-1 scope.
   - `flood_edge` — an **edge-of-water photo location** (rendered
     **teal**). The ground elevation is implied by the concurrent
     measured water level at photo time (a wet/dry line is a free
     elevation survey). First five points: the 2026-06-14 event's
     edge photos, all ≈4.15 NAVD88 (the 6/14 water band).
-  - `approximated` — a **best-guess** point placed to shape the
-    heat-map surface (rendered **amber**). NOT a real measurement —
-    e.g. points along a street's crowned centerline (middle higher
-    than the sides), or boundary lines between street / sidewalk /
-    lawn / house where you can infer a height from nearby known
-    points. The amber color keeps these visually distinct from real
-    survey data, so nobody mistakes a guess for a measurement.
+  - `approximated` — a point **interpolated by the user** between
+    surveyed anchors (rendered **amber**). NOT directly measured,
+    but NOT a free guess either (provenance confirmed 2026-07-08):
+    the user placed these by interpolating between the red
+    PDF-derived anchors using known local gradients — street crowns
+    (middle higher than the sides), curb/sidewalk/lawn steps, which
+    way each block slopes — plus structural fictions like the 14.5
+    house pads that keep the flood surface off the buildings. Amber
+    = "human interpolation anchored to survey data"; the color keeps
+    it visually distinct from direct measurements.
 - `x`, `y`: pixel coordinates in `map_raw.png` (top-left origin,
   matplotlib convention). Decimal pixels fine.
 
