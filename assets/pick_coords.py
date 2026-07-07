@@ -60,13 +60,32 @@ HINTS = {
     "porch_deck": "the porch platform itself",
     "fire_hydrant_central": "click the STREET surface beside the hydrant (3.85 = road elev; the hydrant is just the locator), Central Ave house side",
     "driveway_central": "click the STREET beside the sidewalk at the driveway (mid-width of it), Central Ave house side; 4.11 = road elev",
-    "NE_central_ave_edge": "6/14 wet/dry line up Central Ave, NE side",
-    "NW_bay_ave_edge": "6/14 wet/dry line on Bay Ave, NW side",
-    "SW_bay_ave_edge": "6/14 wet/dry line on Bay Ave, SW side",
-    "NW_central_edge_cross_central_neighbors_driveway":
+    "edge_20260614_NE_central": "6/14 wet/dry line up Central Ave, NE side "
+        "(wrack line in the gutter by the yellow curb / hydrant)",
+    "edge_20260614_NW_bay": "6/14 wet/dry line on Bay Ave, NW side",
+    "edge_20260614_SW_bay": "6/14 wet/dry line on Bay Ave, SW side",
+    "edge_20260614_NW_central_neighbors_driveway":
         "6/14 wet/dry line at the neighbors' driveway across Central",
-    "bay_ave_farther_upstream_edge":
+    "edge_20260614_bay_upstream":
         "6/14 wet/dry line farther upstream (west) on Bay Ave",
+}
+
+# Documentary photo for each event-mark point. The picker auto-opens
+# the photo (macOS Preview) when the point comes up, so you can see
+# exactly where the water edge sat before clicking.
+_OBS = REPO_ROOT / "assets" / "observations"
+PHOTOS = {
+    "edge_20260614_NE_central":
+        _OBS / "2026-06-14" / "NE-central-ave-edge" / "barnacle_20260614 - 8.jpeg",
+    "edge_20260614_NW_bay":
+        _OBS / "2026-06-14" / "NW-bay-ave-edge" / "barnacle_20260614 - 33.jpeg",
+    "edge_20260614_SW_bay":
+        _OBS / "2026-06-14" / "SW-bay-ave-edge" / "barnacle_20260614 - 32.jpeg",
+    "edge_20260614_NW_central_neighbors_driveway":
+        _OBS / "2026-06-14" / "NW-central-edge-cross-central-neigbors-driveway"
+             / "barnacle_20260614 - 36.jpeg",
+    "edge_20260614_bay_upstream":
+        _OBS / "2026-06-14" / "bay-ave-farther-upstream" / "barnacle_20260614 - 42.jpeg",
 }
 
 
@@ -195,8 +214,25 @@ def main():
                 return i
         return len(rows)
 
+    def maybe_open_photo(idx):
+        """When a new pending point comes up, pop its documentary photo
+        (if any) so the user can see where the mark actually sat."""
+        if idx == state.get("photo_idx"):
+            return
+        state["photo_idx"] = idx
+        if not (0 <= idx < len(rows)):
+            return
+        photo = PHOTOS.get(rows[idx]["label"])
+        if not photo or not photo.exists():
+            return
+        print(f"  📷 reference photo: {photo}")
+        if sys.platform == "darwin":
+            import subprocess
+            subprocess.Popen(["open", str(photo)])
+
     def update_title():
         idx = next_pending_idx()
+        maybe_open_photo(idx)
         msg = ""
         if state["cursor_x"] is not None:
             msg = f"cursor=({state['cursor_x']:.0f}, {state['cursor_y']:.0f})"

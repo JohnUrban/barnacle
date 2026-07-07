@@ -231,7 +231,10 @@ The 6/14 event was supposed to be the high-surge unblocker for v0.8
 - [x] **STAGED 2026-07-07** — `flood_edge` category (teal) added to
       `pick_coords.py` + `render_map.py`; all five edge-photo
       locations staged in the CSV at ~4.15 NAVD88 (the 6/14 water
-      band), awaiting user clicks.
+      band) under DATED event-mark names (`edge_20260614_*` — these
+      are one-time water-edge marks, not fixed features), awaiting
+      user clicks. The picker auto-opens each mark's documentary
+      photo when its turn comes up.
 - [ ] Establish a permanent reference point on
       `grate_bay_ave_upstream` for future tape measurements (low-point
       convention agreed 6/14).
