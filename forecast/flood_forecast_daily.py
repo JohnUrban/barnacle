@@ -4280,6 +4280,7 @@ def _render_water_series_section(forecast):
         "data": {"labels": labels, "datasets": datasets},
         "options": {
             "responsive": True,
+            "maintainAspectRatio": False,
             "plugins": {
                 "legend": {"display": True,
                            "labels": {"boxWidth": 22, "boxHeight": 2,
@@ -4326,8 +4327,9 @@ def _render_water_series_section(forecast):
     return f"""
   <section class="water-series">
     <h2>Predicted water level — next 24 hours</h2>
-    <canvas id="water-series-chart" width="800" height="300"
-            style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
+    <div style="position:relative;height:340px;margin:8px auto">
+      <canvas id="water-series-chart"></canvas>
+    </div>
     <p class="note">{' '.join(note_bits)}</p>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
@@ -4729,8 +4731,12 @@ def _render_oscillation_section(forecast):
        is untested by tape above SH ~7.3 (storm-surge extrapolation);
        and these are TIDE thresholds — rain floods ignore them
        entirely (see the rain pathway / burst band above).</p>
-    <canvas id="oscillation-chart" width="800" height="380"
-            style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
+    <!-- Fixed-height wrapper + maintainAspectRatio:false — on phones a
+         width-locked aspect ratio squashed the plot to ~50px once the
+         legend took its rows (user screenshot 2026-07-07 PM). -->
+    <div style="position:relative;height:360px;margin:8px auto">
+      <canvas id="oscillation-chart"></canvas>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <script>
@@ -4763,12 +4769,14 @@ def _render_oscillation_section(forecast):
         var thresholds = landmarks.map(function(l) {{ return l.mllw_threshold; }});
         var minE = Math.min.apply(null, thresholds);
         var maxE = Math.max.apply(null, thresholds);
+        // Short names: the legend is 7 entries on a ~360px phone —
+        // every character costs a wrap row, and rows cost plot height.
         var LM_STYLE = {{
-          grate_SW:        {{ color: '#222222', name: 'SW grate (first water)', solid: true }},
-          gutter_walkway:  {{ color: '#2f8f5f', name: 'gutter (move the car)' }},
-          curb:            {{ color: '#c0392b', name: 'curb (flood onset)' }},
+          grate_SW:        {{ color: '#222222', name: 'SW grate', solid: true }},
+          gutter_walkway:  {{ color: '#2f8f5f', name: 'gutter' }},
+          curb:            {{ color: '#c0392b', name: 'curb' }},
           lawn_step:       {{ color: '#7c4dbc', name: 'lawn step' }},
-          porch_step1_top: {{ color: '#6d4c2f', name: '1st porch step top' }}
+          porch_step1_top: {{ color: '#6d4c2f', name: 'porch step' }}
         }};
         var landmarkDatasets = landmarks.map(function(l) {{
           var st = LM_STYLE[l.key] || {{ color: '#888', name: l.label }};
@@ -4811,6 +4819,7 @@ def _render_oscillation_section(forecast):
           }},
           options: {{
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {{
               tooltip: {{
                 filter: function(item) {{ return item.datasetIndex < 2; }},
