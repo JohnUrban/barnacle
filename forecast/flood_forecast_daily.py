@@ -4723,6 +4723,11 @@ def _render_oscillation_section(forecast):
     <h2>Sandy Hook peak over time</h2>
     <p class="note">Observed (■) past peaks and predicted (●) upcoming peaks,
        plotted as <b>Sandy Hook MLLW</b> (the actual NOAA gauge reading).
+       Note the two series sample differently: squares are ONE observed
+       peak per day (the higher of the day's two highs), while circles
+       show EVERY upcoming high tide — their zig-zag is the real
+       day/night inequality of the two daily highs (often ~1 ft apart
+       here), which the daily-max squares can't show by construction.
        Horizontal lines are the SH-MLLW thresholds at which the
        {CURRENT_MODEL_VERSION} model (enhancement 0.00, calibrated on
        4 tape-measured events, SH 6.17&ndash;7.29) predicts water
