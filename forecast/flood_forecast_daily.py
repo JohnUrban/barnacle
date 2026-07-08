@@ -127,12 +127,15 @@ SEASONALITY_KEY_ALIASES = {}
 # Curated landmarks for the oscillation chart on the home page (9b.4(b)).
 # Five entries — fewer than the full landmark set — so labels don't crowd
 # each other on the chart's y-axis. Updated for v0.7 (2026-06-14).
+# Aligned 2026-07-07 (mobile/grammar pass) to the water-level chart's
+# landmark set + shared palette, so the two charts read as one system
+# (chart grammar: landmark lines live in the LEGEND, learned by color).
 OSCILLATION_LANDMARK_KEYS = {
-    "grate_SE",               # 3.60 — SE proximal grate (was lowest_sentinel_grate)
-    "grate_NE",               # 3.80 — user's corner grate (was corner_grate at 3.91)
-    "curb",                   # 4.16 — curb at walkway
-    "lawn_step",              # 4.66 — lawn / walkway step
-    "porch_step1_top",        # 5.41 — top of first porch step
+    "grate_SW",               # 3.52 — lowest grate, first water (black, solid)
+    "gutter_walkway",         # 3.78 — move-the-car threshold (green)
+    "curb",                   # 4.16 — curb TOP at walkway (red)
+    "lawn_step",              # 4.66 — lawn / walkway step (purple)
+    "porch_step1_top",        # 5.41 — top of first porch step (brown)
 }
 
 MLLW_TO_NAVD88_OFFSET = -2.82  # NAVD88 = MLLW + offset
@@ -3726,6 +3729,7 @@ def _oscillation_chart_data(forecast):
     for key, label, elev, sh in LANDMARKS:
         if key in keep_keys:
             landmark_lines.append({
+                "key":            key,           # palette + short-label lookup in JS
                 "label":          label,
                 "mllw_threshold": float(sh),     # the threshold drawn on the chart
                 "navd88":         float(elev),   # for tooltip context
@@ -4750,36 +4754,31 @@ def _render_oscillation_section(forecast):
         var predictedData = points.map(function(p) {{
           return p.kind === 'predicted' ? p.sh_peak_mllw : null;
         }});
-        // Build a horizontal-line annotation per landmark, color-graded
-        // blue (low MLLW threshold) → red (high) so the band reads
-        // bottom-to-top as a severity gradient.
+        // Landmark threshold lines as constant DATASETS with legend
+        // entries — the 2026-07-06 chart grammar (labels live in the
+        // LEGEND, never boxes on the plot; boxes collided into soup on
+        // phones). Shared palette with the water-level chart, so the
+        // reader learns ONE color language.
         var landmarks = data.landmarks;
         var thresholds = landmarks.map(function(l) {{ return l.mllw_threshold; }});
         var minE = Math.min.apply(null, thresholds);
         var maxE = Math.max.apply(null, thresholds);
-        function lerp(a, b, t) {{ return a + (b - a) * t; }}
-        var annotations = {{}};
-        landmarks.forEach(function(l, i) {{
-          var t = (l.mllw_threshold - minE) / (maxE - minE || 1);
-          // Blue (31, 111, 235) → Red (209, 68, 74)
-          var r = Math.round(lerp(31, 209, t));
-          var g = Math.round(lerp(111, 68, t));
-          var b = Math.round(lerp(235, 74, t));
-          annotations['lm' + i] = {{
-            type: 'line',
-            yMin: l.mllw_threshold, yMax: l.mllw_threshold,
-            borderColor: 'rgba(' + r + ',' + g + ',' + b + ',0.7)',
-            borderWidth: 1,
-            borderDash: [4, 3],
-            label: {{
-              display: true,
-              content: l.label + ' (' + l.mllw_threshold.toFixed(2) + ')',
-              position: 'end',
-              backgroundColor: 'rgba(255,255,255,0.85)',
-              color: 'rgb(' + r + ',' + g + ',' + b + ')',
-              font: {{ size: 10 }},
-              padding: 2,
-            }}
+        var LM_STYLE = {{
+          grate_SW:        {{ color: '#222222', name: 'SW grate (first water)', solid: true }},
+          gutter_walkway:  {{ color: '#2f8f5f', name: 'gutter (move the car)' }},
+          curb:            {{ color: '#c0392b', name: 'curb (flood onset)' }},
+          lawn_step:       {{ color: '#7c4dbc', name: 'lawn step' }},
+          porch_step1_top: {{ color: '#6d4c2f', name: '1st porch step top' }}
+        }};
+        var landmarkDatasets = landmarks.map(function(l) {{
+          var st = LM_STYLE[l.key] || {{ color: '#888', name: l.label }};
+          return {{
+            label: st.name + ' ' + l.mllw_threshold.toFixed(2),
+            data: labels.map(function() {{ return l.mllw_threshold; }}),
+            borderColor: st.color,
+            borderWidth: st.solid ? 1.5 : 1.2,
+            borderDash: st.solid ? [] : [6, 5],
+            fill: false, pointRadius: 0, spanGaps: true,
           }};
         }});
         var ctx = document.getElementById('oscillation-chart').getContext('2d');
@@ -4794,7 +4793,7 @@ def _render_oscillation_section(forecast):
                 borderColor: 'rgba(60,60,60,0.85)',
                 backgroundColor: 'rgba(60,60,60,0.85)',
                 pointStyle: 'rect',
-                pointRadius: 6,
+                pointRadius: 4,
                 spanGaps: true,
                 showLine: false,
               }},
@@ -4804,17 +4803,17 @@ def _render_oscillation_section(forecast):
                 borderColor: 'rgba(31, 111, 235, 0.9)',
                 backgroundColor: 'rgba(31, 111, 235, 0.9)',
                 pointStyle: 'circle',
-                pointRadius: 6,
+                pointRadius: 4,
                 spanGaps: true,
                 showLine: false,
               }}
-            ]
+            ].concat(landmarkDatasets)
           }},
           options: {{
             responsive: true,
             plugins: {{
-              annotation: {{ annotations: annotations }},
               tooltip: {{
+                filter: function(item) {{ return item.datasetIndex < 2; }},
                 callbacks: {{
                   label: function(ctx) {{
                     var p = points[ctx.dataIndex];
@@ -4826,15 +4825,22 @@ def _render_oscillation_section(forecast):
                   }}
                 }}
               }},
-              legend: {{ position: 'top' }}
+              legend: {{ position: 'top',
+                         labels: {{ boxWidth: 22, boxHeight: 2,
+                                    font: {{ size: 10 }} }} }}
             }},
             scales: {{
               x: {{
-                title: {{ display: true, text: 'Tide peak (local time)' }},
+                title: {{ display: true, text: 'Tide peak (local time)',
+                          font: {{ size: 11 }} }},
+                ticks: {{ maxTicksLimit: 8, font: {{ size: 10 }},
+                          maxRotation: 50 }},
                 grid: {{ color: 'rgba(0,0,0,0.05)' }}
               }},
               y: {{
-                title: {{ display: true, text: 'Sandy Hook peak (ft MLLW)' }},
+                title: {{ display: true, text: 'Sandy Hook peak (ft MLLW)',
+                          font: {{ size: 11 }} }},
+                ticks: {{ font: {{ size: 10 }} }},
                 grid: {{ color: 'rgba(0,0,0,0.06)' }},
                 suggestedMin: Math.min(minE - 0.2,
                   Math.min.apply(null,
