@@ -4834,7 +4834,9 @@ def _render_oscillation_section(forecast):
   <section class="oscillation">
     <h2>Sandy Hook peak over time</h2>
     <p class="note">Observed (■) past peaks and predicted (●) upcoming peaks,
-       plotted as <b>Sandy Hook MLLW</b> (the actual NOAA gauge reading).
+       plotted by default in <b>inches vs the SW grate</b> (the
+       project's standard reference; 0&Prime; = water first emerges) —
+       toggle to the raw gauge reading (ft MLLW).
        Both series are PER-TIDE (both daily highs — the zig-zag is the
        real day/night inequality, often ~1 ft here). Under each past
        square, a faded circle shows what the model predicted
@@ -4855,6 +4857,13 @@ def _render_oscillation_section(forecast):
        is untested by tape above SH ~7.3 (storm-surge extrapolation);
        and these are TIDE thresholds — rain floods ignore them
        entirely (see the rain pathway / burst band above).</p>
+    <div class="heatmap-toggle unit-toggle">
+      <span class="note">Units:</span>
+      <label><input type="radio" name="osc-unit" value="in" checked>
+        &Prime; vs SW grate</label>
+      <label><input type="radio" name="osc-unit" value="mllw">
+        ft MLLW</label>
+    </div>
     <!-- Fixed-height wrapper + maintainAspectRatio:false — on phones a
          width-locked aspect ratio squashed the plot to ~50px once the
          legend took its rows (user screenshot 2026-07-07 PM). -->
@@ -4927,124 +4936,534 @@ def _render_oscillation_section(forecast):
             fill: false, pointRadius: 0, spanGaps: true,
           }};
         }});
+        // Unit toggle (user 2026-07-07): default inches-vs-SW-grate,
+        // option ft MLLW. Shared preference + event with the flood-
+        // peaks chart below so both flip together.
+        var UNIT_KEY = 'barnacle-peaks-unit';
+        var unit = 'in';
+        try {{ unit = localStorage.getItem(UNIT_KEY) || 'in'; }} catch (e) {{}}
+        var GRATE_SH = 6.34;   // the SW grate expressed at the gauge
+        function conv(v) {{ return unit === 'in' ? (v - GRATE_SH) * 12 : v; }}
+        function fmtShort(v) {{
+          var c = conv(v);
+          return unit === 'in'
+            ? (c >= 0 ? '+' : '') + c.toFixed(1) + '\u2033' : c.toFixed(2);
+        }}
+        function fmtVal(v) {{
+          return fmtShort(v) + (unit === 'in' ? ' vs SW grate' : ' ft MLLW');
+        }}
+        function cmap(arr) {{
+          return arr.map(function(v) {{ return v == null ? null : conv(v); }});
+        }}
         var ctx = document.getElementById('oscillation-chart').getContext('2d');
-        new Chart(ctx, {{
-          type: 'line',
-          data: {{
-            labels: labels,
-            datasets: [
-              {{
-                label: 'Observed SH peak',
-                data: observedData,
-                borderColor: 'rgba(60,60,60,0.85)',
-                backgroundColor: 'rgba(60,60,60,0.85)',
-                pointStyle: 'rect',
-                pointRadius: 4,
-                spanGaps: true,
-                showLine: false,
-              }},
-              {{
-                label: 'Predicted SH peak',
-                data: predictedData,
-                borderColor: 'rgba(31, 111, 235, 0.9)',
-                backgroundColor: 'rgba(31, 111, 235, 0.9)',
-                pointStyle: 'circle',
-                pointRadius: 4,
-                spanGaps: true,
-                showLine: false,
-              }},
-              {{
-                label: 'as predicted ~24 h ahead',
-                data: pred24Data,
-                borderColor: 'rgba(31, 111, 235, 0.45)',
-                backgroundColor: 'rgba(31, 111, 235, 0.25)',
-                pointStyle: 'circle',
-                pointRadius: 7,
-                pointBorderWidth: 1.5,
-                spanGaps: true,
-                showLine: false,
-              }}
-            ].concat(hasBurst ? [{{
-                label: 'rain-burst compound potential',
-                data: burstData,
-                borderColor: 'rgba(11, 61, 107, 0.95)',
-                backgroundColor: 'rgba(11, 61, 107, 0.35)',
-                pointStyle: 'triangle',
-                pointRadius: 6,
-                spanGaps: true,
-                showLine: false,
-              }}] : []).concat(landmarkDatasets)
-          }},
-          options: {{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {{
-              tooltip: {{
-                filter: function(item) {{
-                  return item.datasetIndex < (hasBurst ? 4 : 3);
+        var chart = null;
+        function build() {{
+          if (chart) chart.destroy();
+          var lmDatasets = landmarks.map(function(l) {{
+            var st = LM_STYLE[l.key] || {{ color: '#888', name: l.label }};
+            return {{
+              label: st.name + ' ' + fmtShort(l.mllw_threshold),
+              data: labels.map(function() {{ return conv(l.mllw_threshold); }}),
+              borderColor: st.color,
+              borderWidth: st.solid ? 1.5 : 1.2,
+              borderDash: st.solid ? [] : [6, 5],
+              fill: false, pointRadius: 0, spanGaps: true,
+            }};
+          }});
+          chart = new Chart(ctx, {{
+            type: 'line',
+            data: {{
+              labels: labels,
+              datasets: [
+                {{
+                  label: 'Observed SH peak',
+                  data: cmap(observedData),
+                  borderColor: 'rgba(60,60,60,0.85)',
+                  backgroundColor: 'rgba(60,60,60,0.85)',
+                  pointStyle: 'rect', pointRadius: 4,
+                  spanGaps: true, showLine: false,
                 }},
-                callbacks: {{
-                  label: function(ctx) {{
-                    var p = points[ctx.dataIndex];
-                    if (!p) return ctx.formattedValue;
-                    if (hasBurst && ctx.datasetIndex === 3) {{
-                      return [
-                        'If a forecast-class burst lands on this tide:',
-                        'street water \u2248 ' +
-                          p.burst_potential_mllw.toFixed(2) +
-                          ' ft (SH-equivalent units \u2014 the gauge',
-                        'itself never reads rain floods)',
-                      ];
-                    }}
-                    if (ctx.datasetIndex === 2) {{
-                      var err = p.predicted_24h_mllw - p.sh_peak_mllw;
-                      return [
-                        '~24 h ahead we said: ' +
-                          p.predicted_24h_mllw.toFixed(2) + ' ft MLLW',
-                        'It came in: ' + p.sh_peak_mllw.toFixed(2) +
-                          ' (' + (err >= 0 ? '+' : '') + err.toFixed(2) +
-                          ' ft error)',
-                      ];
-                    }}
-                    return [
-                      (p.kind === 'observed' ? 'Observed' : 'Predicted'),
-                      'Sandy Hook: ' + p.sh_peak_mllw.toFixed(2) + ' ft MLLW',
-                    ];
-                  }}
+                {{
+                  label: 'Predicted SH peak',
+                  data: cmap(predictedData),
+                  borderColor: 'rgba(31, 111, 235, 0.9)',
+                  backgroundColor: 'rgba(31, 111, 235, 0.9)',
+                  pointStyle: 'circle', pointRadius: 4,
+                  spanGaps: true, showLine: false,
+                }},
+                {{
+                  label: 'as predicted ~24 h ahead',
+                  data: cmap(pred24Data),
+                  borderColor: 'rgba(31, 111, 235, 0.45)',
+                  backgroundColor: 'rgba(31, 111, 235, 0.25)',
+                  pointStyle: 'circle', pointRadius: 7,
+                  pointBorderWidth: 1.5,
+                  spanGaps: true, showLine: false,
                 }}
-              }},
-              legend: {{ position: 'top',
-                         labels: {{ boxWidth: 22, boxHeight: 2,
-                                    font: {{ size: 10 }} }} }}
+              ].concat(hasBurst ? [{{
+                  label: 'rain-burst compound potential',
+                  data: cmap(burstData),
+                  borderColor: 'rgba(11, 61, 107, 0.95)',
+                  backgroundColor: 'rgba(11, 61, 107, 0.35)',
+                  pointStyle: 'triangle', pointRadius: 6,
+                  spanGaps: true, showLine: false,
+                }}] : []).concat(lmDatasets)
             }},
-            scales: {{
-              x: {{
-                title: {{ display: true, text: 'Tide peak (local time)',
-                          font: {{ size: 11 }} }},
-                ticks: {{ maxTicksLimit: 8, font: {{ size: 10 }},
-                          maxRotation: 50 }},
-                grid: {{ color: 'rgba(0,0,0,0.05)' }}
+            options: {{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {{
+                tooltip: {{
+                  filter: function(item) {{
+                    return item.datasetIndex < (hasBurst ? 4 : 3);
+                  }},
+                  callbacks: {{
+                    label: function(c) {{
+                      var p = points[c.dataIndex];
+                      if (!p) return c.formattedValue;
+                      if (hasBurst && c.datasetIndex === 3) {{
+                        return [
+                          'If a forecast-class burst lands on this tide:',
+                          'street water \u2248 ' +
+                            fmtVal(p.burst_potential_mllw) +
+                            (unit === 'in' ? '' :
+                             ' (SH-equivalent \u2014 the gauge never' +
+                             ' reads rain floods)'),
+                        ];
+                      }}
+                      if (c.datasetIndex === 2) {{
+                        var err = conv(p.predicted_24h_mllw) -
+                                  conv(p.sh_peak_mllw);
+                        var eu = unit === 'in' ? '\u2033' : ' ft';
+                        return [
+                          '~24 h ahead we said: ' +
+                            fmtVal(p.predicted_24h_mllw),
+                          'It came in: ' + fmtShort(p.sh_peak_mllw) +
+                            ' (' + (err >= 0 ? '+' : '') +
+                            err.toFixed(unit === 'in' ? 1 : 2) +
+                            eu + ' error)',
+                        ];
+                      }}
+                      return [
+                        (p.kind === 'observed' ? 'Observed' : 'Predicted'),
+                        fmtVal(p.sh_peak_mllw),
+                      ];
+                    }}
+                  }}
+                }},
+                legend: {{ position: 'top',
+                           labels: {{ boxWidth: 22, boxHeight: 2,
+                                      font: {{ size: 10 }} }} }}
               }},
-              y: {{
-                title: {{ display: true, text: 'Sandy Hook peak (ft MLLW)',
-                          font: {{ size: 11 }} }},
-                ticks: {{ font: {{ size: 10 }} }},
-                grid: {{ color: 'rgba(0,0,0,0.06)' }},
-                suggestedMin: Math.min(minE - 0.2,
-                  Math.min.apply(null,
-                    points.map(function(p) {{ return p.sh_peak_mllw; }}))),
-                suggestedMax: Math.max(maxE + 0.2,
-                  Math.max.apply(null,
-                    points.map(function(p) {{
-                      return Math.max(p.sh_peak_mllw,
-                                      p.burst_potential_mllw || 0);
-                    }}))),
+              scales: {{
+                x: {{
+                  title: {{ display: true, text: 'Tide peak (local time)',
+                            font: {{ size: 11 }} }},
+                  ticks: {{ maxTicksLimit: 8, font: {{ size: 10 }},
+                            maxRotation: 50 }},
+                  grid: {{ color: 'rgba(0,0,0,0.05)' }}
+                }},
+                y: {{
+                  title: {{ display: true,
+                            text: unit === 'in'
+                              ? 'inches vs SW grate'
+                              : 'Sandy Hook peak (ft MLLW)',
+                            font: {{ size: 11 }} }},
+                  ticks: {{ font: {{ size: 10 }} }},
+                  grid: {{ color: 'rgba(0,0,0,0.06)' }},
+                  suggestedMin: conv(Math.min(minE - 0.2,
+                    Math.min.apply(null,
+                      points.map(function(p) {{ return p.sh_peak_mllw; }})))),
+                  suggestedMax: conv(Math.max(maxE + 0.2,
+                    Math.max.apply(null,
+                      points.map(function(p) {{
+                        return Math.max(p.sh_peak_mllw,
+                                        p.burst_potential_mllw || 0);
+                      }})))),
+                }}
               }}
             }}
-          }}
+          }});
+        }}
+        build();
+        var radios = document.querySelectorAll('input[name="osc-unit"]');
+        function syncRadios() {{
+          radios.forEach(function(r) {{ r.checked = (r.value === unit); }});
+        }}
+        syncRadios();
+        radios.forEach(function(r) {{
+          r.addEventListener('change', function() {{
+            try {{ localStorage.setItem(UNIT_KEY, r.value); }} catch (e) {{}}
+            document.dispatchEvent(new CustomEvent('barnacle-peaks-unit'));
+          }});
+        }});
+        document.addEventListener('barnacle-peaks-unit', function() {{
+          try {{ unit = localStorage.getItem(UNIT_KEY) || 'in'; }} catch (e) {{}}
+          syncRadios();
+          build();
         }});
       }})();
     </script>
+  </section>
+"""
+
+
+def _flood_peaks_chart_data(forecast):
+    """Data for the all-pathways flood-peaks timeline (2026-07-07,
+    user design). Everything in ft NAVD88 (client converts to the
+    display unit): tide peaks past+future (reusing the oscillation
+    data), MEASURED flood peaks from the spot-check log (any pathway
+    — this is where the 7/6 11:34 AM rain flood lives, which a
+    per-tide axis cannot represent), and past days' archived
+    burst-potential assessments (day-wide: the daily archive is the
+    day's LAST run, so there is no honest clock time for them)."""
+    base = _oscillation_chart_data(forecast)
+    tides = []
+    for pt in base["points"]:
+        row = {
+            "time": pt["time"],
+            "navd88": round(pt["sh_peak_mllw"] + MLLW_TO_NAVD88_OFFSET, 3),
+            "kind": pt["kind"],
+        }
+        if pt.get("predicted_24h_mllw") is not None:
+            row["pred24_navd88"] = round(
+                pt["predicted_24h_mllw"] + MLLW_TO_NAVD88_OFFSET, 3)
+        if pt.get("burst_potential_mllw") is not None:
+            row["burst_navd88"] = round(
+                pt["burst_potential_mllw"] + MLLW_TO_NAVD88_OFFSET, 3)
+        tides.append(row)
+
+    # Measured flood peaks: max implied water per day from the
+    # spot-check log (landmark elevation + depth). Pocket rows are
+    # excluded (retention, not street water); dry checks (implied
+    # water below the SW grate) don't mark.
+    measured = []
+    try:
+        elev_by_key = {k: e for k, _lbl, e, _sh in LANDMARKS}
+        cutoff = _station_local_now() - dt.timedelta(days=7)
+        best = {}
+        obs_path = os.path.join(_REPO_ROOT, "data",
+                                "labeled_observations.csv")
+        with open(obs_path) as f:
+            for r in csv.DictReader(f):
+                key = (r.get("landmark_key") or "").strip()
+                if "pocket" in key or key not in elev_by_key:
+                    continue
+                try:
+                    d_in = float(r.get("observed_depth_in") or "")
+                except ValueError:
+                    continue
+                ts = (r.get("observation_time_local") or "").strip()
+                try:
+                    t = dt.datetime.strptime(ts[:16], "%Y-%m-%dT%H:%M")
+                except ValueError:
+                    continue
+                if t < cutoff:
+                    continue
+                w = elev_by_key[key] + d_in / 12.0
+                if w <= GRATE_SW:
+                    continue
+                day = t.date().isoformat()
+                if day not in best or w > best[day][1]:
+                    best[day] = (ts[:16].replace("T", " "), w)
+        measured = [{"time": v[0], "navd88": round(v[1], 3)}
+                    for v in sorted(best.values())]
+    except OSError:
+        measured = []
+
+    # Past days where the archived forecast carried live pluvial risk.
+    risk_days = []
+    try:
+        today = _station_local_now().date()
+    except Exception:
+        today = dt.date.today()
+    for i in range(1, 8):
+        d = today - dt.timedelta(days=i)
+        path = os.path.join(_REPO_ROOT, "docs", "archive",
+                            d.isoformat() + ".json")
+        try:
+            with open(path) as f:
+                arc = json.load(f)
+        except (OSError, ValueError):
+            continue
+        pr = arc.get("pluvial_risk") or {}
+        if not pr.get("level"):
+            continue
+        pots = [v for v in (pr.get("potential_low_tide_navd88"),
+                            pr.get("potential_low_tide_navd88_tanh"))
+                if v is not None]
+        if not pots:
+            continue
+        risk_days.append({"day": d.isoformat(),
+                          "navd88": round(max(pots), 3),
+                          "level": pr["level"]})
+
+    landmarks = [{"key": l["key"], "navd88": l["navd88"]}
+                 for l in base["landmarks"]]
+    return {"tides": tides, "measured": measured,
+            "risk_days": risk_days, "landmarks": landmarks}
+
+
+def _render_flood_peaks_section(forecast):
+    """The all-pathways companion to the per-tide peaks chart above it
+    (2026-07-07, user: "we care about flooding any time" — rain-only
+    floods happen between tides and at low tide; the per-tide axis
+    cannot show them). Continuous TIME x-axis, local-water y-axis.
+    Kept alongside the original per-tide chart for now (single-user
+    A/B; a keep/retire decision can come later)."""
+    data = _flood_peaks_chart_data(forecast)
+    if len(data["tides"]) < 2:
+        return ""
+    data_json = json.dumps(data, default=str)
+    js = r"""
+      (function() {
+        var data = __DATA__;
+        var GRATE = 3.52, MLLW_OFF = 2.82;
+        var UNIT_KEY = 'barnacle-peaks-unit';
+        var unit = 'in';
+        try { unit = localStorage.getItem(UNIT_KEY) || 'in'; } catch (e) {}
+        function conv(v) {
+          return unit === 'in' ? (v - GRATE) * 12 : v + MLLW_OFF;
+        }
+        function fmtShort(v) {
+          var c = conv(v);
+          return unit === 'in'
+            ? (c >= 0 ? '+' : '') + c.toFixed(1) + '″' : c.toFixed(2);
+        }
+        function fmtVal(v) {
+          return fmtShort(v) + (unit === 'in' ? ' vs SW grate' : ' ft MLLW');
+        }
+        function T(str) {
+          var d = new Date(str.replace(' ', 'T'));
+          return isNaN(d.getTime()) ? null : d.getTime();
+        }
+        function fmtTick(ms) {
+          return new Date(ms).toLocaleDateString(undefined,
+            { weekday: 'short', month: 'numeric', day: 'numeric' });
+        }
+        var LM_STYLE = {
+          grate_SW:        { color: '#222222', name: 'SW grate', solid: true },
+          gutter_walkway:  { color: '#2f8f5f', name: 'gutter' },
+          curb:            { color: '#c0392b', name: 'curb' },
+          lawn_step:       { color: '#7c4dbc', name: 'lawn step' },
+          porch_step1_top: { color: '#6d4c2f', name: 'porch step' }
+        };
+        var nowMs = Date.now();
+        var allX = [];
+        function pts(rows, field, kindFilter) {
+          var out = [];
+          rows.forEach(function(r) {
+            if (kindFilter && r.kind !== kindFilter) return;
+            var v = field ? r[field] : r.navd88;
+            var x = T(r.time);
+            if (v == null || x == null) return;
+            allX.push(x);
+            out.push({ x: x, y: v, src: r });
+          });
+          return out;
+        }
+        var obsP    = pts(data.tides, null, 'observed');
+        var futP    = pts(data.tides, null, 'predicted');
+        var p24P    = pts(data.tides, 'pred24_navd88', null);
+        var burstP  = pts(data.tides, 'burst_navd88', null);
+        var measP   = pts(data.measured, null, null);
+        // Day-wide archived-risk segments: pairs separated by a null
+        // gap so each day is its own dash.
+        var riskSeg = [];
+        data.risk_days.forEach(function(r) {
+          var d0 = T(r.day + ' 00:00'), d1 = T(r.day + ' 23:59');
+          if (d0 == null) return;
+          allX.push(d0, d1);
+          riskSeg.push({ x: d0, y: r.navd88, src: r });
+          riskSeg.push({ x: d1, y: r.navd88, src: r });
+          riskSeg.push({ x: (d0 + d1) / 2, y: null });
+        });
+        var xMin = Math.min.apply(null, allX.concat([nowMs])) - 6*3600e3;
+        var xMax = Math.max.apply(null, allX.concat([nowMs])) + 6*3600e3;
+        var allY = [];
+        [obsP, futP, p24P, burstP, measP].forEach(function(a) {
+          a.forEach(function(q) { allY.push(q.y); });
+        });
+        riskSeg.forEach(function(q) { if (q.y != null) allY.push(q.y); });
+        data.landmarks.forEach(function(l) { allY.push(l.navd88); });
+        var ctx = document.getElementById('flood-peaks-chart')
+                    .getContext('2d');
+        var chart = null;
+        function cpts(a) {
+          return a.map(function(q) {
+            return { x: q.x, y: q.y == null ? null : conv(q.y), src: q.src };
+          });
+        }
+        function build() {
+          if (chart) chart.destroy();
+          var lmDatasets = data.landmarks.map(function(l) {
+            var st = LM_STYLE[l.key] || { color: '#888', name: l.key };
+            return {
+              label: st.name + ' ' + fmtShort(l.navd88),
+              data: [{ x: xMin, y: conv(l.navd88) },
+                     { x: xMax, y: conv(l.navd88) }],
+              borderColor: st.color,
+              borderWidth: st.solid ? 1.5 : 1.2,
+              borderDash: st.solid ? [] : [6, 5],
+              fill: false, pointRadius: 0, showLine: true,
+            };
+          });
+          var core = [
+            { label: 'Observed tide peak', data: cpts(obsP),
+              borderColor: 'rgba(60,60,60,0.85)',
+              backgroundColor: 'rgba(60,60,60,0.85)',
+              pointStyle: 'rect', pointRadius: 4, showLine: false },
+            { label: 'Predicted tide peak', data: cpts(futP),
+              borderColor: 'rgba(31,111,235,0.9)',
+              backgroundColor: 'rgba(31,111,235,0.9)',
+              pointStyle: 'circle', pointRadius: 4, showLine: false },
+            { label: 'as predicted ~24 h ahead', data: cpts(p24P),
+              borderColor: 'rgba(31,111,235,0.45)',
+              backgroundColor: 'rgba(31,111,235,0.25)',
+              pointStyle: 'circle', pointRadius: 7,
+              pointBorderWidth: 1.5, showLine: false },
+          ];
+          if (measP.length) core.push(
+            { label: 'MEASURED flood (spot-check, any cause)',
+              data: cpts(measP),
+              borderColor: 'rgba(11,61,107,1)',
+              backgroundColor: 'rgba(217,119,6,0.9)',
+              pointStyle: 'rectRot', pointRadius: 7,
+              pointBorderWidth: 2, showLine: false });
+          if (burstP.length) core.push(
+            { label: 'rain-burst compound potential', data: cpts(burstP),
+              borderColor: 'rgba(11,61,107,0.95)',
+              backgroundColor: 'rgba(11,61,107,0.35)',
+              pointStyle: 'triangle', pointRadius: 6, showLine: false });
+          if (riskSeg.length) core.push(
+            { label: 'burst potential archived that day', data: cpts(riskSeg),
+              borderColor: 'rgba(11,61,107,0.45)',
+              borderWidth: 3, borderDash: [2, 3],
+              pointRadius: 0, showLine: true, spanGaps: false });
+          var nCore = core.length;
+          chart = new Chart(ctx, {
+            type: 'scatter',
+            data: { datasets: core.concat(lmDatasets) },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                annotation: { annotations: {
+                  nowline: {
+                    type: 'line', xMin: nowMs, xMax: nowMs,
+                    borderColor: '#888', borderWidth: 1,
+                    borderDash: [3, 3],
+                    label: { display: true, content: 'now',
+                             position: 'start',
+                             backgroundColor: 'rgba(255,255,255,0.75)',
+                             color: '#666', font: { size: 9 } }
+                  }
+                } },
+                tooltip: {
+                  filter: function(item) {
+                    return item.datasetIndex < nCore;
+                  },
+                  callbacks: {
+                    title: function(items) {
+                      if (!items.length) return '';
+                      return new Date(items[0].parsed.x).toLocaleString(
+                        undefined, { weekday: 'short', month: 'numeric',
+                                     day: 'numeric', hour: 'numeric',
+                                     minute: '2-digit' });
+                    },
+                    label: function(c) {
+                      var raw = c.raw || {};
+                      var lbl = c.dataset.label + ': ';
+                      var y = raw.src && raw.src.navd88 != null
+                        ? raw.src.navd88
+                        : (raw.src && raw.src.burst_navd88) || null;
+                      return lbl + (c.parsed.y >= 0 && unit === 'in'
+                        ? '+' : '') +
+                        c.parsed.y.toFixed(unit === 'in' ? 1 : 2) +
+                        (unit === 'in' ? '″ vs SW grate'
+                                       : ' ft MLLW-equivalent');
+                    }
+                  }
+                },
+                legend: { position: 'top',
+                          labels: { boxWidth: 22, boxHeight: 2,
+                                    font: { size: 10 } } }
+              },
+              scales: {
+                x: {
+                  type: 'linear', min: xMin, max: xMax,
+                  ticks: {
+                    maxTicksLimit: 8, font: { size: 10 },
+                    maxRotation: 50,
+                    callback: function(v) { return fmtTick(v); }
+                  },
+                  grid: { color: 'rgba(0,0,0,0.05)' }
+                },
+                y: {
+                  title: { display: true,
+                           text: unit === 'in'
+                             ? 'inches vs SW grate'
+                             : 'ft MLLW (gauge-equivalent)',
+                           font: { size: 11 } },
+                  ticks: { font: { size: 10 } },
+                  grid: { color: 'rgba(0,0,0,0.06)' },
+                  suggestedMin: conv(Math.min.apply(null, allY)) -
+                                (unit === 'in' ? 3 : 0.25),
+                  suggestedMax: conv(Math.max.apply(null, allY)) +
+                                (unit === 'in' ? 3 : 0.25),
+                }
+              }
+            }
+          });
+        }
+        build();
+        var radios = document.querySelectorAll('input[name="fpk-unit"]');
+        function syncRadios() {
+          radios.forEach(function(r) { r.checked = (r.value === unit); });
+        }
+        syncRadios();
+        radios.forEach(function(r) {
+          r.addEventListener('change', function() {
+            try { localStorage.setItem(UNIT_KEY, r.value); } catch (e) {}
+            document.dispatchEvent(new CustomEvent('barnacle-peaks-unit'));
+          });
+        });
+        document.addEventListener('barnacle-peaks-unit', function() {
+          try { unit = localStorage.getItem(UNIT_KEY) || 'in'; } catch (e) {}
+          syncRadios();
+          build();
+        });
+      })();
+""".replace("__DATA__", data_json)
+    return """
+  <section class="oscillation">
+    <h2>Flood peaks at 342 Bay — past &amp; forecast (all pathways)</h2>
+    <p class="note">The chart above is organized BY TIDE — but this
+       corner floods on rain alone, between tides, even at dead low
+       tide (7/6/2026). This companion view puts everything on a real
+       TIME axis in local units: tide peaks (observed ■ / predicted ●
+       / faded halo = what we said ~24&nbsp;h ahead), <b>measured
+       flood peaks from the spot-check log</b> (orange diamonds — any
+       cause, placed when they actually happened), navy triangles =
+       rain-burst compound potential on upcoming tides, and faint
+       navy day-dashes = days whose archived forecast carried live
+       burst risk (day-wide, because a burst has magnitude but no
+       forecastable clock time). A rain flood with no halo under it =
+       a miss the tide model could never have seen; that is the point
+       of this chart.</p>
+    <div class="heatmap-toggle unit-toggle">
+      <span class="note">Units:</span>
+      <label><input type="radio" name="fpk-unit" value="in" checked>
+        &Prime; vs SW grate</label>
+      <label><input type="radio" name="fpk-unit" value="mllw">
+        ft MLLW</label>
+    </div>
+    <div style="position:relative;height:380px;margin:8px auto">
+      <canvas id="flood-peaks-chart"></canvas>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script>""" + js + """    </script>
   </section>
 """
 
@@ -6725,6 +7144,7 @@ def render_html_page(forecast):
 {map_section}
 {_render_equation_widget_html(forecast)}
 {_render_oscillation_section(forecast)}
+{_render_flood_peaks_section(forecast)}
   {_render_rain_timing_html(forecast)}
 
   {_landmarks_section_html(forecast, wrapper='section')}
