@@ -91,7 +91,7 @@ across v0.6–v0.8 and the user explicitly rejects that pattern.
 | v0.8 model spec promotion | ✅ **Shipped 2026-06-16.** Same-night reaction to 2026-06-15 PM storm-condition event (SH 7.289, peak winds N/NNE, v0.7 under by 1.3″ structural / 3.5″ operational at curb). Changes: enhancement constant −0.13 → 0.00 (conservative; matches storm condition, errs +1.5″ on regular tides — within tape precision); **NEW wind-direction adjustment** (`compute_wind_adjustment()`) reports a −0.13 ft "expected actual" line when forecast wind at peak is in offshore sector (S/SSW/SW/WSW/SSE) — calibrated against 6/14 (offshore peak, enh −0.13) vs 6/15 (onshore peak, enh 0); NEW landmark `sidewalk_under_walkway_lawn_step` at 4.33 NAVD88 (cross-fit from 3 measurements). SH thresholds all shift −0.13 ft uniformly. See `model/v0.8.md` and `assets/observations/2026-06-15/README.md` for the full anchor. |
 | v0.9 model spec promotion | ✅ **Shipped 2026-07-06** (the pluvial flash-flood day; three same-day commits). Bundles: (a) **QPF input fix** — rain had been silently 0.0 in every production run ever (NWS moved QPF to the gridpoint endpoint); (b) **pluvial advisory banner** with v0.9-alpha scenario depths (`estimate_pluvial_water`, two-regime, calibrated on 7/6 + Oct 30); (c) **porch ladder re-anchored**: `lawn_step` 4.58→4.66, fictitious `porch_step` 5.08 removed, NEW `porch_step_base` 4.68 / `porch_step1_top` 5.41 / `porch_deck` 8.08 (18 landmarks total); (d) lookahead thresholds recomputed (were v0.6-era); (e) seasonality display join aliased (CSV keys/thresholds stale — annual refresh). See `model/v0.9.md`. |
 | Series-first architecture + flood windows + TODAY-first widget | ✅ **Shipped 2026-07-06 (evening).** Rain-DNA build: (a) QPF rain layer IN `water_series` (deterministic layer; sustained rain renders as curve bumps); (b) rain-burst *potential level* on charts (amber dashed — analog-scaled burst magnitude without fake timing); (c) `compute_flood_windows()` — start/end/duration/peak per landmark from series crossings (grazing episodes phrased "may briefly touch"); (d) `today_*` forecast fields (regime/peak/rel-to-SW-grate — the standard mental unit); (e) widget redesigned TODAY-first (today colors the widget; 72h-worst is a labeled secondary line); (f) home-page water-level chart + flooding-windows table; (g) email "Today" line. |
-| Water-level chart design (FINAL, user-approved 2026-07-06) | ✅ Converged after a long design loop; do not regress. Grammar: **solid blue** = tide+surge (will happen); **navy band** = rain-burst potential, bottom = tide curve, top = FLAT absolute potential level, drawn only across burst-capable hours (thickness = rain's headroom over the tide); **amber solid** = sustained-rain street-water line (two-line design, never spliced with tide); **dashed colored lines** = landmark ladder (labels live in the LEGEND, never as boxes on the plot; shared palette with the widget: black solid=SW grate ground, green=gutter, red=curb, purple=lawn step, brown=porch step 1); y-axis = inches vs SW grate, standard frame [−60,+36] with auto-expand; 6-h ticks, dotted midnight lines, now-line + dot on curve (browser-time on the website). |
+| Water-level chart design (FINAL, user-approved 2026-07-06) | ✅ Converged after a long design loop; do not regress. Grammar: **solid blue** = tide+surge (will happen); **navy band** = rain-burst potential, bottom = tide curve, top = FLAT absolute potential level, drawn only across burst-capable hours (thickness = rain's headroom over the tide); **amber solid** = sustained-rain street-water line (two-line design, never spliced with tide); **dashed colored lines** = landmark ladder (labels live in the LEGEND, never as boxes on the plot; shared palette with the widget: black solid=SW grate ground, green=gutter, red=curb, purple=lawn step, brown=porch step 1); y-axis = inches vs SW grate, standard frame [−60,+36] with auto-expand; 6-h ticks, dotted midnight lines, now-line + dot on curve (browser-time on the website). EXTENDED 2026-07-07 (evening, iOS session): the grammar now governs ALL charts — the peaks charts too (landmark lines as legend datasets, same palette). Both peaks charts default to inches-vs-SW-grate with an ft-MLLW toggle (shared localStorage key `barnacle-peaks-unit` + custom event). Charts sit in fixed-height wrappers with `maintainAspectRatio:false` (width-locked aspect + legend rows crushed plots to ~50px on phones). |
 | Move to `bayavebarnacle@gmail.com` SMTP account | ⏸ Awaiting account-aging for Gmail app passwords |
 | First real-event validation of NWS parser | ⏸ Awaiting next coastal flood event |
 | v0.6 model-spec promotion + 9th landmark added | ✅ Live (2026-05-18). model/v0.6.md canonical; v0.5 archived. New lowest sentinel at 3.60 NAVD88 (SH 6.02). |
@@ -2398,5 +2398,32 @@ documented: red=PDF, amber=user interpolation, teal=dated event
 marks); map complete (all 18 landmarks + stations + 6/14 edge marks
 user-clicked); repo + memory staleness-audited. Working tree clean,
 all pushed.
+
+**Evening session 2026-07-07 (iOS/responsive + peaks-chart build):**
+- Site responsive pass (iOS Chrome = WebKit; NO UA sniffing):
+  scrollable tables, -webkit-text-size-adjust, 16px inputs,
+  stacked slider rows, canvas legend/title scale with canvas width.
+- "Sandy Hook peak over time" joined the chart grammar, then evolved:
+  PER-TIDE observed squares (from predictions_log tide list + the
+  shared observed-peaks cache) with faded "as predicted ~24 h ahead"
+  halo circles — nearest logged run within 16–36 h; the square↔halo
+  gap is the per-tide forecast error, on the home page. Convention
+  chosen deliberately (matches the daily-email promise; last-minute
+  predictions would flatter, mixed leads wouldn't compare).
+- NEW "Flood peaks at 342 Bay — past & forecast (all pathways)"
+  section beneath it (kept side-by-side; single-user A/B, keep/retire
+  later): continuous TIME axis + local units; measured flood peaks
+  from labeled_observations auto-plot as orange diamonds at their
+  ACTUAL times (7/6 renders at 11:34 AM +15.0″ — the rain flood a
+  per-tide axis cannot represent); day-wide navy dashes = archived
+  burst risk (no honest clock time in the daily archive — it holds
+  the day's LAST run); rain-burst compound-potential triangles on
+  QPF-horizon future tides (dual-model max; SH-equivalent caveat).
+- BUG FIXES: NOAA preliminary-feed spike rejection in
+  _fetch_actual_peak_around (a phantom 12.48 ft "peak" on calm July 4
+  had poisoned observed_peaks_cache AND the lead-time accuracy
+  stats; neighbor-agreement filter, ±12 min within 0.3 ft); chart
+  aspect-lock crush; phantom-elevation + '~'-value parser fixes from
+  earlier in the day stand.
 
 End of handoff.
