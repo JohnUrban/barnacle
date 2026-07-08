@@ -547,16 +547,28 @@ def _fetch_actual_peak_around(time_str, window_hours=2):
         )
     except Exception:
         return (None, None)
-    peak = None
-    peak_t = None
+    vals = []
     for d in (data.get("data") or []):
         try:
-            v = float(d["v"])
+            vals.append((d.get("t"), float(d["v"])))
         except (KeyError, ValueError, TypeError):
+            continue
+    # SPIKE REJECTION (2026-07-08): NOAA's preliminary 6-min feed
+    # occasionally contains isolated sensor spikes — a cached "12.48 ft
+    # peak" on a calm July night polluted both this chart and the
+    # lead-time accuracy section. A real tide peak is smooth at 6-min
+    # resolution, so a candidate must have a neighbor within ±2
+    # samples (±12 min) that agrees within 0.3 ft.
+    peak = None
+    peak_t = None
+    for i, (t, v) in enumerate(vals):
+        near = [w for j, (_, w) in enumerate(vals)
+                if j != i and abs(j - i) <= 2]
+        if near and min(abs(v - w) for w in near) > 0.3:
             continue
         if peak is None or v > peak:
             peak = v
-            peak_t = d.get("t")
+            peak_t = t
     return (peak, peak_t)
 
 
@@ -3670,6 +3682,68 @@ Coastal Flood Statement directly.
     return subject, text, html
 
 
+def _past_tides_with_predictions(days=7):
+    """Per-tide history for the oscillation chart (2026-07-07, user
+    design): every past high tide recorded in predictions_log.csv
+    within `days`, with (a) its observed peak (NOAA fetch, disk-cached
+    in observed_peaks_cache.csv — same cache the lead-time accuracy
+    section uses) and (b) the prediction made ~24 h ahead — the lead
+    time the daily email promises, so the square↔circle gap on the
+    chart is the product's own error at its own job. Nearest logged
+    run within [16, 36] h lead counts (the hourly bot is throttled to
+    ~62% coverage, so exact-24h rows don't always exist); None when no
+    qualifying run.
+
+    Empty list when the log is missing/unusable — caller falls back to
+    the old daily-peak series."""
+    if not os.path.exists(PREDICTIONS_LOG_PATH):
+        return []
+    try:
+        now_local = _station_local_now()
+    except Exception:
+        now_local = dt.datetime.now()
+    cutoff_min = now_local - dt.timedelta(days=days)
+    cutoff_max = now_local - dt.timedelta(hours=2)   # tide has ended
+    by_target = {}
+    try:
+        with open(PREDICTIONS_LOG_PATH) as f:
+            for r in csv.DictReader(f):
+                t = r.get("target_tide_time") or ""
+                try:
+                    target = dt.datetime.strptime(t, "%Y-%m-%d %H:%M")
+                    pred = float(r["sh_peak_mllw_predicted"])
+                    lead = float(r["hours_until_peak"])
+                except (ValueError, TypeError, KeyError):
+                    continue
+                if not (cutoff_min <= target <= cutoff_max):
+                    continue
+                by_target.setdefault(t, []).append((lead, pred))
+    except OSError:
+        return []
+    cache = _load_observed_peaks_cache()
+    dirty = False
+    out = []
+    for t in sorted(by_target):
+        obs = cache.get(t)
+        if obs is None:
+            obs, _ = _fetch_actual_peak_around(t)
+            if obs is not None:
+                cache[t] = obs
+                dirty = True
+        if obs is None:
+            continue
+        cand = [(abs(lead - 24.0), pred)
+                for lead, pred in by_target[t] if 16.0 <= lead <= 36.0]
+        out.append({
+            "time": t,
+            "observed": obs,
+            "predicted_24h": (min(cand)[1] if cand else None),
+        })
+    if dirty:
+        _save_observed_peaks_cache(cache)
+    return out
+
+
 def _oscillation_chart_data(forecast):
     """Build data points for the home-page oscillation chart (HANDOFF 9b.4(b)).
 
@@ -3689,21 +3763,35 @@ def _oscillation_chart_data(forecast):
     """
     points = []
 
-    # Past: observed peaks from the last 7 days
-    for r in (forecast.get("recent_history_7d") or []):
-        peak = r.get("peak_mllw")
-        time_str = r.get("peak_time")
-        if peak is None or not time_str:
-            continue
-        try:
-            peak_f = float(peak)
-        except (TypeError, ValueError):
-            continue
-        points.append({
-            "time": time_str,
-            "sh_peak_mllw": peak_f,
-            "kind": "observed",
-        })
+    # Past: PER-TIDE observed peaks (both daily highs — so the observed
+    # squares show the same day/night inequality the predicted circles
+    # do), each paired with the ~24h-ahead prediction where the hourly
+    # log has one. Falls back to the old one-peak-per-day series if the
+    # predictions log is unavailable.
+    per_tide = _past_tides_with_predictions(days=7)
+    if per_tide:
+        for r in per_tide:
+            points.append({
+                "time": r["time"],
+                "sh_peak_mllw": r["observed"],
+                "kind": "observed",
+                "predicted_24h_mllw": r["predicted_24h"],
+            })
+    else:
+        for r in (forecast.get("recent_history_7d") or []):
+            peak = r.get("peak_mllw")
+            time_str = r.get("peak_time")
+            if peak is None or not time_str:
+                continue
+            try:
+                peak_f = float(peak)
+            except (TypeError, ValueError):
+                continue
+            points.append({
+                "time": time_str,
+                "sh_peak_mllw": peak_f,
+                "kind": "observed",
+            })
 
     # Future: predicted peaks for upcoming high tides in this forecast
     for t in (forecast.get("all_tides") or []):
@@ -4723,11 +4811,13 @@ def _render_oscillation_section(forecast):
     <h2>Sandy Hook peak over time</h2>
     <p class="note">Observed (■) past peaks and predicted (●) upcoming peaks,
        plotted as <b>Sandy Hook MLLW</b> (the actual NOAA gauge reading).
-       Note the two series sample differently: squares are ONE observed
-       peak per day (the higher of the day's two highs), while circles
-       show EVERY upcoming high tide — their zig-zag is the real
-       day/night inequality of the two daily highs (often ~1 ft apart
-       here), which the daily-max squares can't show by construction.
+       Both series are PER-TIDE (both daily highs — the zig-zag is the
+       real day/night inequality, often ~1 ft here). Under each past
+       square, a faded circle shows what the model predicted
+       <b>~24 hours ahead</b> — the lead time the daily email promises
+       — so the square-to-circle gap is the forecast error you would
+       actually have lived with (nearest logged run within 16–36 h;
+       missing where the throttled hourly bot had no qualifying run).
        Horizontal lines are the SH-MLLW thresholds at which the
        {CURRENT_MODEL_VERSION} model (enhancement 0.00, calibrated on
        4 tape-measured events, SH 6.17&ndash;7.29) predicts water
@@ -4764,6 +4854,13 @@ def _render_oscillation_section(forecast):
         }});
         var predictedData = points.map(function(p) {{
           return p.kind === 'predicted' ? p.sh_peak_mllw : null;
+        }});
+        // What the model said ~24h before each PAST tide (null where
+        // the throttled hourly log has no 16-36h-lead run). Drawn as
+        // a faded halo under the observed square: the vertical gap IS
+        // the forecast error at the lead time the daily email promises.
+        var pred24Data = points.map(function(p) {{
+          return p.predicted_24h_mllw != null ? p.predicted_24h_mllw : null;
         }});
         // Landmark threshold lines as constant DATASETS with legend
         // entries — the 2026-07-06 chart grammar (labels live in the
@@ -4819,6 +4916,17 @@ def _render_oscillation_section(forecast):
                 pointRadius: 4,
                 spanGaps: true,
                 showLine: false,
+              }},
+              {{
+                label: 'as predicted ~24 h ahead',
+                data: pred24Data,
+                borderColor: 'rgba(31, 111, 235, 0.45)',
+                backgroundColor: 'rgba(31, 111, 235, 0.25)',
+                pointStyle: 'circle',
+                pointRadius: 7,
+                pointBorderWidth: 1.5,
+                spanGaps: true,
+                showLine: false,
               }}
             ].concat(landmarkDatasets)
           }},
@@ -4827,11 +4935,21 @@ def _render_oscillation_section(forecast):
             maintainAspectRatio: false,
             plugins: {{
               tooltip: {{
-                filter: function(item) {{ return item.datasetIndex < 2; }},
+                filter: function(item) {{ return item.datasetIndex < 3; }},
                 callbacks: {{
                   label: function(ctx) {{
                     var p = points[ctx.dataIndex];
                     if (!p) return ctx.formattedValue;
+                    if (ctx.datasetIndex === 2) {{
+                      var err = p.predicted_24h_mllw - p.sh_peak_mllw;
+                      return [
+                        '~24 h ahead we said: ' +
+                          p.predicted_24h_mllw.toFixed(2) + ' ft MLLW',
+                        'It came in: ' + p.sh_peak_mllw.toFixed(2) +
+                          ' (' + (err >= 0 ? '+' : '') + err.toFixed(2) +
+                          ' ft error)',
+                      ];
+                    }}
                     return [
                       (p.kind === 'observed' ? 'Observed' : 'Predicted'),
                       'Sandy Hook: ' + p.sh_peak_mllw.toFixed(2) + ' ft MLLW',
