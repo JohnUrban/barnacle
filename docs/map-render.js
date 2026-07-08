@@ -311,9 +311,17 @@
       if (lower >= maxDepth && i > 0) break;
       rows.push(BANDS[i]);
     }
-    var pad = 10, chip = 22, lineH = 30, fs = 16;
-    var boxW = 340, boxH = pad * 2 + rows.length * lineH;
-    var x0 = 12, y0 = h - boxH - 12;
+    // Scale with canvas width: the base map is ~3000 px wide but
+    // displays at ~360 px on a phone — fixed pixel sizes vanish.
+    // A fixed FRACTION of the canvas reads the same at every display
+    // size (2026-07-07 iOS pass).
+    var k = Math.max(1, w / 720);
+    var fs = Math.round(16 * k);
+    var pad = Math.round(10 * k), chip = Math.round(22 * k),
+        lineH = Math.round(30 * k);
+    var boxW = Math.round(340 * k),
+        boxH = pad * 2 + rows.length * lineH;
+    var x0 = Math.round(12 * k), y0 = h - boxH - Math.round(12 * k);
     ctx.save();
     ctx.fillStyle = 'rgba(255,255,255,0.88)';
     ctx.fillRect(x0, y0, boxW, boxH);
@@ -327,20 +335,24 @@
       ctx.fillStyle = 'rgba(' + rows[i].rgb.join(',') + ',0.85)';
       ctx.fillRect(x0 + pad, cy - chip / 2, chip, chip);
       ctx.fillStyle = '#222';
-      ctx.fillText(rows[i].label, x0 + pad + chip + 10, cy);
+      ctx.fillText(rows[i].label, x0 + pad + chip + Math.round(10 * k), cy);
     }
     ctx.restore();
   }
 
   function drawTitle(ctx, text, width) {
+    // Title bar scales with canvas width (see drawBandLegend note).
+    var k = Math.max(1, width / 720);
+    var barH = Math.round(30 * k);
     ctx.save();
     ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-    ctx.fillRect(0, 0, width, 30);
+    ctx.fillRect(0, 0, width, barH);
     ctx.fillStyle = '#222';
-    ctx.font = 'bold 14px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.font = 'bold ' + Math.round(14 * k) +
+      'px -apple-system, BlinkMacSystemFont, sans-serif';
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
-    ctx.fillText(text, width / 2, 15);
+    ctx.fillText(text, width / 2, barH / 2);
     ctx.restore();
   }
 
