@@ -5187,16 +5187,24 @@ def _flood_peaks_chart_data(forecast):
         except (OSError, ValueError):
             continue
         pr = arc.get("pluvial_risk") or {}
-        if not pr.get("level"):
+        level = pr.get("day_max_level") or pr.get("level")
+        if not level:
             continue
-        pots = [v for v in (pr.get("potential_low_tide_navd88"),
+        # Prefer the day-max carry-forward fields (2026-07-08+); older
+        # archives only hold the day's LAST run, which can postdate the
+        # event it should describe (the 7/6 flood day archived only the
+        # evening residue — a known historical artifact, noted on the
+        # chart).
+        pots = [v for v in (pr.get("day_max_potential_low_tide_navd88"),
+                            pr.get("day_max_potential_low_tide_navd88_tanh"),
+                            pr.get("potential_low_tide_navd88"),
                             pr.get("potential_low_tide_navd88_tanh"))
                 if v is not None]
         if not pots:
             continue
         risk_days.append({"day": d.isoformat(),
                           "navd88": round(max(pots), 3),
-                          "level": pr["level"]})
+                          "level": level})
 
     landmarks = [{"key": l["key"], "navd88": l["navd88"]}
                  for l in base["landmarks"]]
@@ -5448,7 +5456,13 @@ def _render_flood_peaks_section(forecast):
        rain-burst compound potential on upcoming tides, and faint
        navy day-dashes = days whose archived forecast carried live
        burst risk (day-wide, because a burst has magnitude but no
-       forecastable clock time). A rain flood with no halo under it =
+       forecastable clock time; the dash height is the day's MAXIMUM
+       archived assessment from 2026-07-08 onward — dashes before
+       that show only the day's last run, which can postdate the
+       event: the 7/6 dash is the post-storm evening residue, not a
+       hindcast; nothing predicted that flood — the QPF input was
+       broken and the pluvial model didn't exist until that
+       evening). A rain flood with no halo under it =
        a miss the tide model could never have seen; that is the point
        of this chart.</p>
     <div class="heatmap-toggle unit-toggle">
@@ -7458,6 +7472,36 @@ def main():
     if args.write_json:
         out_path = os.path.abspath(args.write_json)
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        # DAY-MAX carry-forward (2026-07-08): each hourly run OVERWRITES
+        # the daily archive, so the day's peak risk assessment used to
+        # vanish by evening — the 7/6 flood day's archive ended up
+        # showing only the post-storm residue (burst 0.25, potential
+        # 3.8) instead of anything about the event. Carry the day's
+        # maximum burst assessment forward across runs so the archive
+        # answers "how risky did this day ever look?", not "how did the
+        # day end?". The all-pathways chart reads these day_max fields.
+        try:
+            with open(out_path) as f:
+                prev = json.load(f)
+            ppr = prev.get("pluvial_risk") or {}
+            cpr = forecast.get("pluvial_risk")
+            if cpr is None:
+                cpr = forecast["pluvial_risk"] = {}
+            _rank = {None: 0, "possible": 1, "elevated": 2}
+            lv_prev = ppr.get("day_max_level", ppr.get("level"))
+            lv_cur = cpr.get("level")
+            cpr["day_max_level"] = (lv_prev if _rank.get(lv_prev, 0)
+                                    >= _rank.get(lv_cur, 0) else lv_cur)
+            for fld in ("potential_low_tide_navd88",
+                        "potential_low_tide_navd88_tanh",
+                        "burst_est_in_hr"):
+                vals = [v for v in (ppr.get("day_max_" + fld),
+                                    ppr.get(fld), cpr.get(fld))
+                        if v is not None]
+                if vals:
+                    cpr["day_max_" + fld] = max(vals)
+        except (OSError, ValueError):
+            pass  # first run of the day / unreadable previous archive
         with open(out_path, "w") as f:
             json.dump(forecast, f, indent=2, default=str)
         print(f"Wrote JSON: {args.write_json}")
