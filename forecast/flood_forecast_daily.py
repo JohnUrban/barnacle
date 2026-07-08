@@ -3793,7 +3793,20 @@ def _oscillation_chart_data(forecast):
                 "kind": "observed",
             })
 
-    # Future: predicted peaks for upcoming high tides in this forecast
+    # Future: predicted peaks for upcoming high tides in this forecast.
+    # When pluvial risk is live, tides inside the ~24h QPF horizon also
+    # carry a rain-burst COMPOUND potential (2026-07-08, user): the
+    # dual-model max of estimate_pluvial_water at that tide's bay
+    # level, expressed in SH-MLLW-EQUIVALENT units (local water +2.82
+    # — the gauge itself never reads rain floods; the marker says what
+    # the STREET could see, on this chart's axis).
+    pr = forecast.get("pluvial_risk") or {}
+    burst = (pr.get("burst_est_in_hr") or 0) if pr.get("level") else 0
+    try:
+        now_local = _station_local_now()
+    except Exception:
+        now_local = dt.datetime.now()
+    qpf_horizon = now_local + dt.timedelta(hours=24)
     for t in (forecast.get("all_tides") or []):
         peak = t.get("forecast_peak_mllw")
         time_str = t.get("time")
@@ -3803,11 +3816,22 @@ def _oscillation_chart_data(forecast):
             peak_f = float(peak)
         except (TypeError, ValueError):
             continue
-        points.append({
+        point = {
             "time": time_str,
             "sh_peak_mllw": peak_f,
             "kind": "predicted",
-        })
+        }
+        if burst > 0.1:
+            try:
+                tide_dt = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+            except (ValueError, TypeError):
+                tide_dt = None
+            if tide_dt is not None and tide_dt <= qpf_horizon:
+                bay = peak_f + MLLW_TO_NAVD88_OFFSET
+                pot = max(estimate_pluvial_water_models(burst, bay))
+                point["burst_potential_mllw"] = round(
+                    pot - MLLW_TO_NAVD88_OFFSET, 3)
+        points.append(point)
 
     # Landmark threshold lines — curated subset, expressed as the SH
     # MLLW value at which v0.7 would predict water reaches that
@@ -4818,7 +4842,12 @@ def _render_oscillation_section(forecast):
        — so the square-to-circle gap is the forecast error you would
        actually have lived with (nearest logged run within 16–36 h;
        missing where the throttled hourly bot had no qualifying run).
-       Horizontal lines are the SH-MLLW thresholds at which the
+       When burst-capable rain is in the forecast, navy triangles mark
+       the rain-burst COMPOUND potential over the affected upcoming
+       tides (same meaning as the burst band on the 24-h chart;
+       plotted in SH-equivalent units — the gauge itself never records
+       rain floods). Horizontal lines are the SH-MLLW thresholds at
+       which the
        {CURRENT_MODEL_VERSION} model (enhancement 0.00, calibrated on
        4 tape-measured events, SH 6.17&ndash;7.29) predicts water
        reaches each landmark. <b>Caveats</b>: offshore peak winds run
@@ -4862,6 +4891,13 @@ def _render_oscillation_section(forecast):
         var pred24Data = points.map(function(p) {{
           return p.predicted_24h_mllw != null ? p.predicted_24h_mllw : null;
         }});
+        // Rain-burst compound potential for near-term future tides
+        // (only present when pluvial risk is live) — navy triangles,
+        // same meaning as the 24h chart's burst-band top.
+        var burstData = points.map(function(p) {{
+          return p.burst_potential_mllw != null ? p.burst_potential_mllw : null;
+        }});
+        var hasBurst = burstData.some(function(v) {{ return v != null; }});
         // Landmark threshold lines as constant DATASETS with legend
         // entries — the 2026-07-06 chart grammar (labels live in the
         // LEGEND, never boxes on the plot; boxes collided into soup on
@@ -4928,18 +4964,38 @@ def _render_oscillation_section(forecast):
                 spanGaps: true,
                 showLine: false,
               }}
-            ].concat(landmarkDatasets)
+            ].concat(hasBurst ? [{{
+                label: 'rain-burst compound potential',
+                data: burstData,
+                borderColor: 'rgba(11, 61, 107, 0.95)',
+                backgroundColor: 'rgba(11, 61, 107, 0.35)',
+                pointStyle: 'triangle',
+                pointRadius: 6,
+                spanGaps: true,
+                showLine: false,
+              }}] : []).concat(landmarkDatasets)
           }},
           options: {{
             responsive: true,
             maintainAspectRatio: false,
             plugins: {{
               tooltip: {{
-                filter: function(item) {{ return item.datasetIndex < 3; }},
+                filter: function(item) {{
+                  return item.datasetIndex < (hasBurst ? 4 : 3);
+                }},
                 callbacks: {{
                   label: function(ctx) {{
                     var p = points[ctx.dataIndex];
                     if (!p) return ctx.formattedValue;
+                    if (hasBurst && ctx.datasetIndex === 3) {{
+                      return [
+                        'If a forecast-class burst lands on this tide:',
+                        'street water \u2248 ' +
+                          p.burst_potential_mllw.toFixed(2) +
+                          ' ft (SH-equivalent units \u2014 the gauge',
+                        'itself never reads rain floods)',
+                      ];
+                    }}
                     if (ctx.datasetIndex === 2) {{
                       var err = p.predicted_24h_mllw - p.sh_peak_mllw;
                       return [
@@ -4979,7 +5035,10 @@ def _render_oscillation_section(forecast):
                     points.map(function(p) {{ return p.sh_peak_mllw; }}))),
                 suggestedMax: Math.max(maxE + 0.2,
                   Math.max.apply(null,
-                    points.map(function(p) {{ return p.sh_peak_mllw; }}))),
+                    points.map(function(p) {{
+                      return Math.max(p.sh_peak_mllw,
+                                      p.burst_potential_mllw || 0);
+                    }}))),
               }}
             }}
           }}
