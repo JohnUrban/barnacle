@@ -2138,7 +2138,21 @@ def _render_summary_html(forecast):
         return ""
     parts = ['<section class="tldr">']
     if summary:
-        parts.append(f'<p class="tldr-summary">{summary}</p>')
+        # One tide per line (user 2026-07-09): the semicolon-joined
+        # sentence was a wall of text. Keep the "Next 24 h:" lead-in,
+        # then indent each tide entry on its own line.
+        html_summary = summary
+        for lead in ("Next 24 h: ", "Next 24h: "):
+            if summary.startswith(lead):
+                entries = summary[len(lead):].split("; ")
+                html_summary = (
+                    lead.strip() + "<br>" + "<br>".join(
+                        f'<span style="padding-left:1em;display:inline-block">'
+                        f'{e.rstrip(".")}{";" if i < len(entries) - 1 else "."}'
+                        f'</span>'
+                        for i, e in enumerate(entries)))
+                break
+        parts.append(f'<p class="tldr-summary">{html_summary}</p>')
     if level:
         # Primary confidence line: badge + reason
         confidence_html = (
@@ -7164,8 +7178,6 @@ def render_html_page(forecast):
     }})();
   </script>
 
-  {_render_summary_html(forecast)}
-
   <section class="regime regime-{today_class}">
     <div class="regime-kicker">TODAY</div>
     <div class="regime-label">{today_headline}</div>
@@ -7176,6 +7188,8 @@ def render_html_page(forecast):
     <div class="regime-kicker">WORST 72 H</div>
     <div class="regime-summary" style="margin:2px 0"><b>{headline_text}</b> — {headline_summary} Worst-case tide peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}.</div>
   </section>
+
+  {_render_summary_html(forecast)}
 
 {_render_water_series_section(forecast)}
 {_render_flood_windows_html(forecast)}
