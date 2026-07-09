@@ -7,8 +7,8 @@ the model, the architecture, what works, what didn't and why, what's
 next, and all design context worth carrying into future work.
 
 If anything anywhere disagrees with this document, **assume the file
-with the higher version number wins** (currently model spec v0.9 —
-`model/v0.9.md`; older specs live in `model/archive/`).
+with the higher version number wins** (currently model spec v0.10 —
+`model/v0.10.md`; older specs live in `model/archive/`).
 
 **Status: PRODUCTION.** The system is deployed, scheduled, and
 self-publishing. Daily forecasts arrive by email; daily reports
@@ -128,12 +128,13 @@ depth(landmark) = max(0, water − landmark_NAVD88) × 12   # inches
 Plus, reported separately (not in the main number):
 - **Wind adjustment** (v0.8): offshore peak winds → "expected actual"
   −0.13 ft line.
-- **Pluvial pathway (v0.9-gamma dual)**: rain can flood the
-  intersection with no tide at all (2026-07-06 event).
-  `estimate_pluvial_water(rate, bay, model)` — head-dependent
-  drainage, power-law (primary) or tanh (co-reported) input volume,
-  stage-storage fill. Drives the series rain line, burst band,
-  flood windows, and banner scenario brackets; see 9e.1.
+- **Pluvial pathway (v0.10 DYNAMIC TANK, 2026-07-09)**:
+  dV/dt = K·(R−D(bay))^0.70 − k_out·V through the stage curve —
+  the series rain line is a true HYDROGRAPH (timing solved). One
+  fit matches all four measured events incl. both full hydrographs
+  (`model/v0.10.md`). Static v0.9-gamma dual models remain for
+  banner scenarios + the site calculator (tanh refuted as a peak
+  model by event #4; kept as labeled conservative alternative).
 - **Cold-lockout**: demoted to advisory 2026-05-19; never applied.
 
 **18 landmarks** (ft NAVD88 → SH threshold = +2.82): grate_SW 3.52 →

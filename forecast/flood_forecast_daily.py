@@ -298,32 +298,35 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=2,
         except (TypeError, ValueError):
             continue
         tide_water = astro + (surge_ft or 0.0) + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
-        # Rain layer: response-lagged effective rate = mean of this
-        # hour's and the previous hour's QPF (the street pool takes
-        # ~15-45 min to build/drain per 7/6 timing data).
+        # v0.10: feed the tank RAW hourly QPF rates — the tank model
+        # supplies its own lag + integration (the old ad-hoc two-hour
+        # smoothing is retired with the per-point static estimate).
         h0 = t_local.replace(minute=0, second=0, microsecond=0)
-        r_now = qpf_by_local_hour.get(h0, 0.0)
-        r_prev = qpf_by_local_hour.get(h0 - dt.timedelta(hours=1), 0.0)
-        rate_eff = (r_now + r_prev) / 2.0
-        # Two-line design (user, 2026-07-06 evening): tide water and
-        # rain street-water are DIFFERENT SURFACES — emit both, never
-        # splice them into one curve (the old max() splice drew a
-        # misleading "tabletop"). pluvial_navd88 is only present when
-        # the rain layer is active; charts draw it as its own line.
-        point = {"time": p["t"], "tide_navd88": round(tide_water, 3)}
-        water = tide_water
-        if rate_eff >= PLUVIAL_SERIES_RATE_MIN:
-            # v0.9-gamma dual models: primary (power-law) drives the
-            # combined line/windows; the saturating tanh estimate is
-            # carried alongside (additive field — old consumers keep
-            # working) so surfaces can bracket model uncertainty.
-            pluv, pluv_tanh = estimate_pluvial_water_models(
-                rate_eff, tide_water)
-            point["pluvial_navd88"] = round(pluv, 3)
-            point["pluvial_navd88_tanh"] = round(pluv_tanh, 3)
-            water = max(tide_water, pluv)
-        point["water_navd88"] = round(water, 3)
-        out.append(point)
+        rate_raw = qpf_by_local_hour.get(h0, 0.0)
+        out.append({"time": p["t"], "tide_navd88": round(tide_water, 3),
+                    "_t": t_local, "_tide": tide_water, "_rate": rate_raw})
+
+    # v0.10 DYNAMIC TANK (2026-07-09): the pluvial line is now a true
+    # HYDROGRAPH — rise, peak, and recession with fitted timing —
+    # integrated across the whole window, replacing the per-point
+    # steady-state estimate. Two-line design unchanged (tide water
+    # and rain street-water are different surfaces; never spliced).
+    times = [q["_t"] for q in out]
+    tides_w = [q["_tide"] for q in out]
+    rates = [q["_rate"] for q in out]
+    pluv_series = simulate_pluvial_series(times, tides_w, rates)
+    for q, pluv in zip(out, pluv_series):
+        water = q["_tide"]
+        if pluv is not None:
+            q["pluvial_navd88"] = round(pluv, 3)
+            # tanh co-report retained for bracket continuity (static
+            # steady-state at the raw rate — labeled alternative)
+            _, pluv_tanh = estimate_pluvial_water_models(
+                max(q["_rate"], 0.0), q["_tide"])
+            q["pluvial_navd88_tanh"] = round(pluv_tanh, 3)
+            water = max(water, pluv)
+        q["water_navd88"] = round(water, 3)
+        del q["_t"], q["_tide"], q["_rate"]
     return out
 
 
@@ -679,7 +682,7 @@ def update_forecast_accuracy():
     return _summarize_accuracy(last_n=30)
 
 
-CURRENT_MODEL_VERSION = "v0.9"
+CURRENT_MODEL_VERSION = "v0.10"
 
 # v0.8 wind-direction sectors for the storm-bump adjustment. Sandy Hook
 # Bay's SE corner (where Highlands sits) is piled when winds blow INTO
@@ -4260,6 +4263,84 @@ def estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88,
         budget = PLUVIAL_POW_K * (net_rate ** PLUVIAL_POW_GAMMA)
     stage = _pluvial_fill(curve, base_stage, budget)
     return PLUVIAL_STREET_BASE + stage / 12.0
+
+
+# ---- v0.10 DYNAMIC TANK MODEL (2026-07-09, fitted the night of
+# event #4 while the recession data was fresh) ----
+#   dV/dt = TANK_K · max(0, R(t − lag) − D(bay))^TANK_GAMMA − TANK_KOUT · V
+#   stage = stage_curve(fill from tide-set base + V)
+# ONE global parameter set fits BOTH measured hydrographs (7/6 and
+# 7/9, RMS 1.3″ over 24 tape points, peak times within 0–8 min) and
+# independently lands Oct 30 (20.7 vs ≥21) and Dec 19 (11.3 at the
+# 08:12 observation vs band 10.1–12.2). Fit script:
+# history/scripts/tank_model_fit.py. This model gives the series
+# TIMING (rise / peak / recession) — the open item since 7/6.
+# NOTE: γ=0.70 in TRUE-rate space with duration explicit; the
+# earlier "C grows with intensity" finding was partly duration-
+# confounded. The static v0.9-gamma estimate_pluvial_water() remains
+# for banner SCENARIOS (steady-state "a burst like X could reach Y")
+# and the rain-pathway calculator; the tank drives the water_series.
+TANK_K = 1.265e6        # cell-inches per hour at 1 in/hr net (fitted)
+TANK_GAMMA = 0.70       # intensity exponent (fitted)
+TANK_KOUT = 3.12        # /hour — pool drains with ~19-min e-folding (fitted)
+TANK_LAG_MIN = 14       # hillside concentration lag (fitted; obs 16-20)
+
+
+def simulate_pluvial_series(times, tide_waters, rates, dt_min=5.0):
+    """Integrate the v0.10 tank over a series window.
+
+    times: list of naive local datetimes (ascending, ~30-min steps);
+    tide_waters: NAVD88 bay water per point; rates: QPF in/hr per
+    point (raw hourly bucket rates — the tank supplies its own lag
+    and smoothing; do NOT pre-smooth). Returns pluvial water NAVD88
+    per point (None where the tank holds no water above the base).
+    """
+    curve = _load_stage_curve()
+    if not curve or len(times) < 2:
+        return [None] * len(times)
+
+    def rate_at(t):
+        t = t - dt.timedelta(minutes=TANK_LAG_MIN)
+        if t <= times[0]:
+            return rates[0]
+        for i in range(1, len(times)):
+            if t <= times[i]:
+                return rates[i - 1]   # step function per bucket
+        return rates[-1]
+
+    def bay_at(t):
+        for i in range(1, len(times)):
+            if t <= times[i]:
+                return tide_waters[i - 1]
+        return tide_waters[-1]
+
+    out = []
+    V = 0.0
+    t = times[0]
+    idx = 0
+    step = dt.timedelta(minutes=dt_min)
+    while idx < len(times):
+        # integrate up to times[idx]
+        while t < times[idx]:
+            bay = bay_at(t)
+            span = PLUVIAL_STREET_BASE - PLUVIAL_DRAIN_FULL_BELOW
+            frac = min(1.0, max(0.0, (PLUVIAL_STREET_BASE - bay) / span))
+            net = max(0.0, rate_at(t) - PLUVIAL_DRAIN_RATE * frac)
+            dV = (TANK_K * net ** TANK_GAMMA - TANK_KOUT * V) * (dt_min / 60.0)
+            V = max(0.0, V + dV)
+            t = t + step
+        bay = tide_waters[idx]
+        base = max(bay, PLUVIAL_STREET_BASE)
+        base_stage = max(0.0, (base - PLUVIAL_STREET_BASE) * 12)
+        if V > 0:
+            stage = _pluvial_fill(_STAGE_CURVE, base_stage,
+                                  V)
+            w = PLUVIAL_STREET_BASE + stage / 12.0
+            out.append(w if (w - base) * 12 > 0.25 else None)
+        else:
+            out.append(None)
+        idx += 1
+    return out
 
 
 def estimate_pluvial_water_models(rain_rate_in_hr, bay_water_navd88):
