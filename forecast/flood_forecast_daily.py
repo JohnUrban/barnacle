@@ -6983,6 +6983,28 @@ def render_html_page(forecast):
     # contradiction (2026-07-07): rain risk takes the banner when the
     # tide-derived regime is dry.
     headline_text, headline_class = headline_for(forecast, regime)
+    # TODAY-first banner (user 2026-07-09, matching the widget's
+    # 2026-07-06 redesign): today's regime + rain risk is the top
+    # banner; the worst-72h tide becomes a labeled secondary strip.
+    _today_regime = forecast.get("today_regime") or regime
+    today_headline, today_class = headline_for(forecast, _today_regime)
+    _t_rel = forecast.get("today_rel_grate_sw_in")
+    _t_time = forecast.get("today_peak_time") or ""
+    today_summary = ""
+    if _t_rel is not None:
+        today_summary = (f"Tide peak today {_t_rel:+.1f}&Prime; vs SW grate"
+                         + (f" at {_t_time[-5:]}" if _t_time else "") + ".")
+    _pr_b = forecast.get("pluvial_risk") or {}
+    if _pr_b.get("level"):
+        _alerts_b = _pr_b.get("nws_flood_alerts") or []
+        today_summary += (
+            " Rain risk is live"
+            + (" — " + ", ".join(a.get("event", "") for a in _alerts_b)
+               + " in effect" if _alerts_b else "")
+            + (f"; a burst could bring street water to "
+               f"~{((_pr_b.get('potential_low_tide_navd88') or 0) - 3.52) * 12:+.0f}&Prime; "
+               f"vs SW grate regardless of tide."
+               if _pr_b.get("potential_low_tide_navd88") else "."))
     if headline_class == regime:
         headline_summary = f"{REGIME_GLOSSARY.get(regime, '')}."
     else:
@@ -7144,9 +7166,15 @@ def render_html_page(forecast):
 
   {_render_summary_html(forecast)}
 
-  <section class="regime regime-{headline_class}">
-    <div class="regime-label">{headline_text}</div>
-    <div class="regime-summary">{headline_summary} Worst-case tide peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}.</div>
+  <section class="regime regime-{today_class}">
+    <div class="regime-kicker">TODAY</div>
+    <div class="regime-label">{today_headline}</div>
+    <div class="regime-summary">{today_summary}</div>
+  </section>
+
+  <section class="regime regime-{headline_class}" style="padding:10px 24px;margin:-16px 0 28px 0">
+    <div class="regime-kicker">WORST 72 H</div>
+    <div class="regime-summary" style="margin:2px 0"><b>{headline_text}</b> — {headline_summary} Worst-case tide peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}.</div>
   </section>
 
 {_render_water_series_section(forecast)}
