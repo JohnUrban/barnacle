@@ -1792,6 +1792,45 @@ def build_forecast():
         "nws_flood_alerts": nws_flood_alerts,
     }
 
+    # Rain outlook, next 72 h by local day (user 2026-07-09: a rain
+    # box parallel to the high-tides summary). Aggregates the hourly
+    # QPF + PoP/wording per station-local calendar day.
+    rain_outlook = []
+    try:
+        _now_local = _station_local_now()
+        for day_i in range(3):
+            day = (_now_local + dt.timedelta(days=day_i)).date()
+            day_iso = day.isoformat()
+            cum = 0.0
+            peak = 0.0
+            for t_utc, rate in (qpf_hourly or []):
+                try:
+                    t_loc = t_utc.astimezone(STATION_TZ)
+                except (TypeError, ValueError):
+                    continue
+                if t_loc.date() == day:
+                    cum += rate
+                    peak = max(peak, rate)
+            pop = 0
+            thunder = False
+            for pd in (nws_hourly or []):
+                if (pd.get("startTime") or "")[:10] != day_iso:
+                    continue
+                pop = max(pop, ((pd.get("probabilityOfPrecipitation")
+                                 or {}).get("value")) or 0)
+                sf = (pd.get("shortForecast") or "").lower()
+                if "thunder" in sf:
+                    thunder = True
+            label = ("today" if day_i == 0 else
+                     "tomorrow" if day_i == 1 else day.strftime("%a %b %-d"))
+            rain_outlook.append({
+                "day": day_iso, "label": label,
+                "cum_in": round(cum, 2), "peak_in_hr": round(peak, 2),
+                "max_pop_pct": pop, "thunder": thunder,
+            })
+    except Exception:
+        rain_outlook = []
+
     # Confidence indicator inputs
     surge_swing = fetch_surge_swing_6h()
     # Recent-history recap (last 7 days of observed daily peaks)
@@ -1896,6 +1935,7 @@ def build_forecast():
         "cumulative_rain_24h_in": cumulative_rain_24h,
         # Pluvial flood risk advisory (v0.9 first step, 2026-07-06)
         "pluvial_risk": pluvial_risk,
+        "rain_outlook_72h": rain_outlook,
         # Confidence indicator inputs (level computed below after assembly)
         "surge_swing_6h_ft": surge_swing,
         # Recent observed peaks for the recap block
@@ -2142,7 +2182,8 @@ def _render_summary_html(forecast):
         # sentence was a wall of text. Keep the "Next 24 h:" lead-in,
         # then indent each tide entry on its own line.
         html_summary = summary
-        for lead in ("Next 24 h: ", "Next 24h: "):
+        for lead in ("Next 72 h — high tides: ",
+                     "Next 24 h: ", "Next 24h: "):
             if summary.startswith(lead):
                 entries = summary[len(lead):].split("; ")
                 html_summary = (
@@ -2169,6 +2210,47 @@ def _render_summary_html(forecast):
         parts.append(f'<p class="tldr-unusual">{unusual}</p>')
     parts.append('</section>')
     return "".join(parts)
+
+
+def _render_rain_outlook_html(forecast):
+    """The rain twin of the high-tides summary box (user 2026-07-09):
+    one line per local day for the next 72 h, plus alert / burst
+    context when pluvial risk is live. Rain-DNA: rain gets the same
+    top-of-page altitude as the tides."""
+    days = forecast.get("rain_outlook_72h") or []
+    if not days:
+        return ""
+    pr = forecast.get("pluvial_risk") or {}
+    lines = []
+    for d in days:
+        if d["cum_in"] < 0.02 and d["max_pop_pct"] < 20:
+            desc = f"no measurable rain expected (PoP {d['max_pop_pct']}%)"
+        else:
+            desc = (f"~{d['cum_in']:.2f}&Prime; total, peak "
+                    f"{d['peak_in_hr']:.2f} in/hr smeared, "
+                    f"PoP {d['max_pop_pct']}%")
+            if d["thunder"]:
+                desc += ", thunderstorms possible"
+        lines.append(
+            f'<span style="padding-left:1em;display:inline-block">'
+            f'{d["label"]} — {desc};</span>')
+    body = "Next 72 h — rain:<br>" + "<br>".join(lines)
+    body = body.rstrip(";</span>") + ".</span>"
+    extra = ""
+    alerts = pr.get("nws_flood_alerts") or []
+    if alerts:
+        names = ", ".join(a.get("event", "") for a in alerts)
+        extra += (f'<br><b>{names} in effect (NWS).</b>')
+    if pr.get("level") and pr.get("potential_low_tide_navd88"):
+        pot_in = (pr["potential_low_tide_navd88"] - GRATE_SW) * 12
+        extra += (
+            f'<br>A convective burst could bring street water to '
+            f'~{pot_in:+.0f}&Prime; vs SW grate at ANY tide (QPF smears '
+            f'bursts — the rates above understate cells).')
+    return (
+        '<section class="tldr">'
+        f'<p class="tldr-summary">{body}{extra}</p>'
+        '</section>')
 
 
 def _upcoming_tides_only(forecast):
@@ -3132,7 +3214,7 @@ def plain_language_summary(forecast):
         return regime
 
     parts = [f"{time_phrase(t)} — {phrase_for_tide(t)}" for t in tides_sorted]
-    return "Next 24 h: " + "; ".join(parts) + "."
+    return "Next 72 h — high tides: " + "; ".join(parts) + "."
 
 
 def format_time_full(time_str):
@@ -7190,6 +7272,8 @@ def render_html_page(forecast):
   </section>
 
   {_render_summary_html(forecast)}
+
+  {_render_rain_outlook_html(forecast)}
 
 {_render_water_series_section(forecast)}
 {_render_flood_windows_html(forecast)}
