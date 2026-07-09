@@ -2803,8 +2803,9 @@ def _render_accuracy_html(forecast):
         'cannot see rain-driven street floods (the gauge is 4 miles '
         'away and tide-only): pluvial skill is tracked separately '
         'against the spot-check log in '
-        '<code>data/labeled_observations.csv</code>, currently three '
-        'measured rain events, all fit by the v0.9-gamma models.</p>'
+        '<code>data/labeled_observations.csv</code>, currently four '
+        'measured rain events, all fit by the v0.10 tank model — '
+            'one parameter set, including two full measured hydrographs.</p>'
     )
 
     rows = _load_accuracy_rows()
@@ -3779,7 +3780,7 @@ Regime glossary (subject-line label, based on water depth at the curb):
   severe       : {REGIME_GLOSSARY['severe']}
   cold lockout : {REGIME_GLOSSARY['cold_lockout']}
 
-Model: {CURRENT_MODEL_VERSION} (pluvial v0.9-gamma dual-model). Local enhancement {LOCAL_ENHANCEMENT_FT:+.2f} ft (4-event calibration, conservative).
+Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = tank steady-state / tanh bracket). Local enhancement {LOCAL_ENHANCEMENT_FT:+.2f} ft (4-event calibration, conservative).
 """
 
     bg = {"dry": "#e8f5e9", "street": "#e3f2fd", "light": "#fff8e1",
@@ -3856,7 +3857,7 @@ Model: {CURRENT_MODEL_VERSION} (pluvial v0.9-gamma dual-model). Local enhancemen
 {low_html}
 {lookahead_html}
 <p style="font-size:small;color:#666">
-Model {CURRENT_MODEL_VERSION} (pluvial v0.9-gamma dual-model: power-law primary + saturating tanh).
+Model {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph on the chart; scenario brackets = tank steady-state / tanh).
 Local enhancement {LOCAL_ENHANCEMENT_FT:+.2f} ft (conservative, 4-event calibration).
 Surge persistence is a rough proxy; for active coastal storms, check NWS
 Coastal Flood Statement directly.
@@ -4229,7 +4230,7 @@ def _pluvial_fill(curve, base_stage, budget):
 
 
 def estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88,
-                           model="power"):
+                           model="tank"):
     """v0.9-gamma: water at 342 Bay (NAVD88) for a rain rate and
     concurrent bay level, via volume-fill of the stage-storage curve.
     model="power" (primary, near-linear fit to all three anchors) or
@@ -4259,8 +4260,16 @@ def estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88,
     if model == "tanh":
         budget = PLUVIAL_VOLUME_K * math.tanh(
             net_rate / PLUVIAL_FREE_RATE_SCALE)
-    else:
+    elif model == "power":
+        # v0.9-gamma legacy (γ=0.914, implicit ~1h duration)
         budget = PLUVIAL_POW_K * (net_rate ** PLUVIAL_POW_GAMMA)
+    else:
+        # v0.10 TANK STEADY STATE (default, 2026-07-09): dV/dt = 0 →
+        # V = (K/k_out)·net^γ — the level a SUSTAINED rate holds
+        # (reached within ~1 h; drains back out in ~20 min once rain
+        # stops). Same calibration as the series hydrograph, so the
+        # static scenarios and the dynamic line are ONE model family.
+        budget = (TANK_K / TANK_KOUT) * (net_rate ** TANK_GAMMA)
     stage = _pluvial_fill(curve, base_stage, budget)
     return PLUVIAL_STREET_BASE + stage / 12.0
 
@@ -4344,11 +4353,13 @@ def simulate_pluvial_series(times, tide_waters, rates, dt_min=5.0):
 
 
 def estimate_pluvial_water_models(rain_rate_in_hr, bay_water_navd88):
-    """Both input models for the same conditions: (power, tanh).
-    They agree within ~1″ across the calibrated range and diverge in
-    extrapolation — surfaces report the pair as a bracket."""
+    """(primary, tanh) for the same sustained conditions. Primary =
+    v0.10 tank steady state (2026-07-09); tanh = the labeled
+    conservative alternative (refuted as a peak model by event #4 —
+    it saturates below measured levels — kept as the bracket's low
+    edge). v0.9-gamma power remains via model="power" (legacy)."""
     return (estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88,
-                                   model="power"),
+                                   model="tank"),
             estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88,
                                    model="tanh"))
 
@@ -4643,7 +4654,7 @@ def _render_water_series_section(forecast):
     ]
     if has_rain_layer:
         datasets.append(
-            {"label": "Rain street-water (sustained-rain estimate)",
+            {"label": "Rain street-water (v0.10 tank hydrograph)",
              "data": pluv, "borderColor": "#d97706",
              "fill": False, "spanGaps": False,
              "pointRadius": 0, "borderWidth": 2, "tension": 0.2})
@@ -4733,8 +4744,9 @@ def _render_water_series_section(forecast):
         "inches/12; ft MLLW (Sandy Hook gauge) = 6.34 + inches/12."]
     if has_rain_layer:
         note_bits.append(
-            "The amber curve is estimated rain street-water during "
-            "sustained rain (≥0.25 in/hr smeared QPF) — a different "
+            "The amber curve is the v0.10 tank hydrograph — predicted "
+            "rain street-water with real timing (rise, peak, ~20-min "
+            "drain-down), integrated from hourly QPF. A different "
             "surface than the blue bay/tide water; light rain drains "
             "fine and draws no line.")
     if potential:
@@ -4917,7 +4929,7 @@ def _render_pluvial_advisory_html(forecast):
                     f'power-law/tanh spread)', hi)
         lt_txt, _ = _bracket(2.5)
         scenario_html = (
-            f'<p><b>Scenario estimates (v0.9-gamma dual-model, burst '
+            f'<p><b>Scenario estimates (v0.10 tank steady-state / tanh bracket, burst '
             f'{burst:.1f} in/hr):</b><br>'
             f'&bull; Burst at LOW tide (drains working): water ≈ '
             f'{lt_txt} — 7/6-class flash flood.<br>'
@@ -4948,14 +4960,14 @@ def _render_pluvial_advisory_html(forecast):
         'capture this event class. NWS rain amounts (QPF) smear '
         'short convective bursts, so the scenario estimates assume a '
         '7/6-class burst whenever thunderstorms are in the forecast. '
-        'The pluvial model is calibrated on THREE events (7/6/2026 '
-        'pure-pluvial, Oct 30 2025 compound, Dec 19 2025 moderate) '
-        'with rain forcing measured by MRMS radar. Two input models '
-        'are reported — a near-linear power-law (primary) and a '
-        'saturating tanh — which agree in the calibrated range and '
-        'diverge for violent bursts; the spread brackets model '
-        'uncertainty. Treat depths as &plusmn;3&Prime;-class '
-        'estimates, not measurements.</p>'
+        'The pluvial model is calibrated on FOUR events (7/6 + 7/9/2026 '
+        'flash floods — both with full measured hydrographs — Oct 30 '
+        '2025 compound, Dec 19 2025 moderate) '
+        'with rain forcing measured by MRMS radar. Scenario depths '
+        'bracket the v0.10 tank steady-state (primary) against the '
+        'saturating tanh (conservative floor — event #4 showed real '
+        'peaks exceed it in violent bursts). Treat depths as '
+        '&plusmn;3&Prime;-class estimates, not measurements.</p>'
         '</section>'
     )
 
@@ -5973,6 +5985,8 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         if _c and PLUVIAL_VOLUME_K and PLUVIAL_POW_K:
             rain_pathway_js = json.dumps({
                 "curve": [[c[0], round(c[1], 1)] for c in _c],
+                "kss": round(TANK_K / TANK_KOUT, 1),   # v0.10 steady state
+                "gt": TANK_GAMMA,
                 "kpow": round(PLUVIAL_POW_K, 1),
                 "gamma": round(PLUVIAL_POW_GAMMA, 4),
                 "vk": round(PLUVIAL_VOLUME_K, 1),
@@ -6005,19 +6019,26 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
     </div>
     <div class="depth-slider rain-model-toggle">
       <span class="note">Rain model:</span>
-      <label><input type="radio" name="rain-model" value="power" checked>
-        power-law (primary)</label>
+      <label><input type="radio" name="rain-model" value="tank" checked>
+        v0.10 tank (steady-state, primary)</label>
       <label><input type="radio" name="rain-model" value="tanh">
-        saturating tanh</label>
+        tanh (conservative)</label>
+      <label><input type="radio" name="rain-model" value="power">
+        power-law (v0.9, legacy)</label>
     </div>
     <p class="note">The depth slider sets the base (tide-set) water
-       level; the extra-rain slider runs the v0.9-gamma pluvial
-       pathway on top of it — drains absorb up to 0.25 in/hr
+       level; the extra-rain slider answers "what level does a
+       SUSTAINED rate hold?" — drains absorb up to 0.25 in/hr
        (less as the base level backwaters the outfall toward the
        grate tops at 3.52), the surviving rate becomes a volume via
-       the selected input model, and that volume fills the measured
-       stage-storage curve of the intersection. The two models agree
-       below ~2 in/hr and diverge for violent bursts. "Extra" because
+       the selected model, and that volume fills the measured
+       stage-storage curve. Default = the v0.10 tank's steady state
+       (the level reached within ~1 h of sustained rain; it drains
+       back in ~20 min once rain stops — same calibration as the
+       hydrograph on the chart, validated on four measured floods).
+       The models agree below ~2 in/hr and diverge for violent
+       bursts, where event #4 (+18.7&Prime; measured at sustained
+       3.4 in/hr) sits exactly on the tank curve. "Extra" because
        rain may already be in the current forecast's water level —
        this explores additional rain beyond that. The depth range
        tops out at Sandy class: Hurricane Sandy's estimated true
@@ -6039,11 +6060,11 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         if (!dSlider || !canvas) return;
         var defaultWater = parseFloat(dSlider.getAttribute('data-current'));
         var RAIN_SAT_IN = {RAIN_SATURATION_IN};  // legacy fallback only
-        // v0.9-gamma pluvial pathway (null -> legacy 8·tanh bump)
+        // v0.10 pluvial pathway constants (null -> legacy 8·tanh bump)
         var RP = {rain_pathway_js};
-        var rainModel = 'power';
+        var rainModel = 'tank';
         try {{
-          rainModel = localStorage.getItem('barnacle-rain-model') || 'power';
+          rainModel = localStorage.getItem('barnacle-rain-model') || 'tank';
         }} catch (e) {{}}
         var modelRadios = document.querySelectorAll('input[name="rain-model"]');
         modelRadios.forEach(function(r) {{
@@ -6065,7 +6086,9 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           if (net <= 0) return b;
           var budget = rainModel === 'tanh'
             ? RP.vk * Math.tanh(net / RP.scale)
-            : RP.kpow * Math.pow(net, RP.gamma);
+            : rainModel === 'power'
+            ? RP.kpow * Math.pow(net, RP.gamma)
+            : (RP.kss || RP.kpow) * Math.pow(net, RP.gt || RP.gamma);
           var baseStage = Math.max(0, (b - RP.base) * 12);
           var stage = baseStage;
           var C = RP.curve;
@@ -6124,7 +6147,9 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             + (Math.abs(base - defaultWater) < 0.005 ? ' (current forecast)' : '');
           rLabel.innerHTML = rate.toFixed(2) + ' in/hr \\u2192 +'
             + (extraFt * 12).toFixed(1) + '\\u2033'
-            + (RP ? (rainModel === 'tanh' ? ' (tanh)' : ' (power-law)')
+            + (RP ? (rainModel === 'tanh' ? ' (tanh)'
+                     : rainModel === 'power' ? ' (power-law v0.9)'
+                     : ' (v0.10 tank)')
                   : ' (legacy)');
           BarnacleMap.render({{
             canvas: canvas,
@@ -6263,12 +6288,12 @@ def _render_equation_widget_html(forecast, wrapper="section"):
       <span id="pv-drainnote" class="eqn-termname"></span><br>
       &rarr; Net rain filling the bowl = <b id="pv-net">&mdash;</b> in/hr<br>
       &rarr; Water volume &asymp; <b id="pv-volpow">&mdash;</b>&times;
-      the 7/6 flood <span class="eqn-termname">(power-law; tanh model:
-      <span id="pv-voltanh">&mdash;</span>&times;)</span><br>
+      the 7/6 flood <span class="eqn-termname">(v0.10 tank steady-state;
+      tanh: <span id="pv-voltanh">&mdash;</span>&times;)</span><br>
       &rarr; Street water: <b id="pv-outpow">&mdash;</b>
-      <span class="eqn-termname">power-law</span> /
+      <span class="eqn-termname">v0.10 tank (steady-state)</span> /
       <b id="pv-outtanh">&mdash;</b>
-      <span class="eqn-termname">tanh</span>
+      <span class="eqn-termname">tanh (conservative)</span>
       <span id="pv-spreadnote" class="eqn-termname"></span>
     </div>
     <button type="button" id="pv-reset">Snap back to forecast burst</button>
@@ -6276,6 +6301,7 @@ def _render_equation_widget_html(forecast, wrapper="section"):
     <script>
       (function() {{
         var CURVE = {_curve_js};
+        var K_SS = {TANK_K / TANK_KOUT:.1f}, G_T = {TANK_GAMMA};
         var K_POW = {PLUVIAL_POW_K:.1f}, GAMMA = {PLUVIAL_POW_GAMMA:.4f};
         var V_K = {PLUVIAL_VOLUME_K:.1f}, V76 = {_v76:.1f};
         var DRAIN = {PLUVIAL_DRAIN_RATE}, KNEE = {PLUVIAL_DRAIN_FULL_BELOW};
@@ -6333,7 +6359,7 @@ def _render_equation_widget_html(forecast, wrapper="section"):
             return;
           }}
           netEl.textContent = net.toFixed(2);
-          var vPow = K_POW * Math.pow(net, GAMMA);
+          var vPow = K_SS * Math.pow(net, G_T);   // v0.10 tank steady state
           var vTanh = V_K * Math.tanh(net / SCALE);
           document.getElementById('pv-volpow').textContent =
             (vPow / V76).toFixed(2);
@@ -6475,7 +6501,7 @@ def _render_equation_widget_html(forecast, wrapper="section"):
        heat-map are this one calculation applied at different
        points.</p>
 
-    <h3 class="eqn-sub">The rain pathway (v0.9-gamma) — how the rain
+    <h3 class="eqn-sub">The rain pathway (v0.10) — how the rain
       line, burst band, and scenario depths are computed</h3>
     <p class="note">Rain-driven street water is <b>volume</b>-driven,
        not level-driven (the bay is effectively infinite; rain is a
@@ -6483,19 +6509,20 @@ def _render_equation_widget_html(forecast, wrapper="section"):
        0.25 in/hr, a capacity that shrinks to zero as the bay rises
        from 3.0 to 3.52 ft NAVD88 and blocks the outfall
        (head-dependent drainage); (2) the surviving net rain rate
-       becomes a water <i>volume</i> via two reported input models —
-       a near-linear <b>power-law</b> (primary; V &prop;
-       rate<sup>0.91</sup>, fitted to all three measured rain events)
-       and a saturating <b>tanh</b> (alternative); (3) that volume
-       fills the measured stage-storage curve of the intersection
-       upward from whatever level the tide has set — each additional
-       inch of depth needs more volume because the pool widens. The
-       two input models agree in the calibrated range (0.4&ndash;1.7
-       in/hr) and diverge for violent bursts, so surfaces report the
-       spread as the model uncertainty. Calibration: 7/6/2026 (pure
-       pluvial), Oct 30 2025 (compound), Dec 19 2025 (moderate,
-       drains tide-blocked) — all with MRMS-radar-measured rain
-       forcing.</p>
+       feeds the <b>v0.10 dynamic tank</b> — dV/dt = K&middot;rate
+       <sup>0.70</sup> &minus; k&middot;V — whose output volume
+       fills the measured stage-storage curve upward from whatever
+       level the tide has set (each additional inch needs more
+       volume because the pool widens). On the 24-h chart this runs
+       as a true <b>hydrograph</b>: rise (~14-min hillside lag),
+       peak, and ~20-min drain-down. The calculator below shows the
+       tank's <b>steady state</b> (the level a sustained rate holds,
+       reached within ~1&nbsp;h), bracketed against the saturating
+       <b>tanh</b> alternative (a conservative floor — the 7/9 flood
+       exceeded it). Calibration: ONE parameter set fits all four
+       measured floods — 7/6 and 7/9/2026 (full measured
+       hydrographs), Oct 30 2025 (compound), Dec 19 2025 (moderate)
+       — all with MRMS-radar-measured rain forcing.</p>
 {pluv_calc_html}
     <script>
       (function() {{
@@ -7566,7 +7593,12 @@ def render_html_page(forecast):
        NE/NW grates (the drain trunk line) — the opposite corner
        from tide floods. <b>Take-home: never judge flood risk here
        by the tide chart alone.</b> Once the rain is hard enough,
-       the tide level is irrelevant to whether it floods.</p>
+       the tide level is irrelevant to whether it floods. The
+       timing is now measured and modeled (v0.10): street water
+       lags the rain peak by ~15 min, can rise 8&Prime; in 12
+       minutes, and drains back within ~20&ndash;30 min of the rain
+       stopping. All four floods measured to date &mdash; including
+       the two worst &mdash; were rain-driven.</p>
     <p><b>Compound (the worst case).</b> The tide can't prevent a rain
        flood, but it can raise its floor: heavy rain landing on a high
        tide has nowhere to go at all. The biggest flood in this
@@ -7616,8 +7648,9 @@ def render_html_page(forecast):
 {_render_historical_floods_html()}
 
   <footer>
-    <p>Model {CURRENT_MODEL_VERSION} (pluvial v0.9-gamma dual-model:
-       power-law primary + saturating tanh, stage-storage fill,
+    <p>Model {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph —
+       timing calibrated on two measured floods; scenarios = tank
+       steady-state / tanh bracket; stage-storage fill,
        head-dependent drainage). Local enhancement
        {LOCAL_ENHANCEMENT_FT:+.2f} ft.
        Updated hourly (best-effort) via GitHub Actions.</p>

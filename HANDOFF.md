@@ -2421,6 +2421,24 @@ amnesia problem the 'SO FAR TODAY' line fixed, but on the curve —
 after event #4 the chart showed a placid forecast while the street
 had just been under 19 inches.
 
+### ★ DESIGNATED NEXT MODELING SESSION (user, 2026-07-09 post-v0.10):
+### MRMS NOWCASTING — the input is now the ONLY weak link
+
+v0.10 settled the physics (tank hydrograph, one fit, four events);
+event #4 proved the remaining failure mode is INPUT: QPF forecast a
+0.74 in/hr analog burst while 5.53 in/hr fell (7×). NWS alerts +
+analog floors are stopgaps. The fix is reading MRMS PrecipRate in
+near-real-time (NCEP feed, ~2-min frames, proven decodable in this
+repo) inside the hourly bot: "cell inbound over the catchment"
+→ feed OBSERVED rates into the v0.10 tank → the site's hydrograph
+becomes a nowcast with ~15-min physical lead time (the catchment
+lag) plus radar advection lead. Sketch: fetch latest frames each
+run; if hillside-box rate > threshold, run the tank forward on
+observed+persisted rates; surface as a NOWCAST line/banner distinct
+from QPF-based forecast. Bot cadence (~hourly, throttled) is the
+constraint — consider a lightweight separate 10-min Action for
+rain-active periods only.
+
 ### Other likely sessions (refreshed 2026-07-08)
 
 1. **Pluvial input model, next iteration (9e.2)** — candidate
