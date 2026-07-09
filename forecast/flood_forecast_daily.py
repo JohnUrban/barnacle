@@ -358,7 +358,10 @@ def fetch_observed_recent(hours=6):
             out.append((d["t"], float(d["v"])))
         except (ValueError, TypeError):
             continue
-    return out
+    # Despike (2026-07-09): this series feeds surge persistence — the
+    # 11.87 gauge malfunction pushed a +4 ft "surge" into live
+    # forecasts (widget read SEVERE +40″ during the event).
+    return _despike_gauge(out)
 
 
 def fetch_current_surge():
@@ -522,6 +525,39 @@ PREDICTIONS_LOG_FIELDS = [
 ]
 
 
+def _despike_gauge(pairs, tol_ft=1.0, half_window=10):
+    """Drop physically-impossible points from a 6-min gauge series.
+
+    2026-07-09: the Sandy Hook sensor spiked to 11.87 ft MLLW (would
+    be #2 all-time) during a violent convective cell while The
+    Battery, 15 mi away in the same harbor, sat flat — instrument
+    malfunction, not water. The 40-min-wide spike DEFEATED the older
+    neighbor-agreement check (adjacent garbage points "agreed") and
+    fed surge-persistence: the widget showed SEVERE +40″ from
+    garbage while the real (rain) flood measured +18.7″. A point is
+    rejected when it differs from the MEDIAN of its ±half_window
+    neighbors by more than tol_ft — tide + real surge cannot move
+    1 ft in minutes (even Sandy rose ~1 ft per 30 min). Trade-off
+    accepted: a true meteotsunami would also be filtered from PEAK
+    numbers (it would still be visible in raw data / at the house).
+    pairs = [(t, v), ...] chronological; returns filtered list."""
+    # Below 2·half_window+1 points a malfunction could capture the
+    # median — pass through rather than pretend to filter.
+    if len(pairs) < 2 * half_window + 1:
+        return pairs
+    vals = [v for _, v in pairs]
+    out = []
+    n = len(pairs)
+    for i, (t, v) in enumerate(pairs):
+        lo = max(0, i - half_window)
+        hi = min(n, i + half_window + 1)
+        neigh = sorted(vals[lo:i] + vals[i + 1:hi])
+        med = neigh[len(neigh) // 2]
+        if abs(v - med) <= tol_ft:
+            out.append((t, v))
+    return out
+
+
 def _fetch_actual_peak_around(time_str, window_hours=2):
     """Pull NOAA water_level for ±window_hours around a target high-tide
     time, return (peak_mllw, peak_time_str). (None, None) on failure."""
@@ -553,19 +589,12 @@ def _fetch_actual_peak_around(time_str, window_hours=2):
             vals.append((d.get("t"), float(d["v"])))
         except (KeyError, ValueError, TypeError):
             continue
-    # SPIKE REJECTION (2026-07-08): NOAA's preliminary 6-min feed
-    # occasionally contains isolated sensor spikes — a cached "12.48 ft
-    # peak" on a calm July night polluted both this chart and the
-    # lead-time accuracy section. A real tide peak is smooth at 6-min
-    # resolution, so a candidate must have a neighbor within ±2
-    # samples (±12 min) that agrees within 0.3 ft.
+    # SPIKE REJECTION v2 (2026-07-09): median-window despike replaces
+    # the 2026-07-08 neighbor-agreement check, which a 40-min-wide
+    # malfunction defeated (garbage neighbors agree with each other).
     peak = None
     peak_t = None
-    for i, (t, v) in enumerate(vals):
-        near = [w for j, (_, w) in enumerate(vals)
-                if j != i and abs(j - i) <= 2]
-        if near and min(abs(v - w) for w in near) > 0.3:
-            continue
+    for t, v in _despike_gauge(vals):
         if peak is None or v > peak:
             peak = v
             peak_t = t

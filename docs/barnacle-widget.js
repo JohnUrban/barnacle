@@ -628,13 +628,20 @@ function makeWidget(forecast, family) {
     }
   }
 
-  // Footer: updated timestamp
+  // Footer: updated timestamp (left) + brand (right, was empty space)
   w.addSpacer();
-  const stamp = w.addText("Updated " + new Date().toLocaleTimeString(
+  const footer = w.addStack();
+  footer.layoutHorizontally();
+  footer.centerAlignContent();
+  const stamp = footer.addText("Updated " + new Date().toLocaleTimeString(
     "en-US", { hour: "numeric", minute: "2-digit" }
   ));
   stamp.font = Font.systemFont(8);
   stamp.textColor = new Color("#888");
+  footer.addSpacer();
+  const brand = footer.addText("Bay Ave Barnacle");
+  brand.font = Font.mediumSystemFont(8);
+  brand.textColor = new Color("#888");
 
   // Tapping the widget opens the live Pages site
   w.url = "https://johnurban.github.io/barnacle/";
