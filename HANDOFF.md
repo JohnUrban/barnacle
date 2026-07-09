@@ -2373,6 +2373,17 @@ Read these for context if needed:
    (swinters@highlandsnj.gov); would refine the head-dependent
    drainage knee (3.0 placeholder) + confirm the NE-trunk-line
    hypothesis.
+   **Free alternative (user question 2026-07-09): the falling-tide
+   stall experiment.** Grate-throat readings track the bay (with the
+   −0.13 offshore offset) as long as the drain network is
+   backwatered — every reading to date, down to SH 5.71 / bay 2.89
+   (7/9 measurement), is consistent with COUPLED. On a calm dry day,
+   take 3–4 throat readings across a falling tide: the level where
+   the throat STALLS while the gauge keeps falling = the network's
+   hydraulic control elevation (outfall/invert), i.e. the floor of
+   bay-coupling AND the physically-correct drainage knee. Caveat
+   for rainy-day readings: a draining pipe carries a flow gradient
+   that confounds the bay-offset interpretation.
 3. **Local flood reanalysis** (someday) — join historical precip to
    the tide record; modeled local water per event over the century.
 4. **Passive collectors**: high-SH event ≥7.5 (enhancement
