@@ -2391,6 +2391,23 @@ in order; every step has been needed at least once:**
     `git stash list` + `grep -rl '<<<<<<<' data/ docs/`; log-file
     conflicts resolve by UNION of both sides, never ours/theirs.
 
+### Queued next session (user, 2026-07-09 post-event): observed
+### overlay on the 24-h water chart
+
+Extend the home-page water chart ~12 h into the past: (a) OBSERVED
+water line (despiked 6-min gauge → 30-min resample, converted
+local, gray solid) over the past portion; (b) optionally the
+as-predicted line reconstructed from predictions_log (the chart
+version of the peaks-chart halo circles); (c) past measured rain
+floods from labeled_observations as diamond markers (reuse
+_today_lookback/_flood_peaks data patterns). Past pluvial line =
+what the QPF said then — do NOT backfill with MRMS truth (that's
+reanalysis, label it if ever added). Same grammar: now-line
+separates observed from forecast; observed gray, predicted blue.
+Rationale: same amnesia problem the 'SO FAR TODAY' line fixed, but
+on the curve — after event #4 the chart showed a placid forecast
+while the street had just been under 19 inches.
+
 ### Other likely sessions (refreshed 2026-07-08)
 
 1. **Pluvial input model, next iteration (9e.2)** — candidate
