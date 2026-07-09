@@ -7181,10 +7181,10 @@ def render_html_page(forecast):
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Barnacle">
 <meta name="theme-color" content="#0f4064">
-<meta name="description" content="Bay Ave Barnacle — {headline_text}. Worst-case tide peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ.">
+<meta name="description" content="Bay Ave Barnacle — {headline_text}. Worst-case tide peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for the Bay Ave &amp; Central Ave intersection, Highlands NJ (referenced to 342 Bay Ave).">
 <!-- Open Graph (link previews) — W -->
 <meta property="og:title" content="Bay Ave Barnacle — {headline_text}">
-<meta property="og:description" content="Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ.">
+<meta property="og:description" content="Worst-case peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}. Hyperlocal flood forecast for the Bay Ave &amp; Central Ave intersection, Highlands NJ (referenced to 342 Bay Ave).">
 <meta property="og:image" content="https://johnurban.github.io/barnacle/icons/icon-512.png">
 <meta property="og:url" content="https://johnurban.github.io/barnacle/">
 <meta property="og:type" content="website">
@@ -7194,7 +7194,7 @@ def render_html_page(forecast):
 <main>
   <header>
     <h1>Bay Ave Barnacle</h1>
-    <p class="subtitle">Hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ</p>
+    <p class="subtitle">Hyperlocal flood forecast for the intersection of Bay Ave &amp; Central Ave in Highlands NJ &mdash; water levels referenced to 342 Bay Ave</p>
     <p class="last-updated"
        data-generated-at="{dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}">
       <span id="last-updated-display">Last updated …</span>
