@@ -1986,6 +1986,7 @@ def build_forecast():
                                     if today_peak_water is not None else None),
         "today_peak_time": today_peak_time,
         "today_regime": today_regime,
+        "today_lookback": _today_lookback(),   # what already happened today
         "today_highest_crossed": today_highest_crossed,
         "today_rel_grate_sw_in": today_rel_grate_sw_in,
     }
@@ -4365,6 +4366,65 @@ def compute_flood_windows(series):
         if rows:
             out[key] = rows
     return out
+
+
+def _today_lookback():
+    """What actually happened at the corner SO FAR today (user design
+    2026-07-09, post-event-#4: an hour after a top-3 flood the widget
+    said only 'RAIN FLOOD RISK' — true forward-looking, but reads as
+    amnesia to a casual user). Sources, best wins:
+      (a) today's spot-check rows in labeled_observations.csv (tape —
+          the only source that sees RAIN floods), max implied water;
+      (b) today's despiked gauge peak (tide floods, converted local).
+    Returns {navd88, rel_grate_in, time_local, regime, source} or
+    None when nothing measured/observed above the SW grate today."""
+    try:
+        today = _station_local_now().date().isoformat()
+    except Exception:
+        return None
+    best = None
+    # (a) tape
+    try:
+        elev_by_key = {k: e for k, _lbl, e, _sh in LANDMARKS}
+        obs_path = os.path.join(_REPO_ROOT, "data",
+                                "labeled_observations.csv")
+        with open(obs_path) as f:
+            for r in csv.DictReader(f):
+                ts = (r.get("observation_time_local") or "")
+                if not ts.startswith(today):
+                    continue
+                key = (r.get("landmark_key") or "").strip()
+                if "pocket" in key or key not in elev_by_key:
+                    continue
+                try:
+                    w = elev_by_key[key] + float(r["observed_depth_in"]) / 12.0
+                except (TypeError, ValueError, KeyError):
+                    continue
+                if best is None or w > best[0]:
+                    best = (w, ts[11:16], "measured (tape)")
+    except OSError:
+        pass
+    # (b) gauge (despiked upstream)
+    try:
+        peak, peak_t = _fetch_actual_peak_around(
+            _station_local_now().strftime("%Y-%m-%d %H:%M"),
+            window_hours=12)
+        if peak is not None and (peak_t or "").startswith(today):
+            w = peak + MLLW_TO_NAVD88_OFFSET
+            if best is None or w > best[0]:
+                best = (w, (peak_t or "")[11:16], "observed (gauge)")
+    except Exception:
+        pass
+    if best is None or best[0] <= GRATE_SW:
+        return None
+    w, t, src = best
+    return {
+        "navd88": round(w, 3),
+        "rel_grate_in": round((w - GRATE_SW) * 12, 1),
+        "time_local": t,
+        "regime": classify_regime_from_water(w),
+        "source": src,
+    }
 
 
 def classify_regime_from_water(water_navd88):
@@ -7119,6 +7179,16 @@ def render_html_page(forecast):
     if _t_rel is not None:
         today_summary = (f"Tide peak today {_t_rel:+.1f}&Prime; vs SW grate"
                          + (f" at {_t_time[-5:]}" if _t_time else "") + ".")
+    _lb = forecast.get("today_lookback")
+    lookback_html = ""
+    if _lb and (_lb.get("rel_grate_in") or 0) > 0:
+        _lb_reg = regime_display(_lb.get("regime") or "").upper()
+        lookback_html = (
+            f'\n    <div class="regime-summary" style="margin-top:6px;'
+            f'border-top:1px solid rgba(0,0,0,0.12);padding-top:6px">'
+            f'<b>SO FAR TODAY:</b> {_lb_reg} — peak water '
+            f'{_lb["rel_grate_in"]:+.1f}&Prime; vs SW grate at '
+            f'{_lb["time_local"]}, {_lb["source"]}.</div>')
     _pr_b = forecast.get("pluvial_risk") or {}
     if _pr_b.get("level"):
         _alerts_b = _pr_b.get("nws_flood_alerts") or []
@@ -7290,9 +7360,9 @@ def render_html_page(forecast):
   </script>
 
   <section class="regime regime-{today_class}">
-    <div class="regime-kicker">TODAY</div>
+    <div class="regime-kicker">TODAY &mdash; OUTLOOK</div>
     <div class="regime-label">{today_headline}</div>
-    <div class="regime-summary">{today_summary}</div>
+    <div class="regime-summary">{today_summary}</div>{lookback_html}
   </section>
 
   <section class="regime regime-{headline_class}" style="padding:10px 24px;margin:-16px 0 28px 0">

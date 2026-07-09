@@ -491,7 +491,7 @@ function makeWidget(forecast, family) {
     left.layoutVertically();
 
     // ---- TODAY block (the headline) ----
-    const hdr = left.addText("TODAY");
+    const hdr = left.addText("TODAY · OUTLOOK");
     hdr.font = Font.mediumSystemFont(9);
     hdr.textColor = new Color("#777");
 
@@ -506,6 +506,25 @@ function makeWidget(forecast, family) {
       s.textColor = new Color("#555");
     }
     if (showPluvialLine) addPluvialLine(left);
+
+    // SO-FAR line (2026-07-09, post-event-#4): the outlook is
+    // forward-looking by design, but an hour after a top-3 flood the
+    // widget read as amnesia. today_lookback = today's measured/
+    // observed peak (spot-check tape sees rain floods; despiked
+    // gauge sees tide floods).
+    const lb = forecast.today_lookback;
+    if (lb && lb.rel_grate_in > 0) {
+      const reg = (lb.regime === "dry" ? "street water"
+                   : lb.regime).toUpperCase();
+      const lbLine = left.addText(
+        `so far: ${reg} +${lb.rel_grate_in.toFixed(1)}″ @${lb.time_local}`);
+      lbLine.font = Font.semiboldSystemFont(9);
+      lbLine.textColor = new Color(
+        lb.regime === "severe" ? "#b91c1c" :
+        lb.regime === "moderate" ? "#c2410c" : "#555");
+      lbLine.lineLimit = 1;
+      lbLine.minimumScaleFactor = 0.7;
+    }
 
     // Flood window for the highest landmark crossed today, or the
     // rel-to-SW-grate peak (the standard mental unit).
@@ -584,7 +603,7 @@ function makeWidget(forecast, family) {
     }
   } else {
     // Small widget — single column, key info (no chart; too small)
-    const hdrS = w.addText("TODAY");
+    const hdrS = w.addText("TODAY · OUTLOOK");
     hdrS.font = Font.mediumSystemFont(8);
     hdrS.textColor = new Color("#777");
     const regLabel = w.addText(todayLabel);
