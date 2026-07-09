@@ -2394,19 +2394,31 @@ in order; every step has been needed at least once:**
 ### Queued next session (user, 2026-07-09 post-event): observed
 ### overlay on the 24-h water chart
 
-Extend the home-page water chart ~12 h into the past: (a) OBSERVED
-water line (despiked 6-min gauge → 30-min resample, converted
-local, gray solid) over the past portion; (b) optionally the
-as-predicted line reconstructed from predictions_log (the chart
-version of the peaks-chart halo circles); (c) past measured rain
-floods from labeled_observations as diamond markers (reuse
-_today_lookback/_flood_peaks data patterns). Past pluvial line =
-what the QPF said then — do NOT backfill with MRMS truth (that's
-reanalysis, label it if ever added). Same grammar: now-line
-separates observed from forecast; observed gray, predicted blue.
-Rationale: same amnesia problem the 'SO FAR TODAY' line fixed, but
-on the curve — after event #4 the chart showed a placid forecast
-while the street had just been under 19 inches.
+Extend the home-page water chart ~12 h into the past. THREE HONESTY
+TIERS (refined with user 2026-07-09 late — "without my measurements
+we can't do a true observed" is true ONLY for the rain pathway):
+1. OBSERVED BAY line (despiked 6-min gauge → 30-min resample,
+   gray solid): a TRUE observation, and by proven grate-coupling
+   (7/9 measurement) + level-driven tidal flooding it is genuinely
+   observed street water for the TIDE pathway. Always available.
+2. AS-PREDICTED-THEN pluvial (faded dashed, reconstructed from
+   archived runs / predictions_log): the ACCOUNTABLE default for
+   the past rain side — after an event, the gap between this line
+   and a tape diamond IS the visible miss. Do NOT substitute a
+   best-estimate hindcast here; that papers over the failures the
+   chart exists to show. (User also open to rain SHADING for the
+   past window, as the burst band does for the future — acceptable
+   alternative rendering of tier 2.)
+3. TAPE DIAMONDS from labeled_observations — sparse ground truth,
+   outranks both lines where present (reuse _today_lookback /
+   _flood_peaks_chart_data patterns).
+Optional tier 4 (later): MRMS-driven model hindcast, explicitly
+labeled "reanalysis" — for unmeasured events; never silently
+replaces tier 2. Same grammar: now-line separates observed from
+forecast; observed gray, predicted blue. Rationale: the same
+amnesia problem the 'SO FAR TODAY' line fixed, but on the curve —
+after event #4 the chart showed a placid forecast while the street
+had just been under 19 inches.
 
 ### Other likely sessions (refreshed 2026-07-08)
 
