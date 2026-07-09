@@ -36,6 +36,10 @@
 // flood-risk line — rain floods this intersection independent of the
 // tide, so the tide-keyed regime label alone can mislead.
 
+// WIDGET_VERSION: bump on every edit — shows in the widget footer so
+// you can verify which copy is installed (CDN caches the .js ~10 min
+// after a push; if the version below doesn't match the repo, re-copy).
+const WIDGET_VERSION = "v7.09c";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
 // Landmark elevations (NAVD88). Match flood_forecast_daily.py LANDMARKS
@@ -407,7 +411,13 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
 }
 
 async function fetchForecast() {
-  const req = new Request(FORECAST_URL);
+  // Cache-buster: iOS URLCache happily serves widgets a stale JSON
+  // for far longer than Pages' max-age (found 2026-07-09: site showed
+  // the new so-far line while the widget rendered a cached JSON
+  // without the field). A per-5-min query param defeats it while
+  // still coalescing rapid refreshes.
+  const bust = Math.floor(Date.now() / 300000);
+  const req = new Request(FORECAST_URL + "?t=" + bust);
   return await req.loadJSON();
 }
 
@@ -658,7 +668,7 @@ function makeWidget(forecast, family) {
   stamp.font = Font.systemFont(8);
   stamp.textColor = new Color("#888");
   footer.addSpacer();
-  const brand = footer.addText("Bay Ave Barnacle");
+  const brand = footer.addText("Bay Ave Barnacle " + WIDGET_VERSION);
   brand.font = Font.mediumSystemFont(8);
   brand.textColor = new Color("#888");
 
