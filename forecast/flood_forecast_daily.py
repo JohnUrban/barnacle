@@ -1060,6 +1060,42 @@ def _parse_iso_duration_hours(dur):
     return total if total > 0 else None
 
 
+def fetch_nws_flood_alerts():
+    """Active NWS alerts for the 342 Bay point, filtered to
+    flood-relevant events (2026-07-09 — the day a live Flood Watch
+    was up while Barnacle showed nothing). Alerts carry the human
+    forecaster's convective judgment that never survives into the
+    smeared QPF numbers — the same information channel as the Flash
+    Flood Warning that existed DURING the 7/6 flood. Returns a list
+    of {event, headline, severity, ends}; [] on any failure (alerts
+    must never break the run)."""
+    try:
+        data = _get(
+            "https://api.weather.gov/alerts/active",
+            {"point": f"{HIGHLANDS_LAT},{HIGHLANDS_LON}"},
+        )
+    except Exception:
+        return []
+    out = []
+    for feat in (data.get("features") or []):
+        props = feat.get("properties") or {}
+        event = props.get("event") or ""
+        # Flood Watch / Flash Flood Watch / Flood Warning / Flash Flood
+        # Warning / Flood Advisory. Coastal Flood products are the
+        # TIDE pathway's business (nws_surge_parser) — exclude here.
+        if "flood" not in event.lower():
+            continue
+        if "coastal" in event.lower():
+            continue
+        out.append({
+            "event": event,
+            "headline": props.get("headline") or "",
+            "severity": props.get("severity") or "",
+            "ends": props.get("ends") or props.get("expires") or "",
+        })
+    return out
+
+
 def fetch_nws_qpf():
     """Hourly rain-rate buckets (in/hr, UTC) from the NWS gridpoint
     QPF data — THE fix for the bug where rain read 0.0 forever
@@ -1706,10 +1742,23 @@ def build_forecast():
         sf = (p.get("shortForecast") or "").lower()
         if pop >= 60 and ("thunder" in sf or "heavy rain" in sf):
             pluvial_convective = True
+    # NWS flood alerts (2026-07-09): the forecaster's own call.
+    # Warnings (flooding imminent/occurring) → elevated; Watches /
+    # Advisories → at least possible. An active flood alert also
+    # counts as the convective signal for the analog burst below —
+    # the human forecaster IS the convection detector the smeared
+    # QPF numbers lack (today's live example: Flood Watch active,
+    # QPF smeared to 0.05 in/hr, PoP 52% — every numeric trigger
+    # silent).
+    nws_flood_alerts = fetch_nws_flood_alerts()
+    alert_warning = any("warning" in a["event"].lower()
+                        for a in nws_flood_alerts)
     pluvial_risk_level = None
-    if peak_rain_rate_24h >= 0.30 or pluvial_convective:
+    if peak_rain_rate_24h >= 0.30 or pluvial_convective or alert_warning:
         pluvial_risk_level = "elevated"
-    elif cumulative_rain_24h >= 1.0 or (pluvial_max_pop >= 70 and cumulative_rain_24h >= 0.5):
+    elif (cumulative_rain_24h >= 1.0
+          or (pluvial_max_pop >= 70 and cumulative_rain_24h >= 0.5)
+          or nws_flood_alerts):
         pluvial_risk_level = "possible"
     # Analog burst estimate + the "rain burst potential" water level —
     # the level a 7/6-analog burst would reach at low tide. Charts draw
@@ -1717,7 +1766,7 @@ def build_forecast():
     # surfaces (rain-DNA directive) but a convective burst has no
     # knowable clock time, so it renders as a level, not a bump.
     burst_est = peak_rain_rate_24h
-    if pluvial_convective:
+    if pluvial_convective or nws_flood_alerts:
         analog = 1.7 * (max_6h_accum / 0.55) if max_6h_accum > 0 else 1.7
         burst_est = max(burst_est, min(analog, 3.0))
     potential_low_tide = potential_low_tide_tanh = None
@@ -1739,6 +1788,8 @@ def build_forecast():
         "potential_low_tide_navd88_tanh": (
             round(potential_low_tide_tanh, 2)
             if potential_low_tide_tanh else None),
+        # additive (2026-07-09): the alerts that informed the level
+        "nws_flood_alerts": nws_flood_alerts,
     }
 
     # Confidence indicator inputs
@@ -3533,7 +3584,10 @@ def render_email(forecast):
     if pr.get("level"):
         rain_block = (
             f"*** PLUVIAL FLOOD RISK ({pr['level'].upper()}) — independent of tide ***\n"
-            f"  Peak QPF {pr.get('peak_rain_rate_24h_in_hr', 0):.2f} in/hr, "
+            + "".join(
+                f"  NWS ALERT: {a.get('event', '')} — {a.get('headline', '')}\n"
+                for a in (pr.get("nws_flood_alerts") or []))
+            + f"  Peak QPF {pr.get('peak_rain_rate_24h_in_hr', 0):.2f} in/hr, "
             f"cumulative {pr.get('cumulative_rain_24h_in', 0):.2f}\", "
             f"max PoP {pr.get('max_pop_24h_pct', 0)}%"
             + (", thunderstorm wording" if pr.get("convective_wording") else "")
@@ -4540,6 +4594,17 @@ def _render_pluvial_advisory_html(forecast):
         return ""
     heading = ("ELEVATED pluvial flood risk" if level == "elevated"
                else "Possible pluvial flooding")
+    alerts_html = ""
+    alerts = pr.get("nws_flood_alerts") or []
+    if alerts:
+        rows = "".join(
+            f'<li><b>{a.get("event", "")}</b> ({a.get("severity", "")}) '
+            f'— {a.get("headline", "")}</li>'
+            for a in alerts)
+        alerts_html = (
+            f'<p style="margin:6px 0 2px 0"><b>Active NWS alerts for '
+            f'this location:</b></p><ul style="margin:2px 0 8px 18px">'
+            f'{rows}</ul>')
     details = (
         f"Next 24 h: peak QPF rate {pr.get('peak_rain_rate_24h_in_hr', 0):.2f} in/hr, "
         f"cumulative {pr.get('cumulative_rain_24h_in', 0):.2f}\", "
@@ -4606,6 +4671,7 @@ def _render_pluvial_advisory_html(forecast):
     return (
         '<section class="pluvial-advisory">'
         f'<h3>&#9888; {heading} — independent of the tide</h3>'
+        f'{alerts_html}'
         f'<p>{details}</p>'
         f'{scenario_html}'
         '<p class="note">Heavy rain can flood the Bay+Central '
