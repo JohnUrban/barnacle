@@ -4690,11 +4690,39 @@ def should_send_alert(forecast):
     send = rank > 0 and (prev_rank == 0 or rank > prev_rank)
     reason = (f"alert rank {prev_rank}→{rank} ({label})" if send else
               f"steady (rank {rank}, was {prev_rank})")
+    # 24-HOUR COOLDOWN (user policy 2026-07-18: "no more than 1 per
+    # 24 h if the headline doesn't change"): a transient dip to rank
+    # 0 (NWS hiccup, alert boundary) must not re-fire the same alert
+    # on the next run. Suppress re-sends at or below the last-SENT
+    # rank within 24 h; a strictly HIGHER rank (real escalation)
+    # always sends immediately.
+    now_utc = dt.datetime.now(dt.timezone.utc)
+    if send:
+        ls_rank = st.get("last_sent_rank", 0)
+        ls_ts = None
+        try:
+            ls_ts = dt.datetime.strptime(
+                st.get("last_sent_ts", ""), "%Y-%m-%dT%H:%M:%SZ"
+            ).replace(tzinfo=dt.timezone.utc)
+        except (ValueError, TypeError):
+            pass
+        if (ls_ts is not None and rank <= ls_rank
+                and (now_utc - ls_ts) < dt.timedelta(hours=24)):
+            hrs = (now_utc - ls_ts).total_seconds() / 3600
+            send = False
+            reason = (f"suppressed: rank {rank} already alerted "
+                      f"{hrs:.1f}h ago (24h cooldown; a higher rank "
+                      f"would send immediately)")
+    new_state = {"rank": rank, "sig": sig, "label": label,
+                 "updated": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                 "last_sent_rank": st.get("last_sent_rank", 0),
+                 "last_sent_ts": st.get("last_sent_ts", "")}
+    if send:
+        new_state["last_sent_rank"] = rank
+        new_state["last_sent_ts"] = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
     try:
         with open(ALERT_STATE_PATH + ".tmp", "w") as f:
-            json.dump({"rank": rank, "sig": sig, "label": label,
-                       "updated": dt.datetime.now(dt.timezone.utc)
-                       .strftime("%Y-%m-%dT%H:%M:%SZ")}, f)
+            json.dump(new_state, f)
         os.replace(ALERT_STATE_PATH + ".tmp", ALERT_STATE_PATH)
     except OSError:
         pass

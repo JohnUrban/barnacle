@@ -31,7 +31,11 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
+          # cache:pip REQUIRES a requirements file to hash — without
+          # one, setup-python FAILS the whole job (found 2026-07-18
+          # after a night of 10-minute failure-notification emails).
           cache: 'pip'
+          cache-dependency-path: forecast/nowcast-requirements.txt
 
       - name: Trigger check (stdlib, cheap)
         id: gate
@@ -50,7 +54,7 @@ jobs:
 
       - name: Install radar deps
         if: steps.gate.outputs.go == 'true'
-        run: pip install --quiet xarray cfgrib eccodes
+        run: pip install --quiet -r forecast/nowcast-requirements.txt
 
       - name: Run nowcast
         if: steps.gate.outputs.go == 'true'
