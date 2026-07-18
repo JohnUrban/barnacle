@@ -2439,6 +2439,23 @@ from QPF-based forecast. Bot cadence (~hourly, throttled) is the
 constraint — consider a lightweight separate 10-min Action for
 rain-active periods only.
 
+### Email/SMS policy (2026-07-17, user directive)
+
+NO MORE daily-morning email — it trained the user to ignore it.
+Event-driven only: every hourly run evaluates `should_send_alert`
+(state in `data/alert_state.json`, committed by the bot): email +
+SMS fire when flood risk APPEARS (rank 0→>0) or ESCALATES, stay
+silent on steady state, reset on all-clear so the next episode
+alerts. Ranks: street/possible=1, light=2, moderate/elevated=3,
+severe=4 (max of 72h tide regimes + pluvial level). Subject
+prefixed [ALERT]. SMS = email-to-SMS gateway via ALERT_SMS_TO
+GitHub secret (user must add: e.g. 5551234567@vtext.com Verizon /
+@txt.att.net AT&T / @tmomail.net T-Mobile), ~150 chars + site
+link. Manual workflow_dispatch = --force-email (test path). The
+09:00 run keeps map-regen + archive duties only. NEXT QUEUED
+SESSION (user): chart observed-overlay (three honesty tiers, spec
+above).
+
 ### Other likely sessions (refreshed 2026-07-08)
 
 1. **Pluvial input model, next iteration (9e.2)** — candidate

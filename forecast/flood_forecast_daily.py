@@ -4604,6 +4604,88 @@ def compute_flood_windows(series):
     return out
 
 
+ALERT_STATE_PATH = os.path.join(_REPO_ROOT, "data", "alert_state.json")
+
+# Alert ranks: 0 = nothing worth a message. Tide regimes and pluvial
+# levels merge onto one ladder so "risk appeared" has one meaning.
+_ALERT_RANKS = {"dry": 0, "cold_lockout": 0, "street": 1, "light": 2,
+                "moderate": 3, "severe": 4}
+_PLUVIAL_RANKS = {None: 0, "possible": 1, "elevated": 3}
+
+
+def compute_alert_level(forecast):
+    """(rank, label, signature) for the event-driven alert policy
+    (user, 2026-07-17: the daily-morning email became ignorable —
+    'mostly not telling me it will flood'). rank>0 = some flood risk
+    exists in the 72h window or the rain pathway. signature
+    identifies the risk episode so we alert on APPEARANCE and
+    ESCALATION, never repeat on steady state, and reset after
+    all-clear."""
+    tide_rank = 0
+    tide_label = "no tidal flooding"
+    for t in (forecast.get("all_tides") or []):
+        r = ((t.get("depths_in") or {}).get("regime")) or "dry"
+        if _ALERT_RANKS.get(r, 0) > tide_rank:
+            tide_rank = _ALERT_RANKS.get(r, 0)
+            tide_label = f"{regime_display(r)} tide {t.get('time','')}"
+    pr = forecast.get("pluvial_risk") or {}
+    pl_rank = _PLUVIAL_RANKS.get(pr.get("level"), 0)
+    rank = max(tide_rank, pl_rank)
+    if pl_rank >= tide_rank and pl_rank > 0:
+        label = f"rain risk {pr.get('level')}"
+        if pr.get("nws_flood_alerts"):
+            label += " (" + pr["nws_flood_alerts"][0]["event"] + ")"
+    else:
+        label = tide_label
+    sig_bits = [str(rank)]
+    if tide_rank > 0:
+        worst = forecast.get("peak_time_local") or ""
+        sig_bits.append("tide:" + worst)
+    if pl_rank > 0:
+        sig_bits.append("pluv:" + str(pr.get("level")))
+        for a in pr.get("nws_flood_alerts") or []:
+            sig_bits.append(a.get("event", ""))
+    return rank, label, "|".join(sig_bits)
+
+
+def should_send_alert(forecast):
+    """(send: bool, reason) with persisted state. Send on appearance
+    (0→>0) or escalation (rank above last-sent rank). Steady or
+    de-escalating states update the file silently; all-clear resets
+    so the NEXT episode alerts again."""
+    rank, label, sig = compute_alert_level(forecast)
+    try:
+        with open(ALERT_STATE_PATH) as f:
+            st = json.load(f)
+    except (OSError, ValueError):
+        st = {"rank": 0, "sig": ""}
+    prev_rank = st.get("rank", 0)
+    send = rank > 0 and (prev_rank == 0 or rank > prev_rank)
+    reason = (f"alert rank {prev_rank}→{rank} ({label})" if send else
+              f"steady (rank {rank}, was {prev_rank})")
+    try:
+        with open(ALERT_STATE_PATH + ".tmp", "w") as f:
+            json.dump({"rank": rank, "sig": sig, "label": label,
+                       "updated": dt.datetime.now(dt.timezone.utc)
+                       .strftime("%Y-%m-%dT%H:%M:%SZ")}, f)
+        os.replace(ALERT_STATE_PATH + ".tmp", ALERT_STATE_PATH)
+    except OSError:
+        pass
+    return send, reason
+
+
+def build_sms_text(forecast):
+    """~150-char alert for email-to-SMS gateways (ALERT_SMS_TO secret,
+    e.g. 5551234567@vtext.com). Short + link, per user design."""
+    rank, label, _ = compute_alert_level(forecast)
+    _tr = forecast.get("today_regime") or "dry"
+    head, _ = headline_for(forecast, _tr)
+    peak = forecast.get("peak_forecast_observed_mllw") or 0
+    return (f"[Barnacle] {head} — {label}. Worst 72h {peak:.2f}ft "
+            f"{format_time_short(forecast.get('peak_time_local') or '')}. "
+            f"johnurban.github.io/barnacle")
+
+
 def _today_lookback():
     """What actually happened at the corner SO FAR today (user design
     2026-07-09, post-event-#4: an hour after a top-3 flood the widget
@@ -7859,7 +7941,8 @@ def send_email(subject, text_body, html_body):
         msg["Bcc"] = ", ".join(recipients)
 
     msg.set_content(text_body)
-    msg.add_alternative(html_body, subtype="html")
+    if html_body:
+        msg.add_alternative(html_body, subtype="html")
 
     host = os.environ["SMTP_HOST"]
     port = int(os.environ.get("SMTP_PORT", 465))
@@ -7939,6 +8022,9 @@ def main():
         description="Bay Ave Barnacle — daily flood forecast for 342 Bay Ave, Highlands NJ.",
         epilog="Set SMTP_* environment variables to send email, or use --dry-run to print to stdout."
     )
+    parser.add_argument("--force-email", action="store_true",
+                        help="Send the report email regardless of the "
+                             "event-driven alert state (manual/dispatch runs).")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print the email to stdout instead of sending. Useful for testing.")
     parser.add_argument("--json", action="store_true",
@@ -8099,10 +8185,27 @@ def main():
         return
 
     if args.no_send:
-        print("Skipping email send (--no-send set).")
+        # Still evaluate + persist the alert state so risk episodes
+        # are tracked even on runs that can't send (state resets on
+        # all-clear; escalation triggers the next sending run).
+        send, reason = should_send_alert(forecast)
+        print(f"Skipping email send (--no-send set). Alert eval: {reason}"
+              + (" — WOULD SEND" if send else ""))
         return
 
-    # Check SMTP env vars before attempting to send
+    # EVENT-DRIVEN ALERTING (user, 2026-07-17): the daily-morning
+    # email became ignorable ("mostly not telling me it will flood").
+    # Email now goes out ONLY when flood risk APPEARS or ESCALATES
+    # (tide regime ≥ street in the 72h window, or pluvial risk
+    # active); a short SMS (email-to-SMS gateway, ALERT_SMS_TO
+    # secret) rides along. --force-email preserves a manual path.
+    send, reason = should_send_alert(forecast)
+    if getattr(args, "force_email", False):
+        send, reason = True, "forced (--force-email)"
+    if not send:
+        print(f"No alert email: {reason}")
+        return
+
     required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM", "SMTP_TO"]
     missing = [v for v in required if v not in os.environ]
     if missing:
@@ -8110,8 +8213,21 @@ def main():
         print("Either set them, or run with --dry-run / --no-send.", flush=True)
         raise SystemExit(2)
 
+    subject = "[ALERT] " + subject
     send_email(subject, text, html)
-    print(f"Sent: {subject}")
+    print(f"Sent alert email ({reason}): {subject}")
+
+    sms_to = os.environ.get("ALERT_SMS_TO", "").strip()
+    if sms_to:
+        try:
+            sms = build_sms_text(forecast)
+            _orig_to = os.environ.get("SMTP_TO")
+            os.environ["SMTP_TO"] = sms_to
+            send_email("", sms, None)
+            os.environ["SMTP_TO"] = _orig_to
+            print(f"Sent SMS alert to gateway ({len(sms)} chars)")
+        except Exception as e:
+            print(f"WARNING: SMS send failed: {e}")
 
 
 if __name__ == "__main__":
