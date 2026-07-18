@@ -291,7 +291,7 @@ def fetch_tides_24h():
     }
 
 
-def build_water_series(surge_ft, qpf_hourly=None, hours_back=2,
+def build_water_series(surge_ft, qpf_hourly=None, hours_back=12,
                        hours_forward=24, interval_min=30):
     """Model-predicted water level at 342 Bay over a continuous window
     — the data behind the widget tide-curve chart (user request
@@ -370,6 +370,20 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=2,
         except Exception:
             continue
         qpf_by_local_hour[local.replace(minute=0, second=0, microsecond=0)] = rate
+    # OBSERVED-OVERLAY tier 1 (2026-07-17, user session queue): the
+    # despiked gauge is a TRUE observation of the bay — and via
+    # proven grate coupling + level-driven tidal flooding, of tide-
+    # pathway street water. Attach it to past series points; the
+    # chart draws it as a gray line that stops at now. (Tier 2 —
+    # as-predicted-then pluvial reconstruction — deliberately
+    # deferred; user endorsed keeping the current model line across
+    # the past. Tier 3 = tape diamonds, added in the renderer.)
+    observed_by_t = {}
+    try:
+        for t, v in fetch_observed_recent(hours=hours_back + 1):
+            observed_by_t[t[:16]] = round(v + MLLW_TO_NAVD88_OFFSET, 3)
+    except Exception:
+        pass
     out = []
     for p in data.get("predictions", []) or []:
         try:
@@ -383,8 +397,11 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=2,
         # smoothing is retired with the per-point static estimate).
         h0 = t_local.replace(minute=0, second=0, microsecond=0)
         rate_raw = qpf_by_local_hour.get(h0, 0.0)
-        out.append({"time": p["t"], "tide_navd88": round(tide_water, 3),
-                    "_t": t_local, "_tide": tide_water, "_rate": rate_raw})
+        row = {"time": p["t"], "tide_navd88": round(tide_water, 3),
+               "_t": t_local, "_tide": tide_water, "_rate": rate_raw}
+        if p["t"][:16] in observed_by_t:
+            row["observed_navd88"] = observed_by_t[p["t"][:16]]
+        out.append(row)
 
     # v0.10 DYNAMIC TANK (2026-07-09): the pluvial line is now a true
     # HYDROGRAPH — rise, peak, and recession with fitted timing —
@@ -2002,7 +2019,17 @@ def build_forecast():
     flood_windows = compute_flood_windows(water_series)
     today_peak_water = None
     today_peak_time = None
+    # OUTLOOK stays forward-looking: with the series now extending
+    # 12 h back (observed overlay), past water must not masquerade
+    # as the TODAY headline — the SO-FAR lookback owns the past.
+    try:
+        _now_cut = (_station_local_now()
+                    - dt.timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        _now_cut = ""
     for p in water_series:
+        if (p.get("time") or "") < _now_cut:
+            continue
         try:
             w = float(p["water_navd88"])
         except (KeyError, TypeError, ValueError):
@@ -4851,6 +4878,35 @@ def _render_water_series_section(forecast):
     labels = [p["time"][-5:] for p in series]
     tide = [to_in(p.get("tide_navd88")) for p in series]
     pluv = [to_in(p.get("pluvial_navd88")) for p in series]
+    observed = [to_in(p.get("observed_navd88")) for p in series]
+    has_observed = any(v is not None for v in observed)
+    # Tier-3 tape diamonds: user measurements in the chart window
+    tape_pts = []
+    try:
+        elev_by_key = {k: e for k, _l, e, _sh in LANDMARKS}
+        t0 = series[0]["time"]
+        t1 = series[-1]["time"]
+        with open(os.path.join(_REPO_ROOT, "data",
+                               "labeled_observations.csv")) as f:
+            for r in csv.DictReader(f):
+                ts = (r.get("observation_time_local") or "").replace("T", " ")[:16]
+                key = (r.get("landmark_key") or "").strip()
+                if not (t0 <= ts <= t1) or "pocket" in key \
+                        or key not in elev_by_key:
+                    continue
+                try:
+                    w = elev_by_key[key] + float(r["observed_depth_in"]) / 12.0
+                except (TypeError, ValueError):
+                    continue
+                # snap to nearest series label index
+                idx = min(range(len(series)),
+                          key=lambda i: abs(
+                              dt.datetime.strptime(series[i]["time"][:16],
+                                                   "%Y-%m-%d %H:%M")
+                              - dt.datetime.strptime(ts, "%Y-%m-%d %H:%M")))
+                tape_pts.append((idx, to_in(w)))
+    except Exception:
+        tape_pts = []
     has_rain_layer = any(v is not None for v in pluv)
     pr = forecast.get("pluvial_risk") or {}
     # v0.9-gamma dual models: band top = the HIGHER of the two
@@ -4868,6 +4924,8 @@ def _render_water_series_section(forecast):
     # (a Sandy-class forecast should not be clipped).
     all_vals = ([v for v in tide if v is not None]
                 + [v for v in pluv if v is not None]
+                + [v for v in observed if v is not None]
+                + [v for _i, v in tape_pts]
                 + ([to_in(potential)] if potential else []))
     y_min = min(-60, (min(all_vals) - 3) if all_vals else -60)
     y_max = max(36, (max(all_vals) + 3) if all_vals else 36)
@@ -4878,6 +4936,23 @@ def _render_water_series_section(forecast):
          "borderColor": "#1a5fa8",
          "fill": False, "pointRadius": 0, "borderWidth": 2, "tension": 0.35},
     ]
+    if has_observed:
+        datasets.insert(0,
+            {"label": "OBSERVED bay (gauge, despiked)", "data": observed,
+             "borderColor": "#555555",
+             "fill": False, "spanGaps": False,
+             "pointRadius": 0, "borderWidth": 2.5, "tension": 0.3})
+    if tape_pts:
+        tape_data = [None] * len(labels)
+        for idx, v in tape_pts:
+            tape_data[idx] = (max(tape_data[idx], v)
+                              if tape_data[idx] is not None else v)
+        datasets.insert(0,
+            {"label": "MEASURED (tape)", "data": tape_data,
+             "borderColor": "#0b3d6b",
+             "backgroundColor": "rgba(217,119,6,0.9)",
+             "pointStyle": "rectRot", "pointRadius": 6,
+             "pointBorderWidth": 2, "showLine": False})
     if has_rain_layer:
         datasets.append(
             {"label": "Rain street-water (v0.10 tank hydrograph)",
@@ -4968,6 +5043,16 @@ def _render_water_series_section(forecast):
         "Y-axis is inches relative to the SW grate — the reference "
         "point for all relative depths. Convert: ft NAVD88 = 3.52 + "
         "inches/12; ft MLLW (Sandy Hook gauge) = 6.34 + inches/12."]
+    if has_observed:
+        note_bits.append(
+            "The chart now reaches ~12 h into the PAST: the gray line "
+            "is the OBSERVED bay (despiked gauge — a true observation, "
+            "and via the drains' proven bay-coupling, the tide-pathway "
+            "street water); it stops at the now-line where forecast "
+            "takes over. Orange diamonds are tape measurements. The "
+            "blue/amber model lines across the past show the CURRENT "
+            "model's view, not what was predicted at the time — past "
+            "rain floods can exceed them (that gap is the point).")
     if has_rain_layer:
         note_bits.append(
             "The amber curve is the v0.10 tank hydrograph — predicted "

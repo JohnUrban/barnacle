@@ -2392,8 +2392,8 @@ in order; every step has been needed at least once:**
     `git stash list` + `grep -rl '<<<<<<<' data/ docs/`; log-file
     conflicts resolve by UNION of both sides, never ours/theirs.
 
-### Queued next session (user, 2026-07-09 post-event): observed
-### overlay on the 24-h water chart
+### ✅ SHIPPED 2026-07-17 (tiers 1+3): observed overlay on the
+### water chart — tier 2 deliberately deferred
 
 Extend the home-page water chart ~12 h into the past. THREE HONESTY
 TIERS (refined with user 2026-07-09 late — "without my measurements
@@ -2420,6 +2420,16 @@ forecast; observed gray, predicted blue. Rationale: the same
 amnesia problem the 'SO FAR TODAY' line fixed, but on the curve —
 after event #4 the chart showed a placid forecast while the street
 had just been under 19 inches.
+SHIPPED (2026-07-17 late): series extends 12 h back; tier 1 =
+OBSERVED bay line (despiked gauge, gray, stops at now) attached to
+series points as observed_navd88; tier 3 = tape diamonds from
+labeled_observations, snapped to series slots; today_* fields now
+FUTURE-only (the SO-FAR lookback owns the past); widget chart
+slices back to its classic −2 h window (v7.17b). Tier 2
+(as-predicted-then pluvial reconstruction) DEFERRED with user
+approval ("or just keep what the most recent prediction was") —
+the chart note says the past model lines are the CURRENT model's
+view and past rain floods can exceed them.
 
 ### ★ DESIGNATED NEXT MODELING SESSION (user, 2026-07-09 post-v0.10):
 ### MRMS NOWCASTING — the input is now the ONLY weak link
