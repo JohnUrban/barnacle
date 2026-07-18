@@ -100,3 +100,20 @@ was bought with zero tidal floor.
 
 Images (28): mostly porch → intersection / up Bay; some walkway →
 porch step; a few porch-zoom at a car. Uncategorized as yet.
+
+## POSTSCRIPT (same evening): the "radar underread" was mostly OUR box
+
+Backtest (`analysis/box_geometry_backtest.txt`): the old radar
+sampling box was **centered on the house — half of it was Sandy Hook
+Bay**. During 15:16–15:36 the storm core sat south over the bluffs:
+the old box read 0.01–0.12 in/hr (the number the live nowcast ate)
+while a **land-only catchment box** (shoreline→ridge, Mount Mitchill
+included) reads **2.4–3.8 in/hr** for the same frames. Radar saw the
+flood; we sampled the wrong pixels. Tank hindcast peak: old box
++13.0″ → catchment box **+15.9″** (measured +19.9). Residual ~4″ ≈
+priming (K on soaked ground) + shortened lag (peak trailed the last
+strong frame by ~1–4 min, not 15 — soaked hillside delivers faster).
+Fix shipped to nowcast.py, nowcast_tank.py, mrms_point_rain.py
+(cached pre-7/18 box rows not comparable; point values unaffected).
+Instrument ranking revised: observer >> radar-with-right-box >>
+radar-with-wrong-box >> QPF.

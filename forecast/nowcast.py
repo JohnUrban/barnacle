@@ -36,6 +36,20 @@ import flood_forecast_daily as ff
 
 UA = {"User-Agent": "barnacle flood model (dr.john.urban@gmail.com)"}
 LAT, LON = 40.4015, -73.991
+# CATCHMENT sampling region (2026-07-18 evening, user directive:
+# "capture the rain over me and over all the parts that drain to
+# me"). The old +/-0.015-deg box was CENTERED on the house — which
+# sits on the shoreline, so ~half the box was Sandy Hook Bay: rain
+# that drains to nobody diluted the mean, and during event #5 the
+# storm core sat south over the bluffs, OUTSIDE the wet half —
+# frames read 0.1 in/hr during observed torrents. Backtest with this
+# land-only box (shoreline south to the ridge, Mount Mitchill
+# included): those frames read 2.4-3.8 in/hr and the tank hindcast
+# peak improved +13.0 -> +15.9 in (measured +19.9).
+CATCH_LAT_N = 40.4030   # just inland of the shoreline
+CATCH_LAT_S = 40.3860   # ridge crest
+CATCH_LON_W = -74.001
+CATCH_LON_E = -73.980
 BOX = 0.015
 MRMS_BASE = "https://mrms.ncep.noaa.gov/2D/PrecipRate/"
 OUT_PATH = os.path.join(HERE, "..", "docs", "nowcast.json")
@@ -121,8 +135,8 @@ def box_rate(stamp):
     try:
         ds = xr.open_dataset(tmp, engine="cfgrib", decode_timedelta=True)
         var = list(ds.data_vars)[0]
-        box = ds[var].sel(latitude=slice(LAT + BOX, LAT - BOX),
-                          longitude=slice(LON + 360 - BOX, LON + 360 + BOX))
+        box = ds[var].sel(latitude=slice(CATCH_LAT_N, CATCH_LAT_S),
+                          longitude=slice(360 + CATCH_LON_W, 360 + CATCH_LON_E))
         out = float(box.mean()) / 25.4
         ds.close()
     finally:

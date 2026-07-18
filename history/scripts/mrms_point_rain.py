@@ -3,8 +3,11 @@
 
 Pulls gzipped GRIB2 files from the Iowa State mtarchive
 (https://mtarchive.geol.iastate.edu/YYYY/MM/DD/mrms/ncep/<product>/)
-and reports rain at the house point plus a ~1.5 km hillside box
-(the bluff catchment that funnels onto the corner).
+and reports rain at the house point plus the CATCHMENT box (land
+from the shoreline south to the ridge — see CATCH_* constants;
+box geometry changed 2026-07-18: cached box_mean/box_max rows
+extracted before that date used the old house-centered half-water
+box and are NOT comparable to newer rows. Point values unaffected).
 
 Products:
   PrecipRate                 instantaneous rate, mm/hr, every 2 min
@@ -40,6 +43,20 @@ import time
 import urllib.request
 
 LAT, LON = 40.4015, -73.991     # 342 Bay Ave (MRMS longitudes are 0-360)
+# CATCHMENT sampling region (2026-07-18 evening, user directive:
+# "capture the rain over me and over all the parts that drain to
+# me"). The old +/-0.015-deg box was CENTERED on the house — which
+# sits on the shoreline, so ~half the box was Sandy Hook Bay: rain
+# that drains to nobody diluted the mean, and during event #5 the
+# storm core sat south over the bluffs, OUTSIDE the wet half —
+# frames read 0.1 in/hr during observed torrents. Backtest with this
+# land-only box (shoreline south to the ridge, Mount Mitchill
+# included): those frames read 2.4-3.8 in/hr and the tank hindcast
+# peak improved +13.0 -> +15.9 in (measured +19.9).
+CATCH_LAT_N = 40.4030   # just inland of the shoreline
+CATCH_LAT_S = 40.3860   # ridge crest
+CATCH_LON_W = -74.001
+CATCH_LON_E = -73.980
 BOX = 0.015                     # deg half-width ≈ 1.5 km — the hillside catchment
 UA = {"User-Agent": "barnacle flood model (dr.john.urban@gmail.com)"}
 
@@ -118,8 +135,8 @@ def fetch(date, product, hhmm, use_cache=True):
         var = list(ds.data_vars)[0]
         pt = float(ds[var].sel(latitude=LAT, longitude=LON + 360,
                                method="nearest").values)
-        box = ds[var].sel(latitude=slice(LAT + BOX, LAT - BOX),
-                          longitude=slice(LON + 360 - BOX, LON + 360 + BOX))
+        box = ds[var].sel(latitude=slice(CATCH_LAT_N, CATCH_LAT_S),
+                          longitude=slice(360 + CATCH_LON_W, 360 + CATCH_LON_E))
         out = (pt, float(box.mean().values), float(box.max().values))
         ds.close()
     finally:
