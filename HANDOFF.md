@@ -2466,6 +2466,26 @@ link. Manual workflow_dispatch = --force-email (test path). The
 SESSION (user): chart observed-overlay (three honesty tiers, spec
 above).
 
+### Model gap logged 2026-07-18 (user field insight, mid-storm):
+### ANTECEDENT WETTING — the tank is memoryless about the hillside
+
+User, watching a 20-min pulse die on the ebb just off a neap high
+(bay ~2.2 NAVD88 — below the drainage knee even AT high tide that
+day): "slowing down does
+not mean it's over — it is still priming the conditions for a
+flood." Physically right, and the tank can't represent it: K is
+fixed, so a burst on a soaked catchment is treated like a burst on
+a dry one. What a first pulse actually does: raises the hillside
+runoff fraction (soil wetting), fills pockets/micro-storage (7/18:
+pockets full, street dry), charges the drain network. Type
+specimen: 7/13 — morning pulse, hours of lull, evening rain on the
+PRIMED catchment → +19.5″. The MRMS cross-event C-variation is
+consistent with antecedent state as a hidden variable. Candidate
+fix (needs events to calibrate): antecedent-precip multiplier on K
+(e.g., trailing-6h rain scales K within a bounded range), or a
+proper two-layer soil reservoir feeding the tank. Collect: every
+double-pulse event is a calibration pair.
+
 ### Other likely sessions (refreshed 2026-07-08)
 
 1. **Pluvial input model, next iteration (9e.2)** — candidate
