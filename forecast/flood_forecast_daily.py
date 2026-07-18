@@ -345,22 +345,71 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=12,
         )
     except Exception:
         data = {}
-    # NOAA outage fallback (2026-07-17): serve cached series astronomy.
-    if not (data.get("predictions") or []):
+    # THREE-LAYER astronomy sourcing (2026-07-18 upgrade of the
+    # 07-17 outage fallback): live NOAA points, then cached series
+    # points, then COSINE SYNTHESIS between cached high/low extremes
+    # for whatever is still missing. The old cache-only fallback let
+    # the FUTURE horizon shrink toward the cache edge as the outage
+    # aged (user: "the value of the app still lies in prediction" —
+    # the chart showed 12 h of past and only ~6 h of future).
+    # Astronomy is deterministic; the hilo cache reaches days out,
+    # so the +24 h horizon survives any outage the cache survives.
+    astro_map = {}
+    for pp in data.get("predictions", []) or []:
+        try:
+            astro_map[pp["t"]] = float(pp["v"])
+        except (KeyError, TypeError, ValueError):
+            continue
+    if astro_map:
+        _tide_cache_save("series", [[t, v] for t, v in
+                                    sorted(astro_map.items())])
+    else:
+        _TIDE_FALLBACK_USED["flag"] = True
         cache = _tide_cache_load()
         lo = start.strftime("%Y-%m-%d %H:%M")
         hi = end.strftime("%Y-%m-%d %H:%M")
-        rows = [r for r in cache.get("series", []) if lo <= r[0] <= hi]
-        if rows:
+        for r in cache.get("series", []):
+            if lo <= r[0] <= hi:
+                astro_map[r[0]] = float(r[1])
+    # synthesize whatever 30-min slots remain missing
+    expected = []
+    _tt = start.replace(minute=(0 if start.minute < 30 else 30),
+                        second=0, microsecond=0)
+    while _tt <= end:
+        expected.append(_tt)
+        _tt += dt.timedelta(minutes=interval_min)
+    missing = [t for t in expected
+               if t.strftime("%Y-%m-%d %H:%M") not in astro_map]
+    if missing:
+        ext = []
+        for r in _tide_cache_load().get("hilo", []):
+            try:
+                ext.append((dt.datetime.strptime(r[0], "%Y-%m-%d %H:%M"),
+                            float(r[1])))
+            except (ValueError, TypeError):
+                continue
+        ext.sort()
+        synth = 0
+        for t in missing:
+            for i in range(1, len(ext)):
+                t1, v1 = ext[i - 1]
+                t2, v2 = ext[i]
+                if t1 <= t <= t2 and (t2 - t1) <= dt.timedelta(hours=9):
+                    frac = ((t - t1).total_seconds()
+                            / (t2 - t1).total_seconds())
+                    astro_map[t.strftime("%Y-%m-%d %H:%M")] = round(
+                        (v1 + v2) / 2
+                        + (v1 - v2) / 2 * math.cos(math.pi * frac), 3)
+                    synth += 1
+                    break
+        if synth:
             _TIDE_FALLBACK_USED["flag"] = True
-            data = {"predictions": [{"t": r[0], "v": r[1]} for r in rows]}
-        else:
-            return []
-    else:
-        _tide_cache_save("series",
-                         [[p["t"], float(p["v"])]
-                          for p in data["predictions"]
-                          if p.get("v") is not None])
+            print(f"WARNING: synthesized {synth} tide points from "
+                  "cached extremes (cosine; NOAA outage)", flush=True)
+    if not astro_map:
+        return []
+    data = {"predictions": [{"t": t, "v": v}
+                            for t, v in sorted(astro_map.items())]}
     # Index QPF hourly rates by STATION-LOCAL hour for the rain layer.
     # qpf_hourly carries tz-aware UTC datetimes.
     qpf_by_local_hour = {}
