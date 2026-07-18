@@ -7890,6 +7890,21 @@ def render_html_page(forecast):
           nc.peak_proj_utc + ' UTC. Tank model on OBSERVED radar, ' +
           'not forecast.</div></section>';
         el.style.display = 'block';
+        // HEADLINE OVERRIDE (2026-07-18, user during a live flood:
+        // "the app should be actively saying FLOODING at the top").
+        // When observed-radar street water is real, the TODAY label
+        // becomes the live truth, not the QPF outlook.
+        if (nc.street_now_in >= 1) {{
+          var lbl = document.querySelector('.regime .regime-label');
+          var kick = document.querySelector('.regime .regime-kicker');
+          if (lbl) {{
+            lbl.textContent = '\u26A0 FLOODING NOW \u2014 ' +
+              reg.toUpperCase() + ' (+' +
+              nc.street_now_in.toFixed(1) + '\u2033)';
+            lbl.parentElement.className = 'regime regime-severe';
+          }}
+          if (kick) kick.textContent = 'TODAY \u2014 HAPPENING NOW (live radar)';
+        }}
       }}).catch(function() {{}});
     }})();
   </script>
