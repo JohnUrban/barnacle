@@ -31,4 +31,11 @@ Findings:
 4. Cross-grate spread at peak (3.73–3.81) ≈ ±0.5″ — water-plane
    consistency within tape precision.
 
+Measurement-stop provenance (user, 2026-07-17 recollection):
+stopped after the 19:48–50 sweep partly for time, partly because it
+"seemed to be around the peak" — likely already starting to recede,
+though not specifically remembered. Consistent with the gauge crest
+at 19:48, so the final sweep is treated as peak-concurrent (soft
+confirmation, not independent evidence).
+
 Logged: 7 rows in `data/labeled_observations.csv`.
