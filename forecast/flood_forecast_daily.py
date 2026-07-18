@@ -8217,6 +8217,34 @@ def main():
     send_email(subject, text, html)
     print(f"Sent alert email ({reason}): {subject}")
 
+    # PUSH NOTIFICATIONS via ntfy (2026-07-17): carrier email-to-SMS
+    # gateways are dead or dying (AT&T shut June 2025, T-Mobile late
+    # 2024, Verizon degraded w/ 2027 sunset) — ntfy is the reliable
+    # rail: free, no account, HTTP POST, and natively multi-person
+    # (anyone subscribed to the topic gets the push). NTFY_TOPIC
+    # secret = the topic name; treat it like a password (anyone who
+    # knows it can subscribe/post).
+    ntfy_topic = os.environ.get("NTFY_TOPIC", "").strip()
+    if ntfy_topic:
+        try:
+            sms = build_sms_text(forecast)
+            rank, label, _sig = compute_alert_level(forecast)
+            req = Request(
+                f"https://ntfy.sh/{ntfy_topic}",
+                data=sms.encode(),
+                headers={
+                    "Title": f"Barnacle flood alert ({label})",
+                    "Priority": "urgent" if rank >= 3 else "high",
+                    "Tags": "ocean" if rank < 3 else "rotating_light",
+                    "Click": "https://johnurban.github.io/barnacle/",
+                })
+            urlopen(req, timeout=15).read()
+            print(f"Sent ntfy push to topic ({rank=})")
+        except Exception as e:
+            print(f"WARNING: ntfy push failed: {e}")
+
+    # Legacy email-to-SMS gateway path (kept while Verizon's vtext
+    # limps toward its 2027 sunset; AT&T/T-Mobile gateways are gone).
     sms_to = os.environ.get("ALERT_SMS_TO", "").strip()
     if sms_to:
         try:
@@ -8225,7 +8253,9 @@ def main():
             os.environ["SMTP_TO"] = sms_to
             send_email("", sms, None)
             os.environ["SMTP_TO"] = _orig_to
-            print(f"Sent SMS alert to gateway ({len(sms)} chars)")
+            print(f"Sent SMS alert to gateway ({len(sms)} chars) — "
+                  "NOTE: carrier gateways are unreliable/deprecated; "
+                  "prefer NTFY_TOPIC")
         except Exception as e:
             print(f"WARNING: SMS send failed: {e}")
 
