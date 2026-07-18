@@ -2486,6 +2486,20 @@ fix (needs events to calibrate): antecedent-precip multiplier on K
 proper two-layer soil reservoir feeding the tank. Collect: every
 double-pulse event is a calibration pair.
 
+### EVENT #5 (2026-07-18) — see assets/observations/2026-07-18/
+### README for the full record; v0.10.1 shipped same evening
+
+#2 all-time (+19.9" on rain alone, ebbing neap). k_out measured
+3.50/h from the clean recession -> v0.10.1 refit, validation
+improved. Six structural insights queued in the README's "Model
+consequences" (priming, bidirectional drains, tilted recession,
+recirculation, delivery tail, swale) — these are the next model
+session's menu, alongside MRMS multi-product forensics for the
+radar-underread window (PrecipRate vs QPE vs neighboring products,
+15:10-15:30 ET). Autonomy shipped: nowcast day-max memory + SO-FAR
+source (c) "modeled (live radar)" — floods now self-report with
+nobody home.
+
 ### Other likely sessions (refreshed 2026-07-08)
 
 1. **Pluvial input model, next iteration (9e.2)** — candidate

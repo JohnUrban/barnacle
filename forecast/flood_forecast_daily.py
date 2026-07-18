@@ -4514,10 +4514,16 @@ def estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88,
 # confounded. The static v0.9-gamma estimate_pluvial_water() remains
 # for banner SCENARIOS (steady-state "a burst like X could reach Y")
 # and the rain-pathway calculator; the tank drives the water_series.
-TANK_K = 1.265e6        # cell-inches per hour at 1 in/hr net (fitted)
-TANK_GAMMA = 0.70       # intensity exponent (fitted)
-TANK_KOUT = 3.12        # /hour — pool drains with ~19-min e-folding (fitted)
-TANK_LAG_MIN = 14       # hillside concentration lag (fitted; obs 16-20)
+# v0.10.1 (2026-07-18 evening): k_out MEASURED from event #5's clean
+# recession limb (rain ~0, 16:03-16:40): 3.50/h — and with jets still
+# feeding, that's a floor. K/gamma/lag jointly refit against the 7/6
+# + 7/9 hydrographs with k_out pinned; RMS IMPROVED 1.44 -> 1.32 in.
+# The rare legitimate tuning: input-independent measurement first,
+# refit second, validation better everywhere.
+TANK_K = 1.296e6        # cell-inches per hour at 1 in/hr net (refit v0.10.1)
+TANK_GAMMA = 0.78       # intensity exponent (refit v0.10.1)
+TANK_KOUT = 3.50        # /hour — MEASURED 2026-07-18 (e-fold ~17 min)
+TANK_LAG_MIN = 15       # hillside concentration lag (refit; obs 14-20)
 
 
 def simulate_pluvial_series(times, tide_waters, rates, dt_min=5.0):
@@ -4841,6 +4847,27 @@ def _today_lookback():
             if best is None or w > best[0]:
                 best = (w, (peak_t or "")[11:16], "observed (gauge)")
     except Exception:
+        pass
+    # (c) the nowcast's own day-max — the AUTOMATIC witness (2026-07-18,
+    # user: Barnacle must look right with nobody home). Weakest source:
+    # only used when tape and gauge have nothing higher.
+    try:
+        with open(os.path.join(_REPO_ROOT, "docs", "nowcast.json")) as f:
+            nc = json.load(f)
+        if (nc.get("generated_utc") or "").startswith(today):
+            dmx = nc.get("day_max_street_in") or 0
+            if dmx > 0:
+                w_nc = GRATE_SW + dmx / 12.0
+                t_nc = (nc.get("day_max_utc") or "")[11:16]
+                # convert UTC HH:MM to local for display (approx -4)
+                try:
+                    hh = (int(t_nc[:2]) - 4) % 24
+                    t_nc = f"{hh:02d}:{t_nc[3:5]}"
+                except Exception:
+                    pass
+                if best is None or w_nc > best[0]:
+                    best = (w_nc, t_nc, "modeled (live radar)")
+    except (OSError, ValueError):
         pass
     if best is None or best[0] <= GRATE_SW:
         return None

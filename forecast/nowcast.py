@@ -44,6 +44,30 @@ OUT_PATH = os.path.join(HERE, "..", "docs", "nowcast.json")
 def _write(payload):
     payload["generated_utc"] = dt.datetime.now(dt.timezone.utc).strftime(
         "%Y-%m-%dT%H:%M:%SZ")
+    # DAY-MAX MEMORY (2026-07-18, user autonomy requirement: "the
+    # goal is Barnacle reporting stuff and looking right without our
+    # live intervention"): each run previously overwrote the last, so
+    # the system forgot its own floods by evening. Carry the max
+    # modeled street water forward across same-day runs; the site's
+    # SO-FAR-TODAY line reads it as the automatic (modeled) source
+    # when no tape/gauge truth exists.
+    try:
+        with open(OUT_PATH) as f:
+            prev = json.load(f)
+        prev_day = (prev.get("generated_utc") or "")[:10]
+        today = payload["generated_utc"][:10]
+        cand = [payload.get("street_now_in") or 0]
+        if prev_day == today:
+            cand.append(prev.get("day_max_street_in") or 0)
+            if prev.get("day_max_street_in", 0) > (payload.get("street_now_in") or 0):
+                payload["day_max_utc"] = prev.get("day_max_utc")
+        if "day_max_utc" not in payload and (payload.get("street_now_in") or 0) > 0:
+            payload["day_max_utc"] = payload["generated_utc"]
+        payload["day_max_street_in"] = round(max(cand), 1)
+    except (OSError, ValueError):
+        if (payload.get("street_now_in") or 0) > 0:
+            payload["day_max_street_in"] = payload["street_now_in"]
+            payload["day_max_utc"] = payload["generated_utc"]
     tmp = OUT_PATH + ".tmp"
     with open(tmp, "w") as f:
         json.dump(payload, f)
