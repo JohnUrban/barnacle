@@ -120,6 +120,9 @@ jobs:
           TAIL
           } > index.html
 
+      - name: Publish gate (no markers, strict JSON)
+        run: python forecast/check_artifacts.py
+
       - name: Commit and push docs/ + data/ updates
         run: |
           git config user.name  "github-actions[bot]"

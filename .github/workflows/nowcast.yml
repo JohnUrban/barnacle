@@ -60,6 +60,10 @@ jobs:
         if: steps.gate.outputs.go == 'true'
         run: python forecast/nowcast.py
 
+      - name: Publish gate (no markers, strict JSON)
+        if: steps.gate.outputs.go == 'true'
+        run: python forecast/check_artifacts.py
+
       - name: Commit nowcast.json
         if: steps.gate.outputs.go == 'true'
         run: |
