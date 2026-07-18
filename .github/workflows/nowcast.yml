@@ -1,0 +1,73 @@
+name: Barnacle Nowcast
+
+# LIVE radar nowcast (2026-07-17, HANDOFF designated session).
+# Every 10 minutes: a stdlib-only trigger check (~15 s, no heavy
+# deps) decides whether radar is worth paying for — active NWS flood
+# alert or near-term convective wording. When triggered: install
+# xarray/cfgrib (cached), pull the last hour of MRMS PrecipRate over
+# the hillside catchment, run the v0.10 tank, and commit
+# docs/nowcast.json ONLY (tiny file, no conflict surface with the
+# hourly forecast workflow). The site + widget render it client-side
+# and treat >20-min-old data as stale.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: barnacle-nowcast
+  cancel-in-progress: true
+
+jobs:
+  nowcast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Trigger check (stdlib, cheap)
+        id: gate
+        run: |
+          set +e
+          python forecast/nowcast.py --check
+          code=$?
+          set -e
+          if [ "$code" = "0" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          elif [ "$code" = "3" ]; then
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          else
+            exit $code
+          fi
+
+      - name: Install radar deps
+        if: steps.gate.outputs.go == 'true'
+        run: pip install --quiet xarray cfgrib eccodes
+
+      - name: Run nowcast
+        if: steps.gate.outputs.go == 'true'
+        run: python forecast/nowcast.py
+
+      - name: Commit nowcast.json
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          git config user.name "barnacle-nowcast"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/nowcast.json
+          if git diff --cached --quiet; then
+            echo "no change"; exit 0
+          fi
+          git commit -m "nowcast $(date -u +'%Y-%m-%d %H:%M') UTC"
+          for i in 1 2 3; do
+            git push && exit 0
+            git pull --rebase && sleep 2
+          done
+          exit 1

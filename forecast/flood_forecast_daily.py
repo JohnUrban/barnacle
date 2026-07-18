@@ -3760,8 +3760,17 @@ def render_email(forecast):
 
     subject_short, subject_above, _ = landmark_summary(d, peak_ft)
     headline, _ = headline_for(forecast, regime)
-    subject = (f"[342 Bay] {headline}: forecast {peak_ft:.2f} ft "
-               f"at {format_time_short(peak_t)} "
+    # Email parity with the site's TODAY/WORST split (2026-07-17):
+    # subject leads with TODAY (incl. the so-far lookback when water
+    # already happened); the worst-72h peak becomes the tail.
+    _tr = forecast.get("today_regime") or regime
+    _today_head, _ = headline_for(forecast, _tr)
+    _lb = forecast.get("today_lookback")
+    if _lb and (_lb.get("rel_grate_in") or 0) > 0:
+        _today_head += (f" (so far: {regime_display(_lb.get('regime') or '').upper()}"
+                        f" {_lb['rel_grate_in']:+.1f}\")")
+    subject = (f"[342 Bay] TODAY {_today_head} | WORST 72H {headline}: "
+               f"{peak_ft:.2f} ft at {format_time_short(peak_t)} "
                f"({subject_short} {subject_above:+.1f}\")")
 
     # Format the list of all high tides in next 24h.
@@ -3823,7 +3832,18 @@ def render_email(forecast):
     cold_lines = _render_cold_advisory_text(forecast)
     cold_block = ("\n".join(cold_lines) + "\n\n") if cold_lines else ""
 
+    _today_head_text, _ = headline_for(
+        forecast, forecast.get("today_regime") or regime)
+    _lbt = forecast.get("today_lookback")
+    _lb_text = ""
+    if _lbt and (_lbt.get("rel_grate_in") or 0) > 0:
+        _lb_text = (f" | so far: "
+                    f"{regime_display(_lbt.get('regime') or '').upper()} "
+                    f"{_lbt['rel_grate_in']:+.1f}\" at {_lbt['time_local']}")
     text = f"""\
+TODAY: {_today_head_text}{_lb_text}
+WORST 72H: {headline}: {peak_ft:.2f} ft at {format_time_short(peak_t)}
+
 Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
 
 {summary_block}{cold_block}High tides in next 24h ( * = worst case, headlined below):
@@ -3902,11 +3922,47 @@ Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = ta
     accuracy_html = _render_accuracy_html(forecast)
     lookahead_html = _render_lookahead_html(forecast)
 
+    # Email parity with the site (2026-07-17): TODAY — OUTLOOK (+ so-far
+    # line when water already happened) then WORST 72H, before the
+    # summary/confidence blocks — same order as the home page.
+    _tr = forecast.get("today_regime") or regime
+    _today_head, _today_cls = headline_for(forecast, _tr)
+    _tbg = {"dry": "#e8f5e9", "street": "#e3f2fd", "light": "#fff8e1",
+            "moderate": "#ffe0b2", "severe": "#ffcdd2",
+            "cold_lockout": "#eceff1"}.get(_today_cls, "#fff8e1")
+    _lb = forecast.get("today_lookback")
+    _lb_html = ""
+    if _lb and (_lb.get("rel_grate_in") or 0) > 0:
+        _lb_html = (
+            f'<div style="border-top:1px solid rgba(0,0,0,0.15);'
+            f'margin-top:6px;padding-top:6px;font-size:14px">'
+            f'<b>SO FAR TODAY:</b> '
+            f'{regime_display(_lb.get("regime") or "").upper()} — peak '
+            f'water {_lb["rel_grate_in"]:+.1f}&Prime; vs SW grate at '
+            f'{_lb["time_local"]}, {_lb["source"]}.</div>')
+    _today_sub = (f'Tide peak today {forecast.get("today_rel_grate_sw_in", 0) or 0:+.1f}&Prime; '
+                  f'vs SW grate'
+                  + (f' at {forecast["today_peak_time"][-5:]}'
+                     if forecast.get("today_peak_time") else ""))
+    today_block_html = (
+        f'<div style="background:{_tbg};padding:14px 18px;border-radius:8px;'
+        f'margin:12px 0;border:1px solid rgba(0,0,0,0.08)">'
+        f'<div style="font-size:11px;color:#777;letter-spacing:1px">TODAY — OUTLOOK</div>'
+        f'<div style="font-size:26px;font-weight:bold">{_today_head}</div>'
+        f'<div style="font-size:14px">{_today_sub}</div>{_lb_html}</div>'
+        f'<div style="background:#f4f6f8;padding:8px 18px;border-radius:8px;'
+        f'margin:-4px 0 14px 0;border:1px solid rgba(0,0,0,0.08)">'
+        f'<div style="font-size:11px;color:#777;letter-spacing:1px">WORST 72 H</div>'
+        f'<div style="font-size:14px"><b>{headline_for(forecast, regime)[0]}</b> — '
+        f'worst-case tide peak {peak_ft:.2f} ft MLLW at '
+        f'{format_time_full(peak_t)}.</div></div>')
+
     html = f"""\
 <html><body style="font-family:sans-serif;background:{bg};padding:20px">
 <h2>Bay Ave Flood Forecast</h2>
 <p><b>{dt.date.today().isoformat()}</b></p>
 
+{today_block_html}
 {summary_html}
 <h3>High tides in next 24h</h3>
 <table border="1" cellpadding="8" style="border-collapse:collapse;background:white">
@@ -7552,6 +7608,40 @@ def render_html_page(forecast):
       }}
       update();
       setInterval(update, 30000);  // refresh "X ago" every 30s while open
+    }})();
+  </script>
+
+  <div id="nowcast-strip" style="display:none"></div>
+  <script>
+    // LIVE RADAR NOWCAST strip (2026-07-17): renders docs/nowcast.json
+    // client-side; the 10-min Action keeps that file fresh during
+    // rain-capable weather. Hidden when inactive or >20 min stale.
+    (function() {{
+      var bust = Math.floor(Date.now() / 120000);
+      fetch('nowcast.json?t=' + bust).then(function(r) {{
+        return r.json();
+      }}).then(function(nc) {{
+        if (!nc || !nc.active || !nc.generated_utc) return;
+        var age = (Date.now() - Date.parse(nc.generated_utc)) / 60000;
+        if (age > 20) return;
+        var el = document.getElementById('nowcast-strip');
+        var reg = (nc.regime_now === 'dry') ? 'street water'
+                  : nc.regime_now;
+        el.innerHTML =
+          '<section class="regime regime-severe" style="border:2px solid #b91c1c">' +
+          '<div class="regime-kicker">&#128225; LIVE RADAR NOWCAST ' +
+          '(as of ' + Math.round(age) + ' min ago)</div>' +
+          '<div class="regime-label">' + reg.toUpperCase() + '</div>' +
+          '<div class="regime-summary">Rain on the hillside now: ' +
+          nc.recent_max_in_hr.toFixed(1) + ' in/hr (radar). Street ' +
+          'water ≈ ' + (nc.street_now_in >= 0 ? '+' : '') +
+          nc.street_now_in.toFixed(1) + '″ vs SW grate; ' +
+          'projected peak ' + (nc.peak_proj_in >= 0 ? '+' : '') +
+          nc.peak_proj_in.toFixed(1) + '″ around ' +
+          nc.peak_proj_utc + ' UTC. Tank model on OBSERVED radar, ' +
+          'not forecast.</div></section>';
+        el.style.display = 'block';
+      }}).catch(function() {{}});
     }})();
   </script>
 

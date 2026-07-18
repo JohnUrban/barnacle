@@ -39,7 +39,8 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.09c";
+const WIDGET_VERSION = "v7.17a";
+const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
 // Landmark elevations (NAVD88). Match flood_forecast_daily.py LANDMARKS
@@ -418,7 +419,18 @@ async function fetchForecast() {
   // still coalescing rapid refreshes.
   const bust = Math.floor(Date.now() / 300000);
   const req = new Request(FORECAST_URL + "?t=" + bust);
-  return await req.loadJSON();
+  const fc = await req.loadJSON();
+  // LIVE nowcast overlay (2026-07-17): tiny separate file kept fresh
+  // by the 10-min radar Action; attach when active + <20 min old.
+  try {
+    const nreq = new Request(NOWCAST_URL + "?t=" + bust);
+    const nc = await nreq.loadJSON();
+    if (nc && nc.active && nc.generated_utc &&
+        (Date.now() - Date.parse(nc.generated_utc)) / 60000 <= 20) {
+      fc._nowcast = nc;
+    }
+  } catch (e) {}
+  return fc;
 }
 
 function makeErrorWidget(err) {
@@ -502,6 +514,18 @@ function makeWidget(forecast, family) {
 
     // ---- TODAY block (the headline) ----
     const hdr = left.addText("TODAY · OUTLOOK");
+    if (forecast._nowcast) {
+      const nc = forecast._nowcast;
+      const line = left.addText(
+        "📡 LIVE: " + (nc.street_now_in >= 0 ? "+" : "") +
+        nc.street_now_in.toFixed(1) + "″ now → " +
+        (nc.peak_proj_in >= 0 ? "+" : "") +
+        nc.peak_proj_in.toFixed(1) + "″ peak");
+      line.font = Font.boldSystemFont(10);
+      line.textColor = new Color("#b91c1c");
+      line.lineLimit = 1;
+      line.minimumScaleFactor = 0.7;
+    }
     hdr.font = Font.mediumSystemFont(9);
     hdr.textColor = new Color("#777");
 
