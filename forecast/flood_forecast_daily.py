@@ -7895,21 +7895,28 @@ def render_html_page(forecast):
         // When observed-radar street water is real, the TODAY label
         // becomes the live truth, not the QPF outlook.
         if (nc.street_now_in >= 1) {{
-          var lbl = document.querySelector('.regime .regime-label');
-          var kick = document.querySelector('.regime .regime-kicker');
-          if (lbl) {{
-            lbl.textContent = '\u26A0 FLOODING NOW \u2014 ' +
+          // Target the TODAY block explicitly — the first '.regime'
+          // in the DOM is this strip itself (bug caught by the user
+          // MID-FLOOD: strip said FLOODING NOW while TODAY still
+          // said the QPF outlook, "light", under crazy flooding).
+          var tb = document.getElementById('today-block');
+          if (tb) {{
+            var lbl = tb.querySelector('.regime-label');
+            var kick = tb.querySelector('.regime-kicker');
+            var summ = tb.querySelector('.regime-summary');
+            if (lbl) lbl.textContent = '\u26A0 FLOODING NOW \u2014 ' +
               reg.toUpperCase() + ' (+' +
-              nc.street_now_in.toFixed(1) + '\u2033)';
-            lbl.parentElement.className = 'regime regime-severe';
+              nc.street_now_in.toFixed(1) + '\u2033 and live)';
+            if (kick) kick.textContent =
+              'TODAY \u2014 HAPPENING NOW (live radar; QPF outlook superseded)';
+            tb.className = 'regime regime-severe';
           }}
-          if (kick) kick.textContent = 'TODAY \u2014 HAPPENING NOW (live radar)';
         }}
       }}).catch(function() {{}});
     }})();
   </script>
 
-  <section class="regime regime-{today_class}">
+  <section class="regime regime-{today_class}" id="today-block">
     <div class="regime-kicker">TODAY &mdash; OUTLOOK</div>
     <div class="regime-label">{today_headline}</div>
     <div class="regime-summary">{today_summary}</div>{lookback_html}
