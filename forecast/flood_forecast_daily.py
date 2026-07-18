@@ -190,6 +190,52 @@ ROLLUP_WINDOW_HOURS = 72
 PAST_TIDE_VISIBILITY_HOURS = 2
 
 
+_TIDE_FALLBACK_USED = {"flag": False}
+
+
+def _tide_cache_path():
+    # lazy: _REPO_ROOT is defined further down the module
+    return os.path.join(_REPO_ROOT, "data", "tide_predictions_cache.json")
+
+
+def _tide_cache_load():
+    try:
+        with open(_tide_cache_path()) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {"hilo": [], "series": []}
+
+
+def _tide_cache_save(kind, rows):
+    """Merge fresh astronomical predictions into the on-disk cache.
+
+    RESILIENCE (2026-07-17): NOAA's predictions service went down
+    system-wide (every station/datum: 'No Predictions data was
+    found') the same evening a Flood Watch was issued — and the
+    whole forecast crashed at the tide fetch, silencing the RAIN
+    pathway too. Tide predictions are pure astronomy: valid for
+    weeks, perfectly cacheable. Every successful fetch merges into
+    this cache; on API failure the fetchers fall back to it and the
+    site carries a staleness note instead of dying. kind: "hilo"
+    rows = [t, v, type]; "series" rows = [t, v]."""
+    try:
+        cache = _tide_cache_load()
+        merged = {r[0]: r for r in cache.get(kind, [])}
+        for r in rows:
+            merged[r[0]] = r
+        try:
+            cutoff = (_station_local_now()
+                      - dt.timedelta(hours=72)).strftime("%Y-%m-%d %H:%M")
+        except Exception:
+            cutoff = ""
+        cache[kind] = sorted(v for k, v in merged.items() if k >= cutoff)
+        with open(_tide_cache_path() + ".tmp", "w") as f:
+            json.dump(cache, f)
+        os.replace(_tide_cache_path() + ".tmp", _tide_cache_path())
+    except Exception:
+        pass  # cache is best-effort, never fatal
+
+
 def fetch_tides_24h():
     """Returns dict with 'high' and 'low' lists of (time_str, value_mllw_ft)
     for tides in the recent past + future. The "24h" in the name is
@@ -221,9 +267,27 @@ def fetch_tides_24h():
         },
     )
     preds = data.get("predictions", []) or []
+    if preds:
+        _tide_cache_save("hilo", [[p["t"], float(p["v"]), p.get("type")]
+                                  for p in preds])
+        return {
+            "high": [(p["t"], float(p["v"])) for p in preds if p.get("type") == "H"],
+            "low":  [(p["t"], float(p["v"])) for p in preds if p.get("type") == "L"],
+        }
+    # NOAA outage fallback (2026-07-17): serve cached astronomy.
+    cache = _tide_cache_load()
+    lo = start.strftime("%Y-%m-%d %H:%M")
+    hi = end.strftime("%Y-%m-%d %H:%M")
+    rows = [r for r in cache.get("hilo", []) if lo <= r[0] <= hi]
+    if not rows:
+        raise RuntimeError(
+            "No high tides from NOAA and tide cache is empty/out of range")
+    _TIDE_FALLBACK_USED["flag"] = True
+    print("WARNING: NOAA predictions down — serving CACHED tide "
+          f"astronomy ({len(rows)} points)", flush=True)
     return {
-        "high": [(p["t"], float(p["v"])) for p in preds if p.get("type") == "H"],
-        "low":  [(p["t"], float(p["v"])) for p in preds if p.get("type") == "L"],
+        "high": [(r[0], r[1]) for r in rows if r[2] == "H"],
+        "low":  [(r[0], r[1]) for r in rows if r[2] == "L"],
     }
 
 
@@ -280,7 +344,23 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=2,
             },
         )
     except Exception:
-        return []
+        data = {}
+    # NOAA outage fallback (2026-07-17): serve cached series astronomy.
+    if not (data.get("predictions") or []):
+        cache = _tide_cache_load()
+        lo = start.strftime("%Y-%m-%d %H:%M")
+        hi = end.strftime("%Y-%m-%d %H:%M")
+        rows = [r for r in cache.get("series", []) if lo <= r[0] <= hi]
+        if rows:
+            _TIDE_FALLBACK_USED["flag"] = True
+            data = {"predictions": [{"t": r[0], "v": r[1]} for r in rows]}
+        else:
+            return []
+    else:
+        _tide_cache_save("series",
+                         [[p["t"], float(p["v"])]
+                          for p in data["predictions"]
+                          if p.get("v") is not None])
     # Index QPF hourly rates by STATION-LOCAL hour for the rain layer.
     # qpf_hourly carries tz-aware UTC datetimes.
     qpf_by_local_hour = {}
@@ -1990,6 +2070,7 @@ def build_forecast():
         "today_peak_time": today_peak_time,
         "today_regime": today_regime,
         "today_lookback": _today_lookback(),   # what already happened today
+        "tide_predictions_stale": _TIDE_FALLBACK_USED["flag"],
         "today_highest_crossed": today_highest_crossed,
         "today_rel_grate_sw_in": today_rel_grate_sw_in,
     }
@@ -2210,6 +2291,13 @@ def _render_summary_html(forecast):
     if not summary and not level and not unusual:
         return ""
     parts = ['<section class="tldr">']
+    if forecast.get("tide_predictions_stale"):
+        parts.append(
+            '<p class="tldr-confidence confidence-low"><b>NOAA tide-'
+            'prediction service outage</b> &mdash; tide times/heights '
+            'below are served from cached astronomy (identical maths, '
+            'just not refreshed). Rain-risk inputs (QPF, alerts) are '
+            'unaffected and live.</p>')
     if summary:
         # One tide per line (user 2026-07-09): the semicolon-joined
         # sentence was a wall of text. Keep the "Next 24 h:" lead-in,
