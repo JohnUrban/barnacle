@@ -291,8 +291,8 @@ def fetch_tides_24h():
     }
 
 
-def build_water_series(surge_ft, qpf_hourly=None, hours_back=12,
-                       hours_forward=24, interval_min=30):
+def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
+                       hours_forward=30, interval_min=30):
     """Model-predicted water level at 342 Bay over a continuous window
     — the data behind the widget tide-curve chart (user request
     2026-07-06: "show 12-24 hours of the expected height over time
@@ -5154,7 +5154,7 @@ def _render_water_series_section(forecast):
         "inches/12; ft MLLW (Sandy Hook gauge) = 6.34 + inches/12."]
     if has_observed:
         note_bits.append(
-            "The chart now reaches ~12 h into the PAST: the gray line "
+            "The chart reaches 6 h into the PAST: the gray line "
             "is the OBSERVED bay (despiked gauge — a true observation, "
             "and via the drains' proven bay-coupling, the tide-pathway "
             "street water); it stops at the now-line where forecast "

@@ -39,7 +39,7 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.17b";
+const WIDGET_VERSION = "v7.18a";
 const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -622,9 +622,9 @@ function makeWidget(forecast, family) {
     const rainPotential = Math.max(
       prisk.potential_low_tide_navd88 || 0,
       prisk.potential_low_tide_navd88_tanh || 0) || null;
-    // Series now reaches 12 h back for the site's observed overlay;
-    // the tiny widget chart keeps its classic -2h window.
-    const cutoff = Date.now() - 2 * 3600e3;
+    // Widget chart window: 6 h back (user 2026-07-18: context +
+    // "the app knows what happened"), full forecast horizon forward.
+    const cutoff = Date.now() - 6 * 3600e3;
     const chartSeries = series.filter(p => {
       const d = parseLocal(p.time);
       return !d || d.getTime() >= cutoff;
