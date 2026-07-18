@@ -75,8 +75,14 @@ def current_bay():
         d = json.load(urllib.request.urlopen(urllib.request.Request(
             "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?"
             "station=8531680&product=water_level&datum=MLLW&time_zone=lst_ldt"
-            "&units=english&date=latest&format=json", headers=UA), timeout=15))
-        return float(d["data"][-1]["v"]) - 2.82
+            "&units=english&begin_date={b}&end_date={e}&format=json".format(
+                b=(dt.datetime.now() - dt.timedelta(hours=3)
+                   ).strftime("%Y%m%d%%20%H:%M"),
+                e=dt.datetime.now().strftime("%Y%m%d%%20%H:%M")),
+            headers=UA), timeout=15))
+        pairs = [(r["t"], float(r["v"])) for r in d["data"]]
+        pairs = ff._despike_gauge(pairs)
+        return pairs[-1][1] - 2.82
     except Exception:
         return 2.8   # mid-tide fallback
 

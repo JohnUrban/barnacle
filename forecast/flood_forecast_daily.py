@@ -690,10 +690,15 @@ def _despike_gauge(pairs, tol_ft=1.0, half_window=10):
     accepted: a true meteotsunami would also be filtered from PEAK
     numbers (it would still be visible in raw data / at the house).
     pairs = [(t, v), ...] chronological; returns filtered list."""
-    # Below 2·half_window+1 points a malfunction could capture the
-    # median — pass through rather than pretend to filter.
-    if len(pairs) < 2 * half_window + 1:
+    # 2026-07-18 live-rain fix: the old guard PASSED THROUGH whole
+    # windows shorter than 2·half_window+1 — and a 2-h bay read is at
+    # most 20 points, so with half_window=10 the filter silently never
+    # ran (a 9.75 spike sailed into the nowcast base during rain).
+    # Shrink the window to fit the data instead of giving up; only
+    # truly tiny series (<5 pts) pass through.
+    if len(pairs) < 5:
         return pairs
+    half_window = max(2, min(half_window, (len(pairs) - 1) // 2))
     vals = [v for _, v in pairs]
     out = []
     n = len(pairs)
