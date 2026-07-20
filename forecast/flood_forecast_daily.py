@@ -6784,9 +6784,10 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
       <span id="time-slider-value">&mdash;</span>
     </div>
     <div class="depth-slider burst-toggle-row">
-      <label><input type="checkbox" id="burst-potential-toggle">
-        during rain-risk windows, show the BURST-POTENTIAL level
-        (the chart's navy shading) instead of the expected level</label>
+      <label><input type="checkbox" id="burst-potential-toggle" checked>
+        showing the BURST-POTENTIAL level during rain-risk windows
+        (the chart's navy shading) &mdash; uncheck for expected
+        levels only</label>
     </div>
     <div class="depth-slider">
       <label for="depth-slider-input">Explore water level:</label>
@@ -6991,6 +6992,22 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         var tSlider = document.getElementById('time-slider-input');
         var tLabel = document.getElementById('time-slider-value');
         var bToggle = document.getElementById('burst-potential-toggle');
+        // default ON (user 2026-07-20: "the rain-inclusive way... 'on'
+        // is the state I care about — I'm exploring possible flooding,
+        // zero interest in non-flooding tide levels vs burst
+        // potential"). Explicit off persists.
+        if (bToggle) {{
+          try {{
+            bToggle.checked =
+              localStorage.getItem('barnacle-burst-view') !== '0';
+          }} catch (e) {{}}
+          bToggle.addEventListener('change', function() {{
+            try {{
+              localStorage.setItem('barnacle-burst-view',
+                                   bToggle.checked ? '1' : '0');
+            }} catch (e) {{}}
+          }});
+        }}
         function fmtT(t) {{
           var m = t.match(/(\\d{{4}})-(\\d{{2}})-(\\d{{2}}) (\\d{{2}}):(\\d{{2}})/);
           if (!m) return t;
@@ -7145,8 +7162,6 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           dSlider.value = String(defaultWater);
           var tS = document.getElementById('time-slider-input');
           var tL = document.getElementById('time-slider-value');
-          var bT = document.getElementById('burst-potential-toggle');
-          if (bT) bT.checked = false;
           if (tS && typeof startI !== 'undefined') tS.value = String(startI);
           if (tL) tL.textContent = 'now';
           rerender();
