@@ -6915,6 +6915,21 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             rerender();
           }});
         }});
+        // Ladder context (2026-07-20): same names as the chart legend
+        var LADDER_CTX = [
+          [3.78, 'gutter'], [4.16, 'curb'],
+          [4.66, 'lawn step'], [5.41, '1st porch step']
+        ];
+        function ladderContext(v) {{
+          if (v < 3.52) return 'below the grates';
+          var below = null, above = null;
+          for (var i = 0; i < LADDER_CTX.length; i++) {{
+            if (v >= LADDER_CTX[i][0]) below = LADDER_CTX[i][1];
+            else if (!above) above = LADDER_CTX[i][1];
+          }}
+          if (!below) return 'street water, below the ' + (above || 'gutter');
+          return 'above the ' + below + (above ? ', below the ' + above : '');
+        }}
         function fmtWater(v) {{
           if (unit === 'navd88') return v.toFixed(2) + ' ft NAVD88';
           if (unit === 'mllw')   return (v + MLLW_OFF).toFixed(2) + ' ft MLLW';
@@ -6937,6 +6952,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           var atDefault = (Math.abs(base - defaultWater) < 0.005
                            && rate < 0.001);
           dLabel.textContent = fmtWater(base)
+            + ' \u00b7 ' + ladderContext(base)
             + (Math.abs(base - defaultWater) < 0.005 ? ' (current forecast)' : '');
           rLabel.innerHTML = rate.toFixed(2) + ' in/hr \\u2192 +'
             + (extraFt * 12).toFixed(1) + '\\u2033'
@@ -6951,6 +6967,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             style: window.barnacleMapStyle,
             baseMapUrl: {json.dumps(base_map_url)},
             title: 'Water level — ' + fmtWater(w)
+              + ' · ' + ladderContext(w)
               + (rate > 0.001 ? ' (incl. +' + (extraFt * 12).toFixed(1)
                                  + '\\u2033 extra rain)' : '')
               + (atDefault ? '' : '  (exploration)')
@@ -6994,10 +7011,66 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             burst = true;
           }}
           dSlider.value = String(lvl);
+          if (thumbOn) drawThumb(i, lvl);
           tLabel.textContent = fmtT(pt.t)
             + (burst ? ' \u2014 BURST POTENTIAL' : '')
             + (pt.b && !burst ? ' (rain-risk hour)' : '');
           rerender();
+        }}
+        // CHART THUMBNAIL over the map corner (user 2026-07-20):
+        // miniature of the near-term series + ladder lines + a ball
+        // tracking the scrubber. Unlabeled by design.
+        var thumbC = document.getElementById('map-thumb');
+        var thumbBtn = document.getElementById('thumb-toggle');
+        var thumbOn = false;
+        try {{ thumbOn = localStorage.getItem('barnacle-map-thumb') === '1'; }} catch (e) {{}}
+        function drawThumb(idx, lvl) {{
+          if (!thumbC || !MS.series || !MS.series.length) return;
+          var c = thumbC.getContext('2d');
+          var W = thumbC.width, H = thumbC.height, P = 6;
+          c.clearRect(0, 0, W, H);
+          var ws = MS.series.map(function(p) {{ return p.w; }});
+          var lo = Math.min.apply(null, ws.concat([3.5]));
+          var hi = Math.max.apply(null, ws.concat([5.6, lvl || 0]));
+          function X(i) {{ return P + (W - 2*P) * i / (MS.series.length - 1); }}
+          function Y(v) {{ return H - P - (H - 2*P) * (v - lo) / (hi - lo); }}
+          var LC = [[3.78, '#2f8f5f'], [4.16, '#c0392b'],
+                    [4.66, '#7c4dbc'], [5.41, '#6d4c2f']];
+          LC.forEach(function(l) {{
+            if (l[0] > hi || l[0] < lo) return;
+            c.strokeStyle = l[1]; c.lineWidth = 1;
+            c.setLineDash([3, 3]);
+            c.beginPath(); c.moveTo(P, Y(l[0])); c.lineTo(W - P, Y(l[0]));
+            c.stroke();
+          }});
+          c.setLineDash([]);
+          c.strokeStyle = '#1a5fa8'; c.lineWidth = 1.6;
+          c.beginPath();
+          MS.series.forEach(function(p, i) {{
+            if (i === 0) c.moveTo(X(i), Y(p.w)); else c.lineTo(X(i), Y(p.w));
+          }});
+          c.stroke();
+          if (idx != null) {{
+            c.fillStyle = '#b91c1c';
+            c.beginPath();
+            c.arc(X(idx), Y(lvl != null ? lvl : MS.series[idx].w), 3.5, 0, 7);
+            c.fill();
+          }}
+        }}
+        function applyThumb() {{
+          if (!thumbC) return;
+          thumbC.style.display = thumbOn ? 'block' : 'none';
+          if (thumbOn) {{
+            var i = tSlider ? (parseInt(tSlider.value, 10) || 0) : null;
+            drawThumb(i, null);
+          }}
+        }}
+        if (thumbBtn) {{
+          thumbBtn.addEventListener('click', function() {{
+            thumbOn = !thumbOn;
+            try {{ localStorage.setItem('barnacle-map-thumb', thumbOn ? '1' : '0'); }} catch (e) {{}}
+            applyThumb();
+          }});
         }}
         var _scrubPending = false;
         function scrubThrottled() {{
@@ -7022,6 +7095,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           tSlider.addEventListener('input', scrubThrottled);
           if (bToggle) bToggle.addEventListener('change', scrub);
         }}
+        applyThumb();
         dBtn.addEventListener('click', function() {{
           // full reset: level to the live forecast, scrubber back to
           // now, burst view off (2026-07-20 — snap left the time
@@ -7071,7 +7145,17 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
   <section class="{container_class}">
     <{hh}>Predicted water depth (worst tide)</{hh}>
     {intro_note}{toggle_html}{shading_html}
-    <canvas id="heatmap-canvas" style="{canvas_styles}"></canvas>{second_canvas_html}
+    <div class="map-wrap" style="position:relative">
+      <canvas id="heatmap-canvas" style="{canvas_styles}"></canvas>
+      <button type="button" id="thumb-toggle" title="show position on the water-level chart"
+              style="position:absolute;top:8px;left:8px;font-size:15px;
+                     padding:2px 7px;border:1px solid #999;border-radius:5px;
+                     background:rgba(255,255,255,0.9);cursor:pointer">&#128200;</button>
+      <canvas id="map-thumb" width="190" height="95"
+              style="position:absolute;top:40px;left:8px;display:none;
+                     background:rgba(255,255,255,0.88);border:1px solid #999;
+                     border-radius:5px"></canvas>
+    </div>{second_canvas_html}
     {slider_html}
     <script>
       window.barnaclePoints = {points_json};
