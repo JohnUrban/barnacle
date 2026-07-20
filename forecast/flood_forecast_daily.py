@@ -595,7 +595,11 @@ def fetch_surge_swing_6h():
     """Return (max - min) of hourly surge over the past 6h in feet. None on
     failure. Used by the confidence indicator — large swing means surge
     persistence is unreliable as a forecast for the next high tide."""
-    end = dt.datetime.now(dt.timezone.utc)
+    # TZ fix 2026-07-20 (family sweep): lst_ldt needs station-local —
+    # the UTC window skewed +4h into the empty future, so the 6-h
+    # surge swing was computed over ~2h of data, systematically
+    # UNDERSTATING swing and inflating confidence.
+    end = _station_local_now()
     start = end - dt.timedelta(hours=6)
     obs_rows = fetch_observed_recent()
     if not obs_rows:
@@ -1095,12 +1099,12 @@ def build_lookahead_watch_dates(high_tides, skip_first_hours=24):
             continue
         try:
             tide_dt = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
-            # NOAA times are lst_ldt (EDT = UTC-4 in summer); rough UTC
+            # TZ fix 2026-07-20: proper station-tz conversion (the old
+            # hardcoded +4 was wrong every winter, EST = UTC-5)
             # conversion is good enough for the "skip the next 24h"
             # boundary, which doesn't need second-precision.
-            tide_utc = (tide_dt + dt.timedelta(hours=4)).replace(
-                tzinfo=dt.timezone.utc
-            )
+            tide_utc = tide_dt.replace(tzinfo=STATION_TZ).astimezone(
+                dt.timezone.utc)
         except (ValueError, TypeError):
             continue
         if tide_utc < cutoff:
@@ -1134,7 +1138,10 @@ def fetch_recent_history(days=7):
     """Past N days of observed daily peak water level, with the highest
     landmark reached at that peak. Returns list of dicts (one per calendar
     day), sorted chronologically. Empty list on failure."""
-    end = dt.datetime.now(dt.timezone.utc)
+    # TZ fix 2026-07-20 (family sweep): station-local for lst_ldt —
+    # the +4h skew shifted the 7-day window and could mis-bucket
+    # peaks near midnight into the wrong day.
+    end = _station_local_now()
     start = end - dt.timedelta(days=days)
     try:
         data = _get(
@@ -2691,11 +2698,10 @@ def _compute_leadtime_accuracy(max_age_days=14):
                     target_dt = dt.datetime.strptime(
                         target_str, "%Y-%m-%d %H:%M"
                     )
-                    # Approximate UTC (EDT = UTC-4). Good enough for
-                    # the cutoff bucket — precision doesn't matter.
-                    target_utc = (target_dt + dt.timedelta(hours=4)).replace(
-                        tzinfo=dt.timezone.utc
-                    )
+                    # TZ fix 2026-07-20: proper station-tz conversion
+                    # (hardcoded +4 was wrong in EST).
+                    target_utc = target_dt.replace(
+                        tzinfo=STATION_TZ).astimezone(dt.timezone.utc)
                 except (ValueError, TypeError):
                     continue
                 if target_utc > cutoff_max:
