@@ -7128,6 +7128,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           if (tS && typeof startI !== 'undefined') tS.value = String(startI);
           if (tL) tL.textContent = 'now';
           rerender();
+          applyThumb();   // ball back to 'now' on the corner chart
         }});
         rBtn.addEventListener('click', function() {{
           rSlider.value = '0';

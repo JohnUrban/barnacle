@@ -29,7 +29,7 @@
     <h1>Bay Ave Barnacle</h1>
     <p class="subtitle">Hyperlocal flood forecast for the intersection of Bay Ave &amp; Central Ave in Highlands NJ &mdash; water levels referenced to 342 Bay Ave</p>
     <p class="last-updated"
-       data-generated-at="2026-07-20T21:03:53Z">
+       data-generated-at="2026-07-20T21:04:31Z">
       <span id="last-updated-display">Last updated …</span>
     </p>
   </header>
@@ -594,6 +594,7 @@
           if (tS && typeof startI !== 'undefined') tS.value = String(startI);
           if (tL) tL.textContent = 'now';
           rerender();
+          applyThumb();   // ball back to 'now' on the corner chart
         });
         rBtn.addEventListener('click', function() {
           rSlider.value = '0';
@@ -619,7 +620,7 @@
     </div>
     <table class="tide-table">
       <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th></tr></thead>
-      <tbody><tr class="tide-row regime-dry" data-hours-from-now="4.72"><td><a href="tides/2026-07-21T01-47/">Jul 21, 2026: Tue 1:47 AM</a></td><td>4.52</td><td>+0.53</td><td><b>5.05</b></td><td>SW grate</td><td>-15.4&Prime;</td><td>-15.4&Prime;</td><td>no flooding</td></tr><tr class="tide-row regime-dry worst-tide" data-hours-from-now="17.34"><td><a href="tides/2026-07-21T14-24/">Jul 21, 2026: Tue 2:24 PM</a></td><td>5.04</td><td>+0.53</td><td><b>5.58</b></td><td>SW grate</td><td>-9.2&Prime;</td><td>-9.2&Prime;</td><td>no flooding</td></tr><tr class="tide-row regime-dry" data-hours-from-now="29.52"><td><a href="tides/2026-07-22T02-35/">Jul 22, 2026: Wed 2:35 AM</a></td><td>4.22</td><td>+0.53</td><td><b>4.75</b></td><td>SW grate</td><td>-19.0&Prime;</td><td>-19.0&Prime;</td><td>no flooding</td></tr><tr class="tide-row regime-dry" data-hours-from-now="42.12"><td><a href="tides/2026-07-22T15-11/">Jul 22, 2026: Wed 3:11 PM</a></td><td>4.95</td><td>+0.53</td><td><b>5.49</b></td><td>SW grate</td><td>-10.2&Prime;</td><td>-10.2&Prime;</td><td>no flooding</td></tr><tr class="tide-row regime-dry" data-hours-from-now="54.37"><td><a href="tides/2026-07-23T03-26/">Jul 23, 2026: Thu 3:26 AM</a></td><td>3.99</td><td>+0.53</td><td><b>4.52</b></td><td>SW grate</td><td>-21.8&Prime;</td><td>-21.8&Prime;</td><td>no flooding</td></tr><tr class="tide-row regime-dry" data-hours-from-now="66.95"><td><a href="tides/2026-07-23T16-01/">Jul 23, 2026: Thu 4:01 PM</a></td><td>4.89</td><td>+0.53</td><td><b>5.43</b></td><td>SW grate</td><td>-10.9&Prime;</td><td>-10.9&Prime;</td><td>no flooding</td></tr></tbody>
+      <tbody><tr class="tide-row regime-dry" data-hours-from-now="4.71"><td><a href="tides/2026-07-21T01-47/">Jul 21, 2026: Tue 1:47 AM</a></td><td>4.52</td><td>+0.53</td><td><b>5.05</b></td><td>SW grate</td><td>-15.4&Prime;</td><td>-15.4&Prime;</td><td>no flooding</td></tr><tr class="tide-row regime-dry worst-tide" data-hours-from-now="17.33"><td><a href="tides/2026-07-21T14-24/">Jul 21, 2026: Tue 2:24 PM</a></td><td>5.04</td><td>+0.53</td><td><b>5.58</b></td><td>SW grate</td><td>-9.2&Prime;</td><td>-9.2&Prime;</td><td>no flooding</td></tr><tr class="tide-row regime-dry" data-hours-from-now="29.51"><td><a href="tides/2026-07-22T02-35/">Jul 22, 2026: Wed 2:35 AM</a></td><td>4.22</td><td>+0.53</td><td><b>4.75</b></td><td>SW grate</td><td>-19.0&Prime;</td><td>-19.0&Prime;</td><td>no flooding</td></tr><tr class="tide-row regime-dry" data-hours-from-now="42.11"><td><a href="tides/2026-07-22T15-11/">Jul 22, 2026: Wed 3:11 PM</a></td><td>4.95</td><td>+0.53</td><td><b>5.49</b></td><td>SW grate</td><td>-10.2&Prime;</td><td>-10.2&Prime;</td><td>no flooding</td></tr><tr class="tide-row regime-dry" data-hours-from-now="54.36"><td><a href="tides/2026-07-23T03-26/">Jul 23, 2026: Thu 3:26 AM</a></td><td>3.99</td><td>+0.53</td><td><b>4.52</b></td><td>SW grate</td><td>-21.8&Prime;</td><td>-21.8&Prime;</td><td>no flooding</td></tr><tr class="tide-row regime-dry" data-hours-from-now="66.94"><td><a href="tides/2026-07-23T16-01/">Jul 23, 2026: Thu 4:01 PM</a></td><td>4.89</td><td>+0.53</td><td><b>5.43</b></td><td>SW grate</td><td>-10.9&Prime;</td><td>-10.9&Prime;</td><td>no flooding</td></tr></tbody>
     </table>
     <p class="note">Highlighted row is the worst case headlined above.
        <b>Click any time in the first column</b> to open that tide's detail
