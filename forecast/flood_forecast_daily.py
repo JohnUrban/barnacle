@@ -7063,6 +7063,16 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           }});
           c.setLineDash([]);
           c.setLineDash([]);
+          // dotted midnight lines, same as the big chart
+          c.strokeStyle = '#999999'; c.lineWidth = 1;
+          c.setLineDash([2, 3]);
+          MS.series.forEach(function(p2, mi) {{
+            if (p2.t.slice(-5) === '00:00') {{
+              c.beginPath(); c.moveTo(X(mi), P); c.lineTo(X(mi), H - P);
+              c.stroke();
+            }}
+          }});
+          c.setLineDash([]);
           // fixed NOW line (user 2026-07-20): stays put while the
           // ball travels, so "now" is always visible for orientation
           var nowMs2 = Date.now(), nowI = 0;
