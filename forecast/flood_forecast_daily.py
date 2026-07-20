@@ -1287,6 +1287,7 @@ def fetch_nws_flood_alerts():
             "event": event,
             "headline": props.get("headline") or "",
             "severity": props.get("severity") or "",
+            "onset": props.get("onset") or props.get("effective") or "",
             "ends": props.get("ends") or props.get("expires") or "",
         })
     return out
@@ -2084,6 +2085,24 @@ def build_forecast():
     # (2026-07-06 — start/end/duration, not just peak instants; and
     # "today" reflects rain because rain is IN the series).
     flood_windows = compute_flood_windows(water_series)
+    # DAY-SCOPE the pluvial risk (user 2026-07-20: 'POSSIBLE RAIN
+    # FLOODING' sat in the TODAY box while the watch didn't begin
+    # until tomorrow — scope-mixing). risk_today = any burst-capable
+    # series hour dated TODAY, or an alert whose onset is today or
+    # earlier. When False, the TODAY headline stays regime-based and
+    # the risk is announced as TOMORROW's in the 72-h strip.
+    try:
+        _today_str = _station_local_now().strftime("%Y-%m-%d")
+    except Exception:
+        _today_str = dt.date.today().isoformat()
+    _risk_today = any(p.get("burst_risk") and
+                      (p.get("time") or "").startswith(_today_str)
+                      for p in water_series)
+    for _a in (pluvial_risk.get("nws_flood_alerts") or []):
+        _on = (_a.get("onset") or "")[:10]
+        if _on and _on <= _today_str:
+            _risk_today = True
+    pluvial_risk["risk_today"] = bool(_risk_today)
     today_peak_water = None
     today_peak_time = None
     # OUTLOOK stays forward-looking: with the series now extending
@@ -3499,7 +3518,12 @@ def headline_for(forecast, regime):
     message IS the headline and "no tidal flooding expected" becomes
     the detail. CSS class shifts to 'light' (amber) so the banner
     color matches the message."""
-    level = ((forecast.get("pluvial_risk") or {}).get("level")
+    _pr_h = forecast.get("pluvial_risk") or {}
+    if _pr_h.get("risk_today") is False:
+        # risk window opens tomorrow — TODAY's headline must not
+        # claim it (2026-07-20 scope fix); the 72-h strip carries it.
+        return (regime_display(regime).upper(), regime)
+    level = (_pr_h.get("level")
              if forecast else None)
     if regime == "dry" and level:
         text = ("RAIN FLOOD RISK" if level == "elevated"
@@ -7730,16 +7754,33 @@ def render_html_page(forecast):
             f'{_lb["rel_grate_in"]:+.1f}&Prime; vs SW grate at '
             f'{_lb["time_local"]}, {_lb["source"]}.</div>')
     _pr_b = forecast.get("pluvial_risk") or {}
+    rain_later_note = ""
     if _pr_b.get("level"):
         _alerts_b = _pr_b.get("nws_flood_alerts") or []
-        today_summary += (
-            " Rain risk is live"
-            + (" — " + ", ".join(a.get("event", "") for a in _alerts_b)
-               + " in effect" if _alerts_b else "")
-            + (f"; a burst could bring street water to "
-               f"~{((_pr_b.get('potential_low_tide_navd88') or 0) - 3.52) * 12:+.0f}&Prime; "
-               f"vs SW grate regardless of tide."
-               if _pr_b.get("potential_low_tide_navd88") else "."))
+        _alert_names = ", ".join(a.get("event", "") for a in _alerts_b)
+        _pot_txt = ""
+        if _pr_b.get("potential_low_tide_navd88"):
+            _pot_txt = (f"; a burst could bring street water to "
+                        f"~{(_pr_b['potential_low_tide_navd88'] - 3.52) * 12:+.0f}&Prime; "
+                        f"vs SW grate regardless of tide")
+        if _pr_b.get("risk_today") is False:
+            # risk belongs to TOMORROW — say so in the 72-h strip,
+            # keep the TODAY box about today (2026-07-20 scope fix)
+            _on = ""
+            for _a in _alerts_b:
+                if _a.get("onset"):
+                    _on = _a["onset"][11:16]
+                    break
+            rain_later_note = (
+                f" <b>Rain risk begins TOMORROW</b>"
+                + (f" ({_alert_names}" + (f" from {_on}" if _on else "")
+                   + ")" if _alert_names else "")
+                + _pot_txt + ".")
+        else:
+            today_summary += (
+                " Rain risk is live today"
+                + (" — " + _alert_names + " in effect" if _alert_names else "")
+                + _pot_txt + ".")
     if headline_class == regime:
         headline_summary = f"{REGIME_GLOSSARY.get(regime, '')}."
     else:
@@ -7747,6 +7788,7 @@ def render_html_page(forecast):
                             "rain could flood the intersection "
                             "independently of the tide — see the "
                             "rain-risk banner below.")
+    headline_summary += rain_later_note
     peak_t = forecast["peak_time_local"]
     peak_ft = forecast["peak_forecast_observed_mllw"]
     today = dt.date.today().isoformat()

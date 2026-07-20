@@ -39,7 +39,7 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.20a";
+const WIDGET_VERSION = "v7.20b";
 const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -472,7 +472,14 @@ function makeWidget(forecast, family) {
   // tide is a labeled secondary line, no longer the headline.
   const worstRegime = (forecast.depths_in && forecast.depths_in.regime) || "dry";
   let todayRegime = forecast.today_regime || worstRegime;
-  const pluvialLevel = (forecast.pluvial_risk && forecast.pluvial_risk.level) || null;
+  const _pr = forecast.pluvial_risk || {};
+  // 2026-07-20 scope fix: risk whose window opens TOMORROW must not
+  // relabel TODAY (risk_today === false gates it; missing field =
+  // old JSON = old behavior).
+  const pluvialLevel = (_pr.level && _pr.risk_today !== false)
+    ? _pr.level : null;
+  const pluvialTomorrow = (_pr.level && _pr.risk_today === false)
+    ? _pr.level : null;
   // Resolve the "NO FLOODING" + "RAIN FLOOD RISK" contradiction
   // (2026-07-07): when the tide-derived regime is dry but rain risk
   // is live, the rain message IS the headline; "no tidal flooding"
@@ -558,6 +565,15 @@ function makeWidget(forecast, family) {
       s.textColor = new Color("#555");
     }
     if (showPluvialLine) addPluvialLine(left);
+    if (pluvialTomorrow) {
+      const tm = left.addText(
+        pluvialTomorrow === "elevated"
+          ? "\u26A0 rain flood risk TOMORROW"
+          : "rain possible tomorrow");
+      tm.font = Font.semiboldSystemFont(9);
+      tm.textColor = new Color("#8a6d3b");
+      tm.lineLimit = 1;
+    }
 
     // SO-FAR line (2026-07-09, post-event-#4): the outlook is
     // forward-looking by design, but an hour after a top-3 flood the
