@@ -7022,8 +7022,9 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         // tracking the scrubber. Unlabeled by design.
         var thumbC = document.getElementById('map-thumb');
         var thumbBtn = document.getElementById('thumb-toggle');
-        var thumbOn = false;
-        try {{ thumbOn = localStorage.getItem('barnacle-map-thumb') === '1'; }} catch (e) {{}}
+        var thumbOn = true;   // default ON (user 2026-07-20: "default
+                              // should have the chart appear")
+        try {{ thumbOn = localStorage.getItem('barnacle-map-thumb') !== '0'; }} catch (e) {{}}
         function drawThumb(idx, lvl) {{
           if (!thumbC || !MS.series || !MS.series.length) return;
           var c = thumbC.getContext('2d');
