@@ -39,7 +39,7 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.18a";
+const WIDGET_VERSION = "v7.20a";
 const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -192,13 +192,14 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
 
   // Y-axis: inches relative to the SW grate (the standard reference).
   const toIn = (v) => (v - LOWEST_ELEV) * 12;
-  const times = [], tideIn = [], pluvIn = [];
+  const times = [], tideIn = [], pluvIn = [], obsIn = [];
   for (const p of series) {
     const t = parseLocal(p.time);
     if (!t) continue;
     times.push(t);
     tideIn.push(toIn(p.tide_navd88 != null ? p.tide_navd88 : p.water_navd88));
     pluvIn.push(p.pluvial_navd88 != null ? toIn(p.pluvial_navd88) : null);
+    obsIn.push(p.observed_navd88 != null ? toIn(p.observed_navd88) : null);
   }
   if (!times.length) return null;
   const combined = tideIn.map((v, i) => Math.max(v, pluvIn[i] != null ? pluvIn[i] : -1e9));
@@ -315,6 +316,23 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
     dottedV(x(mid.getTime()), new Color("#999999", 0.9));
     mid.setHours(mid.getHours() + 24);
   }
+
+  // OBSERVED bay (despiked gauge) — gray, past portion only, drawn
+  // under the forecast curve. Site parity (v7.20a): the past is
+  // observation, the future is model; the now-dot is the seam.
+  ctx.setStrokeColor(new Color("#555555", 0.9));
+  ctx.setLineWidth(2.5);
+  let oseg = null;
+  for (let i = 0; i < times.length; i++) {
+    if (obsIn[i] != null) {
+      const pt = new Point(x(times[i].getTime()), y(obsIn[i]));
+      if (!oseg) { oseg = new Path(); oseg.move(pt); }
+      else oseg.addLine(pt);
+    } else if (oseg) {
+      ctx.addPath(oseg); ctx.strokePath(); oseg = null;
+    }
+  }
+  if (oseg) { ctx.addPath(oseg); ctx.strokePath(); }
 
   // Tide curve (bay water — blue)
   ctx.setStrokeColor(new Color("#1a5fa8"));

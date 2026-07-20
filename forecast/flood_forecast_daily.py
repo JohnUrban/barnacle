@@ -29,6 +29,7 @@ import math
 import json
 import smtplib
 import datetime as dt
+import time as _time
 from zoneinfo import ZoneInfo
 
 # NOAA CO-OPS queries with time_zone=lst_ldt interpret begin_date /
@@ -486,7 +487,12 @@ def fetch_observed_recent(hours=6):
     (time, value_mllw_ft). Default 6h preserves backwards-compat with the
     surge-swing calculation; pass hours=24 for the live-gauge widget
     (HANDOFF 16f / Y in the 2026-05-19 solo-work backlog)."""
-    end = dt.datetime.now(dt.timezone.utc)
+    # TZ fix 2026-07-20: begin/end MUST be station-local for lst_ldt
+    # queries (the documented 2026-07-06 bug class, still lurking
+    # here) — the UTC window skewed +4 h into the empty future, so
+    # "past 7 h" returned only ~3 h and the chart's observed overlay
+    # cropped to the tail (user report).
+    end = _station_local_now()
     start = end - dt.timedelta(hours=hours)
     data = _get(
         "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
@@ -4798,7 +4804,7 @@ def build_sms_text(forecast):
     peak = forecast.get("peak_forecast_observed_mllw") or 0
     return (f"[Barnacle] {head} — {label}. Worst 72h {peak:.2f}ft "
             f"{format_time_short(forecast.get('peak_time_local') or '')}. "
-            f"johnurban.github.io/barnacle")
+            f"johnurban.github.io/barnacle/?a={int(_time.time()) // 60}")
 
 
 def _today_lookback():
@@ -5190,7 +5196,7 @@ def _render_water_series_section(forecast):
     note_bits.append("Windows below are derived from these curves.")
     return f"""
   <section class="water-series">
-    <h2>Predicted water level — next 24 hours</h2>
+    <h2>Predicted near-term water levels</h2>
     <div style="position:relative;height:340px;margin:8px auto">
       <canvas id="water-series-chart"></canvas>
     </div>
@@ -8452,7 +8458,11 @@ def main():
                     "Title": f"Barnacle flood alert ({label})",
                     "Priority": "urgent" if rank >= 3 else "high",
                     "Tags": "ocean" if rank < 3 else "rotating_light",
-                    "Click": "https://johnurban.github.io/barnacle/",
+                    # cache-busted (2026-07-20): clicking an alert
+                    # seconds after it fires must not serve the CDN's
+                    # pre-alert page — the "disconnect" the user hit
+                    "Click": "https://johnurban.github.io/barnacle/?a="
+                             + str(int(_time.time())),
                 })
             urlopen(req, timeout=15).read()
             print(f"Sent ntfy push to topic ({rank=})")
