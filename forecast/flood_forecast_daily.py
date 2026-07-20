@@ -2525,6 +2525,165 @@ def _render_day_cards_html(forecast):
     return '<div class="day-cards">' + "".join(html_cards) + '</div>'
 
 
+def _render_how_flooding_html(forecast):
+    return f"""
+  <section class="reference">
+    <h2>How flooding works here (plain English)</h2>
+    <p><b>Tide floods.</b> When the bay at Sandy Hook climbs above the
+       storm-grate elevations (roughly 6.3&ndash;6.6 ft on the gauge),
+       bay water pushes backwards up the storm drains and surfaces in
+       the street — the SE and SW grates across Bay Ave go first, and
+       those areas stay wettest. No rain required.</p>
+    <p><b>Rain floods — the tide does not matter.</b> This corner
+       sits at the bottom of the Highlands hillside — the bluffs
+       climb ~200 feet directly above it, and everything that falls
+       on them surges downhill onto this low shelf within minutes.
+       So the rainfall <i>rate</i> alone understates the input
+       enormously: the intersection receives the hillside's water,
+       not just its own. When a burst is intense enough (roughly 1+
+       inch/hour), that amplified inflow fills the drain system
+       beyond its discharge capacity, the water backs up, and it
+       behaves exactly as if a high tide were in — <b>even at dead
+       low tide</b>. Proven July 6, 2026: about 7&Prime; of water at
+       the curb while the bay sat more than a foot below the lowest
+       grate. In rain floods the backup concentrates around the
+       NE/NW grates (the drain trunk line) — the opposite corner
+       from tide floods. <b>Take-home: never judge flood risk here
+       by the tide chart alone.</b> Once the rain is hard enough,
+       the tide level is irrelevant to whether it floods. The
+       timing is now measured and modeled (v0.10): street water
+       lags the rain peak by ~15 min, can rise 8&Prime; in 12
+       minutes, and drains back within ~20&ndash;30 min of the rain
+       stopping. All four floods measured to date &mdash; including
+       the two worst &mdash; were rain-driven.</p>
+    <p><b>Compound (the worst case).</b> The tide can't prevent a rain
+       flood, but it can raise its floor: heavy rain landing on a high
+       tide has nowhere to go at all. The biggest flood in this
+       project's records — October 30, 2025, water past the bottom
+       porch step — was exactly this combination. The two add
+       <i>sub-linearly</i>, though: the deeper the water, the larger
+       the area it covers, so each additional inch takes more water
+       than the last. The same rain that raises a low-tide street
+       pool by a foot might add only a few inches on top of a high
+       tide — but those inches start from a much higher floor.</p>
+  </section>
+
+"""
+
+
+def _render_reference_scale_html(forecast):
+    return f"""
+  <section class="reference">
+    <h2>Reference scale</h2>
+    <p>Sandy Hook observed water level (MLLW; {CURRENT_MODEL_VERSION} thresholds = landmark elevation + 2.82):</p>
+    <ul>
+      <li>&lt; 6.34 ft — no flooding, nothing visible</li>
+      <li>6.34 ft — water emerges from SW grate across Bay (lowest grate)</li>
+      <li>6.42 ft — SE grate across Bay emerges</li>
+      <li>6.46 ft — SE/SW pavement corners wet; Bay Ave upstream grate emerges</li>
+      <li>6.60 ft — water at gutter / curb edge at walkway (don't park there)</li>
+      <li>6.62 ft — NE (user's corner) + NW grates emerge (Pathway B)</li>
+      <li>6.98 ft — water tops curb at walkway (flood onset at property)</li>
+      <li>7.15 ft — water on sidewalk under the walkway lawn step</li>
+      <li>7.18 ft — Bay Ave road middle covered</li>
+      <li>7.36 ft — intersection high point submerged</li>
+      <li>7.48 ft — water at lawn / walkway step</li>
+      <li>7.50 ft — water at bottom of porch steps</li>
+      <li>8.23 ft — water over the first porch step</li>
+      <li>10.90 ft — water at the porch deck (Sandy-class)</li>
+    </ul>
+  </section>
+
+"""
+
+
+def _render_glossary_html(forecast):
+    return f"""
+  <section class="reference">
+    <h2>Regime glossary</h2>
+    <p>The label in the subject line (NO FLOODING / STREET / LIGHT / MODERATE / SEVERE) summarises severity based on water depth at the curb.</p>
+    <ul>
+      <li><b>no flooding</b> — {REGIME_GLOSSARY['dry']}</li>
+      <li><b>street</b> — {REGIME_GLOSSARY['street']}</li>
+      <li><b>light</b> — {REGIME_GLOSSARY['light']}</li>
+      <li><b>moderate</b> — {REGIME_GLOSSARY['moderate']}</li>
+      <li><b>severe</b> — {REGIME_GLOSSARY['severe']}</li>
+      <li><b>cold lockout</b> — {REGIME_GLOSSARY['cold_lockout']}</li>
+    </ul>
+  </section>
+
+"""
+
+
+def render_details_page(forecast):
+    """The "For more information" page (docs/details.html, 2026-07-20
+    multi-page split): deep reference material off the landing scroll —
+    how-flooding, reference scale, historical floods, the model term
+    by term (incl. the rain-pathway calculator), spot-check protocol,
+    accuracy, glossary. Anchors match _render_more_info_links_html."""
+    gen = ""
+    try:
+        gen = _station_local_now().strftime("%a %b %d, %I:%M %p ET")
+    except Exception:
+        pass
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Bay Ave Barnacle — details &amp; reference</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1><a href="index.html" style="text-decoration:none;color:inherit">Bay Ave Barnacle</a> — details</h1>
+    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated {gen}</p>
+  </header>
+
+  <div id="how"></div>
+{_render_how_flooding_html(forecast)}
+  <div id="reference"></div>
+{_render_reference_scale_html(forecast)}
+  <div id="history"></div>
+{_render_historical_floods_html()}
+  <div id="model"></div>
+{_render_equation_widget_html(forecast)}
+  <div id="spotcheck"></div>
+  {_spot_check_block_html(forecast)}
+  <div id="accuracy"></div>
+  {_render_accuracy_html(forecast)}
+  <div id="glossary"></div>
+{_render_glossary_html(forecast)}
+
+  <footer>
+    <p><a href="index.html">&larr; back to the live forecast</a></p>
+  </footer>
+</main>
+</body></html>"""
+
+
+def _render_more_info_links_html():
+    """Landing-page links to details.html (2026-07-20 multi-page
+    split — user: landing ends at the heat-map; deep reference
+    material moves off the scroll)."""
+    items = [
+        ("how", "How flooding works here (plain English)"),
+        ("reference", "Reference scale"),
+        ("history", "How bad can it get? The 10 worst floods"),
+        ("model", "The model, term by term"),
+        ("spotcheck", "Spot-check (help calibrate the model)"),
+        ("accuracy", "Model accuracy — predicted vs observed"),
+        ("glossary", "Regime glossary"),
+    ]
+    links = "".join(
+        f'<li><a href="details.html#{a}">{t}</a></li>'
+        for a, t in items)
+    return ('<section class="more-info"><h2>For more information</h2>'
+            f'<ul class="more-info-list">{links}</ul></section>')
+
+
 def _render_summary_html(forecast):
     """HTML version: summary + confidence + optional unusual-forecast note
     inside a styled banner."""
@@ -3976,7 +4135,8 @@ def _landmarks_section_text(forecast, today=None):
     return "\n".join(parts) + "\n"
 
 
-def _landmarks_section_html(forecast, today=None, wrapper="section"):
+def _landmarks_section_html(forecast, today=None, wrapper="section",
+                            include_spot_check=True):
     """Combined Landmarks section (HTML)."""
     table_html = _unified_landmark_table_html(forecast, today)
     footer_html = "".join(_landmarks_footer_html(forecast, today))
@@ -3997,7 +4157,9 @@ def _landmarks_section_html(forecast, today=None, wrapper="section"):
             '<div style="background:white;padding:8px;border-radius:4px">'
             + body + '</div>'
         )
-    return landmarks_section + _spot_check_block_html(forecast, today)
+    if include_spot_check:
+        return landmarks_section + _spot_check_block_html(forecast, today)
+    return landmarks_section
 
 
 # ============================================================
@@ -6602,7 +6764,30 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
                 "knee": PLUVIAL_DRAIN_FULL_BELOW,
                 "base": PLUVIAL_STREET_BASE,
                 "scale": PLUVIAL_FREE_RATE_SCALE})
+        _map_series = [
+            {"t": pt["time"], "w": pt.get("water_navd88"),
+             "b": bool(pt.get("burst_risk"))}
+            for pt in (forecast.get("water_series") or [])
+            if pt.get("water_navd88") is not None]
+        _pots_m = [v for v in (
+            (forecast.get("pluvial_risk") or {}).get("potential_low_tide_navd88"),
+            (forecast.get("pluvial_risk") or {}).get("potential_low_tide_navd88_tanh"))
+            if v is not None]
+        map_series_js = json.dumps(
+            {"series": _map_series,
+             "potential": (max(_pots_m) if _pots_m else None)})
         slider_html = f"""
+    <div class="depth-slider time-slider">
+      <label for="time-slider-input">Slide through the forecast:</label>
+      <input type="range" id="time-slider-input" min="0"
+             max="{max(0, len(_map_series) - 1)}" step="1" value="0">
+      <span id="time-slider-value">&mdash;</span>
+    </div>
+    <div class="depth-slider burst-toggle-row">
+      <label><input type="checkbox" id="burst-potential-toggle">
+        during rain-risk windows, show the BURST-POTENTIAL level
+        (the chart's navy shading) instead of the expected level</label>
+    </div>
     <div class="depth-slider">
       <label for="depth-slider-input">Explore water level:</label>
       <input type="range" id="depth-slider-input"
@@ -6771,10 +6956,63 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
               + (atDefault ? '' : '  (exploration)')
           }});
         }}
-        dSlider.addEventListener('input', rerender);
+        dSlider.addEventListener('input', function() {{
+          // manual level exploration leaves time-scrub mode
+          var tl = document.getElementById('time-slider-value');
+          if (tl) tl.textContent = '\u2014';
+          rerender();
+        }});
         rSlider.addEventListener('input', rerender);
         // Shading toggle re-runs the current exploration state
         window.barnacleRerender = rerender;
+
+        // TIME SCRUBBER (user 2026-07-20): slide the map through the
+        // same series the top chart draws — see the street at any
+        // forecast moment. Burst checkbox swaps in the navy-band
+        // potential level across flagged (rain-risk) hours.
+        var MS = {map_series_js};
+        var tSlider = document.getElementById('time-slider-input');
+        var tLabel = document.getElementById('time-slider-value');
+        var bToggle = document.getElementById('burst-potential-toggle');
+        function fmtT(t) {{
+          var m = t.match(/(\\d{{4}})-(\\d{{2}})-(\\d{{2}}) (\\d{{2}}):(\\d{{2}})/);
+          if (!m) return t;
+          var d = new Date(+m[1], m[2]-1, +m[3], +m[4], +m[5]);
+          var wd = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+          var h = d.getHours(), ap = h >= 12 ? 'PM' : 'AM';
+          return wd + ' ' + ((h % 12) || 12) + ':' + m[5] + ' ' + ap;
+        }}
+        function scrub() {{
+          if (!MS.series || !MS.series.length) return;
+          var i = Math.min(MS.series.length - 1,
+                           Math.max(0, parseInt(tSlider.value, 10) || 0));
+          var pt = MS.series[i];
+          var lvl = pt.w;
+          var burst = false;
+          if (bToggle && bToggle.checked && pt.b && MS.potential != null) {{
+            lvl = Math.max(lvl, MS.potential);
+            burst = true;
+          }}
+          dSlider.value = String(lvl);
+          tLabel.textContent = fmtT(pt.t)
+            + (burst ? ' \u2014 BURST POTENTIAL' : '')
+            + (pt.b && !burst ? ' (rain-risk hour)' : '');
+          rerender();
+        }}
+        if (tSlider) {{
+          // start the scrubber at "now" (first future point)
+          var nowMs = Date.now();
+          var startI = 0;
+          for (var i = 0; i < MS.series.length; i++) {{
+            var mm = MS.series[i].t.match(/(\\d{{4}})-(\\d{{2}})-(\\d{{2}}) (\\d{{2}}):(\\d{{2}})/);
+            if (mm && new Date(+mm[1], mm[2]-1, +mm[3], +mm[4], +mm[5]).getTime() >= nowMs) {{
+              startI = i; break;
+            }}
+          }}
+          tSlider.value = String(startI);
+          tSlider.addEventListener('input', scrub);
+          if (bToggle) bToggle.addEventListener('change', scrub);
+        }}
         dBtn.addEventListener('click', function() {{
           dSlider.value = String(defaultWater);
           rerender();
@@ -8171,6 +8409,8 @@ def render_html_page(forecast):
 
 {_render_day_cards_html(forecast)}
 
+{map_section}
+
   {_render_summary_html(forecast)}
 
 {_render_flood_windows_html(forecast)}
@@ -8243,99 +8483,61 @@ def render_html_page(forecast):
   </section>
 {_render_pluvial_advisory_html(forecast)}
 {_render_cold_advisory_html(forecast)}
-{_render_live_gauge_section(forecast)}
-{map_section}
-{_render_equation_widget_html(forecast)}
-{_render_oscillation_section(forecast)}
+
+<section class="peaks-toggle-wrap">
+    <div class="heatmap-toggle" id="peaks-view-toggle">
+      <span class="note">Peaks view:</span>
+      <label><input type="radio" name="peaks-view" value="all" checked>
+        rain + tide (all pathways)</label>
+      <label><input type="radio" name="peaks-view" value="tide">
+        tide-only (per-tide, gauge)</label>
+    </div>
+    <div id="peaks-all">
 {_render_flood_peaks_section(forecast)}
+    </div>
+    <div id="peaks-tide" style="display:none">
+{_render_oscillation_section(forecast)}
+    </div>
+    <script>
+      (function() {{
+        var radios = document.querySelectorAll('input[name="peaks-view"]');
+        var v = 'all';
+        try {{ v = localStorage.getItem('barnacle-peaks-view') || 'all'; }} catch (e) {{}}
+        function apply() {{
+          document.getElementById('peaks-all').style.display =
+            (v === 'all') ? 'block' : 'none';
+          document.getElementById('peaks-tide').style.display =
+            (v === 'tide') ? 'block' : 'none';
+          // hidden Chart.js canvases render zero-size; nudge on reveal
+          window.dispatchEvent(new Event('resize'));
+        }}
+        radios.forEach(function(r) {{
+          r.checked = (r.value === v);
+          r.addEventListener('change', function() {{
+            v = r.value;
+            try {{ localStorage.setItem('barnacle-peaks-view', v); }} catch (e) {{}}
+            apply();
+          }});
+        }});
+        apply();
+      }})();
+    </script>
+  </section>
   {_render_rain_timing_html(forecast)}
 
-  {_landmarks_section_html(forecast, wrapper='section')}
+  {_landmarks_section_html(forecast, wrapper='section', include_spot_check=False)}
+
+{_render_live_gauge_section(forecast)}
 
   {_render_recent_history_html(forecast)}
 
-  {_render_accuracy_html(forecast)}
 
   {_render_low_tides_html(forecast)}
 
   {_render_lookahead_html(forecast)}
 
-  <section class="reference">
-    <h2>How flooding works here (plain English)</h2>
-    <p><b>Tide floods.</b> When the bay at Sandy Hook climbs above the
-       storm-grate elevations (roughly 6.3&ndash;6.6 ft on the gauge),
-       bay water pushes backwards up the storm drains and surfaces in
-       the street — the SE and SW grates across Bay Ave go first, and
-       those areas stay wettest. No rain required.</p>
-    <p><b>Rain floods — the tide does not matter.</b> This corner
-       sits at the bottom of the Highlands hillside — the bluffs
-       climb ~200 feet directly above it, and everything that falls
-       on them surges downhill onto this low shelf within minutes.
-       So the rainfall <i>rate</i> alone understates the input
-       enormously: the intersection receives the hillside's water,
-       not just its own. When a burst is intense enough (roughly 1+
-       inch/hour), that amplified inflow fills the drain system
-       beyond its discharge capacity, the water backs up, and it
-       behaves exactly as if a high tide were in — <b>even at dead
-       low tide</b>. Proven July 6, 2026: about 7&Prime; of water at
-       the curb while the bay sat more than a foot below the lowest
-       grate. In rain floods the backup concentrates around the
-       NE/NW grates (the drain trunk line) — the opposite corner
-       from tide floods. <b>Take-home: never judge flood risk here
-       by the tide chart alone.</b> Once the rain is hard enough,
-       the tide level is irrelevant to whether it floods. The
-       timing is now measured and modeled (v0.10): street water
-       lags the rain peak by ~15 min, can rise 8&Prime; in 12
-       minutes, and drains back within ~20&ndash;30 min of the rain
-       stopping. All four floods measured to date &mdash; including
-       the two worst &mdash; were rain-driven.</p>
-    <p><b>Compound (the worst case).</b> The tide can't prevent a rain
-       flood, but it can raise its floor: heavy rain landing on a high
-       tide has nowhere to go at all. The biggest flood in this
-       project's records — October 30, 2025, water past the bottom
-       porch step — was exactly this combination. The two add
-       <i>sub-linearly</i>, though: the deeper the water, the larger
-       the area it covers, so each additional inch takes more water
-       than the last. The same rain that raises a low-tide street
-       pool by a foot might add only a few inches on top of a high
-       tide — but those inches start from a much higher floor.</p>
-  </section>
+{_render_more_info_links_html()}
 
-  <section class="reference">
-    <h2>Reference scale</h2>
-    <p>Sandy Hook observed water level (MLLW; {CURRENT_MODEL_VERSION} thresholds = landmark elevation + 2.82):</p>
-    <ul>
-      <li>&lt; 6.34 ft — no flooding, nothing visible</li>
-      <li>6.34 ft — water emerges from SW grate across Bay (lowest grate)</li>
-      <li>6.42 ft — SE grate across Bay emerges</li>
-      <li>6.46 ft — SE/SW pavement corners wet; Bay Ave upstream grate emerges</li>
-      <li>6.60 ft — water at gutter / curb edge at walkway (don't park there)</li>
-      <li>6.62 ft — NE (user's corner) + NW grates emerge (Pathway B)</li>
-      <li>6.98 ft — water tops curb at walkway (flood onset at property)</li>
-      <li>7.15 ft — water on sidewalk under the walkway lawn step</li>
-      <li>7.18 ft — Bay Ave road middle covered</li>
-      <li>7.36 ft — intersection high point submerged</li>
-      <li>7.48 ft — water at lawn / walkway step</li>
-      <li>7.50 ft — water at bottom of porch steps</li>
-      <li>8.23 ft — water over the first porch step</li>
-      <li>10.90 ft — water at the porch deck (Sandy-class)</li>
-    </ul>
-  </section>
-
-  <section class="reference">
-    <h2>Regime glossary</h2>
-    <p>The label in the subject line (NO FLOODING / STREET / LIGHT / MODERATE / SEVERE) summarises severity based on water depth at the curb.</p>
-    <ul>
-      <li><b>no flooding</b> — {REGIME_GLOSSARY['dry']}</li>
-      <li><b>street</b> — {REGIME_GLOSSARY['street']}</li>
-      <li><b>light</b> — {REGIME_GLOSSARY['light']}</li>
-      <li><b>moderate</b> — {REGIME_GLOSSARY['moderate']}</li>
-      <li><b>severe</b> — {REGIME_GLOSSARY['severe']}</li>
-      <li><b>cold lockout</b> — {REGIME_GLOSSARY['cold_lockout']}</li>
-    </ul>
-  </section>
-
-{_render_historical_floods_html()}
 
   <footer>
     <p>Model {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph —
@@ -8649,6 +8851,14 @@ def main():
         with open(out_path, "w") as f:
             f.write(page_html)
         print(f"Wrote HTML: {args.write_html}")
+        try:
+            details_path = os.path.join(os.path.dirname(out_path),
+                                        "details.html")
+            with open(details_path, "w") as f:
+                f.write(render_details_page(forecast))
+            print(f"Wrote details page: {details_path}")
+        except Exception as e:
+            print(f"WARNING: details page failed: {e}")
 
         # Generate per-tide deep-link pages (HANDOFF 9b.2). Each upcoming
         # tide gets docs/tides/<slug>/{index.html,forecast.json,evolution.csv}.

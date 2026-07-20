@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Bay Ave Barnacle — details &amp; reference</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1><a href="index.html" style="text-decoration:none;color:inherit">Bay Ave Barnacle</a> — details</h1>
+    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated Mon Jul 20, 04:37 PM ET</p>
+  </header>
+
+  <div id="how"></div>
+
+  <section class="reference">
+    <h2>How flooding works here (plain English)</h2>
+    <p><b>Tide floods.</b> When the bay at Sandy Hook climbs above the
+       storm-grate elevations (roughly 6.3&ndash;6.6 ft on the gauge),
+       bay water pushes backwards up the storm drains and surfaces in
+       the street — the SE and SW grates across Bay Ave go first, and
+       those areas stay wettest. No rain required.</p>
+    <p><b>Rain floods — the tide does not matter.</b> This corner
+       sits at the bottom of the Highlands hillside — the bluffs
+       climb ~200 feet directly above it, and everything that falls
+       on them surges downhill onto this low shelf within minutes.
+       So the rainfall <i>rate</i> alone understates the input
+       enormously: the intersection receives the hillside's water,
+       not just its own. When a burst is intense enough (roughly 1+
+       inch/hour), that amplified inflow fills the drain system
+       beyond its discharge capacity, the water backs up, and it
+       behaves exactly as if a high tide were in — <b>even at dead
+       low tide</b>. Proven July 6, 2026: about 7&Prime; of water at
+       the curb while the bay sat more than a foot below the lowest
+       grate. In rain floods the backup concentrates around the
+       NE/NW grates (the drain trunk line) — the opposite corner
+       from tide floods. <b>Take-home: never judge flood risk here
+       by the tide chart alone.</b> Once the rain is hard enough,
+       the tide level is irrelevant to whether it floods. The
+       timing is now measured and modeled (v0.10): street water
+       lags the rain peak by ~15 min, can rise 8&Prime; in 12
+       minutes, and drains back within ~20&ndash;30 min of the rain
+       stopping. All four floods measured to date &mdash; including
+       the two worst &mdash; were rain-driven.</p>
+    <p><b>Compound (the worst case).</b> The tide can't prevent a rain
+       flood, but it can raise its floor: heavy rain landing on a high
+       tide has nowhere to go at all. The biggest flood in this
+       project's records — October 30, 2025, water past the bottom
+       porch step — was exactly this combination. The two add
+       <i>sub-linearly</i>, though: the deeper the water, the larger
+       the area it covers, so each additional inch takes more water
+       than the last. The same rain that raises a low-tide street
+       pool by a foot might add only a few inches on top of a high
+       tide — but those inches start from a much higher floor.</p>
+  </section>
+
+
+  <div id="reference"></div>
+
+  <section class="reference">
+    <h2>Reference scale</h2>
+    <p>Sandy Hook observed water level (MLLW; v0.10 thresholds = landmark elevation + 2.82):</p>
+    <ul>
+      <li>&lt; 6.34 ft — no flooding, nothing visible</li>
+      <li>6.34 ft — water emerges from SW grate across Bay (lowest grate)</li>
+      <li>6.42 ft — SE grate across Bay emerges</li>
+      <li>6.46 ft — SE/SW pavement corners wet; Bay Ave upstream grate emerges</li>
+      <li>6.60 ft — water at gutter / curb edge at walkway (don't park there)</li>
+      <li>6.62 ft — NE (user's corner) + NW grates emerge (Pathway B)</li>
+      <li>6.98 ft — water tops curb at walkway (flood onset at property)</li>
+      <li>7.15 ft — water on sidewalk under the walkway lawn step</li>
+      <li>7.18 ft — Bay Ave road middle covered</li>
+      <li>7.36 ft — intersection high point submerged</li>
+      <li>7.48 ft — water at lawn / walkway step</li>
+      <li>7.50 ft — water at bottom of porch steps</li>
+      <li>8.23 ft — water over the first porch step</li>
+      <li>10.90 ft — water at the porch deck (Sandy-class)</li>
+    </ul>
+  </section>
+
+
+  <div id="history"></div>
+
+  <section class="reference historical-floods">
+    <h2>How bad can it get? The 10 worst floods of the last century</h2>
+    <p class="note">Verified Sandy Hook peaks (NOAA station 8531680;
+       cross-checked against the ShorelySafe dashboard's top-ten and
+       our own 1910&ndash;2026 hourly record — the event lists agree).
+       Local columns apply the v0.10 transform
+       (water at 342 = SH &minus; 2.82 ft) and are <b>tide-only
+       floors</b>: every event on this list also had rain, whose
+       local boost is unrecorded — actual water at 342 was at least
+       this high. <b>vs SW grate</b> is inches above the lowest grate
+       (3.52 NAVD88, where water first appears); <b>highest
+       landmark</b> uses the surveyed porch ladder.</p>
+    <table class="tide-table">
+      <thead><tr><th>#</th><th>Date</th><th>Event</th>
+      <th>Peak (ft MLLW)</th><th>Tide-only floor at 342 (ft NAVD88)</th>
+      <th>vs SW grate (floor)</th><th>Highest landmark covered (min)</th></tr></thead>
+      <tbody><tr><td>1</td><td>2012-10-29</td><td>Hurricane Sandy</td><td>14.40</td><td>11.58</td><td>+97&Prime;</td><td>porch deck (+42&Prime;)</td></tr><tr><td>2</td><td>1960-09-12</td><td>Hurricane Donna</td><td>10.08</td><td>7.26</td><td>+45&Prime;</td><td>3rd porch step top (+6&Prime;)</td></tr><tr><td>3</td><td>1992-12-11</td><td>December 1992 nor'easter</td><td>10.08</td><td>7.26</td><td>+45&Prime;</td><td>3rd porch step top (+6&Prime;)</td></tr><tr><td>4</td><td>2011-08-28</td><td>Hurricane Irene</td><td>9.76</td><td>6.94</td><td>+41&Prime;</td><td>3rd porch step top (+2&Prime;)</td></tr><tr><td>5</td><td>1953-11-07</td><td>November 1953 nor'easter</td><td>9.69</td><td>6.87</td><td>+40&Prime;</td><td>3rd porch step top (+2&Prime;)</td></tr><tr><td>6</td><td>1962-03-06</td><td>Ash Wednesday storm</td><td>9.39</td><td>6.57</td><td>+37&Prime;</td><td>2nd porch step top (+6&Prime;)</td></tr><tr><td>7</td><td>1944-09-14</td><td>Great Atlantic Hurricane</td><td>9.39</td><td>6.57</td><td>+37&Prime;</td><td>2nd porch step top (+6&Prime;)</td></tr><tr><td>8</td><td>2010-03-13</td><td>March 2010 nor'easter</td><td>9.03</td><td>6.21</td><td>+32&Prime;</td><td>2nd porch step top (+2&Prime;)</td></tr><tr><td>9</td><td>1950-11-25</td><td>Great Appalachian Storm</td><td>8.99</td><td>6.17</td><td>+32&Prime;</td><td>2nd porch step top (+1&Prime;)</td></tr><tr><td>10</td><td>1966-01-23</td><td>January 1966 nor'easter</td><td>8.89</td><td>6.07</td><td>+31&Prime;</td><td>1st porch step top (+8&Prime;)</td></tr></tbody>
+    </table>
+    <p class="note"><b>Even at their tide-only floors, every event on
+       this list puts water on the porch stairs</b> — the mildest
+       reaches the top of the 1st step; Sandy put ~3&frac12; feet over
+       the porch deck <i>before counting its rain</i>. For scale: the
+       worst events measured since this project began — Oct 30 2025
+       (~5.27 NAVD88 measured, +21&Prime; vs SW grate, past the
+       porch-step base) and the 7/6/2026 flash flood (~4.8 NAVD88) —
+       sit far below these floors. <b>Epistemic honesty</b>: this
+       ranking is built from the tide gauge, which records no local
+       water and no rain. True local rankings are unknowable from it —
+       each event's rain boost is unrecorded, and pluvial-only floods
+       (like 7/6/2026, when the gauge read an unremarkable ~6.0) are
+       entirely invisible to it. 342 Bay has no historical flood
+       record; the spot-check log this project keeps is, as far as we
+       know, the first one. Other caveats: the local transform is
+       calibrated on 2026 moderate events and extrapolates to
+       hurricane regimes; Sandy's 14.4 is the estimated true peak
+       (the gauge failed at 13.31).</p>
+  </section>
+
+  <div id="model"></div>
+
+  <section class="eqn-widget">
+    <h2>The model, term by term</h2>
+    <p class="note">This is the actual v0.10 <b>tide-keyed</b>
+       prediction math with this forecast's numbers filled in — the
+       calculation behind the per-tide table, alerts, and heat-map.
+       Edit any term to see how the prediction would change — then
+       "Snap back" to return to the live forecast. (Rain-driven street
+       water is a separate pathway; see "The rain pathway" below the
+       glossary.)</p>
+
+    <div class="eqn-line">
+      <span class="eqn-lhs">Water level (NAVD88) =</span>
+      <input type="number" id="eq-shpeak" step="0.01"
+             value="5.54" data-default="5.5425">
+      <span class="eqn-termname">ft &mdash; Sandy Hook peak (MLLW)</span>
+    </div>
+    <div class="eqn-line">
+      <span class="eqn-op">+</span>
+      <input type="number" id="eq-enh" step="0.01"
+             value="0.00"
+             data-default="0.0000">
+      <span class="eqn-termname">ft &mdash; local enhancement</span>
+    </div>
+    <div class="eqn-line">
+      <span class="eqn-op">+</span>
+      <input type="number" id="eq-datum" step="0.01"
+             value="-2.82"
+             data-default="-2.8200">
+      <span class="eqn-termname">ft &mdash; MLLW&rarr;NAVD88 datum offset</span>
+    </div>
+    <div class="eqn-result">
+      &rarr; Water level = <b id="eq-water">&mdash;</b> ft NAVD88
+    </div>
+
+    <div class="eqn-line">
+      <span class="eqn-lhs">Depth at</span>
+      <select id="eq-landmark"></select>
+      <span class="eqn-termname">= max(0, water &minus; elevation) &times; 12
+        + rain</span>
+    </div>
+    <div class="eqn-line">
+      <span class="eqn-lhs">Peak rain</span>
+      <input type="number" id="eq-rain" step="0.05" min="0"
+             value="0.08" data-default="0.0783">
+      <span class="eqn-termname">in/hr &mdash; adds
+        <b id="eq-rainadd">&mdash;</b>&Prime; of depth
+        (<span id="eq-rainnote"></span>)</span>
+    </div>
+    <div class="eqn-result">
+      &rarr; Depth at <span id="eq-lmname">&mdash;</span> =
+      <b id="eq-depth">&mdash;</b>&Prime;
+      <span class="eqn-regime" id="eq-regime"></span>
+    </div>
+
+    <button type="button" id="eq-reset">Snap back to current forecast</button>
+
+    <h3 class="eqn-sub">What each term means</h3>
+    <dl class="eqn-glossary">
+      <dt>Sandy Hook peak (MLLW)</dt>
+      <dd>The forecast peak water height at the NOAA Sandy Hook gauge
+        (station 8531680) for the worst high tide in the next 24 hours,
+        in feet above Mean Lower Low Water. This is the live input that
+        changes tide to tide &mdash; it already folds in the astronomical
+        tide plus any storm surge.</dd>
+      <dt>Local enhancement (+0.00 ft)</dt>
+      <dd>The residual after the datum conversion: how much water at
+        342 Bay differs from what the SH gauge reads. v0.8+ sets this
+        to <b>0.00 ft</b> — the conservative value from 4 tape-measured
+        spot-check events (SH 6.17–7.29). Regular tides with offshore
+        peak winds run ~0.13 ft lower; the wind-adjustment line in the
+        worst-case detail reports that "expected actual" separately.
+        (The v0.6 constant +0.40 was over-fit to memory-based
+        observations that pre-dated the spot-check protocol.)</dd>
+      <dt>MLLW&rarr;NAVD88 offset (&minus;2.82 ft)</dt>
+      <dd>A pure datum conversion. The gauge reports heights in MLLW;
+        the landmark elevations at the house were surveyed in NAVD88.
+        This is fixed geometry, not a tunable model parameter.</dd>
+      <dt>Peak rain (in/hr)</dt>
+      <dd>The heaviest single hour of rainfall the NWS forecasts in
+        the window [-90 min, +15 min] around the high tide (v0.7
+        before-biased window — rain after the peak can't raise the
+        peak). In this tide-keyed calculation rain adds depth through
+        a saturating curve, 8&middot;tanh(rate) inches, applied as a
+        uniform water-level rise above 0.1 in/hr — a legacy
+        approximation kept because it fits the compound events. The
+        rain <i>pathway</i> below is the modern treatment.</dd>
+    </dl>
+    <p class="note">The tide-keyed model in one sentence: convert the
+       gauge's tide forecast to a water level at the house (first
+       three terms), then at each landmark the depth is simply how far
+       that water level sits above the landmark's surveyed elevation,
+       with a rain term added on top. The per-tide table, alerts, and
+       heat-map are this one calculation applied at different
+       points.</p>
+
+    <h3 class="eqn-sub">The rain pathway (v0.10) — how the rain
+      line, burst band, and scenario depths are computed</h3>
+    <p class="note">Rain-driven street water is <b>volume</b>-driven,
+       not level-driven (the bay is effectively infinite; rain is a
+       finite source). The pipeline: (1) drains absorb the first
+       0.25 in/hr, a capacity that shrinks to zero as the bay rises
+       from 3.0 to 3.52 ft NAVD88 and blocks the outfall
+       (head-dependent drainage); (2) the surviving net rain rate
+       feeds the <b>v0.10 dynamic tank</b> — dV/dt = K&middot;rate
+       <sup>0.70</sup> &minus; k&middot;V — whose output volume
+       fills the measured stage-storage curve upward from whatever
+       level the tide has set (each additional inch needs more
+       volume because the pool widens). On the 24-h chart this runs
+       as a true <b>hydrograph</b>: rise (~14-min hillside lag),
+       peak, and ~20-min drain-down. The calculator below shows the
+       tank's <b>steady state</b> (the level a sustained rate holds,
+       reached within ~1&nbsp;h), bracketed against the saturating
+       <b>tanh</b> alternative (a conservative floor — the 7/9 flood
+       exceeded it). Calibration: ONE parameter set fits all four
+       measured floods — 7/6 and 7/9/2026 (full measured
+       hydrographs), Oct 30 2025 (compound), Dec 19 2025 (moderate)
+       — all with MRMS-radar-measured rain forcing.</p>
+
+    <div class="eqn-line">
+      <span class="eqn-lhs">Rain burst</span>
+      <input type="number" id="pv-rate" step="0.05" min="0" max="6"
+             value="0.83" data-default="0.8300">
+      <span class="eqn-termname">in/hr &mdash; effective sustained rate</span>
+    </div>
+    <div class="eqn-line">
+      <span class="eqn-lhs">Bay level</span>
+      <input type="number" id="pv-bay" step="0.05" min="2.0" max="5.5"
+             value="2.50" data-default="2.5000">
+      <span class="eqn-termname">ft NAVD88 &mdash; sets the base AND the
+        drain capacity (grate tops = 3.52)</span>
+    </div>
+    <div class="eqn-result">
+      &rarr; Drains absorb <b id="pv-drain">&mdash;</b> in/hr
+      <span id="pv-drainnote" class="eqn-termname"></span><br>
+      &rarr; Net rain filling the bowl = <b id="pv-net">&mdash;</b> in/hr<br>
+      &rarr; Water volume &asymp; <b id="pv-volpow">&mdash;</b>&times;
+      the 7/6 flood <span class="eqn-termname">(v0.10 tank steady-state;
+      tanh: <span id="pv-voltanh">&mdash;</span>&times;)</span><br>
+      &rarr; Street water: <b id="pv-outpow">&mdash;</b>
+      <span class="eqn-termname">v0.10 tank (steady-state)</span> /
+      <b id="pv-outtanh">&mdash;</b>
+      <span class="eqn-termname">tanh (conservative)</span>
+      <span id="pv-spreadnote" class="eqn-termname"></span>
+    </div>
+    <button type="button" id="pv-reset">Snap back to forecast burst</button>
+
+    <script>
+      (function() {
+        var CURVE = [[0.0, 273.0], [0.1, 445.0], [0.2, 611.0], [0.3, 770.0], [0.4, 922.0], [0.5, 1060.0], [0.6, 1202.0], [0.7, 1327.0], [0.8, 1442.0], [0.9, 1561.0], [1.0, 1665.0], [1.1, 1763.0], [1.2, 1854.0], [1.3, 1933.0], [1.4, 2004.0], [1.5, 2079.0], [1.6, 2156.0], [1.7, 2220.0], [1.8, 2298.0], [1.9, 2379.0], [2.0, 2455.0], [2.1, 2533.0], [2.2, 2619.0], [2.3, 2713.0], [2.4, 2795.0], [2.5, 2890.0], [2.6, 2981.0], [2.7, 3077.0], [2.8, 3185.0], [2.9, 3327.0], [3.0, 3493.0], [3.1, 3655.0], [3.2, 3846.0], [3.3, 4055.0], [3.4, 4279.0], [3.5, 4517.0], [3.6, 4757.0], [3.7, 4987.0], [3.8, 5250.0], [3.9, 5501.0], [4.0, 5751.0], [4.1, 6012.0], [4.2, 6291.0], [4.3, 6598.0], [4.4, 6888.0], [4.5, 7213.0], [4.6, 7568.0], [4.7, 7942.0], [4.8, 8372.0], [4.9, 8805.0], [5.0, 9266.0], [5.1, 9730.0], [5.2, 10207.0], [5.3, 10712.0], [5.4, 11219.0], [5.5, 11754.0], [5.6, 12285.0], [5.7, 12845.0], [5.8, 13418.0], [5.9, 14013.0], [6.0, 14599.0], [6.1, 15204.0], [6.2, 15817.0], [6.3, 16456.0], [6.4, 17088.0], [6.5, 17737.0], [6.6, 18372.0], [6.7, 19041.0], [6.8, 19700.0], [6.9, 20386.0], [7.0, 21146.0], [7.1, 22012.0], [7.2, 22882.0], [7.3, 23960.0], [7.4, 25444.0], [7.5, 27216.0], [7.6, 28493.0], [7.7, 29302.0], [7.8, 30126.0], [7.9, 30947.0], [8.0, 31791.0], [8.1, 32724.0], [8.2, 33690.0], [8.3, 34675.0], [8.4, 35701.0], [8.5, 36725.0], [8.6, 37812.0], [8.7, 38903.0], [8.8, 40010.0], [8.9, 41133.0], [9.0, 42252.0], [9.1, 43350.0], [9.2, 44446.0], [9.3, 45526.0], [9.4, 46619.0], [9.5, 47684.0], [9.6, 48747.0], [9.7, 49801.0], [9.8, 50834.0], [9.9, 51831.0], [10.0, 52806.0], [10.1, 53752.0], [10.2, 54662.0], [10.3, 55538.0], [10.4, 56391.0], [10.5, 57240.0], [10.6, 58064.0], [10.7, 58847.0], [10.8, 59619.0], [10.9, 60370.0], [11.0, 61088.0], [11.1, 61789.0], [11.2, 62468.0], [11.3, 63123.0], [11.4, 63771.0], [11.5, 64352.0], [11.6, 64962.0], [11.7, 65527.0], [11.8, 66100.0], [11.9, 66660.0], [12.0, 67228.0], [12.1, 67882.0], [12.2, 68729.0], [12.3, 69784.0], [12.4, 71038.0], [12.5, 72508.0], [12.6, 73935.0], [12.7, 75230.0], [12.8, 76427.0], [12.9, 77549.0], [13.0, 78597.0], [13.1, 79587.0], [13.2, 80514.0], [13.3, 81391.0], [13.4, 82212.0], [13.5, 82971.0], [13.6, 83643.0], [13.7, 84304.0], [13.8, 84951.0], [13.9, 85586.0], [14.0, 86202.0], [14.1, 86821.0], [14.2, 87429.0], [14.3, 88050.0], [14.4, 88660.0], [14.5, 89259.0], [14.6, 89893.0], [14.7, 90507.0], [14.8, 91123.0], [14.9, 91725.0], [15.0, 92332.0], [15.1, 92951.0], [15.2, 93544.0], [15.3, 94162.0], [15.4, 94770.0], [15.5, 95375.0], [15.6, 95965.0], [15.7, 96546.0], [15.8, 97157.0], [15.9, 97744.0], [16.0, 98310.0], [16.1, 98865.0], [16.2, 99409.0], [16.3, 99960.0], [16.4, 100493.0], [16.5, 101023.0], [16.6, 101545.0], [16.7, 102064.0], [16.8, 102581.0], [16.9, 103101.0], [17.0, 103620.0], [17.1, 104159.0], [17.2, 104677.0], [17.3, 105179.0], [17.4, 105677.0], [17.5, 106184.0], [17.6, 106693.0], [17.7, 107188.0], [17.8, 107691.0], [17.9, 108190.0], [18.0, 108687.0], [18.1, 109172.0], [18.2, 109683.0], [18.3, 110198.0], [18.4, 110683.0], [18.5, 111169.0], [18.6, 111644.0], [18.7, 112120.0], [18.8, 112583.0], [18.9, 113047.0], [19.0, 113509.0], [19.1, 113964.0], [19.2, 114425.0], [19.3, 114874.0], [19.4, 115336.0], [19.5, 115810.0], [19.6, 116269.0], [19.7, 116715.0], [19.8, 117142.0], [19.9, 117569.0], [20.0, 117979.0], [20.1, 118377.0], [20.2, 118759.0], [20.3, 119118.0], [20.4, 119468.0], [20.5, 119795.0], [20.6, 120131.0], [20.7, 120462.0], [20.8, 120767.0], [20.9, 121034.0], [21.0, 121288.0], [21.1, 121531.0], [21.2, 121754.0], [21.3, 121962.0], [21.4, 122161.0], [21.5, 122337.0], [21.6, 122508.0], [21.7, 122657.0], [21.8, 122815.0], [21.9, 122961.0], [22.0, 123097.0], [22.1, 123194.0], [22.2, 123274.0], [22.3, 123335.0], [22.4, 123387.0], [22.5, 123425.0], [22.6, 123464.0], [22.7, 123494.0], [22.8, 123533.0], [22.9, 123570.0], [23.0, 123619.0], [23.1, 123682.0], [23.2, 123744.0], [23.3, 123790.0], [23.4, 123823.0], [23.5, 123859.0], [23.6, 123897.0], [23.7, 123930.0], [23.8, 123962.0], [23.9, 123998.0], [24.0, 124030.0]];
+        var K_SS = 370285.7, G_T = 0.78;
+        var K_POW = 412146.9, GAMMA = 0.9143;
+        var V_K = 677881.3, V76 = 566830.0;
+        var DRAIN = 0.25, KNEE = 3.0;
+        var BASE = 3.52, SCALE = 1.2;
+        var GRATE = 3.52;
+        var rIn = document.getElementById('pv-rate');
+        var bIn = document.getElementById('pv-bay');
+        if (!rIn || !bIn) return;
+        function fillCurve(baseStage, budget) {
+          var stage = baseStage;
+          for (var i = 1; i < CURVE.length; i++) {
+            var s = CURVE[i][0], a = CURVE[i][1];
+            if (s <= baseStage) continue;
+            var step = a * (s - CURVE[i-1][0]);
+            if (budget < step) {
+              stage = a > 0 ? CURVE[i-1][0] + budget / a : s;
+              budget = 0; break;
+            }
+            budget -= step; stage = s;
+          }
+          if (budget > 0 && CURVE[CURVE.length-1][1] > 0)
+            stage += budget / CURVE[CURVE.length-1][1];
+          return stage;
+        }
+        function fmt(w) {
+          var inches = (w - GRATE) * 12;
+          return w.toFixed(2) + ' ft NAVD88 ('
+            + (inches >= 0 ? '+' : '') + inches.toFixed(1)
+            + '\u2033 vs SW grate)';
+        }
+        function recompute() {
+          var rate = parseFloat(rIn.value) || 0;
+          var bay = parseFloat(bIn.value) || 0;
+          var base = Math.max(bay, BASE);
+          var fracOpen = Math.min(1, Math.max(0,
+            (BASE - bay) / (BASE - KNEE)));
+          var drain = DRAIN * fracOpen;
+          var net = rate - drain;
+          document.getElementById('pv-drain').textContent =
+            drain.toFixed(2);
+          document.getElementById('pv-drainnote').textContent =
+            fracOpen >= 1 ? '(outfall clear \u2014 full capacity)'
+            : fracOpen <= 0 ? '(bay at the grate tops \u2014 outfall blocked)'
+            : '(bay is backwatering the outfall \u2014 '
+              + Math.round(fracOpen * 100) + '% capacity)';
+          var netEl = document.getElementById('pv-net');
+          if (net <= 0) {
+            netEl.textContent = '0 (drains keep up)';
+            document.getElementById('pv-volpow').textContent = '0';
+            document.getElementById('pv-voltanh').textContent = '0';
+            document.getElementById('pv-outpow').textContent = fmt(base);
+            document.getElementById('pv-outtanh').textContent = fmt(base);
+            document.getElementById('pv-spreadnote').textContent =
+              '\u2014 no rain lift; water = the tide-set base.';
+            return;
+          }
+          netEl.textContent = net.toFixed(2);
+          var vPow = K_SS * Math.pow(net, G_T);   // v0.10 tank steady state
+          var vTanh = V_K * Math.tanh(net / SCALE);
+          document.getElementById('pv-volpow').textContent =
+            (vPow / V76).toFixed(2);
+          document.getElementById('pv-voltanh').textContent =
+            (vTanh / V76).toFixed(2);
+          var baseStage = Math.max(0, (base - BASE) * 12);
+          var wPow = BASE + fillCurve(baseStage, vPow) / 12;
+          var wTanh = BASE + fillCurve(baseStage, vTanh) / 12;
+          document.getElementById('pv-outpow').textContent = fmt(wPow);
+          document.getElementById('pv-outtanh').textContent = fmt(wTanh);
+          var spread = Math.abs(wPow - wTanh) * 12;
+          document.getElementById('pv-spreadnote').textContent =
+            spread < 0.5
+              ? '\u2014 the two models agree here (calibrated range).'
+              : '\u2014 models differ by ' + spread.toFixed(1)
+                + '\u2033: extrapolation territory; the spread is the '
+                + 'honest uncertainty.';
+        }
+        rIn.addEventListener('input', recompute);
+        bIn.addEventListener('input', recompute);
+        document.getElementById('pv-reset')
+          .addEventListener('click', function() {
+            rIn.value = rIn.getAttribute('data-default');
+            bIn.value = bIn.getAttribute('data-default');
+            recompute();
+          });
+        recompute();
+      })();
+    </script>
+
+    <script>
+      (function() {
+        var L = [{"key": "grate_SW", "label": "SW distal grate across Bay", "elev": 3.52, "shed": 0.0}, {"key": "grate_SE", "label": "SE proximal grate across Bay", "elev": 3.6, "shed": 0.0}, {"key": "corner_SE", "label": "SE corner across Bay", "elev": 3.64, "shed": 0.0}, {"key": "corner_SW", "label": "SW corner across Bay", "elev": 3.64, "shed": 0.0}, {"key": "grate_bay_ave_upstream", "label": "Bay Ave upstream grate", "elev": 3.64, "shed": 0.0}, {"key": "gutter_walkway", "label": "Gutter / curb edge at walkway", "elev": 3.78, "shed": 0.0}, {"key": "grate_NE", "label": "Storm grate at user's corner (NE)", "elev": 3.8, "shed": 0.0}, {"key": "grate_NW", "label": "NW corner grate across Central", "elev": 3.8, "shed": 0.0}, {"key": "corner_NE", "label": "NE corner pavement", "elev": 3.91, "shed": 0.0}, {"key": "corner_NW", "label": "NW corner pavement", "elev": 3.91, "shed": 0.0}, {"key": "curb", "label": "Curb TOP at walkway", "elev": 4.16, "shed": 0.0}, {"key": "sidewalk_under_walkway_lawn_step", "label": "Sidewalk under walkway lawn-step", "elev": 4.33, "shed": 0.0}, {"key": "road_middle", "label": "Bay Ave road middle", "elev": 4.36, "shed": 0.0}, {"key": "intersection_highpoint", "label": "Intersection high point", "elev": 4.54, "shed": 0.0}, {"key": "lawn_step", "label": "Lawn / walkway step", "elev": 4.66, "shed": 0.0}, {"key": "porch_step_base", "label": "Bottom of porch steps", "elev": 4.68, "shed": 0.0}, {"key": "porch_step1_top", "label": "Top of first porch step", "elev": 5.41, "shed": 0.0}, {"key": "porch_deck", "label": "Porch deck (platform)", "elev": 8.08, "shed": 0.0}];
+        var ids = ['eq-shpeak','eq-enh','eq-datum','eq-rain'];
+        var sel = document.getElementById('eq-landmark');
+        if (!sel) return;
+        for (var i = 0; i < L.length; i++) {
+          var o = document.createElement('option');
+          o.value = String(i);
+          o.textContent = L[i].label;
+          sel.appendChild(o);
+        }
+        // Default to the SW grate — the project's reference point
+        // (all relative depths are quoted vs the SW grate; it is the
+        // first landmark to wet). Regime is still computed at the
+        // curb below, where the thresholds are defined.
+        for (var i = 0; i < L.length; i++) {
+          if (L[i].key === 'grate_SW') { sel.value = String(i); break; }
+        }
+        var curbElev = 4.16;
+        for (var i = 0; i < L.length; i++) {
+          if (L[i].key === 'curb') { curbElev = L[i].elev; }
+        }
+        function num(id) {
+          return parseFloat(document.getElementById(id).value) || 0;
+        }
+        function recompute() {
+          var shpeak = num('eq-shpeak');
+          var enh    = num('eq-enh');
+          var datum  = num('eq-datum');
+          var rate   = num('eq-rain');
+          var water  = shpeak + enh + datum;
+          var rainAdd = (rate > 0.1) ? 8.0 * Math.tanh(rate) : 0.0;
+          var lm = L[parseInt(sel.value, 10) || 0];
+          var rainHere = Math.max(0, rainAdd - lm.shed);
+          var depth = Math.max(0, water - lm.elev) * 12 + rainHere;
+          document.getElementById('eq-water').textContent =
+            water.toFixed(2);
+          document.getElementById('eq-rainadd').textContent =
+            rainAdd.toFixed(1);
+          document.getElementById('eq-rainnote').textContent =
+            (rate > 0.1)
+              ? (lm.shed > 0
+                  ? lm.label + ' sheds ' + lm.shed.toFixed(0)
+                    + '\u2033 \u2192 +' + rainHere.toFixed(1) + '\u2033 here'
+                  : 'no shedding here')
+              : 'below the 0.1 in/hr threshold';
+          document.getElementById('eq-lmname').textContent = lm.label;
+          document.getElementById('eq-depth').textContent =
+            depth.toFixed(1);
+          // Regime thresholds are DEFINED at the curb top — compute
+          // there regardless of which landmark the depth readout uses
+          // (fix 2026-07-07: the regime previously followed the
+          // selected landmark, mislabeling sub-curb depths).
+          var curbDepth = Math.max(0, water - curbElev) * 12 + rainHere;
+          var regime = '';
+          if (curbDepth >= 8)      regime = 'severe';
+          else if (curbDepth >= 4) regime = 'moderate';
+          else if (curbDepth > 0)  regime = 'light';
+          else                     regime = 'dry';
+          var rEl = document.getElementById('eq-regime');
+          // 'dry' is the internal key; display as 'no flooding'
+          rEl.textContent = '(regime at curb: '
+            + (regime === 'dry' ? 'no flooding' : regime) + ')';
+          rEl.className = 'eqn-regime regime-' + regime;
+        }
+        ids.forEach(function(id) {
+          document.getElementById(id)
+            .addEventListener('input', recompute);
+        });
+        sel.addEventListener('change', recompute);
+        document.getElementById('eq-reset')
+          .addEventListener('click', function() {
+            ids.forEach(function(id) {
+              var el = document.getElementById(id);
+              el.value = el.getAttribute('data-default');
+            });
+            for (var i = 0; i < L.length; i++) {
+              if (L[i].key === 'grate_SW') { sel.value = String(i); break; }
+            }
+            recompute();
+          });
+        recompute();
+      })();
+    </script>
+  </section>
+
+  <div id="spotcheck"></div>
+  <section class="spot-check"><h2>Spot-check (help calibrate the model)</h2><p>Suggested observation times today: <b>Tue 1:47 AM (lower high), Tue 2:24 PM (peak), Wed 2:35 AM (lower high), Wed 3:11 PM (lower high), Thu 3:26 AM (lower high), Thu 4:01 PM (lower high)</b>.</p><p class="spot-check-callout">★ PLUVIAL-ONLY OPPORTUNITY: today has notable rain (0.31" forecast over next 24 h) but no tide is expected to reach even the lowest landmark. If you see any water on the street during the heaviest rain hour, that's a rare data point for whether 342 Bay can flood from rain alone (HANDOFF item 14).</p><p>Take a peek around one of those times — even &ldquo;no water at all&rdquo; is useful. Use the landmark table above (lowest to highest) to describe what you saw. Report back with: time you looked, highest landmark with water (or &ldquo;no water&rdquo;), and rough depth above it. Goes into <code>data/labeled_observations.csv</code>.</p></section>
+  <div id="accuracy"></div>
+  
+<section class="accuracy">
+  <h2>Model accuracy — predicted vs observed peaks</h2>
+  <p>Last 30 forecasts: mean error <b>+0.40 ft</b>, mean |error| <b>0.50 ft</b>, worst |error| 1.28 ft. Total scored: 60.</p>
+  <div class="outcome-block"><h3 style="margin:12px 0 4px 0;font-size:15px">Outcome-depth accuracy (per-observation)</h3><p style="font-size:13px;margin:4px 0">N = 21 labeled observations. Mean error <b>+5.3&Prime;</b> (positive = model over-predicts), mean |error| <b>5.3&Prime;</b>, worst |error| 7.2&Prime;.</p><table class="outcome-table"><thead><tr><th>Time</th><th>Landmark</th><th>Observed</th><th>Predicted</th><th>Error</th></tr></thead><tbody><tr><td>2026-05-18T21:45</td><td>grate_SE</td><td>-0.6&Prime;</td><td>+5.9&Prime;</td><td class="err-over">+6.5&Prime;</td></tr><tr><td>2026-05-18T21:56:26</td><td>grate_SE</td><td>+0.5&Prime;</td><td>+6.7&Prime;</td><td class="err-over">+6.2&Prime;</td></tr><tr><td>2026-05-18T22:04:51</td><td>gutter_walkway</td><td>+0.0&Prime;</td><td>+4.5&Prime;</td><td class="err-over">+4.5&Prime;</td></tr><tr><td>2026-05-18T22:06</td><td>grate_NE</td><td>-2.2&Prime;</td><td>+2.9&Prime;</td><td class="err-over">+5.2&Prime;</td></tr><tr><td>2026-05-18T22:06</td><td>grate_SE</td><td>+1.0&Prime;</td><td>+6.5&Prime;</td><td class="err-over">+5.5&Prime;</td></tr><tr><td>2026-05-18T22:15</td><td>grate_NE</td><td>-1.2&Prime;</td><td>+3.0&Prime;</td><td class="err-over">+4.2&Prime;</td></tr><tr><td>2026-05-18T22:17:02</td><td>grate_NE</td><td>-1.2&Prime;</td><td>+2.7&Prime;</td><td class="err-over">+3.9&Prime;</td></tr><tr><td>2026-05-18T22:18:36</td><td>grate_NW</td><td>-1.6&Prime;</td><td>+2.7&Prime;</td><td class="err-over">+4.3&Prime;</td></tr><tr><td>2026-05-18T22:28:37</td><td>pocket_SE_retention</td><td>+1.0&Prime;</td><td>+5.9&Prime;</td><td class="err-over">+4.9&Prime;</td></tr><tr><td>2026-05-31T20:53</td><td>grate_NE</td><td>-7.2&Prime;</td><td>+0.0&Prime;</td><td class="err-over">+7.2&Prime;</td></tr><tr><td>2026-05-31T20:54</td><td>grate_SE</td><td>-5.0&Prime;</td><td>+1.6&Prime;</td><td class="err-over">+6.6&Prime;</td></tr><tr><td>2026-06-14T19:43</td><td>grate_NE</td><td>+4.0&Prime;</td><td>+9.4&Prime;</td><td class="err-over">+5.4&Prime;</td></tr><tr><td>2026-06-14T19:45</td><td>grate_SE</td><td>+6.8&Prime;</td><td>+13.2&Prime;</td><td class="err-over">+6.4&Prime;</td></tr><tr><td>2026-06-14T19:55</td><td>grate_NE</td><td>+4.5&Prime;</td><td>+9.9&Prime;</td><td class="err-over">+5.4&Prime;</td></tr><tr><td>2026-06-14T19:58</td><td>grate_SE</td><td>+7.0&Prime;</td><td>+13.5&Prime;</td><td class="err-over">+6.5&Prime;</td></tr><tr><td>2026-06-14T20:07</td><td>grate_NE</td><td>+5.0&Prime;</td><td>+9.9&Prime;</td><td class="err-over">+4.9&Prime;</td></tr><tr><td>2026-06-14T20:08</td><td>grate_SE</td><td>+7.8&Prime;</td><td>+13.7&Prime;</td><td class="err-over">+5.9&Prime;</td></tr><tr><td>2026-06-14T20:14</td><td>grate_NE</td><td>+5.0&Prime;</td><td>+9.9&Prime;</td><td class="err-over">+4.9&Prime;</td></tr><tr><td>2026-06-14T20:20</td><td>grate_SE</td><td>+7.5&Prime;</td><td>+13.3&Prime;</td><td class="err-over">+5.8&Prime;</td></tr><tr><td>2026-06-14T20:25</td><td>grate_NE</td><td>+4.8&Prime;</td><td>+9.2&Prime;</td><td class="err-over">+4.4&Prime;</td></tr><tr><td>2026-07-09T14:28</td><td>grate_SW</td><td>-9.2&Prime;</td><td>-7.6&Prime;</td><td class="err-over">+1.7&Prime;</td></tr></tbody></table><p class="note">Compares each user-logged observation in <code>data/labeled_observations.csv</code> to the model's predicted depth at the same landmark at the same time, <b>as logged at observation time</b> — an append-only record of the model version that was live that day, kept unrevised on purpose. The large early over-predictions (2026-05-18, offshore-wind event) are v0.7-era rows that motivated the v0.8 wind adjustment; they are history, not current-model skill. Sparse but each row is a real observation with real depth.</p></div>
+  <div class="leadtime-block"><h3 style="margin:12px 0 4px 0;font-size:15px">Accuracy by lead time (predictions log)</h3><p style="font-size:13px;margin:4px 0">1807 predictions across 27 past tides. Each row groups predictions by how many hours BEFORE the tide they were made — closer to peak should mean smaller error.</p><table class="outcome-table"><thead><tr><th>Lead time</th><th>N predictions</th><th>Mean error (signed)</th><th>Mean |error|</th></tr></thead><tbody><tr><td>3-6 h</td><td>46</td><td class="err-under">-0.09 ft</td><td>0.20 ft</td></tr><tr><td>6-12 h</td><td>160</td><td class="err-under">-0.06 ft</td><td>0.23 ft</td></tr><tr><td>12-24 h</td><td>320</td><td class="err-over">+0.02 ft</td><td>0.25 ft</td></tr><tr><td>24-48 h</td><td>637</td><td class="err-over">+0.02 ft</td><td>0.30 ft</td></tr><tr><td>48-120 h</td><td>644</td><td class="err-over">+0.02 ft</td><td>0.33 ft</td></tr></tbody></table><p class="note">From <code>data/predictions_log.csv</code> joined to NOAA observed peaks (cached at <code>data/observed_peaks_cache.csv</code>). Populated over time as hourly predictions accumulate.</p></div>
+  <div class="classifier-block"><h3 style="margin:12px 0 4px 0;font-size:15px">Flood / no-flood (binary, SH ≥ 6.34 ft = lowest grate)</h3><table class="confusion-table"><tbody><tr><th></th><th>Actual flood</th><th>Actual dry</th></tr><tr><th>Predicted flood</th><td class="tp">4 TP</td><td class="fp">21 FP</td></tr><tr><th>Predicted dry</th><td class="fn">0 FN</td><td class="tn">35 TN</td></tr></tbody></table><p style="font-size:13px;margin:6px 0">Overall accuracy: <b>65.0%</b> &middot; False-positive rate: 37.5% &middot; False-negative rate: 0.0% &middot; N = 60</p></div>
+  <canvas id="accuracy-chart" width="800" height="380"
+          style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <script>
+    (function() {
+      var rows = [{"date": "2026-05-18", "predicted": 6.193, "observed": 6.367, "error": -0.17400000000000038, "regime": "street"}, {"date": "2026-05-19", "predicted": 5.927, "observed": 5.488, "error": 0.43899999999999917, "regime": "dry"}, {"date": "2026-05-20", "predicted": 5.622, "observed": 5.409, "error": 0.21300000000000008, "regime": "dry"}, {"date": "2026-05-21", "predicted": 5.329, "observed": 4.72, "error": 0.609, "regime": "dry"}, {"date": "2026-05-22", "predicted": 5.059, "observed": 5.357, "error": -0.29800000000000004, "regime": "dry"}, {"date": "2026-05-23", "predicted": 5.1705, "observed": 4.195, "error": 0.9754999999999994, "regime": "dry"}, {"date": "2026-05-24", "predicted": 6.0264999999999995, "observed": 4.779, "error": 1.2474999999999996, "regime": "street"}, {"date": "2026-05-25", "predicted": 6.075800000000001, "observed": 5.199, "error": 0.8768000000000011, "regime": "street"}, {"date": "2026-05-26", "predicted": 5.8389999999999995, "observed": 5.531, "error": 0.30799999999999983, "regime": "dry"}, {"date": "2026-05-27", "predicted": 5.8624, "observed": 5.209, "error": 0.6534000000000004, "regime": "dry"}, {"date": "2026-05-28", "predicted": 6.222799999999999, "observed": 5.403, "error": 0.8197999999999999, "regime": "street"}, {"date": "2026-05-29", "predicted": 6.1728, "observed": 5.403, "error": 0.7698, "regime": "street"}, {"date": "2026-05-30", "predicted": 6.0329999999999995, "observed": 6.538, "error": -0.5050000000000008, "regime": "street"}, {"date": "2026-05-31", "predicted": 6.4159999999999995, "observed": 6.17, "error": 0.24599999999999955, "regime": "street"}, {"date": "2026-06-01", "predicted": 5.981999999999999, "observed": 6.006, "error": -0.02400000000000091, "regime": "dry"}, {"date": "2026-06-02", "predicted": 5.607, "observed": 5.517, "error": 0.08999999999999986, "regime": "dry"}, {"date": "2026-06-03", "predicted": 5.3924, "observed": 4.93, "error": 0.4624000000000006, "regime": "dry"}, {"date": "2026-06-04", "predicted": 5.2692000000000005, "observed": 4.851, "error": 0.41820000000000057, "regime": "dry"}, {"date": "2026-06-05", "predicted": 5.0517, "observed": 5.029, "error": 0.022700000000000387, "regime": "dry"}, {"date": "2026-06-06", "predicted": 5.0532, "observed": 4.53, "error": 0.5232000000000001, "regime": "dry"}, {"date": "2026-06-07", "predicted": 5.551, "observed": 4.638, "error": 0.9130000000000003, "regime": "dry"}, {"date": "2026-06-08", "predicted": 6.092, "observed": 5.209, "error": 0.883, "regime": "street"}, {"date": "2026-06-09", "predicted": 6.004200000000001, "observed": 6.151, "error": -0.14679999999999893, "regime": "dry"}, {"date": "2026-06-10", "predicted": 6.193, "observed": 6.154, "error": 0.0389999999999997, "regime": "street"}, {"date": "2026-06-11", "predicted": 7.050199999999999, "observed": 6.055, "error": 0.9951999999999996, "regime": "moderate"}, {"date": "2026-06-12", "predicted": 7.203600000000001, "observed": 6.242, "error": 0.9616000000000007, "regime": "moderate"}, {"date": "2026-06-13", "predicted": 7.120000000000001, "observed": 6.242, "error": 0.878000000000001, "regime": "moderate"}, {"date": "2026-06-14", "predicted": 7.313000000000001, "observed": 7.161, "error": 0.15200000000000102, "regime": "severe"}, {"date": "2026-06-17", "predicted": 6.6129, "observed": 5.865, "error": 0.7478999999999996, "regime": "street"}, {"date": "2026-06-18", "predicted": 6.48, "observed": 6.144, "error": 0.3360000000000003, "regime": "street"}, {"date": "2026-06-19", "predicted": 5.8418, "observed": 5.271, "error": 0.5708000000000002, "regime": "dry"}, {"date": "2026-06-20", "predicted": 5.418, "observed": 5.202, "error": 0.2160000000000002, "regime": "dry"}, {"date": "2026-06-21", "predicted": 5.423, "observed": 5.606, "error": -0.18299999999999983, "regime": "dry"}, {"date": "2026-06-23", "predicted": 5.776399999999999, "observed": 5.199, "error": 0.577399999999999, "regime": "dry"}, {"date": "2026-06-24", "predicted": 5.856399999999999, "observed": 4.94, "error": 0.9163999999999985, "regime": "dry"}, {"date": "2026-06-25", "predicted": 5.607, "observed": 5.107, "error": 0.5, "regime": "dry"}, {"date": "2026-06-26", "predicted": 5.753799999999999, "observed": 5.573, "error": 0.18079999999999874, "regime": "dry"}, {"date": "2026-06-27", "predicted": 5.9072, "observed": 5.531, "error": 0.37619999999999987, "regime": "dry"}, {"date": "2026-06-28", "predicted": 5.9399999999999995, "observed": 5.531, "error": 0.4089999999999998, "regime": "dry"}, {"date": "2026-06-29", "predicted": 5.965999999999999, "observed": 5.662, "error": 0.3039999999999994, "regime": "dry"}, {"date": "2026-06-30", "predicted": 5.8367, "observed": 5.803, "error": 0.03370000000000051, "regime": "dry"}, {"date": "2026-07-01", "predicted": 5.4879999999999995, "observed": 5.465, "error": 0.022999999999999687, "regime": "dry"}, {"date": "2026-07-02", "predicted": 5.419, "observed": 4.95, "error": 0.4689999999999994, "regime": "dry"}, {"date": "2026-07-03", "predicted": 5.1850000000000005, "observed": 4.861, "error": 0.32400000000000073, "regime": "dry"}, {"date": "2026-07-04", "predicted": 5.2418, "observed": 5.734, "error": -0.4922000000000004, "regime": "dry"}, {"date": "2026-07-05", "predicted": 5.9191, "observed": 5.248, "error": 0.6711, "regime": "dry"}, {"date": "2026-07-06", "predicted": 6.5998, "observed": 5.642, "error": 0.9577999999999998, "regime": "street"}, {"date": "2026-07-07", "predicted": 6.3641, "observed": 5.642, "error": 0.7220999999999993, "regime": "street"}, {"date": "2026-07-08", "predicted": 6.656499999999999, "observed": 5.882, "error": 0.7744999999999997, "regime": "street"}, {"date": "2026-07-09", "predicted": 6.469199999999999, "observed": 6.19, "error": 0.27919999999999856, "regime": "street"}, {"date": "2026-07-10", "predicted": 6.981, "observed": 6.026, "error": 0.9550000000000001, "regime": "light"}, {"date": "2026-07-11", "predicted": 7.2258, "observed": 5.98, "error": 1.2457999999999991, "regime": "light"}, {"date": "2026-07-12", "predicted": 7.1505, "observed": 5.868, "error": 1.2824999999999998, "regime": "light"}, {"date": "2026-07-13", "predicted": 6.708, "observed": 5.868, "error": 0.8399999999999999, "regime": "street"}, {"date": "2026-07-14", "predicted": 6.5024999999999995, "observed": 6.413, "error": 0.08949999999999925, "regime": "street"}, {"date": "2026-07-15", "predicted": 6.126, "observed": 6.16, "error": -0.03399999999999981, "regime": "dry"}, {"date": "2026-07-16", "predicted": 6.3654, "observed": 5.672, "error": 0.6934000000000005, "regime": "street"}, {"date": "2026-07-17", "predicted": 5.9765, "observed": 6.046, "error": -0.06950000000000056, "regime": "dry"}, {"date": "2026-07-18", "predicted": 5.284, "observed": 6.023, "error": -0.7389999999999999, "regime": "dry"}, {"date": "2026-07-19", "predicted": 5.629, "observed": 5.537, "error": 0.09199999999999964, "regime": "dry"}];
+      var lo = 4.10;
+      var hi = 7.41;
+      var data = rows.map(function(r) {
+        return { x: r.predicted, y: r.observed, date: r.date,
+                  error: r.error, regime: r.regime };
+      });
+      var ctx = document.getElementById('accuracy-chart').getContext('2d');
+      new Chart(ctx, {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: 'Daily forecast vs actual',
+            data: data,
+            backgroundColor: 'rgba(31, 111, 235, 0.55)',
+            borderColor: 'rgba(31, 111, 235, 0.85)',
+            pointRadius: 5,
+            pointHoverRadius: 7,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            annotation: {
+              annotations: {
+                yEqualsX: {
+                  type: 'line',
+                  xMin: lo, xMax: hi, yMin: lo, yMax: hi,
+                  borderColor: 'rgba(150,150,150,0.7)',
+                  borderWidth: 1, borderDash: [6, 4],
+                  label: { display: true, content: 'y = x (perfect)',
+                            position: 'end',
+                            backgroundColor: 'rgba(255,255,255,0.85)',
+                            color: '#666',
+                            font: { size: 11 } }
+                }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  var r = ctx.raw;
+                  return [
+                    r.date,
+                    'Predicted: ' + r.x.toFixed(2) + ' ft MLLW',
+                    'Observed:  ' + r.y.toFixed(2) + ' ft MLLW',
+                    'Error:     ' + r.error.toFixed(2) + ' ft '
+                      + (r.error > 0 ? '(over-pred)' : '(under-pred)'),
+                  ];
+                }
+              }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            x: { title: { display: true,
+                            text: 'Predicted SH peak (ft MLLW)' },
+                  suggestedMin: lo, suggestedMax: hi,
+                  grid: { color: 'rgba(0,0,0,0.05)' } },
+            y: { title: { display: true,
+                            text: 'Observed SH peak (ft MLLW)' },
+                  suggestedMin: lo, suggestedMax: hi,
+                  grid: { color: 'rgba(0,0,0,0.05)' } }
+          }
+        }
+      });
+    })();
+  </script>
+  <p class="note">Positive mean error = model over-predicts on average. Each point is one archived daily forecast (since the JSON archive started). x = predicted Sandy Hook peak, y = actual NOAA observed peak. The dashed diagonal is perfect prediction (y=x); points above the line = model under-predicted, below = over-predicted. Raw data: <code>data/forecast_accuracy.csv</code>.</p><p class="note">Scope: this scores the <b>tide-keyed input</b> — each day's predicted vs observed peak at the Sandy Hook gauge, as the forecast actually ran that day (an append-only record; rows are never recomputed under newer models). It cannot see rain-driven street floods (the gauge is 4 miles away and tide-only): pluvial skill is tracked separately against the spot-check log in <code>data/labeled_observations.csv</code>, currently four measured rain events, all fit by the v0.10 tank model — one parameter set, including two full measured hydrographs.</p>
+</section>
+
+  <div id="glossary"></div>
+
+  <section class="reference">
+    <h2>Regime glossary</h2>
+    <p>The label in the subject line (NO FLOODING / STREET / LIGHT / MODERATE / SEVERE) summarises severity based on water depth at the curb.</p>
+    <ul>
+      <li><b>no flooding</b> — no visible flood water at any landmark</li>
+      <li><b>street</b> — water on the street at sub-curb landmarks; curb still clear</li>
+      <li><b>light</b> — water at curb (0–4 inches)</li>
+      <li><b>moderate</b> — water at curb (4–8 inches)</li>
+      <li><b>severe</b> — water past lawn step / bulkhead overtopping territory</li>
+      <li><b>cold lockout</b> — cold conditions met but rule no longer actively applied (see retrospective)</li>
+    </ul>
+  </section>
+
+
+
+  <footer>
+    <p><a href="index.html">&larr; back to the live forecast</a></p>
+  </footer>
+</main>
+</body></html>
