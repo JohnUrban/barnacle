@@ -8036,6 +8036,8 @@ def render_html_page(forecast):
     }})();
   </script>
 
+{_render_water_series_section(forecast)}
+
   <section class="regime regime-{today_class}" id="today-block">
     <div class="regime-kicker">TODAY &mdash; OUTLOOK &middot; {_kick_today}</div>
     <div class="regime-label">{today_headline}</div>
@@ -8051,7 +8053,6 @@ def render_html_page(forecast):
 
   {_render_rain_outlook_html(forecast)}
 
-{_render_water_series_section(forecast)}
 {_render_flood_windows_html(forecast)}
 
   <section class="tides">
@@ -8234,7 +8235,90 @@ def render_html_page(forecast):
 """
 
 
-def send_email(subject, text_body, html_body):
+def build_series_chart_png(forecast):
+    """Compact PNG of the near-term water chart for the TOP of emails
+    (user 2026-07-20: "the widget gives me everything in a glance...
+    a snapshot of that graph should be the top of emails"). Mirrors
+    the chart grammar: blue tide, amber tank hydrograph, gray
+    observed past, navy burst band, landmark dashed lines, now-line.
+    Returns PNG bytes or None (matplotlib missing / no series)."""
+    series = forecast.get("water_series") or []
+    if len(series) < 4:
+        return None
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from io import BytesIO
+    except Exception:
+        return None
+    def to_in(v):
+        return None if v is None else (v - GRATE_SW) * 12
+    t = list(range(len(series)))
+    tide = [to_in(p.get("tide_navd88")) for p in series]
+    pluv = [to_in(p.get("pluvial_navd88")) for p in series]
+    obs = [to_in(p.get("observed_navd88")) for p in series]
+    pr = forecast.get("pluvial_risk") or {}
+    pots = [v for v in (pr.get("potential_low_tide_navd88"),
+                        pr.get("potential_low_tide_navd88_tanh"))
+            if v is not None]
+    pot = to_in(max(pots)) if pots else None
+    fig, ax = plt.subplots(figsize=(7.2, 2.9), dpi=110)
+    for y, c, lbl in ((0, "#222222", "SW grate"),
+                      (3.1, "#2f8f5f", "gutter"),
+                      (7.7, "#c0392b", "curb"),
+                      (13.7, "#7c4dbc", "lawn step")):
+        ax.axhline(y, color=c, lw=0.9,
+                   ls="-" if y == 0 else (0, (5, 4)), alpha=0.65)
+        ax.text(len(series) - 0.5, y + 0.25, lbl, fontsize=6.5,
+                color=c, ha="right")
+    if pot is not None:
+        flags = [bool(p.get("burst_risk")) for p in series]
+        if not any(flags):
+            flags = [True] * len(series)
+        top = [max(pot, tv) if (f and tv is not None) else None
+               for f, tv in zip(flags, tide)]
+        bot = [tv if f else None for f, tv in zip(flags, tide)]
+        ax.fill_between(t, [b if b is not None else 0 for b in bot],
+                        [tp if tp is not None else 0 for tp in top],
+                        where=[tp is not None for tp in top],
+                        color="#0b3d6b", alpha=0.28, linewidth=0)
+    ax.plot(t, tide, color="#1a5fa8", lw=1.8)
+    if any(v is not None for v in pluv):
+        ax.plot(t, pluv, color="#d97706", lw=1.8)
+    if any(v is not None for v in obs):
+        ax.plot(t, obs, color="#555555", lw=2.2)
+        now_i = max(i for i, v in enumerate(obs) if v is not None)
+        ax.axvline(now_i, color="#888888", lw=0.8, ls=":")
+    ticks = [i for i, p in enumerate(series)
+             if p["time"][-5:] in ("00:00", "06:00", "12:00", "18:00")]
+    ax.set_xticks(ticks)
+    labs = []
+    for i in ticks:
+        hh = series[i]["time"][-5:]
+        if hh == "00:00":
+            try:
+                labs.append(dt.datetime.strptime(
+                    series[i]["time"][:10], "%Y-%m-%d").strftime("%a"))
+            except Exception:
+                labs.append("12A")
+        else:
+            labs.append({"06:00": "6A", "12:00": "12P",
+                         "18:00": "6P"}[hh])
+    ax.set_xticklabels(labs, fontsize=7)
+    ax.tick_params(axis="y", labelsize=7)
+    ax.set_ylabel('in vs SW grate', fontsize=7.5)
+    ax.grid(alpha=0.15)
+    ax.set_title("Water at 342 Bay — observed (gray) → forecast",
+                 fontsize=8.5)
+    fig.tight_layout(pad=0.6)
+    buf = BytesIO()
+    fig.savefig(buf, format="png")
+    plt.close(fig)
+    return buf.getvalue()
+
+
+def send_email(subject, text_body, html_body, inline_png=None):
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = os.environ["SMTP_FROM"]
@@ -8251,7 +8335,16 @@ def send_email(subject, text_body, html_body):
 
     msg.set_content(text_body)
     if html_body:
+        if inline_png:
+            html_body = html_body.replace(
+                "<body>",
+                '<body><img src="cid:chart" alt="water chart" '
+                'style="width:100%;max-width:680px;display:block;'
+                'margin:0 auto 10px auto">', 1)
         msg.add_alternative(html_body, subtype="html")
+        if inline_png:
+            msg.get_payload()[-1].add_related(
+                inline_png, "image", "png", cid="<chart>")
 
     host = os.environ["SMTP_HOST"]
     port = int(os.environ.get("SMTP_PORT", 465))
@@ -8523,8 +8616,14 @@ def main():
         raise SystemExit(2)
 
     subject = "[ALERT] " + subject
-    send_email(subject, text, html)
-    print(f"Sent alert email ({reason}): {subject}")
+    _png = None
+    try:
+        _png = build_series_chart_png(forecast)
+    except Exception as e:
+        print(f"WARNING: chart png failed: {e}")
+    send_email(subject, text, html, inline_png=_png)
+    print(f"Sent alert email ({reason}): {subject}"
+          + (" [chart attached]" if _png else " [no chart]"))
 
     # PUSH NOTIFICATIONS via ntfy (2026-07-17): carrier email-to-SMS
     # gateways are dead or dying (AT&T shut June 2025, T-Mobile late

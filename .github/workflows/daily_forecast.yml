@@ -38,6 +38,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install chart dependency
+        run: pip install --quiet matplotlib
+
       - name: Self-heal inherited corruption (markers in data/docs)
         run: python forecast/heal_tree.py
 
