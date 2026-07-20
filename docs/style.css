@@ -853,3 +853,19 @@ footer a { color: #555; }
 .time-slider label { font-weight: 600; }
 .burst-toggle-row { font-size: 13px; color: #444; }
 .peaks-toggle-wrap { margin-top: 8px; }
+
+/* Time-scrubber layout stability (2026-07-20): the value label's
+   changing text length was re-wrapping the flex row mid-drag - the
+   track resized under the finger, remapping the touch position and
+   flinging the thumb ("spasms"). Track owns a full row at all
+   viewports; the label line reserves its height and cannot resize
+   the track. */
+.time-slider { display: block !important; }
+.time-slider label { display: block; font-weight: 600; }
+.time-slider input[type="range"] {
+    display: block; width: 100%; margin: 6px 0 2px 0;
+}
+#time-slider-value {
+    display: block; min-height: 1.4em; font-variant-numeric: tabular-nums;
+}
+.burst-toggle-row { display: block !important; }
