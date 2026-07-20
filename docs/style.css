@@ -827,3 +827,21 @@ footer a { color: #555; }
     color: rgba(0,0,0,0.45);
     margin-bottom: 2px;
 }
+
+/* Day cards (2026-07-20 reorganization): the 72-h window as three
+   calendar-day cards; TODAY heaviest, WORST ribbon on the max day. */
+.day-cards { display: grid; gap: 10px; margin: 14px 0 22px 0; }
+.day-card { margin: 0; padding: 12px 18px; }
+.day-card .regime-label { font-size: 22px; }
+.day-card-today .regime-label { font-size: 28px; }
+.dc-line { margin: 2px 0; font-size: 14px; }
+.dc-past { color: #999; font-size: 12px; }
+.dc-sofar { margin-top: 6px; border-top: 1px solid rgba(0,0,0,0.12);
+            padding-top: 6px; }
+.dc-worst { background: #b91c1c; color: #fff; border-radius: 4px;
+            padding: 1px 7px; font-size: 10px; letter-spacing: 0.5px;
+            margin-left: 6px; }
+@media (min-width: 600px) {
+  .day-cards { grid-template-columns: 1fr 1fr; }
+  .day-card-today { grid-column: 1 / -1; }
+}

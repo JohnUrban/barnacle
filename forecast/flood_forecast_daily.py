@@ -2377,7 +2377,9 @@ def _render_summary_text(forecast):
     """One-line plain-language summary, plus confidence + unusual-forecast
     note (when applicable) on their own lines."""
     out = []
-    summary = forecast.get("plain_language_summary") or ""
+    # day cards (2026-07-20) replaced the per-tide sentence list;
+    # this block now carries the outage notice + confidence + unusual
+    summary = ""
     if summary:
         out.append(summary)
     level = forecast.get("confidence_level")
@@ -2392,6 +2394,135 @@ def _render_summary_text(forecast):
     if unusual:
         out.append(unusual)
     return out
+
+
+SEVERITY_RANK = {"dry": 0, "cold_lockout": 0, "street": 1,
+                 "light": 2, "moderate": 3, "severe": 4}
+
+
+def _render_day_cards_html(forecast):
+    """DAY CARDS (user redesign 2026-07-20): the 72-h window organized
+    by calendar day - TODAY / TOMORROW / day-3 - each card holding its
+    own tides, rain outlook, and regime badge, with a WORST ribbon on
+    the window's worst day. Replaces the TODAY box, WORST-72H strip,
+    per-tide summary sentences, and the rain-outlook box (four objects
+    slicing the same 72 h differently - "mish-mashed"). Overnight
+    tides sit in their calendar day labeled "Tue 2:35 AM" (user:
+    everyone can interpret that). TODAY is deliberately the heaviest
+    card. The FLOODING-NOW nowcast override keeps targeting
+    id=today-block = the TODAY card."""
+    try:
+        now_l = _station_local_now()
+    except Exception:
+        now_l = dt.datetime.now()
+    days = [(now_l + dt.timedelta(days=i)).strftime("%Y-%m-%d")
+            for i in range(3)]
+
+    def _dk(base, i):
+        d = now_l + dt.timedelta(days=i)
+        return base + d.strftime("%a %b ").upper() + str(d.day)
+
+    kickers = {days[0]: _dk("TODAY &middot; ", 0),
+               days[1]: _dk("TOMORROW &middot; ", 1),
+               days[2]: _dk("", 2)}
+    rain_by_day = {d.get("day"): d
+                   for d in (forecast.get("rain_outlook_72h") or [])}
+    pr = forecast.get("pluvial_risk") or {}
+    alerts = pr.get("nws_flood_alerts") or []
+    peak_t = forecast.get("peak_time_local")
+
+    def alert_covers(day):
+        for a in alerts:
+            on = (a.get("onset") or "")[:10]
+            en = (a.get("ends") or "")[:10]
+            if (not on or on <= day) and (not en or en >= day):
+                yield a
+
+    cards = []
+    for day in days:
+        tides = [t for t in (forecast.get("all_tides") or [])
+                 if (t.get("time") or "").startswith(day)]
+        tide_rank = 0
+        tide_rows = []
+        for t in tides:
+            reg = ((t.get("depths_in") or {}).get("regime")) or "dry"
+            tide_rank = max(tide_rank, SEVERITY_RANK.get(reg, 0))
+            rel = ((t.get("forecast_peak_mllw") or 0)
+                   + MLLW_TO_NAVD88_OFFSET - GRATE_SW) * 12
+            star = "&#9733; " if t.get("time") == peak_t else ""
+            past = ((t.get("hours_from_now") is not None)
+                    and t["hours_from_now"] < 0)
+            tide_rows.append(
+                '<div class="dc-line">' + star
+                + format_time_short(t["time"]) + " tide &mdash; "
+                + regime_display(reg) + f" ({rel:+.1f}&Prime;)"
+                + (' <span class="dc-past">(past)</span>' if past else "")
+                + "</div>")
+        rain = rain_by_day.get(day) or {}
+        day_alerts = list(alert_covers(day))
+        rain_bits = []
+        if day_alerts:
+            names = ", ".join(a.get("event", "") for a in day_alerts)
+            a0 = day_alerts[0]
+            on = (a0.get("onset") or "")
+            span = ""
+            if on[:10] == day and on[11:16]:
+                hh, mm = int(on[11:13]), on[14:16]
+                span = (" from " + str((hh % 12) or 12)
+                        + (":" + mm if mm != "00" else "")
+                        + ("AM" if hh < 12 else "PM"))
+            rain_bits.append("<b>" + names + "</b>" + span)
+        if rain.get("cum_in", 0) >= 0.02 or rain.get("max_pop_pct", 0) >= 20:
+            rain_bits.append(
+                f"~{rain.get('cum_in', 0):.2f}&Prime; rain, "
+                f"PoP {rain.get('max_pop_pct', 0)}%"
+                + (", thunderstorms" if rain.get("thunder") else ""))
+        rain_line = ("Rain: " + "; ".join(rain_bits)
+                     if rain_bits else "Rain: nothing significant expected")
+        rain_risky = bool(day_alerts) or bool(
+            pr.get("level") and (rain.get("thunder")
+                                 or rain.get("peak_in_hr", 0) >= 0.15))
+        if tide_rank >= 2 or (tide_rank >= 1 and not rain_risky):
+            badge_cls = next(k for k, v in SEVERITY_RANK.items()
+                             if v == tide_rank)
+            badge = regime_display(badge_cls).upper()
+        elif rain_risky:
+            badge = ("RAIN FLOOD RISK" if pr.get("level") == "elevated"
+                     else "POSSIBLE RAIN FLOODING")
+            badge_cls = "light"
+        else:
+            badge_cls = "dry" if tide_rank == 0 else "street"
+            badge = regime_display(badge_cls).upper()
+        cards.append({"day": day, "kicker": kickers[day], "badge": badge,
+                      "badge_cls": badge_cls, "tide_rows": tide_rows,
+                      "rain_line": rain_line,
+                      "rank": (tide_rank, 1 if rain_risky else 0)})
+    worst = max(cards, key=lambda c: c["rank"])
+    html_cards = []
+    for c in cards:
+        is_today = c["day"] == days[0]
+        ribbon = (' <span class="dc-worst">&#9650; WORST OF 72 H</span>'
+                  if c is worst and c["rank"] > (0, 0) else "")
+        extra = ""
+        if is_today:
+            _lb = forecast.get("today_lookback")
+            if _lb and (_lb.get("rel_grate_in") or 0) > 0:
+                extra = (
+                    '<div class="regime-summary dc-sofar"><b>SO FAR:</b> '
+                    + regime_display(_lb.get("regime") or "").upper()
+                    + f' &mdash; peak {_lb["rel_grate_in"]:+.1f}&Prime; at '
+                    + _lb["time_local"] + ", " + _lb["source"] + ".</div>")
+        html_cards.append(
+            '<section class="regime regime-' + c["badge_cls"] + ' day-card'
+            + (" day-card-today" if is_today else "")
+            + ('" id="today-block">' if is_today else '">')
+            + '<div class="regime-kicker">' + c["kicker"] + ribbon + '</div>'
+            + '<div class="regime-label">' + c["badge"] + '</div>'
+            + '<div class="regime-summary">'
+            + "".join(c["tide_rows"])
+            + '<div class="dc-line">' + c["rain_line"] + '</div>'
+            + '</div>' + extra + '</section>')
+    return '<div class="day-cards">' + "".join(html_cards) + '</div>'
 
 
 def _render_summary_html(forecast):
@@ -8038,20 +8169,9 @@ def render_html_page(forecast):
 
 {_render_water_series_section(forecast)}
 
-  <section class="regime regime-{today_class}" id="today-block">
-    <div class="regime-kicker">TODAY &mdash; OUTLOOK &middot; {_kick_today}</div>
-    <div class="regime-label">{today_headline}</div>
-    <div class="regime-summary">{today_summary}</div>{lookback_html}
-  </section>
-
-  <section class="regime regime-{headline_class}" style="padding:10px 24px;margin:-16px 0 28px 0">
-    <div class="regime-kicker">WORST 72 H &middot; through {_kick_end}</div>
-    <div class="regime-summary" style="margin:2px 0"><b>{headline_text}</b> — {headline_summary} Worst-case tide peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}.</div>
-  </section>
+{_render_day_cards_html(forecast)}
 
   {_render_summary_html(forecast)}
-
-  {_render_rain_outlook_html(forecast)}
 
 {_render_flood_windows_html(forecast)}
 
