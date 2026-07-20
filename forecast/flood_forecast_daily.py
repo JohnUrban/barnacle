@@ -7023,7 +7023,17 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           if (bToggle) bToggle.addEventListener('change', scrub);
         }}
         dBtn.addEventListener('click', function() {{
+          // full reset: level to the live forecast, scrubber back to
+          // now, burst view off (2026-07-20 — snap left the time
+          // slider stranded; also the old 3.0 floor clamped a ~2.5
+          // forecast level so the thumb never visibly moved).
           dSlider.value = String(defaultWater);
+          var tS = document.getElementById('time-slider-input');
+          var tL = document.getElementById('time-slider-value');
+          var bT = document.getElementById('burst-potential-toggle');
+          if (bT) bT.checked = false;
+          if (tS && typeof startI !== 'undefined') tS.value = String(startI);
+          if (tL) tL.textContent = 'now';
           rerender();
         }});
         rBtn.addEventListener('click', function() {{
