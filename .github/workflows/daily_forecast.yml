@@ -14,6 +14,13 @@ on:
     - cron: '0 * * * *'   # every hour, on the hour, UTC
   workflow_dispatch:
 
+# One run at a time (2026-07-20): the 02:00 UTC slot double-fired,
+# the two runs rebased into each other inside the commit step, and
+# conflict markers shipped to the live site. Queued, never parallel.
+concurrency:
+  group: barnacle-forecast
+  cancel-in-progress: false
+
 permissions:
   contents: write  # needed to commit docs/ + data/ updates
 
@@ -30,6 +37,9 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: '3.11'
+
+      - name: Self-heal inherited corruption (markers in data/docs)
+        run: python forecast/heal_tree.py
 
       - name: Determine run type (daily vs hourly)
         id: when
@@ -127,19 +137,37 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # Pull-rebase first in case a parallel run / human commit landed
-          # between our checkout and this push. Hourly cadence makes this
-          # more likely than the old once-a-day cadence did.
-          git pull --rebase --autostash || true
+          # Commit FIRST (clean generated state), then rebase our commit
+          # onto whatever landed meanwhile, re-run the publish gate, and
+          # only then push. A failed rebase ABORTS the publish (next run
+          # regenerates everything) instead of shipping merge artifacts
+          # — the 02:00 twin-run race put conflict markers on the live
+          # site through the old swallow-errors pull.
           git add docs/ data/
           if git diff --staged --quiet; then
             echo "No updates to commit"
-          else
-            if [ "${{ steps.when.outputs.is_daily }}" = "true" ]; then
-              msg="daily forecast ${{ steps.when.outputs.today }}"
-            else
-              msg="hourly update ${{ steps.when.outputs.today }} ${{ steps.when.outputs.hour }}:00 UTC"
-            fi
-            git commit -m "$msg"
-            git push
+            exit 0
           fi
+          if [ "${{ steps.when.outputs.is_daily }}" = "true" ]; then
+            msg="daily forecast ${{ steps.when.outputs.today }}"
+          else
+            msg="hourly update ${{ steps.when.outputs.today }} ${{ steps.when.outputs.hour }}:00 UTC"
+          fi
+          git commit -m "$msg"
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
+            if ! git pull --rebase; then
+              echo "REBASE CONFLICT — aborting publish (no corruption shipped)"
+              git rebase --abort || true
+              exit 1
+            fi
+            if ! python forecast/check_artifacts.py; then
+              echo "PUBLISH GATE FAIL after rebase — aborting publish"
+              exit 1
+            fi
+          done
+          echo "push failed after 3 attempts"
+          exit 1

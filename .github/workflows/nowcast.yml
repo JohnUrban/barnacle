@@ -76,6 +76,7 @@ jobs:
           git commit -m "nowcast $(date -u +'%Y-%m-%d %H:%M') UTC"
           for i in 1 2 3; do
             git push && exit 0
-            git pull --rebase && sleep 2
+            git pull --rebase || { git rebase --abort || true; echo "rebase conflict - abort publish"; exit 1; }
+            sleep 2
           done
           exit 1
