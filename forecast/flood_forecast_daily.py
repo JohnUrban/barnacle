@@ -7030,10 +7030,24 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           var W = thumbC.width, H = thumbC.height, P = 6;
           c.clearRect(0, 0, W, H);
           var ws = MS.series.map(function(p) {{ return p.w; }});
+          var anyB = MS.series.some(function(p) {{ return p.b; }});
           var lo = Math.min.apply(null, ws.concat([3.5]));
-          var hi = Math.max.apply(null, ws.concat([5.6, lvl || 0]));
+          var hi = Math.max.apply(null, ws.concat(
+            [5.6, lvl || 0,
+             (anyB && MS.potential != null) ? MS.potential : 0]));
           function X(i) {{ return P + (W - 2*P) * i / (MS.series.length - 1); }}
           function Y(v) {{ return H - P - (H - 2*P) * (v - lo) / (hi - lo); }}
+          // navy burst band, same grammar as the big chart: bottom =
+          // the curve, flat top = potential, burst-flagged hours only
+          if (anyB && MS.potential != null) {{
+            c.fillStyle = 'rgba(11,61,107,0.30)';
+            var half = (W - 2*P) / (MS.series.length - 1) / 2;
+            MS.series.forEach(function(p, i) {{
+              if (!p.b) return;
+              var top = Math.max(MS.potential, p.w);
+              c.fillRect(X(i) - half, Y(top), half * 2, Y(p.w) - Y(top));
+            }});
+          }}
           var LC = [[3.78, '#2f8f5f'], [4.16, '#c0392b'],
                     [4.66, '#7c4dbc'], [5.41, '#6d4c2f']];
           LC.forEach(function(l) {{
