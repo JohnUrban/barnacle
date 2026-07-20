@@ -2518,7 +2518,9 @@ def _render_rain_timing_text(forecast):
         peak_rain = t.get("peak_rain_in_hr") or 0
         offset = t.get("peak_rain_offset_h")
         label = "★ peak tide" if t["time"] == peak_t else "lower high"
-        when = t["time"][-5:]
+        # weekday-annotated (user 2026-07-20): bare clock times here
+        # spanned three calendar days with no day indication
+        when = format_time_short(t["time"])
         if peak_rain <= 0.005:
             lines.append(f"  {when} ({label}): no rain in ±90 min window")
             continue
@@ -2545,7 +2547,9 @@ def _render_rain_timing_html(forecast):
         peak_rain = t.get("peak_rain_in_hr") or 0
         offset = t.get("peak_rain_offset_h")
         label = "★ peak tide" if t["time"] == peak_t else "lower high"
-        when = t["time"][-5:]
+        # weekday-annotated (user 2026-07-20): bare clock times here
+        # spanned three calendar days with no day indication
+        when = format_time_short(t["time"])
         if peak_rain <= 0.005:
             timing_desc = "no rain in ±90 min window"
         else:
@@ -3509,7 +3513,7 @@ def regime_display(regime):
     return REGIME_DISPLAY.get(regime, regime)
 
 
-def headline_for(forecast, regime):
+def headline_for(forecast, regime, scope="today"):
     """(headline_text, css_regime_class) for banners/subjects.
 
     Fixes the contradiction (user 2026-07-07) where a rainy no-tide
@@ -3519,7 +3523,7 @@ def headline_for(forecast, regime):
     the detail. CSS class shifts to 'light' (amber) so the banner
     color matches the message."""
     _pr_h = forecast.get("pluvial_risk") or {}
-    if _pr_h.get("risk_today") is False:
+    if scope == "today" and _pr_h.get("risk_today") is False:
         # risk window opens tomorrow — TODAY's headline must not
         # claim it (2026-07-20 scope fix); the 72-h strip carries it.
         return (regime_display(regime).upper(), regime)
@@ -3871,6 +3875,12 @@ def _landmarks_section_html(forecast, today=None, wrapper="section"):
 def render_email(forecast):
     d = forecast["depths_in"]
     regime = d["regime"]
+    try:
+        _now_k = _station_local_now()
+    except Exception:
+        _now_k = dt.datetime.now()
+    _kick_today = _now_k.strftime("%a %b ") + str(_now_k.day)
+    _kick_end = (_now_k + dt.timedelta(hours=72)).strftime("%a")
     peak_t = forecast["peak_time_local"]
     peak_ft = forecast["peak_forecast_observed_mllw"]
     all_tides = forecast.get("all_tides", [])
@@ -3979,7 +3989,7 @@ Worst case detail:
 
 {rain_block}{_landmarks_section_text(forecast)}
 Regime: {regime_display(regime)} — {REGIME_GLOSSARY.get(regime, '')}
-Today (next 24h): {regime_display(forecast.get('today_regime') or regime)}; peak water {forecast.get('today_rel_grate_sw_in', 0) or 0:+.1f}" vs SW grate{f" at {forecast['today_peak_time'][-5:]}" if forecast.get('today_peak_time') else ""}
+Today ({_station_local_now().strftime("%A")}): {regime_display(forecast.get('today_regime') or regime)}; peak water {forecast.get('today_rel_grate_sw_in', 0) or 0:+.1f}" vs SW grate{f" at {forecast['today_peak_time'][-5:]}" if forecast.get('today_peak_time') else ""}
 
 {recap_block}{accuracy_block}{low_block}{lookahead_block}Reference scale (Sandy Hook obs MLLW; {CURRENT_MODEL_VERSION} thresholds = landmark + 2.82):
   < 6.34  : no flooding (nothing visible)
@@ -5081,7 +5091,12 @@ def _render_water_series_section(forecast):
          "borderColor": "#1a5fa8",
          "fill": False, "pointRadius": 0, "borderWidth": 2, "tension": 0.35},
     ]
+    tide_idx = 0   # band must fill to the TIDE dataset (index shifts
+                   # as overlay datasets are inserted below — the
+                   # 2026-07-20 invisible-band regression was fill:0
+                   # pointing at the inserted tape/observed layers)
     if has_observed:
+        tide_idx += 1
         datasets.insert(0,
             {"label": "OBSERVED bay (gauge, despiked)", "data": observed,
              "borderColor": "#555555",
@@ -5092,6 +5107,7 @@ def _render_water_series_section(forecast):
         for idx, v in tape_pts:
             tape_data[idx] = (max(tape_data[idx], v)
                               if tape_data[idx] is not None else v)
+        tide_idx += 1
         datasets.insert(0,
             {"label": "MEASURED (tape)", "data": tape_data,
              "borderColor": "#0b3d6b",
@@ -5129,11 +5145,16 @@ def _render_water_series_section(forecast):
     # Day-boundary line at midnight
     for idx, lab in enumerate(labels):
         if lab == "00:00":
+            try:
+                _md = dt.datetime.strptime(series[idx]["time"][:10],
+                                           "%Y-%m-%d").strftime("%a")
+            except Exception:
+                _md = "12 AM"
             annotations[f"midnight{idx}"] = {
                 "type": "line", "xMin": idx, "xMax": idx,
                 "borderColor": "#999999", "borderWidth": 1,
                 "borderDash": [2, 3],
-                "label": {"display": True, "content": "12 AM",
+                "label": {"display": True, "content": _md,
                           "position": "start", "font": {"size": 9},
                           "backgroundColor": "rgba(255,255,255,0.7)",
                           "color": "#777777"}}
@@ -5158,7 +5179,7 @@ def _render_water_series_section(forecast):
         datasets.append({
             "label": f"rain-burst potential (up to +{pot_in}″, storm-capable hours)",
             "data": zone_data,
-            "fill": 0,
+            "fill": tide_idx,
             "backgroundColor": "rgba(11, 61, 107, 0.30)",
             "borderColor": "rgba(11, 61, 107, 0.9)",
             "pointRadius": 0, "borderWidth": 1.5, "spanGaps": False,
@@ -7731,7 +7752,13 @@ def render_html_page(forecast):
     # Headline resolves the "NO FLOODING" vs "RAIN FLOOD RISK"
     # contradiction (2026-07-07): rain risk takes the banner when the
     # tide-derived regime is dry.
-    headline_text, headline_class = headline_for(forecast, regime)
+    # 72-h strip + subject legitimately own tomorrow's risk — the
+    # today-gate applies only to the TODAY box (2026-07-20: the strip
+    # read "NO FLOODING ... rain risk begins tomorrow", contradicting
+    # itself; window scope resolves it to "POSSIBLE RAIN FLOODING —
+    # no tidal flooding expected, but ... begins TOMORROW").
+    headline_text, headline_class = headline_for(forecast, regime,
+                                                 scope="window")
     # TODAY-first banner (user 2026-07-09, matching the widget's
     # 2026-07-06 redesign): today's regime + rain risk is the top
     # banner; the worst-72h tide becomes a labeled secondary strip.
@@ -7771,8 +7798,14 @@ def render_html_page(forecast):
                 if _a.get("onset"):
                     _on = _a["onset"][11:16]
                     break
+            try:
+                _tmrw_wd = (_station_local_now()
+                            + dt.timedelta(days=1)).strftime("%a")
+            except Exception:
+                _tmrw_wd = ""
             rain_later_note = (
-                f" <b>Rain risk begins TOMORROW</b>"
+                f" <b>Rain risk begins TOMORROW"
+                + (f" ({_tmrw_wd})" if _tmrw_wd else "") + "</b>"
                 + (f" ({_alert_names}" + (f" from {_on}" if _on else "")
                    + ")" if _alert_names else "")
                 + _pot_txt + ".")
@@ -7789,6 +7822,12 @@ def render_html_page(forecast):
                             "independently of the tide — see the "
                             "rain-risk banner below.")
     headline_summary += rain_later_note
+    try:
+        _now_k = _station_local_now()
+    except Exception:
+        _now_k = dt.datetime.now()
+    _kick_today = _now_k.strftime("%a %b ") + str(_now_k.day)
+    _kick_end = (_now_k + dt.timedelta(hours=72)).strftime("%a")
     peak_t = forecast["peak_time_local"]
     peak_ft = forecast["peak_forecast_observed_mllw"]
     today = dt.date.today().isoformat()
@@ -7998,13 +8037,13 @@ def render_html_page(forecast):
   </script>
 
   <section class="regime regime-{today_class}" id="today-block">
-    <div class="regime-kicker">TODAY &mdash; OUTLOOK</div>
+    <div class="regime-kicker">TODAY &mdash; OUTLOOK &middot; {_kick_today}</div>
     <div class="regime-label">{today_headline}</div>
     <div class="regime-summary">{today_summary}</div>{lookback_html}
   </section>
 
   <section class="regime regime-{headline_class}" style="padding:10px 24px;margin:-16px 0 28px 0">
-    <div class="regime-kicker">WORST 72 H</div>
+    <div class="regime-kicker">WORST 72 H &middot; through {_kick_end}</div>
     <div class="regime-summary" style="margin:2px 0"><b>{headline_text}</b> — {headline_summary} Worst-case tide peak {peak_ft:.2f} ft MLLW at {format_time_full(peak_t)}.</div>
   </section>
 
