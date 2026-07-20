@@ -7063,6 +7063,18 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           }});
           c.setLineDash([]);
           c.setLineDash([]);
+          // fixed NOW line (user 2026-07-20): stays put while the
+          // ball travels, so "now" is always visible for orientation
+          var nowMs2 = Date.now(), nowI = 0;
+          for (var ni = 0; ni < MS.series.length; ni++) {{
+            var nm = MS.series[ni].t.match(/(\\d+)-(\\d+)-(\\d+) (\\d+):(\\d+)/);
+            if (nm && new Date(+nm[1], nm[2]-1, +nm[3], +nm[4], +nm[5]).getTime() >= nowMs2) {{
+              nowI = ni; break;
+            }}
+          }}
+          c.strokeStyle = '#222222'; c.lineWidth = 1.2;
+          c.beginPath(); c.moveTo(X(nowI), P); c.lineTo(X(nowI), H - P);
+          c.stroke();
           c.strokeStyle = '#1a5fa8'; c.lineWidth = 1.6;
           c.beginPath();
           MS.series.forEach(function(p, i) {{
