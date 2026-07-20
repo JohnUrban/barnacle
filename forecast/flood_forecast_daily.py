@@ -7048,15 +7048,19 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
               c.fillRect(X(i) - half, Y(top), half * 2, Y(p.w) - Y(top));
             }});
           }}
-          var LC = [[3.78, '#2f8f5f'], [4.16, '#c0392b'],
-                    [4.66, '#7c4dbc'], [5.41, '#6d4c2f']];
+          // ladder: solid black zero line (SW grate) + dashed colors,
+          // matching the big chart exactly
+          var LC = [[3.52, '#222222', true], [3.78, '#2f8f5f'],
+                    [4.16, '#c0392b'], [4.66, '#7c4dbc'],
+                    [5.41, '#6d4c2f']];
           LC.forEach(function(l) {{
             if (l[0] > hi || l[0] < lo) return;
-            c.strokeStyle = l[1]; c.lineWidth = 1;
-            c.setLineDash([3, 3]);
+            c.strokeStyle = l[1]; c.lineWidth = l[2] ? 1.4 : 1;
+            c.setLineDash(l[2] ? [] : [3, 3]);
             c.beginPath(); c.moveTo(P, Y(l[0])); c.lineTo(W - P, Y(l[0]));
             c.stroke();
           }});
+          c.setLineDash([]);
           c.setLineDash([]);
           c.strokeStyle = '#1a5fa8'; c.lineWidth = 1.6;
           c.beginPath();
