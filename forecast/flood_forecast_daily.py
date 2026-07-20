@@ -6791,7 +6791,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
     <div class="depth-slider">
       <label for="depth-slider-input">Explore water level:</label>
       <input type="range" id="depth-slider-input"
-             min="3.0" max="11.6" step="0.05"
+             min="1.5" max="11.6" step="0.05"
              value="{water_with_rain:.2f}"
              data-current="{water_with_rain:.4f}">
       <span id="depth-slider-value">{water_with_rain:.2f} ft NAVD88</span>
@@ -6999,6 +6999,15 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             + (pt.b && !burst ? ' (rain-risk hour)' : '');
           rerender();
         }}
+        var _scrubPending = false;
+        function scrubThrottled() {{
+          if (_scrubPending) return;
+          _scrubPending = true;
+          requestAnimationFrame(function() {{
+            _scrubPending = false;
+            scrub();
+          }});
+        }}
         if (tSlider) {{
           // start the scrubber at "now" (first future point)
           var nowMs = Date.now();
@@ -7010,7 +7019,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             }}
           }}
           tSlider.value = String(startI);
-          tSlider.addEventListener('input', scrub);
+          tSlider.addEventListener('input', scrubThrottled);
           if (bToggle) bToggle.addEventListener('change', scrub);
         }}
         dBtn.addEventListener('click', function() {{

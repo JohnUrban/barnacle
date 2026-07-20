@@ -132,7 +132,13 @@
       return Promise.reject(new Error('d3-delaunay not loaded'));
     }
 
+    // SEQUENCE GUARD (2026-07-20): the time-scrubber fires renders
+    // faster than they complete; without this, slow renders finish
+    // out of order and stale frames paint over fresh ones.
+    canvas.__renderSeq = (canvas.__renderSeq || 0) + 1;
+    var __seq = canvas.__renderSeq;
     return loadImage(opts.baseMapUrl).then(function(img) {
+      if (canvas.__renderSeq !== __seq) return;   // superseded
       var w = img.naturalWidth, h = img.naturalHeight;
       canvas.width = w;
       canvas.height = h;
