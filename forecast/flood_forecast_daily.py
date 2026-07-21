@@ -3630,7 +3630,13 @@ def _render_accuracy_html(forecast):
             f'<code>data/predictions_log.csv</code> joined to NOAA '
             f'observed peaks (cached at '
             f'<code>data/observed_peaks_cache.csv</code>). Populated '
-            f'over time as hourly predictions accumulate.</p>'
+            f'over time as hourly predictions accumulate. '
+            f'<b>Near-peak rows begin 2026-07-21:</b> a lead-time bug '
+            f'made every earlier run stop logging ~4&nbsp;h before '
+            f'each peak, so 0&ndash;4&nbsp;h buckets and the final '
+            f'approach on per-tide convergence charts only exist from '
+            f'that date onward. Earlier rows are honest as-run history '
+            f'at their stated leads; nothing was backfilled.</p>'
             f'</div>'
         )
 
@@ -4585,7 +4591,14 @@ def render_email(forecast):
     # Email parity with the site's TODAY/WORST split (2026-07-17):
     # subject leads with TODAY (incl. the so-far lookback when water
     # already happened); the worst-72h peak becomes the tail.
-    _tr = forecast.get("today_regime") or regime
+    # today_regime is None once the local day's series is exhausted
+    # (post-Phase-1 day scoping). Remaining-today truth is then "no
+    # further flooding today" — NOT the worst-72h regime, which would
+    # resurrect the tomorrow-bleed. Keep the worst-72h fallback only
+    # when the series itself is missing (degraded inputs own that).
+    _tr = forecast.get("today_regime")
+    if _tr is None:
+        _tr = "dry" if forecast.get("water_series") else regime
     _today_head, _ = headline_for(forecast, _tr)
     _lb = forecast.get("today_lookback")
     if _lb and (_lb.get("rel_grate_in") or 0) > 0:
@@ -4753,7 +4766,9 @@ Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = ta
     # Email parity with the site (2026-07-17): TODAY — OUTLOOK (+ so-far
     # line when water already happened) then WORST 72H, before the
     # summary/confidence blocks — same order as the home page.
-    _tr = forecast.get("today_regime") or regime
+    _tr = forecast.get("today_regime")
+    if _tr is None:
+        _tr = "dry" if forecast.get("water_series") else regime
     _today_head, _today_cls = headline_for(forecast, _tr)
     _tbg = {"dry": "#e8f5e9", "street": "#e3f2fd", "light": "#fff8e1",
             "moderate": "#ffe0b2", "severe": "#ffcdd2",

@@ -39,7 +39,7 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.22a";
+const WIDGET_VERSION = "v7.23a";
 const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -762,16 +762,51 @@ function makeWidget(forecast, family) {
     }
   }
 
-  // Footer: updated timestamp (left) + brand (right, was empty space)
+  // Footer (v7.23a): the stamp is the FORECAST's generated_utc, not
+  // the widget's render time — refresh time says nothing about data
+  // freshness. >2.5 h old (hourly pipeline missed ~2 slots) turns it
+  // into a loud STALE flag; degraded inputs get an amber line.
   w.addSpacer();
+  const shortInput = {
+    nws_qpf: "rain QPF", surge_observation: "surge",
+    nws_hourly: "NWS hourly", nws_flood_alerts: "alerts",
+    live_gauge: "gauge", tide_predictions: "tide preds",
+    nws_coastal_product: "NWS coastal", temperature: "temp",
+  };
+  const degraded = (forecast.degraded_inputs || [])
+    .map((k) => shortInput[k] || k);
+  if (degraded.length) {
+    const dWarn = w.addText("⚠ degraded inputs: " + degraded.join(", "));
+    dWarn.font = Font.systemFont(8);
+    dWarn.textColor = new Color("#b45f00");
+    dWarn.lineLimit = 1;
+  }
   const footer = w.addStack();
   footer.layoutHorizontally();
   footer.centerAlignContent();
-  const stamp = footer.addText("Updated " + new Date().toLocaleTimeString(
+  let stampText = "Updated " + new Date().toLocaleTimeString(
     "en-US", { hour: "numeric", minute: "2-digit" }
-  ));
-  stamp.font = Font.systemFont(8);
-  stamp.textColor = new Color("#888");
+  );
+  let stampColor = "#888";
+  let stampBold = false;
+  if (forecast.generated_utc) {
+    const genMs = Date.parse(forecast.generated_utc);
+    const ageH = (Date.now() - genMs) / 3600000;
+    const genLocal = new Date(genMs).toLocaleTimeString(
+      "en-US", { hour: "numeric", minute: "2-digit" }
+    );
+    if (ageH > 2.5) {
+      stampText = "⚠ STALE — forecast from " + genLocal
+        + " (" + Math.round(ageH) + "h old)";
+      stampColor = "#c0392b";
+      stampBold = true;
+    } else {
+      stampText = "Data " + genLocal;
+    }
+  }
+  const stamp = footer.addText(stampText);
+  stamp.font = stampBold ? Font.mediumSystemFont(8) : Font.systemFont(8);
+  stamp.textColor = new Color(stampColor);
   footer.addSpacer();
   const brand = footer.addText("Bay Ave Barnacle " + WIDGET_VERSION);
   brand.font = Font.mediumSystemFont(8);

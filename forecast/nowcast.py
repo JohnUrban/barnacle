@@ -31,8 +31,18 @@ import tempfile
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-import flood_forecast_daily as ff
+# Prefer the package import so tests and nowcast share ONE module
+# object — the old unconditional path hack loaded a SECOND copy of
+# flood_forecast_daily, and mock.patch on the package copy silently
+# missed the copy trigger_check() actually called (live NWS from
+# inside the "offline" suite; passed only while a real Flood Watch
+# was active). Script mode (python forecast/nowcast.py) still falls
+# back to the path hack.
+try:
+    from forecast import flood_forecast_daily as ff
+except ImportError:
+    sys.path.insert(0, HERE)
+    import flood_forecast_daily as ff
 
 UA = {"User-Agent": "barnacle flood model (dr.john.urban@gmail.com)"}
 LAT, LON = 40.4015, -73.991

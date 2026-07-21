@@ -2798,4 +2798,43 @@ Claude Fable 5 review):**
   explicit prohibition on mixing refactors with retuning or history
   rewrites. This keeps the recommended refactor reviewable and reversible.
 
+**2026-07-21 late: audit arc CLOSED — Codex phases 1-7 reviewed,
+gaps shut (Claude wrap-up):**
+- External Codex audit verified finding-by-finding (nothing material
+  rejected); Codex then shipped 7 phases, each reviewed against the
+  diffs + tests + live data. Verdicts: ALL PASS. Highlights: the
+  hours_from_now relabel bug is dead (first sub-4h predictions-log
+  row EVER at lead +3.08 h, 15:19 UTC run — convergence charts gain
+  their near-peak tail from today); alert delivery is transactional
+  (evaluate pure / per-channel attempts / ack only on success;
+  --no-send is genuinely side-effect-free — the checkout-origin
+  alert-state RITUAL IS OBSOLETE); ledgers repaired value-for-value
+  and schema-gated; confidence calibration went data-driven (LOW
+  ±0.61 from 25 forecasts, MEDIUM ±0.45 from 34 — replaces the
+  ±0.50 heuristic in Conf popups); input health exported
+  (forecast.json: generated_utc / schema 1.0 / model_version /
+  input_health / degraded_inputs); model stamp promoted v0.10.1 with
+  honest cutover provenance (model/v0.10.1.md); accuracy section
+  leads with recall/precision/false-alerts-per-30d vs always-dry
+  baseline; offline CI on push (compile + unittest + gate); nowcast
+  cancel-in-progress OFF (cancel-starvation was ~half the cadence
+  problem) + offset cron minutes.
+- Wrap-up fixes on top (this entry's commit): (1) LATENT CI FLAKE:
+  nowcast.py's sys.path import loaded a SECOND copy of
+  flood_forecast_daily, so test mocks missed the copy
+  trigger_check() called — suite hit LIVE NWS and passed only
+  because a real Flood Watch was active. nowcast now prefers the
+  package import (script mode keeps the path hack); the two trigger
+  tests patch nowcast.ff. Suite: 36 tests, 0.02 s, fully offline.
+  (2) WIDGET v7.23a (re-copy!): footer stamp is now the FORECAST's
+  generated_utc ("Data 11:19"), turns red "⚠ STALE — forecast from
+  … (Nh old)" past 2.5 h, plus amber "⚠ degraded inputs: …" line
+  from degraded_inputs. (3) Accuracy section marks the 2026-07-21
+  near-peak logging cutover (explains the sudden density change in
+  by-lead buckets + convergence charts; nothing backfilled).
+  (4) Email TODAY block: with day-scoped today_regime, an exhausted
+  day now reads NO FLOODING (dry) instead of borrowing the worst-72h
+  regime; the worst-72h fallback survives only when the series
+  itself is missing (degraded inputs own that case).
+
 End of handoff.

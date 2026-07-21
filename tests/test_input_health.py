@@ -92,17 +92,17 @@ class InputHealthTests(unittest.TestCase):
 
     def test_nowcast_runs_conservatively_when_alert_status_is_unknown(self):
         with mock.patch.object(
-            ff, "fetch_nws_flood_alerts", return_value=None
-        ), mock.patch.object(ff, "fetch_nws_hourly_forecast") as hourly:
+            nowcast.ff, "fetch_nws_flood_alerts", return_value=None
+        ), mock.patch.object(nowcast.ff, "fetch_nws_hourly_forecast") as hourly:
             code = nowcast.trigger_check()
         self.assertEqual(code, 0)
         hourly.assert_not_called()
 
     def test_nowcast_runs_conservatively_when_hourly_check_fails(self):
         with mock.patch.object(
-            ff, "fetch_nws_flood_alerts", return_value=[]
+            nowcast.ff, "fetch_nws_flood_alerts", return_value=[]
         ), mock.patch.object(
-            ff, "fetch_nws_hourly_forecast", side_effect=OSError("offline")
+            nowcast.ff, "fetch_nws_hourly_forecast", side_effect=OSError("offline")
         ):
             code = nowcast.trigger_check()
         self.assertEqual(code, 0)
