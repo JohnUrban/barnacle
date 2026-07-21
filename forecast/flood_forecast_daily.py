@@ -2103,6 +2103,39 @@ def build_forecast():
         if _on and _on <= _today_str:
             _risk_today = True
     pluvial_risk["risk_today"] = bool(_risk_today)
+    # DAY OUTLOOK export (2026-07-21, widget "72 H — OUTLOOK" redesign):
+    # per-day tidal/rain risk booleans, the same day-scoping the site's
+    # day cards use, so the widget never re-derives risk logic.
+    try:
+        _do_days = [( _station_local_now() + dt.timedelta(days=i)
+                     ).strftime("%Y-%m-%d") for i in range(3)]
+    except Exception:
+        _do_days = []
+    day_outlook = []
+    _ro_by_day = {d.get("day"): d for d in rain_outlook}
+    for _d in _do_days:
+        _tides_d = [t for t in all_tides
+                    if (t.get("time") or "").startswith(_d)]
+        _rank_d = 0
+        for t in _tides_d:
+            _r = ((t.get("depths_in") or {}).get("regime")) or "dry"
+            _rank_d = max(_rank_d, {"dry": 0, "cold_lockout": 0,
+                                    "street": 1, "light": 2,
+                                    "moderate": 3, "severe": 4}.get(_r, 0))
+        _ro = _ro_by_day.get(_d) or {}
+        _al_d = False
+        for _a in (pluvial_risk.get("nws_flood_alerts") or []):
+            _on = (_a.get("onset") or "")[:10]
+            _en = (_a.get("ends") or "")[:10]
+            if (not _on or _on <= _d) and (not _en or _en >= _d):
+                _al_d = True
+        _rr = _al_d or bool(
+            pluvial_risk.get("level")
+            and (_ro.get("thunder") or _ro.get("peak_in_hr", 0) >= 0.15))
+        day_outlook.append({"day": _d,
+                            "tide_flood": _rank_d >= 1,
+                            "tide_rank": _rank_d,
+                            "rain_risk": bool(_rr)})
     today_peak_water = None
     today_peak_time = None
     # OUTLOOK stays forward-looking: with the series now extending
@@ -2183,6 +2216,7 @@ def build_forecast():
         "today_peak_time": today_peak_time,
         "today_regime": today_regime,
         "today_lookback": _today_lookback(),   # what already happened today
+        "day_outlook": day_outlook,            # per-day tide/rain risk (widget)
         "tide_predictions_stale": _TIDE_FALLBACK_USED["flag"],
         "today_highest_crossed": today_highest_crossed,
         "today_rel_grate_sw_in": today_rel_grate_sw_in,

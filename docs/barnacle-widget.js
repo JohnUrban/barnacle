@@ -39,7 +39,7 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.20b";
+const WIDGET_VERSION = "v7.21a";
 const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -618,27 +618,62 @@ function makeWidget(forecast, family) {
     left.addSpacer(4);
     // ---- 72h worst (secondary, clearly labeled) ----
     const worstStyle = REGIME_STYLES[worstRegime] || REGIME_STYLES.dry;
-    const wHdr = left.addText("WORST 72H");
+    // 72 H — OUTLOOK (user redesign 2026-07-21): risk-first lines
+    // (tidal days / rain days) instead of worst-tide-first; the
+    // confidence "LOW ±0.50" line is dropped — glanceability wins,
+    // details live one tap away on the site.
+    const wHdr = left.addText("72H — OUTLOOK");
     wHdr.font = Font.mediumSystemFont(9);
     wHdr.textColor = new Color("#777");
-    const wLine1 = left.addText(
-      `● ${peakFt != null ? peakFt.toFixed(2) : "—"} · ${regimeDisplay(worstRegime).toLowerCase()}`);
-    wLine1.font = Font.semiboldSystemFont(11);
-    wLine1.textColor = new Color(worstStyle.text);
-    wLine1.lineLimit = 1;
-    const wLine2 = left.addText(
-      formatTimeShort(peakTime) + (hToPeak != null ? ` · ${formatHoursToPeak(hToPeak)}` : ""));
-    wLine2.font = Font.systemFont(8);
-    wLine2.textColor = new Color("#666");
-    wLine2.lineLimit = 1;
-    wLine2.minimumScaleFactor = 0.7;
-    if (conf) {
-      const confTxt = confUnc != null
-        ? `${conf.toUpperCase()} ±${confUnc.toFixed(2)}`
-        : conf.toUpperCase();
-      const confLine = left.addText(confTxt);
-      confLine.font = Font.systemFont(8);
-      confLine.textColor = new Color("#555");
+    const dayOut = forecast.day_outlook;
+    function dayNames(flagKey) {
+      if (!dayOut || !dayOut.length) return null;
+      const names = [];
+      const today = new Date();
+      for (const d of dayOut) {
+        if (!d[flagKey]) continue;
+        const m = d.day.match(/(\d{4})-(\d{2})-(\d{2})/);
+        if (!m) continue;
+        const dd = new Date(+m[1], m[2] - 1, +m[3]);
+        const diff = Math.round((dd - new Date(today.getFullYear(),
+          today.getMonth(), today.getDate())) / 86400000);
+        names.push(diff === 0 ? "today" : diff === 1 ? "tomorrow"
+          : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dd.getDay()]);
+      }
+      return names;
+    }
+    if (dayOut && dayOut.length) {
+      const tDays = dayNames("tide_flood");
+      const rDays = dayNames("rain_risk");
+      const tLine = left.addText(
+        "Tidal flood: " + (tDays.length ? tDays.join(", ") : "none"));
+      tLine.font = Font.semiboldSystemFont(10);
+      tLine.textColor = new Color(tDays.length ? "#1565c0" : "#777");
+      tLine.lineLimit = 1; tLine.minimumScaleFactor = 0.7;
+      const rLine = left.addText(
+        "Rain flood: " + (rDays.length ? rDays.join(", ") : "none"));
+      rLine.font = Font.semiboldSystemFont(10);
+      rLine.textColor = new Color(rDays.length ? "#b45f00" : "#777");
+      rLine.lineLimit = 1; rLine.minimumScaleFactor = 0.7;
+      const hLine = left.addText(
+        "High tide: " + formatTimeShort(peakTime)
+        + (hToPeak != null ? ` · ${formatHoursToPeak(hToPeak)}` : ""));
+      hLine.font = Font.systemFont(8);
+      hLine.textColor = new Color("#666");
+      hLine.lineLimit = 1; hLine.minimumScaleFactor = 0.7;
+    } else {
+      // old-JSON fallback: previous worst-tide lines
+      const wLine1 = left.addText(
+        `● ${peakFt != null ? peakFt.toFixed(2) : "—"} · ${regimeDisplay(worstRegime).toLowerCase()}`);
+      wLine1.font = Font.semiboldSystemFont(11);
+      wLine1.textColor = new Color(worstStyle.text);
+      wLine1.lineLimit = 1;
+      const wLine2 = left.addText(
+        formatTimeShort(peakTime) + (hToPeak != null ? ` · ${formatHoursToPeak(hToPeak)}` : ""));
+      wLine2.font = Font.systemFont(8);
+      wLine2.textColor = new Color("#666");
+      wLine2.lineLimit = 1;
+      wLine2.minimumScaleFactor = 0.7;
     }
     if (cold) {
       const coldLine = left.addText("Cold (hyp. open)");
