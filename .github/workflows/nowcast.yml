@@ -1,17 +1,19 @@
 name: Barnacle Nowcast
 
 # LIVE radar nowcast (2026-07-17, HANDOFF designated session).
-# Every 10 minutes: a stdlib-only trigger check (~15 s, no heavy
+# Requests a run every 10 minutes: a stdlib-only trigger check (~15 s, no heavy
 # deps) decides whether radar is worth paying for — active NWS flood
 # alert or near-term convective wording. When triggered: install
 # xarray/cfgrib (cached), pull the last hour of MRMS PrecipRate over
-# the hillside catchment, run the v0.10 tank, and commit
+# the hillside catchment, run the v0.10.1 tank, and commit
 # docs/nowcast.json ONLY (tiny file, no conflict surface with the
-# hourly forecast workflow). The site + widget render it client-side
-# and treat >20-min-old data as stale.
+# hourly forecast workflow). GitHub schedules are best-effort; the site
+# and widget enforce a strict safety rule and never render >20-min-old
+# radar output as live.
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    # Offset from round minutes to reduce GitHub schedule congestion.
+    - cron: '3,13,23,33,43,53 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -19,7 +21,11 @@ permissions:
 
 concurrency:
   group: barnacle-nowcast
-  cancel-in-progress: true
+  # A full radar pass can outlive the 10-minute schedule interval.
+  # Cancelling in-progress runs starved publication: completed commits
+  # had a 31.6-minute median interval (60-minute p90) on 2026-07-18–21.
+  # Keep the active run; GitHub may coalesce queued runs naturally.
+  cancel-in-progress: false
 
 jobs:
   nowcast:
@@ -76,7 +82,9 @@ jobs:
           git commit -m "nowcast $(date -u +'%Y-%m-%d %H:%M') UTC"
           for i in 1 2 3; do
             git push && exit 0
-            git pull --rebase || { git rebase --abort || true; echo "rebase conflict - abort publish"; exit 1; }
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; echo "rebase conflict - abort publish"; exit 1; }
+            python forecast/check_artifacts.py
             sleep 2
           done
           exit 1

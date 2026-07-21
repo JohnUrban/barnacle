@@ -702,8 +702,10 @@ Same surge information the Borough's emergency management is looking at.
     walks `docs/archive/*.json`, pulls actual NOAA observed peak around
     each archived forecast's predicted peak time (±2 h window), appends
     a scored row to `data/forecast_accuracy.csv`, and renders a
-    one-line "Model accuracy (last N forecasts): mean error +X ft,
-    mean |error| Y ft, worst |error| Z ft" in the email/page. The
+    one-line "Peak forecast error (last N as-run forecasts): mean
+    error +X ft, mean |error| Y ft, worst |error| Z ft" in the
+    email/page. The website leads with recall, precision, false-alert
+    burden, and an always-dry baseline before raw accuracy. The
     workflow's commit step now adds both `docs/` and `data/`. The
     block will be empty for the first ~1 day after the JSON archive
     starts populating; appears from day 2 onward.
@@ -1250,18 +1252,21 @@ Plus a **time-to-peak axis** from 9b.3: plot accuracy by
 hours-before-peak. Does accuracy improve sharply at -3 h? -6 h?
 Checkboxes for which lead-time bucket to include.
 
-- Status: PARTIAL — modes 1 + 3 shipped 2026-05-19.
+- Status: ✅ DONE; modes 1 + 3 shipped 2026-05-19, mode 2 and the
+  lead-time table subsequently populated, and skill framing corrected
+  2026-07-21.
   - Mode 1 (peak-magnitude): scatter plot of predicted vs observed
     SH peak with y=x reference line (commit 42bee09). Falls back
     to text-only summary when <2 scored rows.
-  - Mode 3 (binary classifier): 2×2 confusion matrix with TP/FP/FN/TN,
-    accuracy, FPR, FNR; flooded threshold = SH ≥ 6.02 MLLW (lowest
-    grate). Color-coded cells (green = caught/dry, red = missed)
-    (commit 357a82b).
-  - Mode 2 (outcome-depth) still queued — waits for
-    data/labeled_observations.csv to grow.
-  - Lead-time accuracy axis (using predictions_log.csv hours_until_peak)
-    still queued — waits for log to accumulate.
+  - Mode 3 (binary classifier): 2×2 confusion matrix with TP/FP/FN/TN;
+    flooded threshold = SH ≥ 6.34 MLLW (current SW-grate threshold).
+    Recall, precision, false alerts per 30 days, and the always-dry
+    class-imbalance baseline are primary; raw and balanced accuracy are
+    context. Color-coded cells (green = caught/dry, red = missed).
+  - Mode 2 (outcome-depth) reads the append-only labeled observations
+    that contain both observed and as-run modeled depths.
+  - Lead-time accuracy table groups predictions-log errors into 0–3,
+    3–6, 6–12, 12–24, 24–48, and 48–120 hour buckets.
 - Extends: HANDOFF 8b (forecast accuracy log) — DONE; this is the
   visualization layer plus the three modes.
 
@@ -2744,5 +2749,32 @@ Claude Fable 5 review):**
   rows remain as-run history; correctly stamped `v0.10.1` rows begin at
   this documentation cutover. Phase 6 improves skill reporting and
   nowcast scheduling.
+
+**2026-07-21 audit remediation — Phase 6 (Codex implementation,
+Claude Fable 5 review):**
+- Reframed the performance section around operational skill rather than
+  class-imbalanced raw accuracy. At this cutover the append-only sample
+  is TP=4, FP=21, FN=0, TN=35: 100% recall, 16% precision, 37.5% false-
+  positive rate, and about 10.1 false alerts per 30 days over 63 days.
+  The page now makes the critical comparison explicit: always predicting
+  dry is 93.3% accurate but catches no floods, versus 65% raw / 81.3%
+  balanced accuracy for the as-run mixed-version history. Lead-time and
+  peak-height errors follow the classifier block; no historical row was
+  recomputed and the model was not retuned.
+- Found the nowcast cadence failure in workflow concurrency, not tank
+  physics. Although cron requested 10-minute runs, `cancel-in-progress`
+  killed active radar passes when the next schedule arrived. Across 60
+  within-event commit intervals on July 18–21, completed output had a
+  31.6-minute median, 60-minute p90, and zero intervals within the UI's
+  20-minute live-data limit. The workflow now keeps the active run,
+  offsets cron away from round-minute congestion, and reruns the publish
+  gate after any push-race rebase. The 20-minute site/widget cutoff stays
+  strict: stale radar is never promoted as live. GitHub scheduling remains
+  best-effort; verify the post-cutover interval distribution during the
+  next rain-gated activation before claiming a true 10-minute service.
+- Added regression tests for precision, recall, balanced/raw accuracy,
+  the always-dry baseline, false-alert normalization, and performance-
+  section ordering. Phase 7 addresses generated-artifact churn, CI, and
+  refactoring boundaries.
 
 End of handoff.

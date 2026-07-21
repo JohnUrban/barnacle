@@ -443,7 +443,8 @@ async function fetchForecast() {
   const req = new Request(FORECAST_URL + "?t=" + bust);
   const fc = await req.loadJSON();
   // LIVE nowcast overlay (2026-07-17): tiny separate file kept fresh
-  // by the 10-min radar Action; attach when active + <20 min old.
+  // by a best-effort 10-min radar Action; attach only when active and
+  // <20 min old. Stale radar must never override the forecast headline.
   try {
     const nreq = new Request(NOWCAST_URL + "?t=" + bust);
     const nc = await nreq.loadJSON();

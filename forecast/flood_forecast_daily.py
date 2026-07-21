@@ -2986,7 +2986,7 @@ def _render_more_info_links_html():
         ("history", "How bad can it get? The 10 worst floods"),
         ("model", "The model, term by term"),
         ("spotcheck", "Spot-check (help calibrate the model)"),
-        ("accuracy", "Model accuracy — predicted vs observed"),
+        ("accuracy", "Forecast performance — as-run evidence"),
         ("glossary", "Regime glossary"),
     ]
     links = "".join(
@@ -3213,14 +3213,14 @@ def _render_rain_timing_html(forecast):
 
 
 def _render_accuracy_text(forecast):
-    """Plain-text one-line model accuracy summary. Empty list when no
+    """Plain-text one-line peak-error summary. Empty list when no
     forecasts have been scored yet (first few days after archive starts)."""
     a = forecast.get("accuracy_summary") or {}
     n = a.get("n_scored_recent") or 0
     if n == 0:
         return []
     return [(
-        f"Model accuracy (last {n} forecasts): "
+        f"Peak forecast error (last {n} as-run forecasts): "
         f"mean error {a['mean_error_ft']:+.2f} ft, "
         f"mean |error| {a['mean_abs_error_ft']:.2f} ft, "
         f"worst |error| {a['max_abs_error_ft']:.2f} ft. "
@@ -3447,6 +3447,7 @@ def _compute_classifier_metrics():
     if not rows:
         return None
     tp = fp = fn = tn = 0
+    dates = []
     for r in rows:
         pred_flood = (r.get("regime") or "") not in ("dry", "")
         obs_flood = r["observed"] >= FLOODED_THRESHOLD_SH_MLLW
@@ -3458,15 +3459,36 @@ def _compute_classifier_metrics():
             fn += 1
         else:
             tn += 1
+        try:
+            dates.append(dt.date.fromisoformat(r.get("date", "")))
+        except (TypeError, ValueError):
+            pass
     total = tp + fp + fn + tn
     def safe_div(a, b):
         return (a / b) if b > 0 else None
+    sample_days = ((max(dates) - min(dates)).days + 1) if dates else None
+    recall = safe_div(tp, tp + fn)
+    specificity = safe_div(tn, tn + fp)
     return {
         "tp": tp, "fp": fp, "fn": fn, "tn": tn,
         "total": total,
+        "precision": safe_div(tp, tp + fp),
+        "recall": recall,
+        "specificity": specificity,
         "fpr":      safe_div(fp, fp + tn),
         "fnr":      safe_div(fn, fn + tp),
         "accuracy": safe_div(tp + tn, total),
+        # Raw accuracy is misleading in this dry-day-dominated sample.
+        # This baseline deliberately catches no floods.
+        "always_dry_accuracy": safe_div(fp + tn, total),
+        "balanced_accuracy": (
+            (recall + specificity) / 2
+            if recall is not None and specificity is not None else None
+        ),
+        "sample_days": sample_days,
+        "false_alerts_per_30_days": (
+            fp * 30.44 / sample_days if sample_days else None
+        ),
         "threshold_sh_mllw": FLOODED_THRESHOLD_SH_MLLW,
     }
 
@@ -3504,12 +3526,15 @@ def _render_accuracy_html(forecast):
     if n == 0:
         return ""
 
-    summary_html = (
-        f'<p>Last {n} forecasts: mean error '
+    magnitude_html = (
+        f'<div class="magnitude-block">'
+        f'<h3 style="margin:12px 0 4px 0;font-size:15px">'
+        f'Peak-height error</h3>'
+        f'<p>Last {n} as-run forecasts: mean error '
         f'<b>{a["mean_error_ft"]:+.2f} ft</b>, '
         f'mean |error| <b>{a["mean_abs_error_ft"]:.2f} ft</b>, '
         f'worst |error| {a["max_abs_error_ft"]:.2f} ft. '
-        f'Total scored: {a["n_scored_total"]}.</p>'
+        f'Total scored: {a["n_scored_total"]}.</p></div>'
     )
 
     # Mode 2: outcome-depth accuracy from data/labeled_observations.csv
@@ -3607,10 +3632,28 @@ def _render_accuracy_html(forecast):
     if cm and cm["total"] > 0:
         def pct(x):
             return f"{x * 100:.1f}%" if x is not None else "—"
+        false_alert_text = (
+            f'{cm["false_alerts_per_30_days"]:.1f} per 30 days over this '
+            f'{cm["sample_days"]}-day sample'
+            if cm["false_alerts_per_30_days"] is not None
+            else "unavailable (valid sample dates required)"
+        )
         classifier_html = (
             f'<div class="classifier-block">'
             f'<h3 style="margin:12px 0 4px 0;font-size:15px">'
-            f'Flood / no-flood (binary, SH ≥ {cm["threshold_sh_mllw"]:.2f} ft = lowest grate)</h3>'
+            f'Flood-alert skill (SH ≥ {cm["threshold_sh_mllw"]:.2f} ft = lowest grate)</h3>'
+            f'<p style="font-size:13px;margin:6px 0">'
+            f'Flood recall: <b>{pct(cm["recall"])}</b> '
+            f'({cm["tp"]}/{cm["tp"] + cm["fn"]} observed floods caught) '
+            f'&middot; Alert precision: <b>{pct(cm["precision"])}</b> '
+            f'({cm["tp"]}/{cm["tp"] + cm["fp"]} flood predictions verified) '
+            f'&middot; False alerts: <b>{false_alert_text}</b>.</p>'
+            f'<p class="note">Dry days dominate: an always-predict-dry '
+            f'baseline is {pct(cm["always_dry_accuracy"])} accurate but '
+            f'catches 0% of floods. The model\'s raw accuracy is '
+            f'{pct(cm["accuracy"])}; balanced accuracy is '
+            f'{pct(cm["balanced_accuracy"])}. Recall and precision are '
+            f'the decision-relevant headline metrics.</p>'
             f'<table class="confusion-table"><tbody>'
             f'<tr><th></th><th>Actual flood</th><th>Actual dry</th></tr>'
             f'<tr><th>Predicted flood</th>'
@@ -3621,10 +3664,9 @@ def _render_accuracy_html(forecast):
             f'<td class="tn">{cm["tn"]} TN</td></tr>'
             f'</tbody></table>'
             f'<p style="font-size:13px;margin:6px 0">'
-            f'Overall accuracy: <b>{pct(cm["accuracy"])}</b> &middot; '
             f'False-positive rate: {pct(cm["fpr"])} &middot; '
-            f'False-negative rate: {pct(cm["fnr"])} &middot; '
-            f'N = {cm["total"]}</p>'
+            f'N = {cm["total"]} daily as-run forecasts. Mixed historical '
+            f'model versions are intentionally not recomputed.</p>'
             f'</div>'
         )
     note_html = (
@@ -3653,11 +3695,11 @@ def _render_accuracy_html(forecast):
         # (optional) outcome-depth + lead-time + binary classifier blocks
         return (
             '<section class="accuracy">'
-            '<h2>Model accuracy</h2>'
-            f'{summary_html}'
-            f'{outcome_html}'
-            f'{leadtime_html}'
+            '<h2>Forecast performance — as-run evidence</h2>'
             f'{classifier_html}'
+            f'{leadtime_html}'
+            f'{magnitude_html}'
+            f'{outcome_html}'
             f'{note_html}'
             '</section>'
         )
@@ -3673,11 +3715,11 @@ def _render_accuracy_html(forecast):
     rows_json = json.dumps(rows)
     return f"""
 <section class="accuracy">
-  <h2>Model accuracy — predicted vs observed peaks</h2>
-  {summary_html}
-  {outcome_html}
-  {leadtime_html}
+  <h2>Forecast performance — as-run evidence</h2>
   {classifier_html}
+  {leadtime_html}
+  {magnitude_html}
+  {outcome_html}
   <canvas id="accuracy-chart" width="800" height="380"
           style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
@@ -9032,8 +9074,9 @@ def render_html_page(forecast):
   <div id="nowcast-strip" style="display:none"></div>
   <script>
     // LIVE RADAR NOWCAST strip (2026-07-17): renders docs/nowcast.json
-    // client-side; the 10-min Action keeps that file fresh during
-    // rain-capable weather. Hidden when inactive or >20 min stale.
+    // client-side; a best-effort 10-min Action refreshes it during
+    // rain-capable weather. Hidden when inactive or >20 min stale;
+    // stale radar never overrides the forecast headline.
     (function() {{
       var bust = Math.floor(Date.now() / 120000);
       fetch('nowcast.json?t=' + bust).then(function(r) {{
