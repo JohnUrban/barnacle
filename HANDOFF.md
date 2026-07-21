@@ -2578,5 +2578,59 @@ all pushed.
   stats; neighbor-agreement filter, ±12 min within 0.3 ft); chart
   aspect-lock crush; phantom-elevation + '~'-value parser fixes from
   earlier in the day stand.
+**2026-07-20 → 07-21 window (twin-run repair + glance-first UX
+redesign):**
+- INFRA: the 02:00 UTC double cron fire made two runs rebase into
+  each other INSIDE the commit step (`pull --rebase --autostash ||
+  true` swallowed a conflict AFTER the gate) → conflict markers
+  shipped in forecast.json, widget "incorrect format", brick-looped
+  runs. Repaired origin, then three-part hardening: workflow
+  concurrency group (no twin runs), forecast/heal_tree.py self-heal
+  at start (unions predictions_log, deletes marked/unparseable
+  artifacts), commit-first→rebase→GATE→push retry loop (gate always
+  re-runs after a rebase; conflict = abort publish).
+- lst_ldt TZ-family sweep ("fix every bug you find"): station-local
+  bounds fixed in fetch_observed_recent (observed line was cropped —
+  user-caught), fetch_surge_swing_6h (confidence had been inflated),
+  fetch_recent_history; two hardcoded +4h conversions (wrong every
+  winter) → proper STATION_TZ astimezone. Alert links cache-busted
+  (?a= minute param) after user hit the CDN pre-alert page race.
+- DAY-SCOPING: pluvial_risk.risk_today + headline_for(scope=) killed
+  today/tomorrow contradictions; then DAY CARDS — 3 calendar-day
+  boxes (TODAY heavier, id=today-block keeps nowcast override;
+  per-day tide rows "Tue 2:35 AM", star on 72-h peak, rain line from
+  alert onset/ends; ▲ WORST OF 72 H ribbon) absorbed the old
+  24h/72h boxes. forecast.day_outlook exports per-day
+  {tide_flood, tide_rank, rain_risk} so the widget never re-derives.
+- MULTI-PAGE: landing ends at heat-map+windows; details.html carries
+  how-flooding / reference scale / 10-worst / model / spot-check /
+  accuracy / glossary behind "For more information" links. Peaks
+  charts deduped: all-pathways DEFAULT, tide-only behind a toggle.
+- GLANCE-FIRST: series chart is now the TOP of the page; alert
+  emails open with a CID-embedded matplotlib PNG of the same chart
+  (matplotlib pip-installed in workflow).
+- MAP: time-scrubber drives the heat-map through the series
+  (burst-potential view DEFAULT ON — user: "0 interest in
+  non-flooding tide levels"); ladder-context wording in title +
+  readout; thumbnail mini-chart overlay (default ON) with
+  scrub-synced ball, burst band, black zero, midnight dashes, fixed
+  now-line. Spasm bug was label-length reflow resizing the slider
+  track under the finger (user diagnosed it) — CSS reserves the
+  label its own line; plus __renderSeq guard + rAF throttle + slider
+  floor 1.5.
+- WIDGET v7.21a: WORST-72H block → "72H — OUTLOOK" (Tidal flood /
+  Rain flood day-name lines from day_outlook + next high tide);
+  confidence "LOW ±0.50" line dropped (user: never useful, widget is
+  at-a-glance). User must re-copy widget source into Scriptable.
+- TIDAL DATUMS (8e5558a8): official Sandy Hook epoch-1983-2001
+  datums (NAVD88 = 2.82 ft MLLW — validates the project constant);
+  TIDAL_DATUMS constant; details reference-scale table in all three
+  frames (MLLW / NAVD88 / vs-grate, MLW −74″ · MSL −45″ · MHW −17″ ·
+  MHHW −13″) with SLR-since-epoch caveat (~+0.4-0.5 ft today);
+  always-on dashed lines on the live-gauge chart; primary chart gets
+  a "Show tidal datums" checkbox (default OFF, persisted, hidden
+  datums stay out of the legend, y-floor stretches to −78″).
+  DEFERRED (user): later choose ONE datum line for the widget and
+  the map-overlay chart versions.
 
 End of handoff.
