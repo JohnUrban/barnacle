@@ -2633,4 +2633,28 @@ redesign):**
   DEFERRED (user): later choose ONE datum line for the widget and
   the map-overlay chart versions.
 
+**2026-07-21 audit remediation — Phase 1 (Codex implementation,
+Claude Fable 5 review):**
+- Fixed the four/five-hour lead-time bug that relabeled the UTC clock
+  as Eastern time. All NOAA `lst_ldt` tide parsing and lead-time math
+  now routes through `ZoneInfo("America/New_York")`; the prediction
+  logger no longer hardcodes EDT. Historical prediction rows remain
+  as-run history; the previously missing final-four-hour samples
+  cannot be reconstructed and begin accumulating only after this
+  cutover.
+- Fixed TODAY fields borrowing tomorrow's overnight maximum by
+  bounding the forward scan to the station-local calendar date.
+- Fixed the nowcast gauge query that used a UTC runner clock as
+  `lst_ldt` and therefore silently returned the hard-coded 2.8-ft
+  fallback. The nowcast now reports `bay_source=observed`; if the
+  gauge is unavailable it uses flagged astronomical tide rather than
+  granting maximum drainage. If neither source exists, nowcasting
+  publishes an explicit unavailable heartbeat instead of a fake
+  level.
+- Added offline regression coverage for EDT, EST, both DST
+  transitions, local-day scoping, UTC-runner NOAA query bounds, and
+  the astronomical fallback. Phase 2 is transactional alert delivery
+  (do not mark sent before a channel succeeds; `--no-send` must be
+  side-effect free).
+
 End of handoff.

@@ -146,26 +146,59 @@ def box_rate(stamp):
     return out
 
 
-def current_bay():
+def _predicted_bay(now_local):
+    """Best available astronomical bay level when observations fail."""
+    series = ff.build_water_series(
+        0.0, qpf_hourly=[], hours_back=1, hours_forward=1, interval_min=30
+    )
+    if not series:
+        raise RuntimeError("no observed or predicted bay level available")
+    target = now_local.strftime("%Y-%m-%d %H:%M")
+    point = min(series, key=lambda row: abs(
+        (dt.datetime.strptime(row["time"], "%Y-%m-%d %H:%M")
+         - now_local).total_seconds()
+    ))
+    # With surge_ft=0 this is the astronomical prediction in NAVD88.
+    return float(point["tide_navd88"]), target
+
+
+def current_bay(now_local=None):
+    """Return ``(NAVD88 level, source)`` for the bay at the current time.
+
+    GitHub runners keep a UTC system clock, while NOAA ``lst_ldt`` query
+    parameters are station-local.  Build the window from the shared Sandy
+    Hook timezone helper.  If observations are unavailable, retain useful
+    drainage physics with the astronomical tide instead of silently granting
+    the tank maximum drainage through the old hard-coded 2.8-ft fallback.
+    """
+    now = now_local or ff._station_local_now()
     try:
         d = json.load(urllib.request.urlopen(urllib.request.Request(
             "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?"
             "station=8531680&product=water_level&datum=MLLW&time_zone=lst_ldt"
             "&units=english&begin_date={b}&end_date={e}&format=json".format(
-                b=(dt.datetime.now() - dt.timedelta(hours=3)
+                b=(now - dt.timedelta(hours=3)
                    ).strftime("%Y%m%d%%20%H:%M"),
-                e=dt.datetime.now().strftime("%Y%m%d%%20%H:%M")),
+                e=now.strftime("%Y%m%d%%20%H:%M")),
             headers=UA), timeout=15))
         pairs = [(r["t"], float(r["v"])) for r in d["data"]]
         pairs = ff._despike_gauge(pairs)
-        return pairs[-1][1] - 2.82
+        if pairs:
+            return pairs[-1][1] - 2.82, "observed"
     except Exception:
-        return 2.8
+        pass
+    predicted, _target = _predicted_bay(now)
+    return predicted, "astronomical-fallback"
 
 
 def run():
     ff._load_stage_curve()
-    bay = current_bay()
+    try:
+        bay, bay_source = current_bay()
+    except Exception as e:
+        _write({"active": False, "error": f"bay level unavailable: {e}",
+                "bay_source": "unavailable"})
+        return
     frames = latest_frames()
     series = []
     for t, s in frames:
@@ -182,6 +215,7 @@ def run():
     payload = {
         "active": active,
         "bay_navd88": round(bay, 3),
+        "bay_source": bay_source,
         "drain_in_hr": round(drain, 3),
         "frames": [{"utc": t.strftime("%H:%M"), "in_hr": r}
                    for t, r in series],

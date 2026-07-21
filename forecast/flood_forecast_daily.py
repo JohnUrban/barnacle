@@ -43,6 +43,35 @@ STATION_TZ = ZoneInfo("America/New_York")
 def _station_local_now():
     """Now in the Sandy Hook station's local timezone (naive)."""
     return dt.datetime.now(STATION_TZ).replace(tzinfo=None)
+
+
+def parse_station_local_time(value):
+    """Parse a NOAA ``lst_ldt`` timestamp as America/New_York.
+
+    NOAA's local products omit an explicit UTC offset.  Attaching a fixed
+    ``-04:00`` works only during daylight time, while relabeling a UTC clock
+    with a local offset shifts lead times by four or five hours.  Keep this
+    conversion in one place so every consumer gets EDT/EST handling from the
+    IANA timezone database.
+    """
+    if isinstance(value, dt.datetime):
+        parsed = value
+    else:
+        parsed = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=STATION_TZ)
+    return parsed.astimezone(STATION_TZ)
+
+
+def hours_until_station_time(value, now_utc=None):
+    """Signed hours from an aware UTC ``now`` to a station-local time."""
+    target = parse_station_local_time(value).astimezone(dt.timezone.utc)
+    now = now_utc or dt.datetime.now(dt.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
+    else:
+        now = now.astimezone(dt.timezone.utc)
+    return (target - now).total_seconds() / 3600.0
 from email.message import EmailMessage
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
@@ -900,20 +929,12 @@ def append_predictions_log(forecast):
             continue
         target_time = t.get("time") or ""
         sh_peak = t.get("forecast_peak_mllw")
-        # Hours until peak (signed). Tide times are local lst_ldt
-        # ("YYYY-MM-DD HH:MM"); attach EDT (-04:00) for parsing.
+        # Hours until peak (signed). Tide times are NOAA station-local
+        # ``lst_ldt`` values; ZoneInfo supplies the correct EDT/EST offset.
         hours_until_peak = ""
         if target_time:
             try:
-                target_dt = dt.datetime.strptime(target_time, "%Y-%m-%d %H:%M")
-                # Treat as US East tz-naive; convert to UTC for comparison.
-                # During EDT this is UTC-4. (Workflow ignores DST nuance —
-                # close enough for "hours until peak" granularity.)
-                target_utc = target_dt + dt.timedelta(hours=4)
-                hours_until_peak = (
-                    target_utc.replace(tzinfo=dt.timezone.utc) - now_utc
-                ).total_seconds() / 3600.0
-                hours_until_peak = f"{hours_until_peak:+.2f}"
+                hours_until_peak = f"{hours_until_station_time(target_time, now_utc):+.2f}"
             except (ValueError, TypeError):
                 pass
 
@@ -1754,6 +1775,38 @@ def parse_iso(t):
     return dt.datetime.fromisoformat(t.replace("Z", "+00:00"))
 
 
+def _future_today_peak(series, now_local=None):
+    """Return the highest modeled point remaining on the local day.
+
+    The forecast series extends into tomorrow.  The TODAY headline must not
+    borrow tomorrow's overnight tide merely because it is the largest future
+    point in the series.
+    """
+    now = now_local or dt.datetime.now(STATION_TZ)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=STATION_TZ)
+    else:
+        now = now.astimezone(STATION_TZ)
+    today = now.strftime("%Y-%m-%d")
+    cutoff = (now.replace(tzinfo=None) - dt.timedelta(minutes=30)).strftime(
+        "%Y-%m-%d %H:%M"
+    )
+    best_water = None
+    best_time = None
+    for point in series or []:
+        stamp = point.get("time") or ""
+        if not stamp.startswith(today) or stamp < cutoff:
+            continue
+        try:
+            water = float(point["water_navd88"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if best_water is None or water > best_water:
+            best_water = water
+            best_time = stamp
+    return best_water, best_time
+
+
 def build_forecast():
     """Pull all inputs, evaluate each high tide in the next 24h, apply model
     to each, return forecast dict with per-tide breakdown and worst-case
@@ -1802,8 +1855,8 @@ def build_forecast():
         forecast_peak = None
         source = None
         try:
-            peak_dt = parse_iso(tide_time + "-04:00" if "T" not in tide_time else tide_time)
-        except Exception:
+            peak_dt = parse_station_local_time(tide_time)
+        except (TypeError, ValueError):
             peak_dt = None
 
         if nws_active and nws_projections and peak_dt is not None:
@@ -1875,10 +1928,8 @@ def build_forecast():
         if peak_dt is not None:
             now_utc = dt.datetime.now(dt.timezone.utc)
             try:
-                hours_from_now = (
-                    peak_dt - now_utc.replace(tzinfo=peak_dt.tzinfo)
-                ).total_seconds() / 3600.0
-            except Exception:
+                hours_from_now = hours_until_station_time(peak_dt, now_utc)
+            except (TypeError, ValueError):
                 hours_from_now = None
 
         all_tides.append({
@@ -2148,26 +2199,10 @@ def build_forecast():
                             "tide_flood": _rank_d >= 1,
                             "tide_rank": _rank_d,
                             "rain_risk": bool(_rr)})
-    today_peak_water = None
-    today_peak_time = None
     # OUTLOOK stays forward-looking: with the series now extending
     # 12 h back (observed overlay), past water must not masquerade
     # as the TODAY headline — the SO-FAR lookback owns the past.
-    try:
-        _now_cut = (_station_local_now()
-                    - dt.timedelta(minutes=30)).strftime("%Y-%m-%d %H:%M")
-    except Exception:
-        _now_cut = ""
-    for p in water_series:
-        if (p.get("time") or "") < _now_cut:
-            continue
-        try:
-            w = float(p["water_navd88"])
-        except (KeyError, TypeError, ValueError):
-            continue
-        if today_peak_water is None or w > today_peak_water:
-            today_peak_water = w
-            today_peak_time = p.get("time")
+    today_peak_water, today_peak_time = _future_today_peak(water_series)
     today_regime = (classify_regime_from_water(today_peak_water)
                     if today_peak_water is not None else None)
     # Highest landmark crossed in the series window
