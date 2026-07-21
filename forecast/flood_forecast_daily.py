@@ -73,6 +73,7 @@ def hours_until_station_time(value, now_utc=None):
         now = now.astimezone(dt.timezone.utc)
     return (target - now).total_seconds() / 3600.0
 from email.message import EmailMessage
+from html import escape as _html_escape
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode
 
@@ -452,6 +453,11 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
         return []
     data = {"predictions": [{"t": t, "v": v}
                             for t, v in sorted(astro_map.items())]}
+    # ``None`` means QPF was unavailable; [] means a caller explicitly has
+    # a valid no-rain series (the nowcast astronomical fallback does this).
+    # Keep those states separate so missing rain data does not draw a false
+    # zero-rain hydrograph.
+    qpf_available = qpf_hourly is not None
     # Index QPF hourly rates by STATION-LOCAL hour for the rain layer.
     # qpf_hourly carries tz-aware UTC datetimes.
     qpf_by_local_hour = {}
@@ -502,7 +508,8 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
     times = [q["_t"] for q in out]
     tides_w = [q["_tide"] for q in out]
     rates = [q["_rate"] for q in out]
-    pluv_series = simulate_pluvial_series(times, tides_w, rates)
+    pluv_series = (simulate_pluvial_series(times, tides_w, rates)
+                   if qpf_available else [None] * len(out))
     for q, pluv in zip(out, pluv_series):
         water = q["_tide"]
         if pluv is not None:
@@ -909,6 +916,7 @@ def update_forecast_accuracy():
 
 
 CURRENT_MODEL_VERSION = "v0.10"
+FORECAST_SCHEMA_VERSION = "1.0"
 
 # v0.8 wind-direction sectors for the storm-bump adjustment. Sandy Hook
 # Bay's SE corner (where Highlands sits) is piled when winds blow INTO
@@ -1322,15 +1330,15 @@ def fetch_nws_flood_alerts():
     forecaster's convective judgment that never survives into the
     smeared QPF numbers — the same information channel as the Flash
     Flood Warning that existed DURING the 7/6 flood. Returns a list
-    of {event, headline, severity, ends}; [] on any failure (alerts
-    must never break the run)."""
+    of {event, headline, severity, ends}; ``None`` on fetch failure so
+    "alerts unavailable" cannot masquerade as "no active alerts"."""
     try:
         data = _get(
             "https://api.weather.gov/alerts/active",
             {"point": f"{HIGHLANDS_LAT},{HIGHLANDS_LON}"},
         )
     except Exception:
-        return []
+        return None
     out = []
     for feat in (data.get("features") or []):
         props = feat.get("properties") or {}
@@ -1369,7 +1377,8 @@ def fetch_nws_qpf():
     probabilityOfPrecipitation + thunderstorm wording, not just QPF.
 
     Returns list of (bucket_start_utc_datetime, rate_in_per_hr),
-    hour-aligned, sorted. Empty list on failure.
+    hour-aligned, sorted. ``None`` on fetch/parse failure or when no usable
+    forecast buckets remain.
     """
     try:
         pts = _get(f"https://api.weather.gov/points/{HIGHLANDS_LAT},{HIGHLANDS_LON}")
@@ -1377,7 +1386,7 @@ def fetch_nws_qpf():
         grid = _get(grid_url)
         values = grid["properties"]["quantitativePrecipitation"]["values"]
     except Exception:
-        return []
+        return None
     out = []
     for v in values:
         try:
@@ -1394,7 +1403,7 @@ def fetch_nws_qpf():
         for i in range(n_buckets):
             out.append((start + dt.timedelta(hours=i), rate_in_hr))
     out.sort(key=lambda x: x[0])
-    return out
+    return out or None
 
 
 # ============================================================
@@ -1837,6 +1846,9 @@ def build_forecast():
     """Pull all inputs, evaluate each high tide in the next 24h, apply model
     to each, return forecast dict with per-tide breakdown and worst-case
     summary."""
+    generated_utc = dt.datetime.now(dt.timezone.utc)
+    _TIDE_FALLBACK_USED["flag"] = False
+    input_health = {}
     tides = fetch_tides_24h()
     high_tides = tides["high"]
     low_tides = tides["low"]
@@ -1844,13 +1856,44 @@ def build_forecast():
         raise RuntimeError("No high tides returned by NOAA for the next 24h")
 
     # Time-independent inputs (shared across all tides today)
-    temp_avg = fetch_temperature_72h_mean()
+    try:
+        temp_avg = fetch_temperature_72h_mean()
+    except Exception as e:
+        temp_avg = None
+        temp_error = str(e)
+    else:
+        temp_error = "no usable observations" if temp_avg is None else ""
+    input_health["temperature"] = {
+        "status": "ok" if temp_avg is not None else "unavailable",
+        "detail": ("72-hour Sandy Hook mean" if temp_avg is not None
+                   else temp_error),
+    }
     cold = (temp_avg is not None and temp_avg < COLD_LOCKOUT_F)
-    nws_hourly = fetch_nws_hourly_forecast()
+    try:
+        nws_hourly_raw = fetch_nws_hourly_forecast()
+    except Exception as e:
+        nws_hourly_raw = None
+        hourly_error = str(e)
+    else:
+        hourly_error = "no forecast periods" if not nws_hourly_raw else ""
+    hourly_available = bool(nws_hourly_raw)
+    nws_hourly = nws_hourly_raw or []
+    input_health["nws_hourly"] = {
+        "status": "ok" if hourly_available else "unavailable",
+        "detail": (f"{len(nws_hourly)} forecast periods" if hourly_available
+                   else hourly_error),
+    }
     # QPF from the gridpoint endpoint — the ONLY place NWS publishes
     # it (2026-07-06 fix; forecastHourly periods carry no QPF and the
     # old read silently returned 0.0 forever).
-    qpf_hourly = fetch_nws_qpf()   # list of (utc_dt, in/hr)
+    qpf_result = fetch_nws_qpf()   # list of (utc_dt, in/hr), or None
+    qpf_available = qpf_result is not None
+    qpf_hourly = qpf_result or []
+    input_health["nws_qpf"] = {
+        "status": "ok" if qpf_available else "unavailable",
+        "detail": (f"{len(qpf_hourly)} hourly buckets" if qpf_available
+                   else "NWS grid QPF fetch/parse failed"),
+    }
 
     # NWS Coastal Flood projections (if any active event)
     nws_active = False
@@ -1861,17 +1904,40 @@ def build_forecast():
         nws_active, nws_projections, _, msg = nws_surge_parser.get_surge_forecast()
         if not nws_active:
             nws_status = "not active"
+            coastal_status = "ok"
         elif not nws_projections:
             nws_status = f"NWS event active but parser failed: {msg}"
+            coastal_status = "degraded"
+        else:
+            coastal_status = "ok"
     except ImportError:
         nws_status = "parser module not found"
+        coastal_status = "unavailable"
     except Exception as e:
         nws_status = f"NWS fetch error: {e}"
+        coastal_status = "unavailable"
+    input_health["nws_coastal_product"] = {
+        "status": coastal_status,
+        "detail": nws_status,
+    }
 
-    # If NWS not active, fall back to surge persistence (one value, applies to all tides today)
-    persisted_surge = None
-    if not (nws_active and nws_projections):
-        persisted_surge = fetch_current_surge() or 0.0
+    # Surge persistence also backs up individual tides not covered by an
+    # active NWS projection. Missing observations remain None and produce an
+    # explicitly degraded astronomical-only tide, never a mislabeled +0.0
+    # persistence estimate.
+    try:
+        persisted_surge = fetch_current_surge()
+    except Exception as e:
+        persisted_surge = None
+        surge_error = str(e)
+    else:
+        surge_error = ("no usable observed/predicted pair"
+                       if persisted_surge is None else "")
+    input_health["surge_observation"] = {
+        "status": "ok" if persisted_surge is not None else "unavailable",
+        "detail": (f"observed minus astronomical: {persisted_surge:+.3f} ft"
+                   if persisted_surge is not None else surge_error),
+    }
 
     # Evaluate each high tide independently
     all_tides = []
@@ -1897,15 +1963,19 @@ def build_forecast():
                 surge = closest["departure_ft"]
                 source = "nws-coastal-flood-product"
 
-        if forecast_peak is None:
+        if forecast_peak is None and persisted_surge is not None:
             # Surge persistence fallback. v0.7 (2026-06-14) dropped the
             # `max(0.0, surge)` clip — negative surge is now passed
             # through (HANDOFF 9c.6). Anti-surge conditions exist; the
             # forecast should be allowed to predict below the
             # astronomical tide.
-            surge = persisted_surge if persisted_surge is not None else 0.0
+            surge = persisted_surge
             forecast_peak = tide_pred + surge
             source = "surge-persistence"
+        elif forecast_peak is None:
+            surge = 0.0
+            forecast_peak = tide_pred
+            source = "astronomical-only-degraded"
 
         # Rain in [-90 min, +15 min] of THIS high tide (v0.7 before-biased
         # window — HANDOFF 9c.7). Rain after the peak cannot raise the
@@ -1916,7 +1986,7 @@ def build_forecast():
         # 2026-07-06: source switched from forecastHourly periods
         # (which no longer carry QPF — the read was silently 0.0
         # forever) to the gridpoint QPF buckets in qpf_hourly.
-        peak_rain_rate = 0.0
+        peak_rain_rate_model = 0.0
         rain_window = []  # list of (hours_offset_from_high_tide, rain_rate_in_hr)
         peak_rain_offset_h = None
         if peak_dt is not None:
@@ -1926,15 +1996,17 @@ def build_forecast():
             wider_end    = peak_dt + dt.timedelta(hours=3)
             for tt, rate in qpf_hourly:
                 if window_start <= tt <= window_end:
-                    if rate > peak_rain_rate:
-                        peak_rain_rate = rate
+                    if rate > peak_rain_rate_model:
+                        peak_rain_rate_model = rate
                         peak_rain_offset_h = (tt - peak_dt).total_seconds() / 3600.0
                 if wider_start <= tt <= wider_end:
                     off_h = (tt - peak_dt).total_seconds() / 3600.0
                     rain_window.append((off_h, rate))
 
         # Depth at landmarks for this tide (main prediction)
-        depths = predict_landmark_depths(forecast_peak, peak_rain_rate, cold)
+        depths = predict_landmark_depths(
+            forecast_peak, peak_rain_rate_model, cold
+        )
 
         # v0.8 wind-direction adjustment: compute a secondary "expected
         # actual" prediction when forecast wind at peak is offshore.
@@ -1943,7 +2015,7 @@ def build_forecast():
         depths_wind_adjusted = None
         if wind_adj is not None and wind_adj["adjustment_ft"] != 0.0:
             depths_wind_adjusted = predict_landmark_depths(
-                forecast_peak, peak_rain_rate, cold,
+                forecast_peak, peak_rain_rate_model, cold,
                 enhancement_override=LOCAL_ENHANCEMENT_FT + wind_adj["adjustment_ft"],
             )
 
@@ -1963,7 +2035,8 @@ def build_forecast():
             "predicted_mllw": tide_pred,
             "surge_ft": surge,
             "forecast_peak_mllw": forecast_peak,
-            "peak_rain_in_hr": peak_rain_rate,
+            "peak_rain_in_hr": (peak_rain_rate_model
+                                if qpf_available else None),
             "peak_rain_offset_h": peak_rain_offset_h,
             "rain_window_3h": sorted(rain_window),  # (offset_h, in/hr) pairs
             "source": source,
@@ -2036,7 +2109,14 @@ def build_forecast():
     # QPF numbers lack (today's live example: Flood Watch active,
     # QPF smeared to 0.05 in/hr, PoP 52% — every numeric trigger
     # silent).
-    nws_flood_alerts = fetch_nws_flood_alerts()
+    alerts_result = fetch_nws_flood_alerts()
+    alerts_available = alerts_result is not None
+    nws_flood_alerts = alerts_result or []
+    input_health["nws_flood_alerts"] = {
+        "status": "ok" if alerts_available else "unavailable",
+        "detail": (f"{len(nws_flood_alerts)} active inland flood alerts"
+                   if alerts_available else "NWS alerts fetch failed"),
+    }
     alert_warning = any("warning" in a["event"].lower()
                         for a in nws_flood_alerts)
     pluvial_risk_level = None
@@ -2061,10 +2141,19 @@ def build_forecast():
             estimate_pluvial_water_models(burst_est, 2.5))
     pluvial_risk = {
         "level": pluvial_risk_level,     # None | "possible" | "elevated"
-        "peak_rain_rate_24h_in_hr": round(peak_rain_rate_24h, 3),
-        "cumulative_rain_24h_in": round(cumulative_rain_24h, 2),
-        "max_6h_accum_in": round(max_6h_accum, 2),
-        "max_pop_24h_pct": pluvial_max_pop,
+        "status": ("ok" if qpf_available and alerts_available
+                   and hourly_available else "degraded"),
+        "qpf_available": qpf_available,
+        "alerts_available": alerts_available,
+        "hourly_forecast_available": hourly_available,
+        "peak_rain_rate_24h_in_hr": (round(peak_rain_rate_24h, 3)
+                                      if qpf_available else None),
+        "cumulative_rain_24h_in": (round(cumulative_rain_24h, 2)
+                                    if qpf_available else None),
+        "max_6h_accum_in": (round(max_6h_accum, 2)
+                             if qpf_available else None),
+        "max_pop_24h_pct": (pluvial_max_pop
+                             if hourly_available else None),
         "convective_wording": pluvial_convective,
         "burst_est_in_hr": round(burst_est, 2),
         # primary (power-law) estimate; _tanh = saturating alternative
@@ -2111,8 +2200,10 @@ def build_forecast():
                      "tomorrow" if day_i == 1 else day.strftime("%a %b %-d"))
             rain_outlook.append({
                 "day": day_iso, "label": label,
-                "cum_in": round(cum, 2), "peak_in_hr": round(peak, 2),
-                "max_pop_pct": pop, "thunder": thunder,
+                "cum_in": (round(cum, 2) if qpf_available else None),
+                "peak_in_hr": (round(peak, 2) if qpf_available else None),
+                "max_pop_pct": (pop if hourly_available else None),
+                "thunder": (thunder if hourly_available else None),
             })
     except Exception:
         rain_outlook = []
@@ -2135,14 +2226,28 @@ def build_forecast():
     # Live gauge — past 24h of observed water level (HANDOFF 16f, "Y")
     try:
         live_gauge_24h = fetch_observed_recent(hours=24)
-    except Exception:
+    except Exception as e:
         live_gauge_24h = []
+        gauge_error = str(e)
+    else:
+        gauge_error = "no usable observations" if not live_gauge_24h else ""
+    input_health["live_gauge"] = {
+        "status": "ok" if live_gauge_24h else "unavailable",
+        "detail": (f"{len(live_gauge_24h)} despiked observations; latest "
+                   f"{live_gauge_24h[-1][0]}" if live_gauge_24h else gauge_error),
+    }
 
     # Model-predicted water level series for the widget tide-curve
     # chart (2026-07-06). Uses the worst tide's surge as the constant
     # surge across the window — same persistence assumption as the
     # per-tide forecasts.
-    water_series = build_water_series(worst["surge_ft"], qpf_hourly)
+    water_series = build_water_series(worst["surge_ft"], qpf_result)
+    input_health["tide_predictions"] = {
+        "status": ("degraded" if _TIDE_FALLBACK_USED["flag"] else "ok"),
+        "detail": ("cached/synthesized astronomical predictions"
+                   if _TIDE_FALLBACK_USED["flag"]
+                   else "live NOAA astronomical predictions"),
+    }
 
     # Mark burst-capable hours on the series points (user 2026-07-06:
     # the rain-burst zone should only span the hours when a burst is
@@ -2220,7 +2325,8 @@ def build_forecast():
                 _al_d = True
         _rr = _al_d or bool(
             pluvial_risk.get("level")
-            and (_ro.get("thunder") or _ro.get("peak_in_hr", 0) >= 0.15))
+            and (_ro.get("thunder") or
+                 (_ro.get("peak_in_hr") or 0) >= 0.15))
         day_outlook.append({"day": _d,
                             "tide_flood": _rank_d >= 1,
                             "tide_rank": _rank_d,
@@ -2242,7 +2348,16 @@ def build_forecast():
     today_rel_grate_sw_in = (round((today_peak_water - GRATE_SW) * 12, 1)
                              if today_peak_water is not None else None)
 
+    degraded_inputs = sorted(
+        name for name, health in input_health.items()
+        if health.get("status") != "ok"
+    )
     return {
+        "generated_utc": generated_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "forecast_schema_version": FORECAST_SCHEMA_VERSION,
+        "model_version": CURRENT_MODEL_VERSION,
+        "input_health": input_health,
+        "degraded_inputs": degraded_inputs,
         # Headline fields (worst-case tide)
         "peak_predicted_mllw": worst["predicted_mllw"],
         "peak_forecast_observed_mllw": worst["forecast_peak_mllw"],
@@ -2263,7 +2378,8 @@ def build_forecast():
         # Seasonal / SLR context for the email and HTML page
         "seasonal_context": seasonal_context,
         # Rain summary across next 24h
-        "cumulative_rain_24h_in": cumulative_rain_24h,
+        "cumulative_rain_24h_in": (cumulative_rain_24h
+                                    if qpf_available else None),
         # Pluvial flood risk advisory (v0.9 first step, 2026-07-06)
         "pluvial_risk": pluvial_risk,
         "rain_outlook_72h": rain_outlook,
@@ -2402,12 +2518,16 @@ def _tide_confidence(forecast, t):
     Same three rules as assess_confidence, evaluated on THIS tide's
     peak; returns (level, popup_text) with the tide named. The popup
     text is plain prose — it feeds a click-to-open bubble."""
-    surge_source = forecast.get("surge_source", "")
+    surge_source = t.get("source") or forecast.get("surge_source", "")
     peak = t["forecast_peak_mllw"]
     if surge_source == "nws-coastal-flood-product":
         level = "high"
         reason = ("NWS Coastal Flood product active — forecaster-vetted "
                   "projection")
+    elif surge_source == "astronomical-only-degraded":
+        level = "low"
+        reason = ("live surge observation unavailable — astronomical tide "
+                  "only, with no storm departure applied")
     elif peak > 8.0:
         level = "low"
         reason = (f"forecast peak {peak:.2f} ft is above the model's "
@@ -2631,16 +2751,24 @@ def _render_day_cards_html(forecast):
                         + (":" + mm if mm != "00" else "")
                         + ("AM" if hh < 12 else "PM"))
             rain_bits.append("<b>" + names + "</b>" + span)
-        if rain.get("cum_in", 0) >= 0.02 or rain.get("max_pop_pct", 0) >= 20:
+        rain_cum = rain.get("cum_in")
+        rain_pop = rain.get("max_pop_pct")
+        if ((rain_cum or 0) >= 0.02 or (rain_pop or 0) >= 20):
             rain_bits.append(
-                f"~{rain.get('cum_in', 0):.2f}&Prime; rain, "
-                f"PoP {rain.get('max_pop_pct', 0)}%"
+                (f"~{rain_cum:.2f}&Prime; rain" if rain_cum is not None
+                 else "QPF unavailable")
+                + (f", PoP {rain_pop}%" if rain_pop is not None
+                   else ", PoP unavailable")
                 + (", thunderstorms" if rain.get("thunder") else ""))
-        rain_line = ("Rain: " + "; ".join(rain_bits)
-                     if rain_bits else "Rain: nothing significant expected")
+        if rain_bits:
+            rain_line = "Rain: " + "; ".join(rain_bits)
+        elif rain_cum is None or rain_pop is None:
+            rain_line = "Rain: forecast inputs unavailable — not assumed dry"
+        else:
+            rain_line = "Rain: nothing significant expected"
         rain_risky = bool(day_alerts) or bool(
             pr.get("level") and (rain.get("thunder")
-                                 or rain.get("peak_in_hr", 0) >= 0.15))
+                                 or (rain.get("peak_in_hr") or 0) >= 0.15))
         if tide_rank >= 2 or (tide_rank >= 1 and not rain_risky):
             badge_cls = next(k for k, v in SEVERITY_RANK.items()
                              if v == tide_rank)
@@ -2934,6 +3062,73 @@ def _upcoming_tides_only(forecast):
     return [t for t in (forecast.get("all_tides") or [])
             if (t.get("hours_from_now") is None
                 or t["hours_from_now"] >= 0)]
+
+
+def _fmt_metric(value, spec=".2f", unavailable="unavailable"):
+    """Format a numeric metric without turning missing data into zero."""
+    if value is None:
+        return unavailable
+    try:
+        return format(value, spec)
+    except (TypeError, ValueError):
+        return unavailable
+
+
+_INPUT_LABELS = {
+    "tide_predictions": "NOAA tide predictions",
+    "surge_observation": "live surge observation",
+    "nws_coastal_product": "NWS coastal flood product",
+    "nws_qpf": "NWS quantitative precipitation forecast",
+    "nws_hourly": "NWS hourly weather forecast",
+    "nws_flood_alerts": "NWS inland flood alerts",
+    "live_gauge": "Sandy Hook live gauge history",
+    "temperature": "Sandy Hook temperature history",
+}
+
+
+def _degraded_health_rows(forecast):
+    health = forecast.get("input_health") or {}
+    rows = []
+    for name in forecast.get("degraded_inputs") or []:
+        item = health.get(name) or {}
+        rows.append({
+            "name": name,
+            "label": _INPUT_LABELS.get(name, name.replace("_", " ")),
+            "status": item.get("status") or "unavailable",
+            "detail": item.get("detail") or "",
+        })
+    return rows
+
+
+def _render_input_health_text(forecast):
+    rows = _degraded_health_rows(forecast)
+    if not rows:
+        return []
+    lines = ["⚠ DEGRADED INPUTS — unavailable is not being treated as zero:"]
+    for row in rows:
+        detail = f" — {row['detail']}" if row["detail"] else ""
+        lines.append(f"  {row['label']}: {row['status']}{detail}")
+    return lines
+
+
+def _render_input_health_html(forecast):
+    rows = _degraded_health_rows(forecast)
+    if not rows:
+        return ""
+    items = "".join(
+        f"<li><b>{_html_escape(row['label'])}:</b> "
+        f"{_html_escape(row['status'])}"
+        + (f" — {_html_escape(row['detail'])}" if row["detail"] else "")
+        + "</li>"
+        for row in rows
+    )
+    return (
+        '<section class="input-health" style="border:2px solid #b45309;'
+        'background:#fff7ed;padding:10px 14px;margin:12px 0">'
+        '<h2 style="margin:0 0 6px 0">⚠ Degraded forecast inputs</h2>'
+        '<p>Unavailable data is shown as unavailable and is not being '
+        f'treated as a measured or forecast zero.</p><ul>{items}</ul></section>'
+    )
 
 
 def _rain_is_notable(forecast):
@@ -3814,6 +4009,10 @@ def assess_confidence(forecast):
     if surge_source == "nws-coastal-flood-product":
         return ("high",
                 "NWS Coastal Flood product active — forecaster-vetted projection")
+    if surge_source == "astronomical-only-degraded":
+        return ("low",
+                "live surge observation unavailable — astronomical tide only; "
+                "storm departure is unknown")
     peak = forecast.get("peak_forecast_observed_mllw") or 0
     if peak > 8.0:
         return ("low",
@@ -4378,6 +4577,8 @@ def render_email(forecast):
 
     summary_lines = _render_summary_text(forecast)
     summary_block = ("\n".join(summary_lines) + "\n\n") if summary_lines else ""
+    health_lines = _render_input_health_text(forecast)
+    health_block = ("\n".join(health_lines) + "\n\n") if health_lines else ""
     rain_lines = _render_rain_timing_text(forecast)
     rain_block = ("\n".join(rain_lines) + "\n\n") if rain_lines else ""
     pr = forecast.get("pluvial_risk") or {}
@@ -4387,9 +4588,13 @@ def render_email(forecast):
             + "".join(
                 f"  NWS ALERT: {a.get('event', '')} — {a.get('headline', '')}\n"
                 for a in (pr.get("nws_flood_alerts") or []))
-            + f"  Peak QPF {pr.get('peak_rain_rate_24h_in_hr', 0):.2f} in/hr, "
-            f"cumulative {pr.get('cumulative_rain_24h_in', 0):.2f}\", "
-            f"max PoP {pr.get('max_pop_24h_pct', 0)}%"
+            + "  Peak QPF "
+            + _fmt_metric(pr.get("peak_rain_rate_24h_in_hr")) + " in/hr, "
+            + "cumulative "
+            + _fmt_metric(pr.get("cumulative_rain_24h_in")) + '\", '
+            + "max PoP " + _fmt_metric(
+                pr.get("max_pop_24h_pct"), ".0f"
+            ) + "%"
             + (", thunderstorm wording" if pr.get("convective_wording") else "")
             + ".\n  Heavy rain alone floods the intersection (see 2026-07-06"
             " event); tide-keyed predictions below do not capture this.\n\n"
@@ -4419,7 +4624,7 @@ WORST 72H: {headline}: {peak_ft:.2f} ft at {format_time_short(peak_t)}
 
 Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
 
-{summary_block}{cold_block}High tides in next 24h ( * = worst case, headlined below):
+{health_block}{summary_block}{cold_block}High tides in next 24h ( * = worst case, headlined below):
 {tide_block}
 
 Worst case detail:
@@ -4429,8 +4634,8 @@ Worst case detail:
   Forecast peak:   {peak_ft:.2f} ft MLLW
   Surge source:    {forecast['surge_source']}
                    ({forecast['nws_status']})
-  Rain in window:  {forecast['peak_rain_rate_in_hr']:.2f} in/hr peak
-  72h mean temp:   {forecast['temp_avg_72h_f']:.1f} F
+  Rain in window:  {_fmt_metric(forecast.get('peak_rain_rate_in_hr'))} in/hr peak
+  72h mean temp:   {_fmt_metric(forecast.get('temp_avg_72h_f'), '.1f')} F
   Cold conditions: {'YES — ice-lock hypothesis met but no longer applied (see retrospective)' if forecast['cold_lockout'] else 'no'}
 
 {rain_block}{_landmarks_section_text(forecast)}
@@ -4530,12 +4735,14 @@ Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = ta
         f'worst-case tide peak {peak_ft:.2f} ft MLLW at '
         f'{format_time_full(peak_t)}.</div></div>')
 
+    health_html = _render_input_health_html(forecast)
     html = f"""\
 <html><body style="font-family:sans-serif;background:{bg};padding:20px">
 <h2>Bay Ave Flood Forecast</h2>
 <p><b>{dt.date.today().isoformat()}</b></p>
 
 {today_block_html}
+{health_html}
 {summary_html}
 <h3>High tides in next 24h</h3>
 <table border="1" cellpadding="8" style="border-collapse:collapse;background:white">
@@ -4550,8 +4757,8 @@ Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = ta
 <b>Forecast peak (obs):</b> {peak_ft:.2f} ft MLLW Sandy Hook
 ({forecast['peak_predicted_mllw']:.2f} predicted {forecast['current_surge_ft']:+.2f} surge)<br>
 <b>Surge source:</b> {forecast['surge_source']} ({forecast['nws_status']})<br>
-<b>Rainfall in window:</b> {forecast['peak_rain_rate_in_hr']:.2f} in/hr peak<br>
-<b>72h mean temp:</b> {forecast['temp_avg_72h_f']:.1f}&deg;F
+<b>Rainfall in window:</b> {_fmt_metric(forecast.get('peak_rain_rate_in_hr'))} in/hr peak<br>
+<b>72h mean temp:</b> {_fmt_metric(forecast.get('temp_avg_72h_f'), '.1f')}&deg;F
 {'(cold conditions met — ice-lock hypothesis no longer applied; see retrospective)' if forecast['cold_lockout'] else ''}</p>
 
 {rain_html}
@@ -5931,9 +6138,12 @@ def _render_pluvial_advisory_html(forecast):
             f'this location:</b></p><ul style="margin:2px 0 8px 18px">'
             f'{rows}</ul>')
     details = (
-        f"Next 24 h: peak QPF rate {pr.get('peak_rain_rate_24h_in_hr', 0):.2f} in/hr, "
-        f"cumulative {pr.get('cumulative_rain_24h_in', 0):.2f}\", "
-        f"max precip probability {pr.get('max_pop_24h_pct', 0)}%"
+        "Next 24 h: peak QPF rate "
+        + _fmt_metric(pr.get("peak_rain_rate_24h_in_hr")) + " in/hr, "
+        + "cumulative "
+        + _fmt_metric(pr.get("cumulative_rain_24h_in")) + '\", '
+        + "max precip probability "
+        + _fmt_metric(pr.get("max_pop_24h_pct"), ".0f") + "%"
         + (", thunderstorm/heavy-rain wording in the NWS forecast"
            if pr.get("convective_wording") else "")
         + "."
@@ -8754,10 +8964,11 @@ def render_html_page(forecast):
     <h1>Bay Ave Barnacle</h1>
     <p class="subtitle">Hyperlocal flood forecast for the intersection of Bay Ave &amp; Central Ave in Highlands NJ &mdash; water levels referenced to 342 Bay Ave</p>
     <p class="last-updated"
-       data-generated-at="{dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}">
+       data-generated-at="{forecast.get('generated_utc', '')}">
       <span id="last-updated-display">Last updated …</span>
     </p>
   </header>
+  {_render_input_health_html(forecast)}
   <!-- DD: workflow-health banner. Hidden by default; revealed by the
        script below when last-update age exceeds the stale threshold.
        Three tiers: <90 min fresh (no banner), 90 min - 3 h amber on
@@ -8973,8 +9184,8 @@ def render_html_page(forecast):
       <dt>Surge</dt><dd>{forecast['current_surge_ft']:+.2f} ft</dd>
       <dt>Forecast peak</dt><dd>{peak_ft:.2f} ft MLLW</dd>
       <dt>Surge source</dt><dd>{forecast['surge_source']} <span class="note">({forecast['nws_status']})</span></dd>
-      <dt>Peak rainfall</dt><dd>{forecast['peak_rain_rate_in_hr']:.2f} in/hr</dd>
-      <dt>72h mean temp</dt><dd>{forecast['temp_avg_72h_f']:.1f}&deg;F</dd>
+      <dt>Peak rainfall</dt><dd>{_fmt_metric(forecast.get('peak_rain_rate_in_hr'))} in/hr</dd>
+      <dt>72h mean temp</dt><dd>{_fmt_metric(forecast.get('temp_avg_72h_f'), '.1f')}&deg;F</dd>
       <dt>Cold conditions</dt><dd>{'<b>YES</b> — ice-lock hypothesis met; <i>no longer actively applied</i> (see <a href="https://github.com/JohnUrban/barnacle/blob/main/history/reports/cold_weather_retrospective.md">retrospective</a>)' if cold else 'no'}</dd>
     </dl>
 {_render_wind_adjustment_html(forecast)}

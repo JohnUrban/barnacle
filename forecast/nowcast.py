@@ -93,11 +93,15 @@ def trigger_check():
     """Stdlib-only: is there any reason to pay for radar? exit 0/3."""
     try:
         alerts = ff.fetch_nws_flood_alerts()
+        if alerts is None:
+            print("trigger: NWS alerts unavailable — run radar conservatively")
+            return 0
         if alerts:
             print("trigger: flood alert active:", alerts[0]["event"])
             return 0
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"trigger: NWS alerts check failed ({e}) — run radar conservatively")
+        return 0
     try:
         hourly = ff.fetch_nws_hourly_forecast() or []
         for p in hourly[:6]:
@@ -107,8 +111,10 @@ def trigger_check():
                               "shower" in sf):
                 print(f"trigger: near-term convective wording (PoP {pop})")
                 return 0
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"trigger: hourly forecast check failed ({e}) — "
+              "run radar conservatively")
+        return 0
     print("quiet: no flood alert, no near-term convective wording")
     return 3
 

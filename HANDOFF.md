@@ -2696,4 +2696,27 @@ Claude Fable 5 review):**
   ledgers, broken quotes, extra fields, stale headers, and empty-file
   initialization. Phase 4 is explicit input health and provenance.
 
+**2026-07-21 audit remediation — Phase 4 (Codex implementation,
+Claude Fable 5 review):**
+- Forecast output now carries `generated_utc`,
+  `forecast_schema_version`, `model_version`, per-source
+  `input_health`, and a derived `degraded_inputs` list. The publish gate
+  requires valid, internally consistent provenance on every generated
+  `docs/forecast.json`.
+- NWS QPF and inland-alert fetch failures now return unavailable rather
+  than an empty/dry result. Missing QPF exports null rain metrics and
+  omits the pluvial hydrograph; HTML/email surfaces a degraded-input
+  warning that explicitly says missing data was not treated as zero.
+- Missing live surge no longer becomes `+0.0 ft` labeled as persistence.
+  Tides fall back to `astronomical-only-degraded`, confidence becomes
+  LOW, and storm departure is called unknown. Gauge, temperature,
+  hourly forecast, coastal product, alerts, QPF, and tide-astronomy
+  health are independently recorded.
+- Radar gating now fails safe: if the NWS alerts or near-term hourly
+  trigger check is unavailable, run the MRMS nowcast rather than declare
+  quiet weather. Offline regression coverage exercises unavailable
+  versus empty semantics, omitted pluvial output, degraded metadata and
+  banners, metadata-gate consistency, and conservative trigger behavior.
+  Phase 5 aligns the production model version and documentation.
+
 End of handoff.

@@ -8,12 +8,15 @@ lenient one hid it. Run before ANY commit of docs/ or data/:
   1. no conflict markers anywhere in docs/ or data/
   2. every .json in docs/ parses under STRICT rules (json.loads
      forbidding NaN/Infinity — matches JSON.parse on iOS)
+  3. canonical CSV ledgers have exact headers and row widths
+  4. forecast.json carries valid provenance and input-health metadata
 Exit 1 = do not commit.
 """
 import json
 import os
 import sys
 import csv
+import datetime as dt
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
@@ -74,6 +77,54 @@ def validate_csv_ledger(path, expected_fields):
     return failures
 
 
+def validate_forecast_metadata(path):
+    """Require provenance and internally consistent input-health metadata."""
+    failures = []
+    try:
+        with open(path, encoding="utf-8") as f:
+            forecast = json.load(f)
+    except (OSError, UnicodeError, ValueError) as e:
+        return [f"metadata read: {e}"]
+    for key in ("generated_utc", "forecast_schema_version", "model_version",
+                "input_health", "degraded_inputs"):
+        if key not in forecast:
+            failures.append(f"missing provenance field {key!r}")
+    generated = forecast.get("generated_utc")
+    try:
+        parsed = dt.datetime.fromisoformat(str(generated).replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            raise ValueError("timezone required")
+    except (TypeError, ValueError):
+        failures.append(f"generated_utc is not timezone-aware ISO-8601: {generated!r}")
+    if forecast.get("forecast_schema_version") != "1.0":
+        failures.append("forecast_schema_version must be '1.0'")
+    if not isinstance(forecast.get("model_version"), str) or not forecast.get(
+        "model_version"
+    ):
+        failures.append("model_version must be a non-empty string")
+    health = forecast.get("input_health")
+    degraded = forecast.get("degraded_inputs")
+    if not isinstance(health, dict):
+        failures.append("input_health must be an object")
+    if not isinstance(degraded, list):
+        failures.append("degraded_inputs must be an array")
+    if isinstance(health, dict) and isinstance(degraded, list):
+        allowed = {"ok", "degraded", "unavailable"}
+        expected = []
+        for name, item in health.items():
+            status = item.get("status") if isinstance(item, dict) else None
+            if status not in allowed:
+                failures.append(f"input_health.{name} has invalid status {status!r}")
+            elif status != "ok":
+                expected.append(name)
+        if sorted(degraded) != sorted(expected):
+            failures.append(
+                f"degraded_inputs mismatch: expected {sorted(expected)!r}, "
+                f"got {sorted(degraded)!r}"
+            )
+    return failures
+
+
 def check_artifacts(root=ROOT):
     bad = []
     for top in ("docs", "data"):
@@ -101,6 +152,9 @@ def check_artifacts(root=ROOT):
         path = os.path.join(root, relpath)
         for why in validate_csv_ledger(path, fields):
             bad.append((path, why))
+    forecast_path = os.path.join(root, "docs", "forecast.json")
+    for why in validate_forecast_metadata(forecast_path):
+        bad.append((forecast_path, why))
     return bad
 
 
