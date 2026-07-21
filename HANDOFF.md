@@ -2678,4 +2678,22 @@ Claude Fable 5 review):**
   recipient restoration, and email/ntfy channel isolation. Phase 3 is
   repair and validation of the append-only CSV ledgers.
 
+**2026-07-21 audit remediation — Phase 3 (Codex implementation,
+Claude Fable 5 review):**
+- Repaired `forecast_accuracy.csv` without changing historical values:
+  its header now includes the eighth `confidence_level` field already
+  present in 59 rows, and the one pre-confidence row has an explicit
+  empty trailing value. Confidence-stratified calibration can now read
+  the stored levels instead of losing them under `DictReader[None]`.
+- Repaired five quoting defects in `labeled_observations.csv`. One
+  backslash-escaped inch mark had merged two physical records into one;
+  four unquoted comma-bearing fields had shifted columns. Strict parsing
+  now yields 149 records, all exactly 10 fields wide, with original text,
+  values, and row order preserved.
+- Extended the publish gate to strict-parse the five canonical live CSV
+  ledgers and require exact headers and row widths. Append writers now
+  reject schema drift before writing, and regression tests cover the live
+  ledgers, broken quotes, extra fields, stale headers, and empty-file
+  initialization. Phase 4 is explicit input health and provenance.
+
 End of handoff.

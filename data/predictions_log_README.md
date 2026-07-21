@@ -65,10 +65,12 @@ Each workflow run appends one row per upcoming high tide in
 - **Never delete rows** even if a prediction turns out to be wildly
   off. The whole point is to preserve the model's beliefs at each
   point in time.
-- **Adding new columns is fine** — append them at the end of
-  `PREDICTIONS_LOG_FIELDS` in `forecast/flood_forecast_daily.py`. Old
-  rows get an empty value for the new column; consumers should handle
-  that.
+- **Adding new columns requires a small schema migration** — append them
+  at the end of `PREDICTIONS_LOG_FIELDS` in
+  `forecast/flood_forecast_daily.py`, extend the header, and add an empty
+  trailing value to historical rows. Values and row order remain untouched.
+  The writer and publish gate now reject a stale header or uneven row width
+  instead of silently corrupting the ledger.
 - **Never remove or rename existing columns** without a deliberate
   migration pass (touch every consumer first).
 

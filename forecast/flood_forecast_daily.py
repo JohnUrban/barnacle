@@ -725,6 +725,28 @@ PREDICTIONS_LOG_FIELDS = [
 ]
 
 
+def _csv_needs_header(path, expected_fields):
+    """Return True for a missing/empty ledger; reject schema drift.
+
+    Appending an expanded row to a stale header silently creates a malformed
+    CSV (the exact failure that hid ``confidence_level`` for two months).
+    Writers therefore fail closed instead of extending a mismatched ledger.
+    """
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            header = next(csv.reader(f, strict=True), None)
+    except FileNotFoundError:
+        return True
+    if header is None:
+        return True
+    if header != expected_fields:
+        raise ValueError(
+            f"CSV header mismatch for {os.path.relpath(path, _REPO_ROOT)}: "
+            f"expected {expected_fields!r}, got {header!r}"
+        )
+    return False
+
+
 def _despike_gauge(pairs, tol_ft=1.0, half_window=10):
     """Drop physically-impossible points from a 6-min gauge series.
 
@@ -873,7 +895,9 @@ def update_forecast_accuracy():
 
     if new_rows:
         os.makedirs(os.path.dirname(ACCURACY_CSV_PATH), exist_ok=True)
-        write_header = not os.path.exists(ACCURACY_CSV_PATH)
+        write_header = _csv_needs_header(
+            ACCURACY_CSV_PATH, ACCURACY_CSV_FIELDS
+        )
         with open(ACCURACY_CSV_PATH, "a", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=ACCURACY_CSV_FIELDS)
             if write_header:
@@ -975,7 +999,9 @@ def append_predictions_log(forecast):
         return
 
     os.makedirs(os.path.dirname(PREDICTIONS_LOG_PATH), exist_ok=True)
-    write_header = not os.path.exists(PREDICTIONS_LOG_PATH)
+    write_header = _csv_needs_header(
+        PREDICTIONS_LOG_PATH, PREDICTIONS_LOG_FIELDS
+    )
     with open(PREDICTIONS_LOG_PATH, "a", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=PREDICTIONS_LOG_FIELDS)
         if write_header:

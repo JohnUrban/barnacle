@@ -13,30 +13,106 @@ Exit 1 = do not commit.
 import json
 import os
 import sys
+import csv
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-bad = []
-for top in ("docs", "data"):
-    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, top)):
-        for fn in files:
-            path = os.path.join(dirpath, fn)
+
+# Canonical, actively consumed ledgers. Raw vendor downloads and archived
+# research CSVs intentionally remain outside this shape gate.
+CSV_SCHEMAS = {
+    "data/forecast_accuracy.csv": [
+        "forecast_run_date", "forecast_peak_predicted_mllw",
+        "forecast_peak_predicted_time", "forecast_regime",
+        "actual_peak_observed_mllw", "actual_peak_observed_time",
+        "mllw_error_ft", "confidence_level",
+    ],
+    "data/labeled_observations.csv": [
+        "observation_time_local", "landmark_key", "landmark_label",
+        "observed_depth_in", "observed_qualitative", "sh_obs_mllw_actual",
+        "model_predicted_depth_in", "weather_in_window", "observer", "notes",
+    ],
+    "data/predictions_log.csv": [
+        "prediction_made_at", "target_tide_time", "hours_until_peak",
+        "predicted_mllw_astronomical", "surge_ft_predicted", "surge_source",
+        "sh_peak_mllw_predicted", "peak_rain_in_hr_predicted",
+        "water_navd88_predicted", "regime_predicted", "cold_lockout",
+        "confidence_level", "model_version",
+    ],
+    "data/labeled_events.csv": [
+        "start", "end", "duration_h", "total_in", "peak_hr_in",
+        "peak_hr_time", "label", "notes",
+    ],
+    "data/observed_peaks_cache.csv": [
+        "target_tide_time", "observed_peak_mllw",
+    ],
+}
+
+
+def validate_csv_ledger(path, expected_fields):
+    """Return shape/schema failures for one canonical CSV ledger."""
+    failures = []
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            reader = csv.reader(f, strict=True)
             try:
-                with open(path, "rb") as f:
-                    blob = f.read()
-            except OSError:
-                continue
-            if b"<<<<<<< " in blob or b">>>>>>> " in blob:
-                bad.append((path, "conflict markers"))
-                continue
-            if fn.endswith(".json"):
+                header = next(reader)
+            except StopIteration:
+                return ["empty file"]
+            if header != expected_fields:
+                failures.append(
+                    f"header mismatch: expected {expected_fields!r}, got {header!r}"
+                )
+            width = len(expected_fields)
+            for logical_row, row in enumerate(reader, 2):
+                if len(row) != width:
+                    failures.append(
+                        f"logical row {logical_row} (through physical line "
+                        f"{reader.line_num}) has {len(row)} fields; expected {width}"
+                    )
+    except (OSError, UnicodeError, csv.Error) as e:
+        failures.append(f"strict CSV parse: {e}")
+    return failures
+
+
+def check_artifacts(root=ROOT):
+    bad = []
+    for top in ("docs", "data"):
+        for dirpath, _dirs, files in os.walk(os.path.join(root, top)):
+            for fn in files:
+                path = os.path.join(dirpath, fn)
                 try:
-                    json.loads(blob.decode("utf-8"),
-                               parse_constant=lambda c: (_ for _ in ()).throw(
-                                   ValueError(f"non-strict constant {c}")))
-                except Exception as e:
-                    bad.append((path, f"strict-parse: {e}"))
-for path, why in bad:
-    print(f"PUBLISH GATE FAIL: {os.path.relpath(path, ROOT)} — {why}")
-if bad:
-    sys.exit(1)
-print(f"publish gate: clean")
+                    with open(path, "rb") as f:
+                        blob = f.read()
+                except OSError:
+                    continue
+                if b"<<<<<<< " in blob or b">>>>>>> " in blob:
+                    bad.append((path, "conflict markers"))
+                    continue
+                if fn.endswith(".json"):
+                    try:
+                        json.loads(
+                            blob.decode("utf-8"),
+                            parse_constant=lambda c: (_ for _ in ()).throw(
+                                ValueError(f"non-strict constant {c}")),
+                        )
+                    except Exception as e:
+                        bad.append((path, f"strict-parse: {e}"))
+    for relpath, fields in CSV_SCHEMAS.items():
+        path = os.path.join(root, relpath)
+        for why in validate_csv_ledger(path, fields):
+            bad.append((path, why))
+    return bad
+
+
+def main():
+    bad = check_artifacts()
+    for path, why in bad:
+        print(f"PUBLISH GATE FAIL: {os.path.relpath(path, ROOT)} — {why}")
+    if bad:
+        return 1
+    print("publish gate: clean")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
