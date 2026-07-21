@@ -5176,11 +5176,13 @@ def compute_alert_level(forecast):
     all-clear."""
     tide_rank = 0
     tide_label = "no tidal flooding"
+    tide_time = ""
     for t in (forecast.get("all_tides") or []):
         r = ((t.get("depths_in") or {}).get("regime")) or "dry"
         if _ALERT_RANKS.get(r, 0) > tide_rank:
             tide_rank = _ALERT_RANKS.get(r, 0)
-            tide_label = f"{regime_display(r)} tide {t.get('time','')}"
+            tide_time = t.get("time", "")
+            tide_label = f"{regime_display(r)} tide {tide_time}"
     pr = forecast.get("pluvial_risk") or {}
     pl_rank = _PLUVIAL_RANKS.get(pr.get("level"), 0)
     rank = max(tide_rank, pl_rank)
@@ -5190,41 +5192,82 @@ def compute_alert_level(forecast):
             label += " (" + pr["nws_flood_alerts"][0]["event"] + ")"
     else:
         label = tide_label
-    sig_bits = [str(rank)]
-    if tide_rank > 0:
-        worst = forecast.get("peak_time_local") or ""
-        sig_bits.append("tide:" + worst)
-    if pl_rank > 0:
-        sig_bits.append("pluv:" + str(pr.get("level")))
-        for a in pr.get("nws_flood_alerts") or []:
-            sig_bits.append(a.get("event", ""))
+    # Severity rank is stored separately.  Keeping it out of the event
+    # signature prevents an ordinary de-escalation from looking like a new
+    # event and generating another message.
+    sig_bits = []
+    if tide_rank == rank and tide_rank > 0:
+        sig_bits.append("tide:" + tide_time)
+    if pl_rank == rank and pl_rank > 0:
+        sig_bits.append("pluv")
+        # Event + onset is stable across headline/expiry refreshes but
+        # distinguishes a genuinely new same-rank warning/watch.
+        alert_ids = sorted(
+            f"{a.get('event', '')}@{a.get('onset', '')}"
+            for a in (pr.get("nws_flood_alerts") or [])
+        )
+        sig_bits.extend(alert_ids)
     return rank, label, "|".join(sig_bits)
 
 
-def should_send_alert(forecast):
-    """(send: bool, reason) with persisted state. Send on appearance
-    (0→>0) or escalation (rank above last-sent rank). Steady or
-    de-escalating states update the file silently; all-clear resets
-    so the NEXT episode alerts again."""
-    rank, label, sig = compute_alert_level(forecast)
+def _load_alert_state(path=None):
+    if path is None:
+        path = ALERT_STATE_PATH
     try:
-        with open(ALERT_STATE_PATH) as f:
-            st = json.load(f)
+        with open(path) as f:
+            return json.load(f)
     except (OSError, ValueError):
-        st = {"rank": 0, "sig": ""}
+        return {"rank": 0, "sig": "", "last_sent_rank": 0,
+                "last_sent_sig": "", "last_sent_ts": ""}
+
+
+def _normalize_alert_sig(value):
+    """Read pre-Phase-2 signatures that began with ``<rank>|``."""
+    return re.sub(r"^\d+\|", "", value or "")
+
+
+def evaluate_alert(forecast, state=None, now_utc=None):
+    """Return a side-effect-free alert delivery decision.
+
+    Delivery is needed for a newly appearing risk, a rank above the last
+    successfully delivered rank, or a genuinely new event signature.  A
+    failed delivery therefore remains eligible on the next run.  The 24-hour
+    cooldown applies only to the *same* signature at the same/lower rank.
+    """
+    rank, label, sig = compute_alert_level(forecast)
+    st = dict(state) if state is not None else _load_alert_state()
     prev_rank = st.get("rank", 0)
-    send = rank > 0 and (prev_rank == 0 or rank > prev_rank)
-    reason = (f"alert rank {prev_rank}→{rank} ({label})" if send else
-              f"steady (rank {rank}, was {prev_rank})")
+    last_rank = st.get("last_sent_rank", 0)
+    last_sig = _normalize_alert_sig(
+        st.get("last_sent_sig") or st.get("sig", "")
+    )
+    appearance = rank > 0 and prev_rank == 0
+    escalation = rank > last_rank
+    # Legacy states did not retain the delivered signature separately.
+    # Avoid a one-time duplicate at migration; appearance/all-clear still
+    # detects the next episode, and the first successful Phase-2 delivery
+    # establishes last_sent_sig for exact new-event comparisons thereafter.
+    new_event = (rank > 0 and bool(st.get("last_sent_sig"))
+                 and sig != last_sig)
+    send = rank > 0 and (appearance or escalation or new_event)
+    if send:
+        why = ("appeared" if appearance else
+               "escalated" if escalation else "new event")
+        reason = f"alert {why}: rank {prev_rank}→{rank} ({label})"
+    else:
+        reason = f"steady (rank {rank}, was {prev_rank})"
     # 24-HOUR COOLDOWN (user policy 2026-07-18: "no more than 1 per
     # 24 h if the headline doesn't change"): a transient dip to rank
     # 0 (NWS hiccup, alert boundary) must not re-fire the same alert
     # on the next run. Suppress re-sends at or below the last-SENT
     # rank within 24 h; a strictly HIGHER rank (real escalation)
     # always sends immediately.
-    now_utc = dt.datetime.now(dt.timezone.utc)
+    now_utc = now_utc or dt.datetime.now(dt.timezone.utc)
+    if now_utc.tzinfo is None:
+        now_utc = now_utc.replace(tzinfo=dt.timezone.utc)
+    else:
+        now_utc = now_utc.astimezone(dt.timezone.utc)
     if send:
-        ls_rank = st.get("last_sent_rank", 0)
         ls_ts = None
         try:
             ls_ts = dt.datetime.strptime(
@@ -5232,27 +5275,56 @@ def should_send_alert(forecast):
             ).replace(tzinfo=dt.timezone.utc)
         except (ValueError, TypeError):
             pass
-        if (ls_ts is not None and rank <= ls_rank
+        if (ls_ts is not None and rank <= last_rank and sig == last_sig
                 and (now_utc - ls_ts) < dt.timedelta(hours=24)):
             hrs = (now_utc - ls_ts).total_seconds() / 3600
             send = False
             reason = (f"suppressed: rank {rank} already alerted "
                       f"{hrs:.1f}h ago (24h cooldown; a higher rank "
                       f"would send immediately)")
-    new_state = {"rank": rank, "sig": sig, "label": label,
-                 "updated": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                 "last_sent_rank": st.get("last_sent_rank", 0),
-                 "last_sent_ts": st.get("last_sent_ts", "")}
-    if send:
-        new_state["last_sent_rank"] = rank
-        new_state["last_sent_ts"] = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+    return {
+        "send": send, "reason": reason, "rank": rank, "label": label,
+        "sig": sig, "now_utc": now_utc, "previous": st,
+    }
+
+
+def persist_alert_state(decision, delivered_channels=None, path=None):
+    """Persist observed risk, acknowledging only confirmed deliveries."""
+    if path is None:
+        path = ALERT_STATE_PATH
+    st = decision["previous"]
+    now_text = decision["now_utc"].strftime("%Y-%m-%dT%H:%M:%SZ")
+    new_state = {
+        "rank": decision["rank"],
+        "sig": decision["sig"],
+        "label": decision["label"],
+        "updated": now_text,
+        "last_sent_rank": st.get("last_sent_rank", 0),
+        "last_sent_sig": st.get("last_sent_sig", ""),
+        "last_sent_ts": st.get("last_sent_ts", ""),
+        "last_sent_channels": st.get("last_sent_channels", []),
+    }
+    channels = sorted(set(delivered_channels or []))
+    if channels:
+        new_state.update({
+            "last_sent_rank": decision["rank"],
+            "last_sent_sig": decision["sig"],
+            "last_sent_ts": now_text,
+            "last_sent_channels": channels,
+        })
     try:
-        with open(ALERT_STATE_PATH + ".tmp", "w") as f:
+        with open(path + ".tmp", "w") as f:
             json.dump(new_state, f)
-        os.replace(ALERT_STATE_PATH + ".tmp", ALERT_STATE_PATH)
-    except OSError:
-        pass
-    return send, reason
+        os.replace(path + ".tmp", path)
+    except OSError as e:
+        print(f"WARNING: alert state write failed: {e}", flush=True)
+    return new_state
+
+
+def should_send_alert(forecast):
+    """Compatibility wrapper: evaluate without mutating alert state."""
+    decision = evaluate_alert(forecast)
+    return decision["send"], decision["reason"]
 
 
 def build_sms_text(forecast):
@@ -9078,6 +9150,88 @@ def send_email(subject, text_body, html_body, inline_png=None):
         s.send_message(msg)
 
 
+def deliver_alert(forecast, subject, text, html, inline_png=None):
+    """Attempt every configured alert rail and report each outcome.
+
+    One broken channel must not prevent another from delivering the warning.
+    Callers may acknowledge the alert when ``succeeded`` is non-empty; a
+    completely failed attempt deliberately remains retryable next run.
+    """
+    result = {"attempted": [], "succeeded": [], "failed": []}
+
+    ntfy_topic = os.environ.get("NTFY_TOPIC", "").strip()
+    if ntfy_topic:
+        result["attempted"].append("ntfy")
+        try:
+            sms = build_sms_text(forecast)
+            rank, label, _sig = compute_alert_level(forecast)
+            req = Request(
+                f"https://ntfy.sh/{ntfy_topic}",
+                data=sms.encode(),
+                headers={
+                    "Title": f"Barnacle flood alert ({label})",
+                    "Priority": "urgent" if rank >= 3 else "high",
+                    "Tags": "ocean" if rank < 3 else "rotating_light",
+                    "Click": "https://johnurban.github.io/barnacle/?a="
+                             + str(int(_time.time())),
+                },
+            )
+            urlopen(req, timeout=15).read()
+            result["succeeded"].append("ntfy")
+        except Exception as e:
+            result["failed"].append({"channel": "ntfy", "error": str(e)})
+
+    email_vars = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM",
+                  "SMTP_TO"]
+    email_present = [name for name in email_vars
+                     if os.environ.get(name, "").strip()]
+    if len(email_present) == len(email_vars):
+        result["attempted"].append("email")
+        try:
+            send_email(subject, text, html, inline_png=inline_png)
+            result["succeeded"].append("email")
+        except Exception as e:
+            result["failed"].append({"channel": "email", "error": str(e)})
+    elif email_present:
+        missing = [name for name in email_vars if name not in email_present]
+        result["failed"].append({
+            "channel": "email",
+            "error": "incomplete configuration; missing " + ", ".join(missing),
+        })
+
+    sms_to = os.environ.get("ALERT_SMS_TO", "").strip()
+    if sms_to:
+        sms_vars = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM"]
+        missing = [name for name in sms_vars
+                   if not os.environ.get(name, "").strip()]
+        if missing:
+            result["failed"].append({
+                "channel": "sms",
+                "error": "incomplete SMTP configuration; missing "
+                         + ", ".join(missing),
+            })
+        else:
+            result["attempted"].append("sms")
+            original_to = os.environ.get("SMTP_TO")
+            try:
+                os.environ["SMTP_TO"] = sms_to
+                send_email("", build_sms_text(forecast), None)
+                result["succeeded"].append("sms")
+            except Exception as e:
+                result["failed"].append({"channel": "sms", "error": str(e)})
+            finally:
+                if original_to is None:
+                    os.environ.pop("SMTP_TO", None)
+                else:
+                    os.environ["SMTP_TO"] = original_to
+
+    if not result["attempted"] and not result["failed"]:
+        result["failed"].append({
+            "channel": "all", "error": "no delivery channels configured",
+        })
+    return result
+
+
 def _compute_map_water_level(forecast, include_rain=True):
     """NAVD88 water level (ft) for the worst tide today, for heat-map
     rendering. Returns None when no overlay should be drawn (cold lockout
@@ -9317,12 +9471,13 @@ def main():
         return
 
     if args.no_send:
-        # Still evaluate + persist the alert state so risk episodes
-        # are tracked even on runs that can't send (state resets on
-        # all-clear; escalation triggers the next sending run).
-        send, reason = should_send_alert(forecast)
-        print(f"Skipping email send (--no-send set). Alert eval: {reason}"
-              + (" — WOULD SEND" if send else ""))
+        # Generation/test runs must be observational only.  In particular,
+        # they may not consume an alert that the next delivery-capable run
+        # still needs to send.
+        decision = evaluate_alert(forecast)
+        print(f"Skipping alert delivery (--no-send set). Alert eval: "
+              f"{decision['reason']}"
+              + (" — WOULD SEND" if decision["send"] else ""))
         return
 
     # EVENT-DRIVEN ALERTING (user, 2026-07-17): the daily-morning
@@ -9331,75 +9486,39 @@ def main():
     # (tide regime ≥ street in the 72h window, or pluvial risk
     # active); a short SMS (email-to-SMS gateway, ALERT_SMS_TO
     # secret) rides along. --force-email preserves a manual path.
-    send, reason = should_send_alert(forecast)
+    decision = evaluate_alert(forecast)
     if getattr(args, "force_email", False):
-        send, reason = True, "forced (--force-email)"
-    if not send:
-        print(f"No alert email: {reason}")
+        decision["send"] = True
+        decision["reason"] = "forced (--force-email)"
+    if not decision["send"]:
+        persist_alert_state(decision)
+        print(f"No alert delivery: {decision['reason']}")
         return
-
-    required = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM", "SMTP_TO"]
-    missing = [v for v in required if v not in os.environ]
-    if missing:
-        print(f"ERROR: missing environment variables: {', '.join(missing)}", flush=True)
-        print("Either set them, or run with --dry-run / --no-send.", flush=True)
-        raise SystemExit(2)
 
     subject = "[ALERT] " + subject
     _png = None
-    try:
-        _png = build_series_chart_png(forecast)
-    except Exception as e:
-        print(f"WARNING: chart png failed: {e}")
-    send_email(subject, text, html, inline_png=_png)
-    print(f"Sent alert email ({reason}): {subject}"
-          + (" [chart attached]" if _png else " [no chart]"))
-
-    # PUSH NOTIFICATIONS via ntfy (2026-07-17): carrier email-to-SMS
-    # gateways are dead or dying (AT&T shut June 2025, T-Mobile late
-    # 2024, Verizon degraded w/ 2027 sunset) — ntfy is the reliable
-    # rail: free, no account, HTTP POST, and natively multi-person
-    # (anyone subscribed to the topic gets the push). NTFY_TOPIC
-    # secret = the topic name; treat it like a password (anyone who
-    # knows it can subscribe/post).
-    ntfy_topic = os.environ.get("NTFY_TOPIC", "").strip()
-    if ntfy_topic:
+    if all(os.environ.get(name, "").strip() for name in
+           ("SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM", "SMTP_TO")):
         try:
-            sms = build_sms_text(forecast)
-            rank, label, _sig = compute_alert_level(forecast)
-            req = Request(
-                f"https://ntfy.sh/{ntfy_topic}",
-                data=sms.encode(),
-                headers={
-                    "Title": f"Barnacle flood alert ({label})",
-                    "Priority": "urgent" if rank >= 3 else "high",
-                    "Tags": "ocean" if rank < 3 else "rotating_light",
-                    # cache-busted (2026-07-20): clicking an alert
-                    # seconds after it fires must not serve the CDN's
-                    # pre-alert page — the "disconnect" the user hit
-                    "Click": "https://johnurban.github.io/barnacle/?a="
-                             + str(int(_time.time())),
-                })
-            urlopen(req, timeout=15).read()
-            print(f"Sent ntfy push to topic ({rank=})")
+            _png = build_series_chart_png(forecast)
         except Exception as e:
-            print(f"WARNING: ntfy push failed: {e}")
+            print(f"WARNING: chart png failed: {e}")
+    delivery = deliver_alert(forecast, subject, text, html, inline_png=_png)
+    for failure in delivery["failed"]:
+        print(f"WARNING: {failure['channel']} alert failed: "
+              f"{failure['error']}", flush=True)
+    if delivery["succeeded"]:
+        persist_alert_state(decision, delivery["succeeded"])
+        print(f"Delivered alert via {', '.join(delivery['succeeded'])} "
+              f"({decision['reason']}): {subject}")
+        return
 
-    # Legacy email-to-SMS gateway path (kept while Verizon's vtext
-    # limps toward its 2027 sunset; AT&T/T-Mobile gateways are gone).
-    sms_to = os.environ.get("ALERT_SMS_TO", "").strip()
-    if sms_to:
-        try:
-            sms = build_sms_text(forecast)
-            _orig_to = os.environ.get("SMTP_TO")
-            os.environ["SMTP_TO"] = sms_to
-            send_email("", sms, None)
-            os.environ["SMTP_TO"] = _orig_to
-            print(f"Sent SMS alert to gateway ({len(sms)} chars) — "
-                  "NOTE: carrier gateways are unreliable/deprecated; "
-                  "prefer NTFY_TOPIC")
-        except Exception as e:
-            print(f"WARNING: SMS send failed: {e}")
+    # Record the observed risk/all-clear transition, but deliberately leave
+    # last_sent_* untouched so the next delivery-capable run retries.
+    persist_alert_state(decision)
+    print("ERROR: alert was not delivered by any channel; it remains "
+          "eligible for retry.", flush=True)
+    raise SystemExit(2)
 
 
 if __name__ == "__main__":

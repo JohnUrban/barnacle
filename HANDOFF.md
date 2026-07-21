@@ -2452,19 +2452,22 @@ rain-active periods only.
 ### Email/SMS policy (2026-07-17, user directive)
 
 NO MORE daily-morning email — it trained the user to ignore it.
-Event-driven only: every hourly run evaluates `should_send_alert`
-(state in `data/alert_state.json`, committed by the bot): email +
-SMS fire when flood risk APPEARS (rank 0→>0) or ESCALATES, stay
-silent on steady state, reset on all-clear so the next episode
-alerts. Ranks: street/possible=1, light=2, moderate/elevated=3,
-severe=4 (max of 72h tide regimes + pluvial level). Subject
-prefixed [ALERT]. SMS = email-to-SMS gateway via ALERT_SMS_TO
-GitHub secret (user must add: e.g. 5551234567@vtext.com Verizon /
-@txt.att.net AT&T / @tmomail.net T-Mobile), ~150 chars + site
-link. Manual workflow_dispatch = --force-email (test path). The
-09:00 run keeps map-regen + archive duties only. NEXT QUEUED
-SESSION (user): chart observed-overlay (three honesty tiers, spec
-above).
+Event-driven only: every delivery-capable hourly run evaluates the
+alert without side effects, attempts each configured channel
+independently, and acknowledges `last_sent_*` in
+`data/alert_state.json` only after at least one channel confirms
+success. A total delivery failure remains eligible for retry on the
+next run; `--no-send` and `--dry-run` never alter alert state. ntfy
+push, SMTP email, and the legacy email-to-SMS gateway are isolated so
+one failure cannot block another. Alerts fire when flood risk APPEARS
+(rank 0→>0), ESCALATES above the last delivered rank, or a genuinely
+new same-rank event signature appears. The 24-hour cooldown applies
+only to the same signature at the same/lower rank. Ranks:
+street/possible=1, light=2, moderate/elevated=3, severe=4 (max of 72h
+tide regimes + pluvial level). Subject prefixed [ALERT]. Manual
+workflow_dispatch = --force-email (test path). The 09:00 run keeps
+map-regen + archive duties only. NEXT QUEUED SESSION (user): chart
+observed-overlay (three honesty tiers, spec above).
 
 ### Model gap logged 2026-07-18 (user field insight, mid-storm):
 ### ANTECEDENT WETTING — the tank is memoryless about the hillside
@@ -2656,5 +2659,23 @@ Claude Fable 5 review):**
   the astronomical fallback. Phase 2 is transactional alert delivery
   (do not mark sent before a channel succeeds; `--no-send` must be
   side-effect free).
+
+**2026-07-21 audit remediation — Phase 2 (Codex implementation,
+Claude Fable 5 review):**
+- Split alert handling into pure evaluation, independent channel
+  delivery, and atomic persistence. A warning is now marked sent only
+  after ntfy, email, or SMS actually succeeds; complete failure exits
+  nonzero and retries next run.
+- Made `--no-send`, `--dry-run`, and the compatibility evaluator
+  side-effect free. Generation and local testing can no longer consume
+  a live alert or require restoring `data/alert_state.json` afterward.
+- Added stable event signatures (tide time; NWS event + onset), retained
+  escalation semantics, and narrowed the 24-hour cooldown to the same
+  delivered signature. Lower-rank background risks no longer churn the
+  active event signature.
+- Added offline regression coverage for appearance, all-clear,
+  cooldown, escalation, same-rank new events, retry-after-failure,
+  recipient restoration, and email/ntfy channel isolation. Phase 3 is
+  repair and validation of the append-only CSV ledgers.
 
 End of handoff.
