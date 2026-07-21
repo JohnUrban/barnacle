@@ -728,7 +728,7 @@ PREDICTIONS_LOG_FIELDS = [
     "regime_predicted",
     "cold_lockout",              # "true" | "false"
     "confidence_level",          # "high" | "medium" | "low" | ""
-    "model_version",             # current model spec version (currently v0.9)
+    "model_version",             # as-run model spec version (currently v0.10.1)
 ]
 
 
@@ -915,7 +915,7 @@ def update_forecast_accuracy():
     return _summarize_accuracy(last_n=30)
 
 
-CURRENT_MODEL_VERSION = "v0.10"
+CURRENT_MODEL_VERSION = "v0.10.1"
 FORECAST_SCHEMA_VERSION = "1.0"
 
 # v0.8 wind-direction sectors for the storm-bump adjustment. Sandy Hook
@@ -4782,7 +4782,7 @@ Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = ta
 {lookahead_html}
 <p style="font-size:small;color:#666">
 Model {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph on the chart; scenario brackets = tank steady-state / tanh).
-Local enhancement {LOCAL_ENHANCEMENT_FT:+.2f} ft (conservative, 4-event calibration).
+Local enhancement {LOCAL_ENHANCEMENT_FT:+.2f} ft (measured-event calibration).
 Surge persistence is a rough proxy; for active coastal storms, check NWS
 Coastal Flood Statement directly.
 </p>
@@ -4795,9 +4795,9 @@ def _past_tides_with_predictions(days=7):
     design): every past high tide recorded in predictions_log.csv
     within `days`, with (a) its observed peak (NOAA fetch, disk-cached
     in observed_peaks_cache.csv — same cache the lead-time accuracy
-    section uses) and (b) the prediction made ~24 h ahead — the lead
-    time the daily email promises, so the square↔circle gap on the
-    chart is the product's own error at its own job. Nearest logged
+    section uses) and (b) the prediction made ~24 h ahead — a decision-
+    relevant alert horizon, so the square↔circle gap on the chart is
+    the product's error at that horizon. Nearest logged
     run within [16, 36] h lead counts (the hourly bot is throttled to
     ~62% coverage, so exact-24h rows don't always exist); None when no
     qualifying run.
@@ -6454,7 +6454,7 @@ def _render_oscillation_section(forecast):
        Both series are PER-TIDE (both daily highs — the zig-zag is the
        real day/night inequality, often ~1 ft here). Under each past
        square, a faded circle shows what the model predicted
-       <b>~24 hours ahead</b> — the lead time the daily email promises
+       <b>~24 hours ahead</b> — a decision-relevant alert horizon
        — so the square-to-circle gap is the forecast error you would
        actually have lived with (nearest logged run within 16–36 h;
        missing where the throttled hourly bot had no qualifying run).
@@ -6510,7 +6510,7 @@ def _render_oscillation_section(forecast):
         // What the model said ~24h before each PAST tide (null where
         // the throttled hourly log has no 16-36h-lead run). Drawn as
         // a faded halo under the observed square: the vertical gap IS
-        // the forecast error at the lead time the daily email promises.
+        // the forecast error at a decision-relevant alert horizon.
         var pred24Data = points.map(function(p) {{
           return p.predicted_24h_mllw != null ? p.predicted_24h_mllw : null;
         }});

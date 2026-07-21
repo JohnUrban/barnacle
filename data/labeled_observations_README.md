@@ -3,7 +3,7 @@
 Append-only log of empirical water-depth observations at named landmarks
 near 342 Bay Ave. Each row is "what John (or another observer) actually saw
 at a given time at a given landmark." Used to validate, calibrate, or
-refine the flood model (current spec: `model/v0.9.md`).
+refine the flood model (current spec: `model/v0.10.1.md`).
 
 ## Why this exists (updated 2026-07-06; original rationale below is history)
 
@@ -90,11 +90,12 @@ was off).
   points don't justify model changes — too many sources of noise
   (lighting, eyeball estimate error, NOAA gauge minor variation).
 - **3+ observations at one landmark, all biased the same direction:**
-  worth revisiting. The local-enhancement offset at that specific
-  landmark may differ from the +0.40 calibrated at the curb.
-- **10+ observations across landmarks:** good basis for refining the
-  per-landmark offsets in `predict_landmark_depths`. Could also fit
-  a per-landmark error model rather than treating +0.40 as universal.
+  worth revisiting. Check the landmark elevation and model structure;
+  do not resurrect the retired +0.40 ft enhancement without new evidence.
+- **10+ observations across landmarks:** good basis for testing the
+  shared-water-level assumption and refining uncertain landmark elevations.
+  Tidal water should remain level across connected landmarks unless field
+  evidence establishes a real hydraulic separation.
 
 When making a model change driven by observations:
 1. Don't delete or rewrite past rows — append new ones

@@ -56,7 +56,10 @@
 | Bottom of curb / gutter (BC) | 3.78 | 6.60 | C 100 reading |
 | Curb face height | 0.38 ft | — | TC − BC |
 | Middle of Bay Ave road | 4.36 | 7.18 | C 100 reading |
-| Lawn / walkway step-up | ~4.54–4.63 | ~7.36–7.45 | Inferred (equal-step-up rule + 4.69 observation) |
+| Lawn / walkway step-up | 4.66 | 7.48 | Field cross-fit / tape observations |
+| Bottom of porch steps | 4.68 | 7.50 | Field re-anchoring, v0.9 |
+| Top of first porch step | 5.41 | 8.23 | Measured porch ladder, v0.9 |
+| Porch deck | 8.08 | 10.90 | Measured porch ladder, v0.9 |
 
 ### Central Avenue side (between Bay+Central corner and fire hydrant)
 
@@ -100,26 +103,36 @@
 
 ## Hydraulic interpretation — what gets wet at what Sandy Hook level
 
-Using `water_at_342_Bay_MLLW = Sandy_Hook_obs_MLLW + 0.40` (local enhancement, empirically fit) and converting to NAVD88 via `NAVD88 = MLLW − 2.82`:
+The production tide pathway uses no constant local enhancement:
+`water_at_342_NAVD88 = Sandy_Hook_obs_MLLW − 2.82`. The retired
+v0.6 `+0.40 ft` term was over-fit to memory-based observations and was
+rejected by repeated tape measurements. A separate −0.13 ft expected-actual
+adjustment is reported for offshore winds; it does not change this conservative
+threshold table.
 
 | Sandy Hook obs (MLLW) | Water at 342 Bay (NAVD88) | What gets wet |
 |---|---|---|
-| < 6.06 | < 3.64 | All dry |
-| 6.06 | 3.64 | Lowest corner across Bay first gets wet (early-warning sentinel) |
-| 6.20 | 3.78 | Gutter line at user's walkway begins filling |
-| 6.33 | 3.91 | Lowest storm inlet grate submerged per H2M plans (Pathway B activates). Confirmed by field check 2026-05-18: the grate at the Bay+Central corner sits slightly above the street-curb interface at the walkway (3.78), so water emerges from the grate at SH ~6.33 then flows downhill to pool at the gutter line (3.78) — which is why the gutter, not the grate, is the practical "water on the street" threshold. |
-| **6.58** | **4.16** | **Water tops curb at walkway — flood onset at 342 Bay** |
-| 6.78 | 4.36 | Middle of Bay Ave at user's spot covered |
-| 6.96 | 4.54 | Intersection center submerged (local high point) |
-| 7.00 | 4.58 | Water at lawn / walkway step |
-| 7.12 | 4.70 | Middle of road near driveway |
-| **7.50** | **5.08** | **Water reaches front porch first step** (v0.5.1, est. ~6" above lawn step) |
-| 7.58 | 5.16 | ~1 ft above curb (Apr 18 2026 class event) |
-| 8.0+ | 5.58+ | Severe; approaching bulkhead overtopping |
-| 13.0+ | 10.58+ | Hurricane Sandy-class (Borough table: ~7 ft on Bay Ave) |
-| 13.82 (1% BFE) | 11.40 | Bay Avenue catastrophically submerged |
+| < 6.34 | < 3.52 | No connected tidal flooding visible |
+| 6.34 | 3.52 | SW distal grate emerges — first-water sentinel |
+| 6.42 | 3.60 | SE proximal grate emerges |
+| 6.46 | 3.64 | SE/SW pavement corners wet; upstream Bay Ave grate emerges |
+| 6.60 | 3.78 | Gutter line at user's walkway begins filling |
+| 6.62 | 3.80 | NE and NW corner grates emerge |
+| 6.73 | 3.91 | NE/NW pavement corners reached |
+| **6.98** | **4.16** | **Water tops curb at walkway — flood onset at 342 Bay** |
+| 7.15 | 4.33 | Sidewalk under the walkway lawn-step face reached |
+| 7.18 | 4.36 | Middle of Bay Ave at user's spot covered |
+| 7.36 | 4.54 | Intersection center submerged (local high point) |
+| 7.48 | 4.66 | Water reaches lawn / walkway step |
+| 7.50 | 4.68 | Water reaches bottom of porch steps |
+| **8.23** | **5.41** | **Water reaches top of first porch step** |
+| 10.90 | 8.08 | Water reaches porch deck |
+| 13.0 | 10.18 | Hurricane Sandy-class catastrophic flooding |
+| 13.82 (1% BFE) | 11.00 | Water reaches the FEMA base-flood elevation |
 
-(Earlier versions of this table had arithmetic errors. Reconciled with model spec v0.5.)
+(Earlier versions of this table used the retired +0.40 enhancement and a
+fictitious 5.08-ft porch-step estimate. Reconciled with the measured v0.10.1
+landmark ladder on 2026-07-21.)
 
 ---
 

@@ -17,6 +17,7 @@ import os
 import sys
 import csv
 import datetime as dt
+import re
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
@@ -77,7 +78,21 @@ def validate_csv_ledger(path, expected_fields):
     return failures
 
 
-def validate_forecast_metadata(path):
+def source_model_version(root=ROOT):
+    """Read the production model stamp without importing the forecast app."""
+    path = os.path.join(root, "forecast", "flood_forecast_daily.py")
+    try:
+        with open(path, encoding="utf-8") as f:
+            match = re.search(
+                r'^CURRENT_MODEL_VERSION\s*=\s*["\']([^"\']+)["\']',
+                f.read(), re.MULTILINE,
+            )
+    except OSError:
+        return None
+    return match.group(1) if match else None
+
+
+def validate_forecast_metadata(path, expected_model_version=None):
     """Require provenance and internally consistent input-health metadata."""
     failures = []
     try:
@@ -102,6 +117,12 @@ def validate_forecast_metadata(path):
         "model_version"
     ):
         failures.append("model_version must be a non-empty string")
+    elif (expected_model_version is not None
+          and forecast.get("model_version") != expected_model_version):
+        failures.append(
+            f"model_version mismatch: source is {expected_model_version!r}, "
+            f"forecast is {forecast.get('model_version')!r}"
+        )
     health = forecast.get("input_health")
     degraded = forecast.get("degraded_inputs")
     if not isinstance(health, dict):
@@ -153,7 +174,11 @@ def check_artifacts(root=ROOT):
         for why in validate_csv_ledger(path, fields):
             bad.append((path, why))
     forecast_path = os.path.join(root, "docs", "forecast.json")
-    for why in validate_forecast_metadata(forecast_path):
+    expected_model = source_model_version(root)
+    if expected_model is None:
+        bad.append((os.path.join(root, "forecast", "flood_forecast_daily.py"),
+                    "CURRENT_MODEL_VERSION not found"))
+    for why in validate_forecast_metadata(forecast_path, expected_model):
         bad.append((forecast_path, why))
     return bad
 

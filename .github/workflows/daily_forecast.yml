@@ -1,10 +1,9 @@
 name: Bay Ave Barnacle Forecast
 
-# Runs hourly (HANDOFF 9b.1 — sub-daily dynamic updates). Most hourly
-# runs write HTML + JSON + append to data/predictions_log.csv, no email
-# and no map regen. The 09:00 UTC run is the "full daily" run: email
-# send + map regen + archive snapshot. 09:00 UTC = 5 AM EDT (summer) /
-# 4 AM EST (winter). GitHub Actions cron does not adjust for DST.
+# Runs hourly (HANDOFF 9b.1 — sub-daily dynamic updates). Every run writes
+# HTML + JSON and appends to data/predictions_log.csv. Alert delivery is
+# event-driven on every run; 09:00 UTC adds the daily archive snapshot but
+# does not imply a routine email. GitHub Actions cron does not adjust for DST.
 #
 # Also runnable manually from the Actions tab via workflow_dispatch —
 # manual runs are treated as full-daily runs so testing exercises the
@@ -59,13 +58,10 @@ jobs:
           echo "is_daily=$is_daily" >> "$GITHUB_OUTPUT"
           echo "Run type: is_daily=$is_daily (hour=$hour UTC, event=${{ github.event_name }})"
 
-      # EVENT-DRIVEN ALERTING (2026-07-17, user): no more daily-morning
-      # email. Every hourly run evaluates the alert state; email + SMS
-      # go out only when flood risk APPEARS or ESCALATES (tide regime
-      # ≥ street in 72h, or pluvial risk). Manual dispatch forces a
-      # send (test path). The 09:00 "daily" run still does map regen +
-      # archive snapshot below — it just no longer implies email.
-      - name: Run forecast (email/SMS only on alert-state escalation)
+      # EVENT-DRIVEN ALERTING (2026-07-17; transactional 2026-07-21):
+      # ntfy/email/SMS attempt independently when risk appears, escalates,
+      # or a new same-rank event begins. Manual dispatch forces a send.
+      - name: Run forecast (event-driven alert delivery)
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}

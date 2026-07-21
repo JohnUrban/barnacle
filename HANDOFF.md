@@ -7,13 +7,14 @@ the model, the architecture, what works, what didn't and why, what's
 next, and all design context worth carrying into future work.
 
 If anything anywhere disagrees with this document, **assume the file
-with the higher version number wins** (currently model spec v0.10 —
-`model/v0.10.md`; older specs live in `model/archive/`).
+with the higher version number wins** (currently model spec v0.10.1 —
+`model/v0.10.1.md`; older specs live in `model/archive/`).
 
 **Status: PRODUCTION.** The system is deployed, scheduled, and
-self-publishing. Daily forecasts arrive by email; daily reports
-publish to GitHub Pages. As of the handoff date the loop runs without
-intervention; the work ahead is refinement, not bootstrap.
+self-publishing. The site refreshes on the forecast workflow and
+event-driven alerts use ntfy/email/SMS when risk appears or escalates;
+routine daily-morning email is retired. As of the handoff date the loop
+runs without intervention; the work ahead is refinement, not bootstrap.
 
 ---
 
@@ -27,8 +28,8 @@ that misses the user's specific property in two directions: false
 positives (predicted flooding that doesn't materialize at this house)
 and false negatives (actual flooding without sufficient warning).
 
-The project produces a **daily morning email** plus an
-**hourly-updated interactive site** at
+The project produces an **hourly-updated interactive site** plus
+**event-driven flood alerts** at
 [johnurban.github.io/barnacle](https://johnurban.github.io/barnacle/)
 (water-level chart, flood windows, heat-map, per-tide deep-link
 pages, forecast.json for the iOS widget), predicting water depth at
@@ -59,12 +60,12 @@ across v0.6–v0.8 and the user explicitly rejects that pattern.
 
 | Component | State |
 |---|---|
-| Model v0.9 specification (18 landmarks; tide-keyed + v0.9-gamma dual pluvial pathway) | ✅ Current — `model/v0.9.md`; v0.1–v0.8 in model/archive/ |
-| Daily forecast script (`forecast/flood_forecast_daily.py`) | ✅ In production, runs daily via GitHub Actions |
+| Model v0.10.1 specification (18 landmarks; tide-keyed + measured/refit dynamic pluvial tank) | ✅ Current — `model/v0.10.1.md`; v0.1–v0.10 in `model/archive/` |
+| Forecast script (`forecast/flood_forecast_daily.py`) | ✅ In production, scheduled via GitHub Actions |
 | Multi-tide forecast (both high tides per day) | ✅ Live since 2026-05-18 |
 | NWS surge parser (`forecast/nws_surge_parser.py`) | ✅ Self-test passes; awaits first live event |
-| GitHub Actions workflow | ✅ Hourly (best-effort ~62% under GHA throttling); email sends on the 09:00 UTC run |
-| Email delivery (Gmail SMTP) | ✅ Working from personal Gmail |
+| GitHub Actions workflow | ✅ Hourly forecast plus rain-gated nowcast; schedules are best-effort under GHA throttling |
+| Alert delivery (ntfy + Gmail SMTP + optional SMS gateway) | ✅ Event-driven; channels isolated and acknowledged only after confirmed delivery |
 | GitHub Pages site | ✅ Live at johnurban.github.io/barnacle/ |
 | Forecast archive (every day kept forever) | ✅ docs/archive/YYYY-MM-DD.html + .json |
 | Machine-readable JSON archive (HANDOFF 16c) | ✅ Live since 2026-05-18 |
@@ -110,11 +111,11 @@ across v0.6–v0.8 and the user explicitly rejects that pattern.
 
 ---
 
-## 3. The model in one screen (v0.9 — see model/v0.9.md for the canonical spec)
+## 3. The model in one screen (v0.10.1 — see model/v0.10.1.md for the canonical spec)
 
 > **This section was stale from v0.5 through v0.8 (caught in the
 > 2026-07-06 audit).** To prevent recurrence it now holds only the
-> one-screen summary + a pointer; `model/v0.9.md` is authoritative.
+> one-screen summary + a pointer; `model/v0.10.1.md` is authoritative.
 
 **Formula (tide-keyed path, applied per high tide in next 24 h):**
 
@@ -128,11 +129,12 @@ depth(landmark) = max(0, water − landmark_NAVD88) × 12   # inches
 Plus, reported separately (not in the main number):
 - **Wind adjustment** (v0.8): offshore peak winds → "expected actual"
   −0.13 ft line.
-- **Pluvial pathway (v0.10 DYNAMIC TANK, 2026-07-09)**:
-  dV/dt = K·(R−D(bay))^0.70 − k_out·V through the stage curve —
+- **Pluvial pathway (v0.10.1 DYNAMIC TANK, refit 2026-07-18)**:
+  dV/dt = 1.296e6·(R−D(bay))^0.78 − 3.50·V through the stage curve,
+  with a 15-minute hillside lag —
   the series rain line is a true HYDROGRAPH (timing solved). One
   fit matches all four measured events incl. both full hydrographs
-  (`model/v0.10.md`). Static v0.9-gamma dual models remain for
+  (`model/v0.10.1.md`). Static v0.9-gamma dual models remain for
   banner scenarios + the site calculator (tanh refuted as a peak
   model by event #4; kept as labeled conservative alternative).
 - **Cold-lockout**: demoted to advisory 2026-05-19; never applied.
@@ -148,8 +150,8 @@ porch_step1_top 5.41 · porch_deck 8.08 → 10.90 (Sandy-class).
 **Hurricane Sandy reference:** 13.31 ft MLLW on the 6-min product,
 12.03 on hourly_height. A 12.0 on hourly IS Sandy-class.
 
-**Calibration events**: see `data/labeled_observations.csv` (92 rows,
-7 events) and the per-event READMEs under `assets/observations/`.
+**Calibration events**: see `data/labeled_observations.csv` (149 records
+through 2026-07-18) and the per-event READMEs under `assets/observations/`.
 Tape-measured anchors: 5/18, 5/31, 6/14, 6/15 (tide events, ±0.2–1.8″
 at curb); Oct 30 2025 + 7/6/2026 (rain events, the pluvial-model
 anchors).
@@ -241,12 +243,12 @@ barnacle/
 │   ├── nws_surge_parser.py
 │   └── smoke_test.sh
 ├── model/
-│   ├── v0.9.md                   # ★ CURRENT spec (tide-keyed + pluvial)
+│   ├── v0.10.1.md                # ★ CURRENT spec (tide + dynamic tank)
 │   ├── elevations.md             # surveyed landmark elevations
 │   ├── elevations.pdf
 │   ├── h2m_pdf_extracts.md       # extracted key text from Borough PDF
 │   ├── HLND2303-Road-Reconstruction-Supplement-Set-2024.05.06.pdf
-│   └── archive/                  # v0.1 - v0.8 specs
+│   └── archive/                  # v0.1 - v0.10 specs
 ├── data/
 │   ├── labeled_events.csv        # 6 flood events used for calibration
 │   ├── labeled_observations.csv  # ongoing log of user-observed depths at landmarks (see README)
@@ -292,7 +294,7 @@ barnacle/
 │   │   ├── mrms/mrms_extracted.csv      # ★ MRMS extractions (committed cache; raw/ gitignored)
 │   │   ├── summary_stats.json           # ★ headline numbers
 │   │   ├── calibration_check.csv        # ★ 4-event validation
-│   │   ├── seasonality_recent.csv       # ★ 1996-2025 8-stratum table, used by daily email
+│   │   ├── seasonality_recent.csv       # ★ 1996-2025 8-stratum table, used in forecast reports
 │   │   ├── seasonality_by_threshold.csv # full-record version (1910-2025)
 │   │   ├── monthly_peak_percentiles.csv # ★ p25/50/75/90/95/99/max per month for #16e
 │   │   ├── slr_trend_by_window.csv      # SLR by 4 windows
@@ -635,10 +637,12 @@ Same surge information the Borough's emergency management is looking at.
 3. **Switch SMTP_USER to `bayavebarnacle@gmail.com`** once the account
    ages enough to support app passwords. Update three GitHub secrets;
    no code change. Keeps forecast emails out of personal Sent folder.
-4. **Refine the `lawn_step` and `porch_step` elevations via cross-fit
-   from grate measurements** (preferred over direct tape, per user
-   2026-06-14). Current values (`lawn_step` 4.58, `porch_step` 5.08)
-   were originally tape-measured but the user is uncertain whether
+4. ~~**Refine the `lawn_step` and `porch_step` elevations via cross-fit
+   from grate measurements**~~ ✅ RESOLVED (2026-07-21). The current
+   surveyed/observed values are lawn 4.66 ft NAVD88, porch base 4.68 ft,
+   and first porch-step top 5.41 ft. The prior values (`lawn_step` 4.58,
+   `porch_step` 5.08) were originally tape-measured, and the user was
+   uncertain whether
    the 4.54–4.63 range reflects survey uncertainty vs. tape uncertainty
    at the time. Either way, direct tape alone is unreliable here
    because the sidewalk and walkway slope toward the road — a tape
@@ -1130,7 +1134,7 @@ date ranges.
 **(b) Water-level oscillation plot.** Line plot of predicted (and
 observed, when available) water level over time. Background banded by
 landmark elevation with a blue→red gradient — lowest (pocket, 3.50)
-in blue, highest (porch step, 5.08) in red. Reading the plot tells you
+in blue, highest (first porch-step top, 5.41) in red. Reading the plot tells you
 which landmarks the water has crossed.
 
 **(c) Map scrubber + play button.** Timeline slider scrolls through
@@ -2339,7 +2343,7 @@ Read these for context if needed:
 
 **In the session after (Claude, cold start) — follow this RECIPE
 in order; every step has been needed at least once:**
-1. Read `model/v0.9.md` + HANDOFF §§1–3 + 9e; memory has the rest.
+1. Read `model/v0.10.1.md` + HANDOFF §§1–3 + 9e; memory has the rest.
 2. **Gauge sanity FIRST** (2026-07-09 lesson: the SH sensor spiked
    to 11.87 MLLW during the storm — instrument, not water):
    pull the 6-min series for the event window AND The Battery
@@ -2350,7 +2354,7 @@ in order; every step has been needed at least once:**
    protects production reads — do NOT hand new gauge-reading code
    paths into production without routing through it.
 3. Convert notes → NAVD88 profile: water = landmark_elev +
-   inches/12 (elevations in `model/v0.9.md` table). Cross-check
+   inches/12 (elevations in `model/elevations.md`). Cross-check
    two landmarks where sweeps overlap (they should agree ±0.05 ft).
 4. Log observations → `data/labeled_observations.csv` — **append
    PLAIN TEXT lines only; the file has legacy unquoted commas and
@@ -2718,5 +2722,27 @@ Claude Fable 5 review):**
   versus empty semantics, omitted pluvial output, degraded metadata and
   banners, metadata-gate consistency, and conservative trigger behavior.
   Phase 5 aligns the production model version and documentation.
+
+**2026-07-21 audit remediation — Phase 5 (Codex implementation,
+Claude Fable 5 review):**
+- Promoted the already-live July 18 refit to the correct `v0.10.1`
+  production stamp without retuning: K=1.296e6, gamma=0.78,
+  measured k_out=3.50/h, lag=15 min. The former `v0.10` spec is
+  preserved under `model/archive/`; `model/v0.10.1.md` documents the
+  measured constraint, refit, cutover, evidence, and reproducibility
+  limitation.
+- Updated `CURRENT_MODEL_VERSION`, the predictions-log README, root
+  README, observations README, workflow wording, current HANDOFF
+  summary, and the elevation/threshold reference in lockstep. The
+  retired +0.40 enhancement and fictitious 5.08-ft porch step no longer
+  appear as current guidance; the table now uses enhancement 0.00 and
+  the measured 5.41-ft first-step top.
+- The publish gate now reads the source model stamp and rejects a
+  generated forecast with a different `model_version`. Regression tests
+  lock the stamp, production constants, current spec path, archived
+  prior spec, and README references together. Historical prediction
+  rows remain as-run history; correctly stamped `v0.10.1` rows begin at
+  this documentation cutover. Phase 6 improves skill reporting and
+  nowcast scheduling.
 
 End of handoff.

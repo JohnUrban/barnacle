@@ -124,8 +124,13 @@ class InputHealthTests(unittest.TestCase):
             payload["degraded_inputs"] = ["nws_qpf"]
             path.write_text(json.dumps(payload), encoding="utf-8")
             repaired = check_artifacts.validate_forecast_metadata(str(path))
+            version_failure = check_artifacts.validate_forecast_metadata(
+                str(path), "v0.10.1"
+            )
         self.assertTrue(any("degraded_inputs mismatch" in f for f in failures))
         self.assertEqual(repaired, [])
+        self.assertTrue(any("model_version mismatch" in f
+                            for f in version_failure))
 
 
 if __name__ == "__main__":
