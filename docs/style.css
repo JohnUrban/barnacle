@@ -77,6 +77,19 @@ dt { font-weight: 600; color: #555; }
 dd { margin: 0; }
 .note { color: #888; font-size: 13px; }
 
+/* Collapsed figure legends (2026-07-21): verbose chart/map notes hide
+   behind an "Explain this figure" expander so figures stay glanceable */
+details.chart-explain, details.map-explain { margin: 4px 0; }
+details.chart-explain > summary, details.map-explain > summary {
+    cursor: pointer;
+    color: #1a5fa8;
+    font-size: 13px;
+    width: -moz-fit-content;
+    width: fit-content;
+}
+details.chart-explain[open] > summary,
+details.map-explain[open] > summary { margin-bottom: 2px; }
+
 table {
     width: 100%;
     border-collapse: collapse;

@@ -39,7 +39,7 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.21a";
+const WIDGET_VERSION = "v7.22a";
 const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -295,7 +295,10 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
   //   red dashed   = curb +7.7″ (flood onset)
   //   purple dashed= lawn step +13.7″
   //   brown dashed = top of 1st porch step +22.7″ (Oct-30 class)
+  //   steel dashed = MSL −45″ (mean sea level, epoch 1983-2001 —
+  //                  same steel family as the site's datum lines)
   const GUTTER_IN = toIn(3.78), LAWN_IN = toIn(4.66), PORCH1_IN = toIn(5.41);
+  const MSL_IN = toIn(-0.24);
   ctx.setStrokeColor(new Color("#222222", 0.9));
   ctx.setLineWidth(1.5);
   {
@@ -308,6 +311,7 @@ function drawTideChart(series, width, height, styleText, rainPotential) {
   dashedH(y(CURB_IN), new Color("#c0392b", 0.85));
   dashedH(y(LAWN_IN), new Color("#7c4dbc", 0.85));
   dashedH(y(PORCH1_IN), new Color("#6d4c2f", 0.85));
+  dashedH(y(MSL_IN), new Color("#4a6b8a", 0.8));
 
   // Day boundaries: dotted vertical line at each midnight in window
   const mid = new Date(times[0]);

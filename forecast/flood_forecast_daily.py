@@ -2720,7 +2720,9 @@ def render_details_page(forecast):
   <div id="model"></div>
 {_render_equation_widget_html(forecast)}
   <div id="spotcheck"></div>
-  {_spot_check_block_html(forecast)}
+  {_spot_check_block_html(forecast,
+                           table_ref='<a href="index.html#landmarks">on '
+                                     'the home page</a>')}
   <div id="accuracy"></div>
   {_render_accuracy_html(forecast)}
   <div id="glossary"></div>
@@ -2756,7 +2758,10 @@ def _render_more_info_links_html():
 def _render_summary_html(forecast):
     """HTML version: summary + confidence + optional unusual-forecast note
     inside a styled banner."""
-    summary = forecast.get("plain_language_summary") or ""
+    # Day cards absorbed the per-tide sentence list (user 2026-07-20,
+    # reapplied 2026-07-21 after the edit was lost in a reset cycle);
+    # this banner keeps only outage / confidence / unusual notes.
+    summary = ""
     level = forecast.get("confidence_level") or ""
     reason = forecast.get("confidence_reason") or ""
     unusual = _unusual_forecast_text(forecast)
@@ -2770,23 +2775,6 @@ def _render_summary_html(forecast):
             'below are served from cached astronomy (identical maths, '
             'just not refreshed). Rain-risk inputs (QPF, alerts) are '
             'unaffected and live.</p>')
-    if summary:
-        # One tide per line (user 2026-07-09): the semicolon-joined
-        # sentence was a wall of text. Keep the "Next 24 h:" lead-in,
-        # then indent each tide entry on its own line.
-        html_summary = summary
-        for lead in ("Next 72 h — high tides: ",
-                     "Next 24 h: ", "Next 24h: "):
-            if summary.startswith(lead):
-                entries = summary[len(lead):].split("; ")
-                html_summary = (
-                    lead.strip() + "<br>" + "<br>".join(
-                        f'<span style="padding-left:1em;display:inline-block">'
-                        f'{e.rstrip(".")}{";" if i < len(entries) - 1 else "."}'
-                        f'</span>'
-                        for i, e in enumerate(entries)))
-                break
-        parts.append(f'<p class="tldr-summary">{html_summary}</p>')
     if level:
         # Primary confidence line: badge + reason
         confidence_html = (
@@ -2803,47 +2791,6 @@ def _render_summary_html(forecast):
         parts.append(f'<p class="tldr-unusual">{unusual}</p>')
     parts.append('</section>')
     return "".join(parts)
-
-
-def _render_rain_outlook_html(forecast):
-    """The rain twin of the high-tides summary box (user 2026-07-09):
-    one line per local day for the next 72 h, plus alert / burst
-    context when pluvial risk is live. Rain-DNA: rain gets the same
-    top-of-page altitude as the tides."""
-    days = forecast.get("rain_outlook_72h") or []
-    if not days:
-        return ""
-    pr = forecast.get("pluvial_risk") or {}
-    lines = []
-    for d in days:
-        if d["cum_in"] < 0.02 and d["max_pop_pct"] < 20:
-            desc = f"no measurable rain expected (PoP {d['max_pop_pct']}%)"
-        else:
-            desc = (f"~{d['cum_in']:.2f}&Prime; total, peak "
-                    f"{d['peak_in_hr']:.2f} in/hr smeared, "
-                    f"PoP {d['max_pop_pct']}%")
-            if d["thunder"]:
-                desc += ", thunderstorms possible"
-        lines.append(
-            f'<span style="padding-left:1em;display:inline-block">'
-            f'{d["label"]} — {desc};</span>')
-    body = "Next 72 h — rain:<br>" + "<br>".join(lines)
-    body = body.rstrip(";</span>") + ".</span>"
-    extra = ""
-    alerts = pr.get("nws_flood_alerts") or []
-    if alerts:
-        names = ", ".join(a.get("event", "") for a in alerts)
-        extra += (f'<br><b>{names} in effect (NWS).</b>')
-    if pr.get("level") and pr.get("potential_low_tide_navd88"):
-        pot_in = (pr["potential_low_tide_navd88"] - GRATE_SW) * 12
-        extra += (
-            f'<br>A convective burst could bring street water to '
-            f'~{pot_in:+.0f}&Prime; vs SW grate at ANY tide (QPF smears '
-            f'bursts — the rates above understate cells).')
-    return (
-        '<section class="tldr">'
-        f'<p class="tldr-summary">{body}{extra}</p>'
-        '</section>')
 
 
 def _upcoming_tides_only(forecast):
@@ -4149,8 +4096,11 @@ def _spot_check_block_text(forecast, today=None):
     return lines
 
 
-def _spot_check_block_html(forecast, today=None):
-    """HTML version of the spot-check prompt."""
+def _spot_check_block_html(forecast, today=None, table_ref="above"):
+    """HTML version of the spot-check prompt. table_ref: where the
+    landmark ladder lives relative to this block — "above" (email,
+    where the table renders directly before it) or an <a> fragment
+    (details.html, where the table stayed on the landing page)."""
     today = today or dt.date.today()
     all_tides = forecast.get("all_tides") or []
     if not all_tides:
@@ -4175,7 +4125,7 @@ def _spot_check_block_html(forecast, today=None):
         f'{callouts_html}'
         '<p>Take a peek around one of those times — even '
         '&ldquo;no water at all&rdquo; is useful. Use the landmark table '
-        'above (lowest to highest) to describe what you saw. Report back '
+        f'{table_ref} (lowest to highest) to describe what you saw. Report back '
         'with: time you looked, highest landmark with water (or '
         '&ldquo;no water&rdquo;), and rough depth above it. '
         'Goes into <code>data/labeled_observations.csv</code>.</p>'
@@ -4217,7 +4167,7 @@ def _landmarks_section_html(forecast, today=None, wrapper="section",
         landmarks_section = ""
     elif wrapper == "section":
         landmarks_section = (
-            '<section class="landmarks">'
+            '<section class="landmarks" id="landmarks">'
             '<h2>Landmarks today</h2>' + body + '</section>'
         )
     else:
@@ -5629,7 +5579,10 @@ def _render_water_series_section(forecast):
       Show tidal datums (MLW &middot; MSL &middot; MHW &middot; MHHW
       &mdash; <a href="details.html#reference">definitions</a>)</label>
     </p>
+    <details class="note chart-explain">
+    <summary>Explain this figure</summary>
     <p class="note">{' '.join(note_bits)}</p>
+    </details>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <script>
@@ -5730,7 +5683,7 @@ def _render_flood_windows_html(forecast):
         return ""
     return f"""
   <section class="flood-windows">
-    <h2>Flooding windows (next 24 h)</h2>
+    <h2>Flooding windows (coming 30 h)</h2>
     <table class="tide-table">
       <thead><tr><th>Landmark</th><th>NAVD88</th><th>Wet window</th>
       <th>Duration</th><th>Peak</th></tr></thead>
@@ -6691,10 +6644,10 @@ def _render_flood_peaks_section(forecast):
     return """
   <section class="oscillation">
     <h2>Flood peaks at 342 Bay — past &amp; forecast (all pathways)</h2>
-    <p class="note">The chart above is organized BY TIDE — but this
-       corner floods on rain alone, between tides, even at dead low
-       tide (7/6/2026). This companion view puts everything on a real
-       TIME axis in local units: tide peaks (observed ■ / predicted ●
+    <p class="note">The tide-only view (toggle above) is organized
+       BY TIDE — but this corner floods on rain alone, between tides,
+       even at dead low tide (7/6/2026). This default view puts
+       everything on a real TIME axis in local units: tide peaks (observed ■ / predicted ●
        / faded halo = what we said ~24&nbsp;h ahead), <b>measured
        flood peaks from the spot-check log</b> (orange diamonds — any
        cause, placed when they actually happened), navy triangles =
@@ -6951,6 +6904,8 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
       <label><input type="radio" name="rain-model" value="power">
         power-law (v0.9, legacy)</label>
     </div>
+    <details class="note map-explain">
+    <summary>Explain this figure</summary>
     <p class="note">The depth slider sets the base (tide-set) water
        level; the extra-rain slider answers "what level does a
        SUSTAINED rate hold?" — drains absorb up to 0.25 in/hr
@@ -6972,6 +6927,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
        of water on the porch deck. Note the blue shading saturates
        at 2 ft depth, so extreme levels differ in EXTENT more than
        in shade.</p>
+    </details>
 """
         slider_script = f"""
       (function() {{
@@ -7199,9 +7155,11 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           }}
           // ladder: solid black zero line (SW grate) + dashed colors,
           // matching the big chart exactly
+          // -0.24 = MSL in NAVD88 (2026-07-21) — steel dashed,
+          // same family as the datum lines on the big charts
           var LC = [[3.52, '#222222', true], [3.78, '#2f8f5f'],
                     [4.16, '#c0392b'], [4.66, '#7c4dbc'],
-                    [5.41, '#6d4c2f']];
+                    [5.41, '#6d4c2f'], [-0.24, '#4a6b8a']];
           LC.forEach(function(l) {{
             if (l[0] > hi || l[0] < lo) return;
             c.strokeStyle = l[1]; c.lineWidth = l[2] ? 1.4 : 1;
@@ -7331,7 +7289,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
       })();"""
     return f"""
   <section class="{container_class}">
-    <{hh}>Predicted water depth (worst tide)</{hh}>
+    <{hh}>Flood Map Forecast</{hh}>
     {intro_note}{toggle_html}{shading_html}
     <div class="map-wrap" style="position:relative">
       <canvas id="heatmap-canvas" style="{canvas_styles}"></canvas>
@@ -8689,7 +8647,9 @@ def render_html_page(forecast):
               nc.street_now_in.toFixed(1) + '\u2033 and live)';
             if (kick) kick.textContent =
               'TODAY \u2014 HAPPENING NOW (live radar; QPF outlook superseded)';
-            tb.className = 'regime regime-severe';
+            // keep the day-card layout classes — this block is a
+            // grid cell now, not the old standalone TODAY box
+            tb.className = 'regime regime-severe day-card day-card-today';
           }}
         }}
       }}).catch(function() {{}});
