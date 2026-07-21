@@ -1,7 +1,10 @@
 import csv
+import datetime as dt
+import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from forecast import check_artifacts
 from forecast import flood_forecast_daily as ff
@@ -52,6 +55,21 @@ class CsvLedgerTests(unittest.TestCase):
             self.assertTrue(ff._csv_needs_header(str(path), ["a"]))
             path.touch()
             self.assertTrue(ff._csv_needs_header(str(path), ["a"]))
+
+    def test_tide_cache_is_multiline_and_round_trips(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "tides.json"
+            now = dt.datetime(2026, 7, 21, 12, 0, tzinfo=ff.STATION_TZ)
+            with mock.patch.object(ff, "_tide_cache_path", return_value=str(path)), \
+                 mock.patch.object(ff, "_station_local_now", return_value=now):
+                ff._tide_cache_save("series", [["2026-07-21 12:00", 4.2]])
+
+            raw = path.read_bytes()
+            self.assertNotIn(b"\r\n", raw)
+            self.assertGreater(raw.count(b"\n"), 3)
+            self.assertEqual(
+                json.loads(raw)["series"], [["2026-07-21 12:00", 4.2]]
+            )
 
 
 if __name__ == "__main__":

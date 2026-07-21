@@ -158,9 +158,10 @@ jobs:
               echo "pushed on attempt $attempt"
               exit 0
             fi
-            if ! git pull --rebase; then
+            git fetch origin main
+            if ! git rebase origin/main; then
               echo "REBASE CONFLICT — aborting publish (no corruption shipped)"
-              git rebase --abort || true
+              git rebase --abort
               exit 1
             fi
             if ! python forecast/check_artifacts.py; then

@@ -273,7 +273,11 @@ def _tide_cache_save(kind, rows):
             cutoff = ""
         cache[kind] = sorted(v for k, v in merged.items() if k >= cutoff)
         with open(_tide_cache_path() + ".tmp", "w") as f:
-            json.dump(cache, f)
+            # One item per line keeps the committed outage fallback
+            # reviewable: sliding the 30-minute window should not replace
+            # one giant JSON line in every hourly diff.
+            json.dump(cache, f, indent=2)
+            f.write("\n")
         os.replace(_tide_cache_path() + ".tmp", _tide_cache_path())
     except Exception:
         pass  # cache is best-effort, never fatal
@@ -906,7 +910,9 @@ def update_forecast_accuracy():
             ACCURACY_CSV_PATH, ACCURACY_CSV_FIELDS
         )
         with open(ACCURACY_CSV_PATH, "a", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=ACCURACY_CSV_FIELDS)
+            writer = csv.DictWriter(
+                f, fieldnames=ACCURACY_CSV_FIELDS, lineterminator="\n"
+            )
             if write_header:
                 writer.writeheader()
             for row in new_rows:
@@ -1011,7 +1017,9 @@ def append_predictions_log(forecast):
         PREDICTIONS_LOG_PATH, PREDICTIONS_LOG_FIELDS
     )
     with open(PREDICTIONS_LOG_PATH, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=PREDICTIONS_LOG_FIELDS)
+        writer = csv.DictWriter(
+            f, fieldnames=PREDICTIONS_LOG_FIELDS, lineterminator="\n"
+        )
         if write_header:
             writer.writeheader()
         for r in rows_to_write:
@@ -3302,7 +3310,7 @@ def _save_observed_peaks_cache(cache):
     try:
         os.makedirs(os.path.dirname(OBSERVED_PEAKS_CACHE_PATH), exist_ok=True)
         with open(OBSERVED_PEAKS_CACHE_PATH, "w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=fields)
+            w = csv.DictWriter(f, fieldnames=fields, lineterminator="\n")
             w.writeheader()
             for target, peak in sorted(cache.items()):
                 w.writerow({
@@ -8284,8 +8292,11 @@ def write_per_tide_pages(forecast, docs_root):
                             rows.append(row)
                 if rows:
                     with open(evo_path, "w", newline="") as out:
-                        writer = csv.DictWriter(out,
-                            fieldnames=PREDICTIONS_LOG_FIELDS)
+                        writer = csv.DictWriter(
+                            out,
+                            fieldnames=PREDICTIONS_LOG_FIELDS,
+                            lineterminator="\n",
+                        )
                         writer.writeheader()
                         for row in rows:
                             writer.writerow(row)

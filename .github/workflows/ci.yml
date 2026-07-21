@@ -1,0 +1,43 @@
+name: Barnacle CI
+
+on:
+  push:
+    paths:
+      - 'forecast/**'
+      - 'tests/**'
+      - '.github/workflows/**'
+  pull_request:
+    paths:
+      - 'forecast/**'
+      - 'tests/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: barnacle-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Compile forecast code
+        run: python -m compileall -q forecast tests
+
+      - name: Run offline regression tests
+        run: python -m unittest discover -s tests -q
+
+      - name: Validate committed artifacts and ledgers
+        run: python forecast/check_artifacts.py

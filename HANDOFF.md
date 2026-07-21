@@ -2777,4 +2777,25 @@ Claude Fable 5 review):**
   section ordering. Phase 7 addresses generated-artifact churn, CI, and
   refactoring boundaries.
 
+**2026-07-21 audit remediation — Phase 7 (Codex implementation,
+Claude Fable 5 review):**
+- Added read-only CI for source/workflow changes: Python compilation, all
+  offline `unittest` regressions, and the strict artifact/ledger publish
+  gate. Generated-only hourly commits do not start redundant CI runs.
+- Reduced avoidable generated churn without changing forecast values.
+  The astronomical outage cache is now stable, indented JSON instead of
+  one giant line; sliding the window changes only the affected rows.
+  Generated CSV writers now use explicit LF line endings, so appended
+  rows no longer appear as trailing-whitespace errors in Git diffs.
+- Standardized the hourly bot's push-race loop on explicit fetch, rebase,
+  re-gate, push behavior. Rebase conflicts abort publication; they are
+  never swallowed. The nowcast loop received the same discipline in
+  Phase 6.
+- Did not split the 9,800-line production entry point during correctness
+  remediation. `forecast/README.md` defines six incremental extraction
+  seams (station time, pure model, sources/provenance, ledgers/caches,
+  alerts, rendering), compatibility and verification rules, and the
+  explicit prohibition on mixing refactors with retuning or history
+  rewrites. This keeps the recommended refactor reviewable and reversible.
+
 End of handoff.
