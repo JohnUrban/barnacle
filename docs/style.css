@@ -90,6 +90,36 @@ details.chart-explain > summary, details.map-explain > summary {
 details.chart-explain[open] > summary,
 details.map-explain[open] > summary { margin-bottom: 2px; }
 
+/* Per-tide confidence badges + click-to-open popup (2026-07-21) */
+.tides { position: relative; }
+.conf-badge {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline dotted;
+}
+.conf-low    { color: #c0392b; }
+.conf-medium { color: #b45f00; }
+.conf-high   { color: #2f8f5f; }
+#conf-pop {
+    display: none;
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    max-width: 460px;
+    background: #fff;
+    border: 1px solid #999;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 13px;
+    color: #444;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    z-index: 30;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;

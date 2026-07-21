@@ -2335,6 +2335,58 @@ def _compute_regime_band(forecast, uncertainty_ft):
     return (lo_regime, hi_regime)
 
 
+def _tide_confidence(forecast, t):
+    """Per-tide confidence for the Upcoming-high-tides table (user
+    2026-07-21: the banner's LOW never said WHICH tide it was about).
+    Same three rules as assess_confidence, evaluated on THIS tide's
+    peak; returns (level, popup_text) with the tide named. The popup
+    text is plain prose — it feeds a click-to-open bubble."""
+    surge_source = forecast.get("surge_source", "")
+    peak = t["forecast_peak_mllw"]
+    if surge_source == "nws-coastal-flood-product":
+        level = "high"
+        reason = ("NWS Coastal Flood product active — forecaster-vetted "
+                  "projection")
+    elif peak > 8.0:
+        level = "low"
+        reason = (f"forecast peak {peak:.2f} ft is above the model's "
+                  f"calibrated range (events fit \u2264 7.6 ft)")
+    else:
+        swing = forecast.get("surge_swing_6h_ft")
+        if swing is not None and swing > 0.5:
+            level = "low"
+            reason = (f"observed surge has swung {swing:.2f} ft in the "
+                      f"past 6 h — persistence assumption is unreliable")
+        else:
+            level = "medium"
+            reason = ("surge persistence applied; forecast within "
+                      "calibrated range")
+    unc = _confidence_uncertainty_ft(level)
+    source, n = _confidence_uncertainty_source(level)
+    source_phrase = (
+        f"calibrated from {n} past forecasts at this confidence level"
+        if source == "data"
+        else "estimated heuristically until enough data accumulates")
+    when = format_time_short(t["time"])
+    text = (f"{level.upper()} — {reason}. The {when} peak "
+            f"({peak:.2f} ft MLLW) could land within roughly "
+            f"±{unc:.2f} ft of the forecast ({source_phrase}).")
+    if unc > 0:
+        try:
+            rain = t.get("peak_rain_in_hr") or 0.0
+            cold = bool(forecast.get("cold_lockout", False))
+            lo = predict_landmark_depths(
+                max(0.0, peak - unc), rain, cold).get("regime")
+            hi = predict_landmark_depths(peak + unc, rain, cold).get("regime")
+            if lo and hi and lo != hi:
+                text += (f" Depending on which way it resolves, this "
+                         f"tide could land anywhere from {lo.upper()} "
+                         f"to {hi.upper()}.")
+        except Exception:
+            pass
+    return level, text
+
+
 def _attach_summary_and_confidence(forecast):
     """Compute plain-language summary + confidence + unusual-forecast flag
     + forecast-accuracy summary after the forecast dict is otherwise
@@ -2755,16 +2807,37 @@ def _render_more_info_links_html():
             f'<ul class="more-info-list">{links}</ul></section>')
 
 
-def _render_summary_html(forecast):
+def _render_more_details_html(forecast):
+    """Collapsible "More details" strip under the day cards (user
+    2026-07-21) for context lines that are true but not glanceable —
+    currently the monthly-percentile note; future one-liners join
+    here rather than floating loose on the page."""
+    bits = []
+    unusual = _unusual_forecast_text(forecast)
+    if unusual:
+        bits.append(unusual)
+    if not bits:
+        return ""
+    body = "".join(f'<p class="note">{b}</p>' for b in bits)
+    return ('<details class="chart-explain more-details">'
+            f'<summary>More details</summary>{body}</details>')
+
+
+def _render_summary_html(forecast, include_confidence=True,
+                         include_unusual=True):
     """HTML version: summary + confidence + optional unusual-forecast note
-    inside a styled banner."""
+    inside a styled banner. The landing page passes both flags False
+    (2026-07-21): per-tide confidence lives in the tides table and the
+    percentile note in the More-details strip; email keeps the banner
+    complete."""
     # Day cards absorbed the per-tide sentence list (user 2026-07-20,
     # reapplied 2026-07-21 after the edit was lost in a reset cycle);
     # this banner keeps only outage / confidence / unusual notes.
     summary = ""
-    level = forecast.get("confidence_level") or ""
+    level = (forecast.get("confidence_level") or "") \
+        if include_confidence else ""
     reason = forecast.get("confidence_reason") or ""
-    unusual = _unusual_forecast_text(forecast)
+    unusual = _unusual_forecast_text(forecast) if include_unusual else None
     if not summary and not level and not unusual:
         return ""
     parts = ['<section class="tldr">']
@@ -6644,6 +6717,8 @@ def _render_flood_peaks_section(forecast):
     return """
   <section class="oscillation">
     <h2>Flood peaks at 342 Bay — past &amp; forecast (all pathways)</h2>
+    <details class="chart-explain">
+    <summary>Explain this figure</summary>
     <p class="note">The tide-only view (toggle above) is organized
        BY TIDE — but this corner floods on rain alone, between tides,
        even at dead low tide (7/6/2026). This default view puts
@@ -6663,6 +6738,7 @@ def _render_flood_peaks_section(forecast):
        evening). A rain flood with no halo under it =
        a miss the tide model could never have seen; that is the point
        of this chart.</p>
+    </details>
     <div class="heatmap-toggle unit-toggle">
       <span class="note">Units:</span>
       <label><input type="radio" name="fpk-unit" value="in" checked>
@@ -8489,6 +8565,16 @@ def render_html_page(forecast):
             f'<a href="tides/{slug}/">{format_time_full(t["time"])}</a>'
             if slug else format_time_full(t["time"])
         )
+        if is_past:
+            conf_cell = '<td class="note">—</td>'
+        else:
+            _cl, _ct = _tide_confidence(forecast, t)
+            _ct_attr = _ct.replace('&', '&amp;').replace('"', '&quot;') \
+                          .replace('<', '&lt;')
+            conf_cell = (
+                f'<td><button type="button" class="conf-badge '
+                f'conf-{_cl}" data-conf="{_ct_attr}">'
+                f'{_cl.upper()}</button></td>')
         tide_rows += (
             f'<tr{row_class}{data_attr}>'
             f'<td>{time_cell}</td>'
@@ -8499,6 +8585,7 @@ def render_html_page(forecast):
             f'<td>{above_in:+.1f}&Prime;</td>'
             f'<td>{rel_in:+.1f}&Prime;</td>'
             f'<td>{regime_display(td["regime"])}</td>'
+            f'{conf_cell}'
             f'</tr>'
         )
 
@@ -8660,9 +8747,12 @@ def render_html_page(forecast):
 
 {_render_day_cards_html(forecast)}
 
+  {_render_more_details_html(forecast)}
+
 {map_section}
 
-  {_render_summary_html(forecast)}
+  {_render_summary_html(forecast, include_confidence=False,
+                        include_unusual=False)}
 
 {_render_flood_windows_html(forecast)}
 
@@ -8675,20 +8765,32 @@ def render_html_page(forecast):
       <label><input type="radio" name="duration" value="72" checked> 72h</label>
     </div>
     <table class="tide-table">
-      <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th></tr></thead>
+      <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th><th>Conf</th></tr></thead>
       <tbody>{tide_rows}</tbody>
     </table>
-    <p class="note">Highlighted row is the worst case headlined above.
+    <div id="conf-pop"></div>
+    <details class="chart-explain">
+    <summary>Explain this table</summary>
+    <p class="note">Highlighted row is the worst tide of the 72 h (the
+       one flagged &#9650; WORST OF 72 H in the day cards).
        <b>Click any time in the first column</b> to open that tide's detail
        page (per-tide heat-map, prediction-evolution replay, convergence
        chart, full landmark table). <b>Above</b> = inches above the highest
        exceeded landmark (negative if water below the lowest landmark).
        <b>Rel</b> = inches above the lowest landmark (lowest road corner,
-       3.64 NAVD88) — always. Surge persistence is increasingly unreliable
+       3.64 NAVD88) — always. <b>Conf</b> = per-tide confidence — click a
+       value to see what drives it and the &plusmn; band it implies.
+       Surge persistence is increasingly unreliable
        for tides beyond ~24h out — use the longer windows for planning,
        not for trust. The most recent high tide stays visible (greyed
        out, marked "past") for {PAST_TIDE_VISIBILITY_HOURS} h after its
-       peak so you can check whether it flooded before you head home.</p>
+       peak so you can check whether it flooded before you head home.
+       Detail pages live under <code>tides/&lt;date&gt;T&lt;HH-MM&gt;/</code>
+       — each has a tide-specific heat-map, a slider that replays the
+       prediction history (drag through past predictions, watch the
+       heat-map redraw), and a convergence chart showing how that
+       tide's peak forecast evolved.</p>
+    </details>
     <script>
       (function() {{
         var radios = document.querySelectorAll('input[name="duration"]');
@@ -8706,12 +8808,30 @@ def render_html_page(forecast):
         }});
         // Apply the default (72) on load
         applyFilter(72);
+        // Confidence popup (2026-07-21): click a badge -> bubble with
+        // the per-tide reasoning, positioned under that row; any
+        // further click (bubble included) dismisses it.
+        var pop = document.getElementById('conf-pop');
+        document.querySelectorAll('.conf-badge').forEach(function(b) {{
+          b.addEventListener('click', function(ev) {{
+            ev.stopPropagation();
+            pop.textContent = b.getAttribute('data-conf');
+            pop.style.display = 'block';
+            var sec = pop.offsetParent || pop.parentElement;
+            var br = b.getBoundingClientRect();
+            var sr = sec.getBoundingClientRect();
+            pop.style.top = (br.bottom - sr.top + 6) + 'px';
+          }});
+        }});
+        document.addEventListener('click', function() {{
+          pop.style.display = 'none';
+        }});
       }})();
     </script>
   </section>
 
   <section class="forecast">
-    <h2>Worst-case detail
+    <h2>Details on highest tide in the next 72 hours
       <a class="detail-link" href="tides/{_tide_slug(peak_t)}/">View this tide's full detail page →</a>
     </h2>
     <dl>
@@ -8725,12 +8845,6 @@ def render_html_page(forecast):
       <dt>Cold conditions</dt><dd>{'<b>YES</b> — ice-lock hypothesis met; <i>no longer actively applied</i> (see <a href="https://github.com/JohnUrban/barnacle/blob/main/history/reports/cold_weather_retrospective.md">retrospective</a>)' if cold else 'no'}</dd>
     </dl>
 {_render_wind_adjustment_html(forecast)}
-    <p class="note">Per-tide detail pages live under <code>tides/&lt;date&gt;T&lt;HH-MM&gt;/</code>
-       (one per upcoming high tide; click any time in the rollup table above
-       to open one). They contain a tide-specific heat-map, a slider that
-       replays the prediction history (drag through past predictions, see
-       the heat-map redraw), and a convergence chart showing how the peak
-       forecast for that tide evolved.</p>
   </section>
 {_render_pluvial_advisory_html(forecast)}
 {_render_cold_advisory_html(forecast)}
