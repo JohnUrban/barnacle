@@ -139,6 +139,18 @@ OSCILLATION_LANDMARK_KEYS = {
     "porch_step1_top",        # 5.41 — top of first porch step (brown)
 }
 
+# Tidal datums at Sandy Hook (NOAA 8531680, epoch 1983-2001), ft MLLW.
+# NAVD88 plane = 2.82 ft MLLW at this station — the source of the
+# project's conversion constant, confirmed against the datums API
+# 2026-07-21. Note the epoch centers on ~1992: with ~4.3 mm/yr SLR,
+# present-day actual mean sea level runs ~0.4-0.5 ft above these.
+TIDAL_DATUMS = [
+    # (key, name, ft_MLLW, one-line meaning)
+    ("MLW",  "Mean Low Water",        0.20, "average daily low tide"),
+    ("MSL",  "Mean Sea Level",        2.58, "average of all levels — 'sea level'"),
+    ("MHW",  "Mean High Water",       4.90, "average daily high tide"),
+    ("MHHW", "Mean Higher-High Water", 5.23, "average of each day's HIGHER high"),
+]
 MLLW_TO_NAVD88_OFFSET = -2.82  # NAVD88 = MLLW + offset
 
 # Derived SH-MLLW thresholds used across report sections. Audit
@@ -2626,6 +2638,29 @@ def _render_reference_scale_html(forecast):
       <li>8.23 ft — water over the first porch step</li>
       <li>10.90 ft — water at the porch deck (Sandy-class)</li>
     </ul>
+    <h3>Tidal datums — the ladder below the grates</h3>
+    <p class="note">Official NOAA datums for Sandy Hook (epoch
+       1983&ndash;2001). "Sea level" is an average, not a line in the
+       water: MSL averages ALL heights over 19 years; MLLW (the
+       gauge's zero) averages only each day's LOWER low; NAVD88 (the
+       survey datum every landmark uses) is a fixed geodetic plane
+       that happens to sit 0.24 ft above epoch-MSL here. The epoch
+       centers on ~1992 &mdash; with ~4.3 mm/yr of sea-level rise
+       (this project's own fit), TODAY's actual mean sea level runs
+       ~0.4&ndash;0.5 ft above these values.</p>
+    <table>
+      <thead><tr><th>Datum</th><th>ft MLLW</th><th>ft NAVD88</th>
+        <th>vs SW grate</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>MLLW (gauge zero)</td><td>0.00</td><td>&minus;2.82</td><td>&minus;76&Prime;</td><td>average daily LOWER low</td></tr>
+        <tr><td>MLW</td><td>0.20</td><td>&minus;2.62</td><td>&minus;74&Prime;</td><td>average daily low tide</td></tr>
+        <tr><td>MSL ("sea level")</td><td>2.58</td><td>&minus;0.24</td><td>&minus;45&Prime;</td><td>average of all levels</td></tr>
+        <tr><td>NAVD88 zero</td><td>2.82</td><td>0.00</td><td>&minus;42&Prime;</td><td>survey datum plane</td></tr>
+        <tr><td>MHW</td><td>4.90</td><td>2.08</td><td>&minus;17&Prime;</td><td>average daily high tide</td></tr>
+        <tr><td>MHHW</td><td>5.23</td><td>2.41</td><td>&minus;13&Prime;</td><td>average HIGHER daily high</td></tr>
+      </tbody>
+    </table>
+
   </section>
 
 """
@@ -5512,6 +5547,17 @@ def _render_water_series_section(forecast):
             "pointRadius": 0, "borderWidth": 1.5, "spanGaps": False,
         })
     datasets.extend(landmark_datasets)
+    # Tidal datums (2026-07-21): hidden by default; the checkbox below
+    # the chart reveals them (and stretches the floor so MLW fits).
+    for _dk, _dn, _dm, _dd in TIDAL_DATUMS:
+        datasets.append({
+            "label": f"{_dk} {round((_dm - 6.34) * 12):+d}″",
+            "data": [round((_dm - 6.34) * 12, 1)] * len(labels),
+            "borderColor": "rgba(74,107,138,0.7)",
+            "borderWidth": 1.1, "borderDash": [4, 4],
+            "fill": False, "pointRadius": 0, "hidden": True,
+            "_datum": True,
+        })
     cfg = {
         "type": "line",
         "data": {"labels": labels, "datasets": datasets},
@@ -5578,12 +5624,21 @@ def _render_water_series_section(forecast):
     <div style="position:relative;height:340px;margin:8px auto">
       <canvas id="water-series-chart"></canvas>
     </div>
+    <p class="note" style="margin-top:2px">
+      <label><input type="checkbox" id="datum-toggle">
+      Show tidal datums (MLW &middot; MSL &middot; MHW &middot; MHHW
+      &mdash; <a href="details.html#reference">definitions</a>)</label>
+    </p>
     <p class="note">{' '.join(note_bits)}</p>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
     <script>
       (function() {{
         var cfg = {json.dumps(cfg)};
+        var datumIdxs = [];
+        cfg.data.datasets.forEach(function(d, i) {{
+          if (d._datum) datumIdxs.push(i);
+        }});
         var seriesTimes = {json.dumps([p["time"] for p in series])};
         var tideVals = {json.dumps(tide)};
         // "Now" marker computed at VIEW time (page regenerates hourly,
@@ -5609,7 +5664,36 @@ def _render_water_series_section(forecast):
             borderColor: '#ffffff', borderWidth: 2
           }};
         }}
-        new Chart(document.getElementById('water-series-chart'), cfg);
+        // Datum lines (2026-07-21): hidden datasets stay out of the
+        // legend entirely; the checkbox flips both, and stretches the
+        // y floor so MLW (-74 in) is on screen.
+        cfg.options.plugins.legend.labels.filter = function(item, data) {{
+          var d = data.datasets[item.datasetIndex];
+          return !(d._datum && d.hidden);
+        }};
+        var wsChart = new Chart(
+          document.getElementById('water-series-chart'), cfg);
+        window.barnacleWaterChart = wsChart;
+        var dtBox = document.getElementById('datum-toggle');
+        if (dtBox) {{
+          var baseMin = cfg.options.scales.y.min;
+          var applyDatums = function(on) {{
+            datumIdxs.forEach(function(i) {{
+              wsChart.data.datasets[i].hidden = !on;
+            }});
+            wsChart.options.scales.y.min =
+              on ? Math.min(baseMin, -78) : baseMin;
+            wsChart.update();
+          }};
+          dtBox.checked =
+            localStorage.getItem('barnacle-datum-lines') === '1';
+          if (dtBox.checked) applyDatums(true);
+          dtBox.addEventListener('change', function() {{
+            localStorage.setItem('barnacle-datum-lines',
+                                 dtBox.checked ? '1' : '0');
+            applyDatums(dtBox.checked);
+          }});
+        }}
       }})();
     </script>
   </section>
@@ -5918,7 +6002,20 @@ def _render_live_gauge_section(forecast):
               fill: true,
               pointRadius: 0,
               tension: 0.25,
-            }}]
+            }}].concat([
+              // Tidal datums (2026-07-21): the ladder BELOW the
+              // grates — muted steel family, legend-toggleable
+              ['MLW 0.20', 0.20], ['MSL 2.58', 2.58],
+              ['MHW 4.90', 4.90], ['MHHW 5.23', 5.23]
+            ].map(function(d) {{
+              return {{
+                label: d[0],
+                data: labels.map(function() {{ return d[1]; }}),
+                borderColor: 'rgba(74, 107, 138, 0.65)',
+                borderWidth: 1.1, borderDash: [4, 4],
+                fill: false, pointRadius: 0,
+              }};
+            }}))
           }},
           options: {{
             responsive: true,

@@ -11,7 +11,7 @@
 <main>
   <header>
     <h1><a href="index.html" style="text-decoration:none;color:inherit">Bay Ave Barnacle</a> — details</h1>
-    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated Tue Jul 21, 09:34 AM ET</p>
+    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated Tue Jul 21, 09:45 AM ET</p>
   </header>
 
   <div id="how"></div>
@@ -79,6 +79,29 @@
       <li>8.23 ft — water over the first porch step</li>
       <li>10.90 ft — water at the porch deck (Sandy-class)</li>
     </ul>
+    <h3>Tidal datums — the ladder below the grates</h3>
+    <p class="note">Official NOAA datums for Sandy Hook (epoch
+       1983&ndash;2001). "Sea level" is an average, not a line in the
+       water: MSL averages ALL heights over 19 years; MLLW (the
+       gauge's zero) averages only each day's LOWER low; NAVD88 (the
+       survey datum every landmark uses) is a fixed geodetic plane
+       that happens to sit 0.24 ft above epoch-MSL here. The epoch
+       centers on ~1992 &mdash; with ~4.3 mm/yr of sea-level rise
+       (this project's own fit), TODAY's actual mean sea level runs
+       ~0.4&ndash;0.5 ft above these values.</p>
+    <table>
+      <thead><tr><th>Datum</th><th>ft MLLW</th><th>ft NAVD88</th>
+        <th>vs SW grate</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>MLLW (gauge zero)</td><td>0.00</td><td>&minus;2.82</td><td>&minus;76&Prime;</td><td>average daily LOWER low</td></tr>
+        <tr><td>MLW</td><td>0.20</td><td>&minus;2.62</td><td>&minus;74&Prime;</td><td>average daily low tide</td></tr>
+        <tr><td>MSL ("sea level")</td><td>2.58</td><td>&minus;0.24</td><td>&minus;45&Prime;</td><td>average of all levels</td></tr>
+        <tr><td>NAVD88 zero</td><td>2.82</td><td>0.00</td><td>&minus;42&Prime;</td><td>survey datum plane</td></tr>
+        <tr><td>MHW</td><td>4.90</td><td>2.08</td><td>&minus;17&Prime;</td><td>average daily high tide</td></tr>
+        <tr><td>MHHW</td><td>5.23</td><td>2.41</td><td>&minus;13&Prime;</td><td>average HIGHER daily high</td></tr>
+      </tbody>
+    </table>
+
   </section>
 
 
@@ -137,7 +160,7 @@
     <div class="eqn-line">
       <span class="eqn-lhs">Water level (NAVD88) =</span>
       <input type="number" id="eq-shpeak" step="0.01"
-             value="6.00" data-default="5.9974">
+             value="6.04" data-default="6.0406">
       <span class="eqn-termname">ft &mdash; Sandy Hook peak (MLLW)</span>
     </div>
     <div class="eqn-line">
