@@ -66,20 +66,21 @@ looks stale, trust this file. Ledger lines are append-only:
 
 **Audit 2026-08-03-a2 remediation program (Codex full-repo audit;
 all findings verified — see audits/2026-08-03-a2/)**
-- [ ] Phase 0: unify station-local day/time everywhere (21 naive
+- [x] Phase 0: unify station-local day/time everywhere (21 naive
       now()/today() calls; injected clock + UTC-boundary/DST tests;
-      TZ env as defense) — third generation of the timezone family.
-- [ ] Phase 0: nowcast source-freshness semantics (source_latest_utc,
+      TZ env as defense) — shipped `5332dd70`.
+- [x] Phase 0: nowcast source-freshness semantics (source_latest_utc,
       age, frames expected/succeeded; site keys "live" off SOURCE
-      time); label the 45-min hold assumption.
-- [ ] Phase 0: heal_tree fail-closed for alert_state.json (quarantine
+      time); 45-min hold labeled — shipped `5332dd70`.
+- [x] Phase 0: heal_tree fail-closed for alert_state.json (quarantine
       + recover origin blob — it is transactional state now, not a
       cache); CSV-parse the predictions-log union; stop deleting
-      unregenerated docs artifacts.
-- [ ] Phase 1: CI triggers beyond forecast/tests (data/model/docs
+      unregenerated docs artifacts — shipped `5332dd70`.
+- [x] Phase 1: CI triggers beyond forecast/tests (data/model/docs
       inputs); semantic gate checks (timestamps, enums, future-time
       rejection, freshness); dispatch-failure visibility + retry;
-      pin actions/deps/CDN (SRI); _html_escape NWS feed text.
+      pin actions/deps/CDN (SRI); _html_escape NWS feed text — shipped
+      `5332dd70`; 67 tests + gate green, pending Claude review.
 - [ ] Phase 2: repo-relative v0.10.1 refit/hindcast command +
       golden/physics tests (freeze behavior, no retuning);
       evidence-count prose precision (six anchors / two hydrographs /
@@ -87,8 +88,10 @@ all findings verified — see audits/2026-08-03-a2/)**
       scratchpad import.
 - [ ] corrects_row_id / erratum convention for append-only ledgers
       (first hand-written erratum row shipped 2026-08-03).
-- [ ] Cadence SLO monitor + "best effort" wording on the site radar
-      strip (within the accepted-risk posture).
+- [ ] Cadence SLO monitor (within accepted-risk posture). "BEST
+      EFFORT" site wording shipped in `5332dd70`.
+- [ ] Audit a2 closeout: Claude verify round-03 implementation diff;
+      close only after findings/fixes are reconciled.
 
 **Standing obligations**
 - List `audits/` at session start; reply to open reports.
@@ -106,3 +109,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-08-03 | DECISION | brain-migration | HANDOFF→short wholesale snapshot; AGENTS/BACKLOG/PLAYBOOK/audits split; old HANDOFF archived verbatim in attic/ [STATED by user; this commit]
 2026-08-03 | DONE | audit-2026-08-03-a1 | distillation audit: 0 critical, 7 edge findings, all confirmed + patched same day (porch-tape stale-import, PLAYBOOK dead ref + fragment, collectors/someday-queue pointers restored) [VERIFIED: audits/2026-08-03-a1/]
 2026-08-03 | FACT | audit-2026-08-03-a2 | Codex full-repo audit: 5 high + 7 med/low, ALL verified in reply; M1 data errors (row-151 AM/PM, day-max 9.0→13.2) fixed same day; remediation program queued above [VERIFIED: audits/2026-08-03-a2/]
+2026-08-03 | DONE | audit-a2-phases-0-1 | station-local clock, source-aged radar/coverage, fail-closed transactional recovery, semantic gates/all-path CI, dispatch visibility, supply-chain pins/SRI, external HTML escaping; 67 tests green [VERIFIED: 5332dd70 + audits/2026-08-03-a2/03-remediation-implementation-codex.md]
