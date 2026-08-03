@@ -2906,5 +2906,25 @@ morning's mode). User chose C for now. REVISIT TRIGGER: the next
 event where the strip is dark during a rise, or whenever the user
 has 10 minutes for option B — A and B stack safely with GHA cron
 (concurrency group serializes; day-max merge is monotonic).
+**2026-08-03 PM (post-event session, cont.): TOWN MAP + ALERT VOLUME**
+- Highlands street flood map (docs/highlands.html, linked from
+  landing): USGS 3DEP street elevations (~25 m sampling, cached CSV
+  in history/data/), intersection-map band palette, 342-relative
+  units toggle, forecast time scrubber + tide thumbnail, zoom/pan/
+  pinch, OSM vector base layer (probe-verified coastline ring
+  assembly — see build_highlands_base_json.py header), 342-calibrated
+  rain view SCOPED TO HIGHLANDS ONLY (user: close downtown, error
+  grows with distance, directionally true; NOT AH/Leonardo/Sea
+  Bright). Expansion sweep for AH/Leonardo/Sea Bright bay-proximal
+  streets in progress; generator has town tags ready.
+- ALERT VOLUME (household policy, user + spouse feedback):
+  ALERT_DAILY_CAP = 2 confirmed deliveries per station-local day
+  (appearance/escalation/new-event logic unchanged — the cap limits
+  phone hits, not evaluation); counter increments only on confirmed
+  delivery. build_sms_text is WARNING-FIRST: the alert's trigger
+  (worst offending tide w/ time+height, or NWS event w/ onset) leads;
+  today's calm state is a trailing "Now: dry." only — no more texts
+  opening with "NO FLOODING" while warning about Wednesday.
+  Tests: tests/test_alert_delivery.py (DailyCap*, WarningFirst*).
 
 End of handoff.
