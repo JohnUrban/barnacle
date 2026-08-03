@@ -212,3 +212,91 @@ class AlertDeliveryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DailyCapTests(unittest.TestCase):
+    """Household volume policy 2026-08-03: at most ALERT_DAILY_CAP
+    deliveries per station-local day; counter increments only on
+    confirmed delivery; resets on day rollover."""
+
+    def _decide(self, state, rank=3):
+        forecast = {"all_tides": [], "pluvial_risk": {"level": "elevated"}}
+        now = dt.datetime(2026, 8, 3, 18, 0, tzinfo=dt.timezone.utc)
+        with mock.patch.object(ff, "compute_alert_level",
+                               return_value=(rank, "rain risk elevated",
+                                             "pluv|X@t")):
+            return ff.evaluate_alert(forecast, state=state, now_utc=now)
+
+    def test_cap_suppresses_after_two_sends(self):
+        st = {"rank": 0, "sig": "", "last_sent_rank": 0,
+              "last_sent_sig": "", "last_sent_ts": "",
+              "sends_today": {"date": "2026-08-03", "count": 2}}
+        d = self._decide(st)
+        self.assertFalse(d["send"])
+        self.assertIn("daily cap", d["reason"])
+
+    def test_prior_day_count_does_not_suppress(self):
+        st = {"rank": 0, "sig": "", "last_sent_rank": 0,
+              "last_sent_sig": "", "last_sent_ts": "",
+              "sends_today": {"date": "2026-08-02", "count": 2}}
+        d = self._decide(st)
+        self.assertTrue(d["send"])
+
+    def test_delivery_increments_counter(self):
+        import json as _json
+        import tempfile as _tf
+        from pathlib import Path as _P
+        st = {"rank": 0, "sig": "", "last_sent_rank": 0,
+              "last_sent_sig": "", "last_sent_ts": "",
+              "sends_today": {"date": "2026-08-03", "count": 1}}
+        d = self._decide(st)
+        self.assertTrue(d["send"])
+        out = _P(_tf.mkdtemp()) / "alert_state.json"
+        ff.persist_alert_state(d, delivered_channels=["ntfy"],
+                               path=str(out))
+        got = _json.loads(out.read_text())
+        self.assertEqual(got["sends_today"],
+                         {"date": "2026-08-03", "count": 2})
+
+    def test_failed_delivery_does_not_increment(self):
+        import json as _json
+        import tempfile as _tf
+        from pathlib import Path as _P
+        st = {"rank": 0, "sig": "", "last_sent_rank": 0,
+              "last_sent_sig": "", "last_sent_ts": "",
+              "sends_today": {"date": "2026-08-03", "count": 1}}
+        d = self._decide(st)
+        out = _P(_tf.mkdtemp()) / "alert_state.json"
+        ff.persist_alert_state(d, delivered_channels=[], path=str(out))
+        got = _json.loads(out.read_text())
+        self.assertEqual(got["sends_today"],
+                         {"date": "2026-08-03", "count": 1})
+
+
+class WarningFirstTextTests(unittest.TestCase):
+    def test_text_leads_with_warning_not_todays_calm(self):
+        forecast = {
+            "all_tides": [{"time": "2026-08-05 15:11",
+                           "forecast_peak_mllw": 6.9,
+                           "depths_in": {"regime": "street"}}],
+            "pluvial_risk": {},
+            "today_regime": "dry",
+            "peak_forecast_observed_mllw": 6.9,
+            "peak_time_local": "2026-08-05 15:11",
+        }
+        txt = ff.build_sms_text(forecast)
+        self.assertTrue(txt.startswith("[Barnacle] ALERT:"))
+        self.assertIn("tide flooding", txt.lower())
+        self.assertNotIn("NO FLOODING —", txt)
+
+    def test_pluvial_alert_names_the_event(self):
+        forecast = {
+            "all_tides": [],
+            "pluvial_risk": {"level": "elevated", "nws_flood_alerts": [
+                {"event": "Flood Watch",
+                 "onset": "2026-08-03T15:00:00-04:00"}]},
+            "today_regime": "dry",
+        }
+        txt = ff.build_sms_text(forecast)
+        self.assertIn("RAIN FLOOD RISK", txt)
+        self.assertIn("Flood Watch", txt)

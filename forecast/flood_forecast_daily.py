@@ -5471,6 +5471,15 @@ _ALERT_RANKS = {"dry": 0, "cold_lockout": 0, "street": 1, "light": 2,
 _PLUVIAL_RANKS = {None: 0, "possible": 1, "elevated": 3}
 
 
+# Max alert deliveries per station-local day (user household policy
+# 2026-08-03: "2 notifications per day or so (most)... If it already
+# sent a flood risk text, it might not matter that the risk has gone
+# up or down. The person already knows there is risk."). Appearance/
+# escalation/new-event logic still decides WHICH sends matter; this
+# caps HOW MANY reach phones.
+ALERT_DAILY_CAP = 2
+
+
 def compute_alert_level(forecast):
     """(rank, label, signature) for the event-driven alert policy
     (user, 2026-07-17: the daily-morning email became ignorable —
@@ -5587,6 +5596,16 @@ def evaluate_alert(forecast, state=None, now_utc=None):
             reason = (f"suppressed: rank {rank} already alerted "
                       f"{hrs:.1f}h ago (24h cooldown; a higher rank "
                       f"would send immediately)")
+    if send:
+        today_local = now_utc.astimezone(STATION_TZ).date().isoformat()
+        sc = st.get("sends_today") or {}
+        sent_count = sc.get("count", 0) if sc.get("date") == today_local \
+            else 0
+        if sent_count >= ALERT_DAILY_CAP:
+            send = False
+            reason = (f"suppressed: daily cap reached "
+                      f"({sent_count}/{ALERT_DAILY_CAP} alerts already "
+                      f"delivered today — household volume policy)")
     return {
         "send": send, "reason": reason, "rank": rank, "label": label,
         "sig": sig, "now_utc": now_utc, "previous": st,
@@ -5609,8 +5628,15 @@ def persist_alert_state(decision, delivered_channels=None, path=None):
         "last_sent_ts": st.get("last_sent_ts", ""),
         "last_sent_channels": st.get("last_sent_channels", []),
     }
+    new_state["sends_today"] = st.get("sends_today") or {}
     channels = sorted(set(delivered_channels or []))
     if channels:
+        today_local = decision["now_utc"].astimezone(
+            STATION_TZ).date().isoformat()
+        sc = new_state["sends_today"]
+        count = sc.get("count", 0) if sc.get("date") == today_local else 0
+        new_state["sends_today"] = {"date": today_local,
+                                    "count": count + 1}
         new_state.update({
             "last_sent_rank": decision["rank"],
             "last_sent_sig": decision["sig"],
@@ -5633,14 +5659,48 @@ def should_send_alert(forecast):
 
 
 def build_sms_text(forecast):
-    """~150-char alert for email-to-SMS gateways (ALERT_SMS_TO secret,
-    e.g. 5551234567@vtext.com). Short + link, per user design."""
+    """~150-char alert for SMS gateways + ntfy push. WARNING FIRST
+    (user 2026-08-03): the old text led with TODAY's headline, so an
+    alert fired by tomorrow's tide or an incoming NWS watch could
+    open with "NO FLOODING —" and read as content-free. The thing
+    the alert exists to say now comes first; today's state is a
+    trailing clarifier only when it differs."""
     rank, label, _ = compute_alert_level(forecast)
+    tide_rank, tide_best = 0, None
+    for t in (forecast.get("all_tides") or []):
+        r = ((t.get("depths_in") or {}).get("regime")) or "dry"
+        if _ALERT_RANKS.get(r, 0) > tide_rank:
+            tide_rank = _ALERT_RANKS.get(r, 0)
+            tide_best = (r, t)
+    pr = forecast.get("pluvial_risk") or {}
+    pl_rank = _PLUVIAL_RANKS.get(pr.get("level"), 0)
+    bits = []
+    if pl_rank > 0 and pl_rank >= tide_rank:
+        ev = ""
+        alerts = pr.get("nws_flood_alerts") or []
+        if alerts:
+            a = alerts[0]
+            ev = a.get("event", "")
+            if a.get("onset"):
+                try:
+                    ev += " from " + format_time_short(
+                        a["onset"][:16].replace("T", " "))
+                except Exception:
+                    pass
+        bits.append("RAIN FLOOD RISK" + (f" ({ev})" if ev else
+                                         f" ({pr.get('level')})"))
+    if tide_rank > 0 and tide_best:
+        r, t = tide_best
+        bits.append(f"{regime_display(r)} tide flooding "
+                    f"{format_time_short(t.get('time') or '')} "
+                    f"({t.get('forecast_peak_mllw') or 0:.2f} ft)")
+    warn = "; ".join(bits) if bits else label
     _tr = forecast.get("today_regime") or "dry"
     head, _ = headline_for(forecast, _tr)
-    peak = forecast.get("peak_forecast_observed_mllw") or 0
-    return (f"[Barnacle] {head} — {label}. Worst 72h {peak:.2f}ft "
-            f"{format_time_short(forecast.get('peak_time_local') or '')}. "
+    today_note = ""
+    if rank > 0 and "NO FLOODING" in (head or "").upper():
+        today_note = " Now: dry."
+    return (f"[Barnacle] ALERT: {warn}.{today_note} "
             f"johnurban.github.io/barnacle/?a={int(_time.time()) // 60}")
 
 
