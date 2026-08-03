@@ -71,6 +71,19 @@ of any event, from live narration alone.
   rain on the floodwater, summer foliage/tents/bunting, post context
   = today's warning) supports but does not prove today. True original
   would need Joe/OEM (joe@cupajoe.live).
+- **Downtown elevation vs ours (user hypothesis, confirmed):** USGS
+  3DEP LiDAR puts ground at 144 Bay Ave at **3.28 ft NAVD88** —
+  BELOW our lowest grate (3.52) and ~1.1 ft below our road middle
+  (4.36). With OEM's 8–12″ of water, the downtown water surface was
+  ~3.9–4.3 NAVD88 vs 4.67 here — the flood was NOT worse there;
+  depth-over-grade was comparable (8–12″ vs ~12″ over our lowest road
+  corner), ours marginally higher. The devastation difference is
+  **freeboard**: those shops/houses sit at grade (doorsills ~½ ft up),
+  so a foot of street water enters buildings; 342's porch deck sits
+  at 8.08 NAVD88, ~4.4 ft above its street. Same water, different
+  exposure. Corollary: at 3.28 ground, downtown's tidal first-water
+  is ~6.10 ft MLLW — it floods ~0.24 ft of tide EARLIER than our
+  corner does.
 
 ## Infrastructure findings (this event as live test)
 
