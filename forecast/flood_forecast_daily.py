@@ -3000,6 +3000,9 @@ def _render_more_info_links_html():
     links = "".join(
         f'<li><a href="details.html#{a}">{t}</a></li>'
         for a, t in items)
+    links += ('<li><a href="highlands.html">Highlands street flood '
+              'map (beta) — every street\'s elevation and flood '
+              'onset</a></li>')
     return ('<section class="more-info"><h2>For more information</h2>'
             f'<ul class="more-info-list">{links}</ul></section>')
 
