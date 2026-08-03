@@ -25,7 +25,9 @@ looks stale, trust this file. Ledger lines are append-only:
       is memoryless about hillside priming; every double-pulse event
       is a calibration pair. Candidate: trailing-rain multiplier on
       K or two-layer soil reservoir. Related: duration-explicit
-      V=C·(R−D)·T upgrade.
+      V=C·(R−D)·T upgrade. Priming is ONE of SIX structural insights
+      queued as the next model session's menu — see "Model
+      consequences" in assets/observations/2026-07-18/README.md.
 - [ ] Stateless-nowcast tank window: each run integrates from V=0
       over ~1 h of frames — understates once a burst ages out.
       Candidate: persist V with decay across runs. (Documented
@@ -39,8 +41,21 @@ looks stale, trust this file. Ledger lines are append-only:
 - [ ] Annual analytics refresh each January
       (`history/scripts/analyze.py` + `pull_sandy_hook_history.py`).
 - [ ] Sandy-era rain archives hunt (extend anchor set backward).
-- [ ] Porch riser tape-out (user offered): rebuilds vertical ladder
-      above porch base.
+- [ ] PASSIVE COLLECTORS (opportunistic, when conditions occur):
+      (a) verify enhancement holds at SH ≥ 7.5 ft (one multi-grate
+      spot-check during a big tide); (b) cold-conditions events —
+      each is a cold-lockout-hypothesis data point (advisory-only
+      since 2026-05-19); (c) NWS surge-parser first-real-event
+      validation — nws_surge_parser.py is live but has never seen a
+      real coastal-flood product (all six measured events were rain).
+- [ ] Confirm/deny 2025-08-21 flood (user saw swirly mud stains at
+      August rental inspection — proto-mud-tracer): would add a row
+      to data/labeled_events.csv. Low value; tide calibration no
+      longer gates anything.
+- [ ] Someday/speculative queue: attic archive §9 items 17–27 +
+      §9e.4-adjacent (ETSS retry, NYHOPS, multi-town spin-offs,
+      subscribe flow, iOS app stages, reanalysis, mesonet rain).
+      Consciously move an item OUT of the attic to activate it.
 - [ ] Datum line for widget + map-overlay chart (single chosen datum;
       deferred from the 2026-07-21 datums feature).
 - [ ] forecast/flood_forecast_daily.py file split (seams documented
@@ -63,3 +78,4 @@ looks stale, trust this file. Ledger lines are append-only:
 2026-08-03 | DECISION | alert-volume | daily cap 2 confirmed deliveries; warning-first texts [STATED by user; VERIFIED in tests]
 2026-08-03 | DONE | town-map | Highlands street flood map shipped: LiDAR street elevations, band palette, scrubber, zoom/pan, OSM base layer, burst-aware rain view (Highlands-scoped) [VERIFIED: docs/highlands.html live]
 2026-08-03 | DECISION | brain-migration | HANDOFF→short wholesale snapshot; AGENTS/BACKLOG/PLAYBOOK/audits split; old HANDOFF archived verbatim in attic/ [STATED by user; this commit]
+2026-08-03 | DONE | audit-2026-08-03-a1 | distillation audit: 0 critical, 7 edge findings, all confirmed + patched same day (porch-tape stale-import, PLAYBOOK dead ref + fragment, collectors/someday-queue pointers restored) [VERIFIED: audits/2026-08-03-a1/]

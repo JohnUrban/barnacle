@@ -22,7 +22,9 @@ as any lesson that changes it.
 
 **In the session after (Claude, cold start) — follow this RECIPE
 in order; every step has been needed at least once:**
-1. Read `model/v0.10.1.md` + HANDOFF §§1–3 + 9e; memory has the rest.
+1. Read `AGENTS.md` + `HANDOFF.md` + `model/v0.10.1.md`; event
+   physics context lives in the per-event READMEs under
+   `assets/observations/`.
 2. **Gauge sanity FIRST** (2026-07-09 lesson: the SH sensor spiked
    to 11.87 MLLW during the storm — instrument, not water):
    pull the 6-min series for the event window AND The Battery
@@ -75,7 +77,6 @@ in order; every step has been needed at least once:**
     `git stash list` + `grep -rl '<<<<<<<' data/ docs/`; log-file
     conflicts resolve by UNION of both sides, never ours/theirs.
 
-### ✅ SHIPPED 2026-07-17 (tiers 1+3): observed overlay on the
 
 ## Live-support mode (agent, during the event — added 2026-08-03, event #6)
 - Log every user report IMMEDIATELY: ledger row (strict CSV — run
@@ -93,3 +94,6 @@ in order; every step has been needed at least once:**
 - MUD-TRACER SURVEY once water is down: rain floods run muddy and
   mark their reach; absence of mud on the driveway = upper bound +
   no-missed-event proof.
+- COASTAL-FLOOD events only: capture the NWS coastal product and
+  validate nws_surge_parser.py against it — live in production,
+  never yet seen a real product (BACKLOG passive collector c).

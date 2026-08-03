@@ -39,8 +39,8 @@ event-driven alerts (ntfy/email/SMS, daily cap 2), iOS widget
   Sea Bright; when done, regen `docs/highlands_streets.json` via
   `history/scripts/build_highlands_map_json.py` and verify the rain
   view stays Highlands-only.
-- Open audit: `audits/2026-08-03-a1/` (brain-migration distillation
-  check) — needs its independent reply before close-out.
+- Audit `audits/2026-08-03-a1/` (distillation check): CLOSED —
+  7 edge findings confirmed and patched same day.
 
 ## Key traps
 
