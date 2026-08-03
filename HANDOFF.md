@@ -2836,5 +2836,23 @@ gaps shut (Claude wrap-up):**
   day now reads NO FLOODING (dry) instead of borrowing the worst-72h
   regime; the worst-72h fallback survives only when the series
   itself is missing (degraded inputs own that case).
+**EVENT #6 — 2026-08-03 pluvial flood (live-supported session):**
+peak ≈ +13.8″ vs SW grate ~10:33 ET, bracketed lawn-step/porch-base
+(tightest peak fix on record); pure pluvial, bay below all grates
+throughout; 14-min violent burst (MRMS mean 2.84 in/hr @10:22, hill
+max 3.97), ~11-min catchment lag. Model: physics hindcast +13.4″
+@10:42, live tank +13.2″ @10:50 — sub-half-inch agreement, best of
+any event; forecast had called rain risk that morning; first live
+firing of the transactional alert pipeline (3/3 channels, escalated
+on the FFW). Official FFW/WEA landed ~30 min AFTER this corner's
+peak. NEW: user's mud-tracer method (no mud on driveway = upper
+bound + no-second-event proof) — candidate standard post-event step.
+Full analysis: assets/observations/2026-08-03/ (README, hydrograph,
+dictation, OEM third-party photo w/ provenance caveat).
+OPEN BUGS FROM THE EVENT: (1) nowcast day-max regressed 13.2→9.0 via
+a stale-checkout cron writer — make the day-max merge monotonic or
+refresh nowcast.json from origin pre-merge; (2) cadence gap at burst
+onset (09:56 run, 10:02 burst, manual coverage from 10:29) — the
+nowcast-off-GHA-cron decision is now field-validated as necessary.
 
 End of handoff.
