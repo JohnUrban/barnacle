@@ -64,6 +64,32 @@ looks stale, trust this file. Ledger lines are append-only:
 - [ ] Choose/retire duplicated peaks charts after longer A/B (user
       single-user A/B since 7/07).
 
+**Audit 2026-08-03-a2 remediation program (Codex full-repo audit;
+all findings verified — see audits/2026-08-03-a2/)**
+- [ ] Phase 0: unify station-local day/time everywhere (21 naive
+      now()/today() calls; injected clock + UTC-boundary/DST tests;
+      TZ env as defense) — third generation of the timezone family.
+- [ ] Phase 0: nowcast source-freshness semantics (source_latest_utc,
+      age, frames expected/succeeded; site keys "live" off SOURCE
+      time); label the 45-min hold assumption.
+- [ ] Phase 0: heal_tree fail-closed for alert_state.json (quarantine
+      + recover origin blob — it is transactional state now, not a
+      cache); CSV-parse the predictions-log union; stop deleting
+      unregenerated docs artifacts.
+- [ ] Phase 1: CI triggers beyond forecast/tests (data/model/docs
+      inputs); semantic gate checks (timestamps, enums, future-time
+      rejection, freshness); dispatch-failure visibility + retry;
+      pin actions/deps/CDN (SRI); _html_escape NWS feed text.
+- [ ] Phase 2: repo-relative v0.10.1 refit/hindcast command +
+      golden/physics tests (freeze behavior, no retuning);
+      evidence-count prose precision (six anchors / two hydrographs /
+      one recession constraint); move all_anchors recipe off the
+      scratchpad import.
+- [ ] corrects_row_id / erratum convention for append-only ledgers
+      (first hand-written erratum row shipped 2026-08-03).
+- [ ] Cadence SLO monitor + "best effort" wording on the site radar
+      strip (within the accepted-risk posture).
+
 **Standing obligations**
 - List `audits/` at session start; reply to open reports.
 - Keep the living-documents registry (AGENTS.md) satisfied.
@@ -79,3 +105,4 @@ looks stale, trust this file. Ledger lines are append-only:
 2026-08-03 | DONE | town-map | Highlands street flood map shipped: LiDAR street elevations, band palette, scrubber, zoom/pan, OSM base layer, burst-aware rain view (Highlands-scoped) [VERIFIED: docs/highlands.html live]
 2026-08-03 | DECISION | brain-migration | HANDOFF→short wholesale snapshot; AGENTS/BACKLOG/PLAYBOOK/audits split; old HANDOFF archived verbatim in attic/ [STATED by user; this commit]
 2026-08-03 | DONE | audit-2026-08-03-a1 | distillation audit: 0 critical, 7 edge findings, all confirmed + patched same day (porch-tape stale-import, PLAYBOOK dead ref + fragment, collectors/someday-queue pointers restored) [VERIFIED: audits/2026-08-03-a1/]
+2026-08-03 | FACT | audit-2026-08-03-a2 | Codex full-repo audit: 5 high + 7 med/low, ALL verified in reply; M1 data errors (row-151 AM/PM, day-max 9.0→13.2) fixed same day; remediation program queued above [VERIFIED: audits/2026-08-03-a2/]
