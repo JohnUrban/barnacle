@@ -11,10 +11,15 @@
   #town-canvas { width: 100%; height: auto; background: #f4f6f8;
                  border: 1px solid #ccc; border-radius: 6px;
                  touch-action: none; }
+  #town-thumb { position: absolute; top: 8px; left: 8px;
+                background: rgba(255,255,255,0.93);
+                border: 1px solid #999; border-radius: 5px; }
   #town-readout { min-height: 1.5em; font-size: 13px; color: #444; }
   .town-slider { display: flex; flex-wrap: wrap; gap: 8px;
-                 align-items: center; margin: 6px 0; }
+                 align-items: center; margin: 6px 0; font-size: 13px; }
   .town-slider input[type=range] { flex: 1 1 100%; }
+  #town-time-label { min-height: 1.3em; display: block;
+                     font-size: 13px; color: #444; }
   .lg-swatch { display: inline-block; width: 22px; height: 10px;
                border-radius: 2px; vertical-align: middle;
                margin-right: 4px; }
@@ -31,77 +36,131 @@
     <div class="town-slider">
       <b style="font-size:14px">Water surface:</b>
       <span id="town-level-label" style="font-size:14px"></span>
-      <button type="button" id="town-snap">Snap to today's forecast peak</button>
+      <button type="button" id="town-snap">Snap to current forecast</button>
+      <label><input type="checkbox" id="town-units">
+        342 Bay Ave relative (&Prime; vs SW grate)</label>
       <input type="range" id="town-level" min="4.0" max="11.0"
              step="0.05" value="6.3">
     </div>
+    <div class="town-slider">
+      <span class="note">Slide through the forecast:</span>
+      <span id="town-time-label" class="note"></span>
+      <input type="range" id="town-time" min="0" max="0" step="1" value="0">
+    </div>
     <div id="town-wrap">
       <canvas id="town-canvas" width="980" height="1150"></canvas>
+      <canvas id="town-thumb" width="190" height="82"></canvas>
     </div>
     <p id="town-readout" class="note">Tap or hover a street for its
        elevation and flood-onset level.</p>
-    <p class="note" style="margin-top:2px">
-      <span class="lg-swatch" style="background:#c9ced4"></span>dry
-      <span class="lg-swatch" style="background:#bfdcf2"></span>&lt;4&Prime;
-      <span class="lg-swatch" style="background:#7fb6e0"></span>4&ndash;8&Prime;
-      <span class="lg-swatch" style="background:#3f88c9"></span>8&ndash;16&Prime;
-      <span class="lg-swatch" style="background:#0b3d6b"></span>&gt;16&Prime;
-      &nbsp;&middot;&nbsp; &#9679; = 342 Bay corner &nbsp;&middot;&nbsp;
-      &#9650; = 140&ndash;144 Bay Ave (downtown)
-    </p>
+    <p class="note" style="margin-top:2px" id="town-legend"></p>
     <details class="chart-explain">
       <summary>Explain this figure</summary>
       <p class="note">Streets are colored by an <b>approximate street
-         water depth</b>: the chosen water-surface elevation minus the
-         street's ground elevation (USGS 1-m LiDAR, sampled about every
-         25 m along the street network; NAVD88 datum, the same one every
-         Barnacle landmark uses). It is an approximation/guess: LiDAR
-         carries ~a few tenths of a foot of error near buildings, a
-         single water surface across town is exactly right for
-         <b>tidal</b> flooding (the bay is one connected level) but only
-         a rough envelope for <b>rain</b> flooding, where each low spot
-         ponds by its own drainage. <b>Water on a property is a function
-         of the building's base height relative to its street</b>: a
-         house or shop that sits well above the street sees far less
-         water than the street number suggests; one at street level sees
-         all of it. The colors deliberately stop at the streets — this
-         map does not claim to know any building's floor height.
-         Cross-reference: the 342 Bay corner (&#9679;) starts taking
-         tidal water at about 6.34 ft MLLW; each street's popup gives
-         the same onset number for that street, so "floods before/after
-         the 342 corner" is directly readable. Rain events at the 342
-         corner are modeled in detail on the
-         <a href="index.html">main page</a>; no such calibration exists
-         yet elsewhere in town.</p>
+         water depth</b> — the chosen water surface minus the street's
+         ground elevation (USGS 1-m LiDAR sampled ~25 m along each
+         street; NAVD88, the same datum as every Barnacle landmark) —
+         using the SAME depth bands as the 342 Bay flood map. It is an
+         approximation: LiDAR carries a few tenths of a foot of error
+         near buildings; one town-wide water surface is exactly right
+         for <b>tidal</b> flooding (the bay is one connected level) but
+         only a rough envelope for <b>rain</b> flooding, where each low
+         spot ponds by its own drainage. <b>Water on a property is a
+         function of the building's base height relative to its
+         street</b>: a house that sits well above the street sees far
+         less water than the street number suggests; one at street
+         level sees all of it — the colors deliberately stop at the
+         streets because this map does not know any building's floor
+         height. The forecast slider replays the predicted bay level
+         from the live forecast (tide pathway only — rain-burst
+         overlays are calibrated to the 342 catchment and are not
+         claimed town-wide). The "342 Bay Ave relative" toggle restates
+         all heights in inches vs the SW grate (3.52 ft NAVD88), the
+         reference every other Barnacle surface uses. Cross-reference:
+         the 342 corner (&#9679;) takes tidal water at ~6.34 ft MLLW;
+         each street's popup gives its own onset, so "floods
+         before/after 342" is directly readable.</p>
     </details>
   </section>
 
   <footer>
     <p class="note">Elevations: USGS 3DEP 1-m LiDAR (NAVD88) &middot;
        streets: OpenStreetMap contributors &middot; conversions:
-       NAVD88 = MLLW &minus; 2.82 ft at Sandy Hook.</p>
+       NAVD88 = MLLW &minus; 2.82 ft at Sandy Hook; SW grate = 3.52 ft
+       NAVD88 = 6.34 ft MLLW.</p>
   </footer>
 </main>
 <script>
 (function() {
-  var MLLW_OFF = 2.82;               // NAVD88 = MLLW - 2.82 (Sandy Hook)
-  var REF = [                        // reference markers
-    {lat: 40.4015, lon: -73.9910, sym: "dot",  label: "342 Bay corner"},
-    {lat: 40.4012, lon: -73.9862, sym: "tri",  label: "140-144 Bay Ave"}
+  var MLLW_OFF = 2.82, GRATE = 3.52;
+  // Same bands as docs/map-render.js (depth in feet above the street)
+  var BANDS = [
+    { max: 0.33, rgb: [158,202,225], label: "<4″ splash" },
+    { max: 1.0,  rgb: [66,146,198],  label: "4″–1′ ankle–shin" },
+    { max: 2.0,  rgb: [8,81,156],    label: "1–2′ knee" },
+    { max: 3.0,  rgb: [106,81,163],  label: "2–3′ waist / cars float" },
+    { max: 5.0,  rgb: [203,24,29],   label: "3–5′ chest / 1st floor" },
+    { max: 1e9,  rgb: [103,0,13],    label: ">5′ over head" }
+  ];
+  var DRY = "#c9ced4";
+  var REF = [
+    {lat: 40.4015, lon: -73.9910, sym: "dot", label: "342 Bay corner"},
+    {lat: 40.4012, lon: -73.9862, sym: "tri", label: "140-144 Bay Ave"}
   ];
   var canvas = document.getElementById("town-canvas");
   var ctx = canvas.getContext("2d");
+  var thumbC = document.getElementById("town-thumb");
   var slider = document.getElementById("town-level");
   var label = document.getElementById("town-level-label");
   var readout = document.getElementById("town-readout");
-  var DATA = null, proj = null, forecastPeak = null;
+  var tSlider = document.getElementById("town-time");
+  var tLabel = document.getElementById("town-time-label");
+  var unitsBox = document.getElementById("town-units");
+  var DATA = null, proj = null, SERIES = null, startI = 0;
+  var forecastPeak = null;
 
-  function colorFor(depthIn) {
-    if (depthIn <= 0) return "#c9ced4";
-    if (depthIn < 4)  return "#bfdcf2";
-    if (depthIn < 8)  return "#7fb6e0";
-    if (depthIn < 16) return "#3f88c9";
-    return "#0b3d6b";
+  try {
+    unitsBox.checked =
+      localStorage.getItem("barnacle-town-units") === "1";
+  } catch (e) {}
+
+  function fmtLevel(navd88) {
+    if (unitsBox.checked) {
+      var g = (navd88 - GRATE) * 12;
+      return (g >= 0 ? "+" : "") + g.toFixed(0) +
+        "″ vs SW grate (" + (navd88 + MLLW_OFF).toFixed(2) +
+        " ft MLLW)";
+    }
+    return (navd88 + MLLW_OFF).toFixed(2) + " ft MLLW (" +
+      navd88.toFixed(2) + " ft NAVD88)";
+  }
+  function fmtElev(navd88) {
+    if (unitsBox.checked) {
+      var g = (navd88 - GRATE) * 12;
+      return (g >= 0 ? "+" : "") + g.toFixed(0) + "″ vs SW grate";
+    }
+    return navd88.toFixed(1) + " ft NAVD88";
+  }
+
+  function colorFor(depthFt) {
+    if (depthFt <= 0) return DRY;
+    for (var i = 0; i < BANDS.length; i++) {
+      if (depthFt <= BANDS[i].max) return "rgb(" + BANDS[i].rgb.join(",") + ")";
+    }
+    return "rgb(" + BANDS[BANDS.length-1].rgb.join(",") + ")";
+  }
+
+  function buildLegend() {
+    var el = document.getElementById("town-legend");
+    var html = '<span class="lg-swatch" style="background:' + DRY +
+      '"></span>dry ';
+    BANDS.forEach(function(b) {
+      html += '<span class="lg-swatch" style="background:rgb(' +
+        b.rgb.join(",") + ')"></span>' + b.label + " ";
+    });
+    html += ' &middot; &#9679; = 342 Bay corner &middot; ' +
+      '&#9650; = 140–144 Bay Ave';
+    el.innerHTML = html;
   }
 
   function buildProj(bbox) {
@@ -119,22 +178,20 @@
 
   function render() {
     if (!DATA) return;
-    var wsM = parseFloat(slider.value);        // ft MLLW
-    var ws = wsM - MLLW_OFF;                   // ft NAVD88
-    label.textContent = wsM.toFixed(2) + " ft MLLW ("
-      + ws.toFixed(2) + " ft NAVD88)";
+    var ws = parseFloat(slider.value) - MLLW_OFF;   // slider is MLLW
+    label.textContent = fmtLevel(ws);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     DATA.streets.forEach(function(st) {
       var pts = st.pts;
       for (var i = 1; i < pts.length; i++) {
-        var a = pts[i - 1], b = pts[i];
+        var a = pts[i-1], b = pts[i];
         if (a[2] == null || b[2] == null) continue;
-        var depth = (ws - (a[2] + b[2]) / 2) * 12;
+        var depthFt = ws - (a[2] + b[2]) / 2;
         var A = proj(a[0], a[1]), B = proj(b[0], b[1]);
-        ctx.strokeStyle = colorFor(depth);
-        ctx.lineWidth = depth > 0 ? 4 : 2.5;
+        ctx.strokeStyle = colorFor(depthFt);
+        ctx.lineWidth = depthFt > 0 ? 4 : 2.5;
         ctx.lineCap = "round";
-        ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]);
+        ctx.beginPath(); ctx.moveTo(A[0],A[1]); ctx.lineTo(B[0],B[1]);
         ctx.stroke();
       }
     });
@@ -142,24 +199,62 @@
       var P = proj(r.lat, r.lon);
       ctx.fillStyle = "#b91c1c";
       ctx.beginPath();
-      if (r.sym === "dot") {
-        ctx.arc(P[0], P[1], 6, 0, 7);
-      } else {
-        ctx.moveTo(P[0], P[1] - 7); ctx.lineTo(P[0] - 6, P[1] + 5);
-        ctx.lineTo(P[0] + 6, P[1] + 5); ctx.closePath();
-      }
+      if (r.sym === "dot") ctx.arc(P[0], P[1], 6, 0, 7);
+      else { ctx.moveTo(P[0],P[1]-7); ctx.lineTo(P[0]-6,P[1]+5);
+             ctx.lineTo(P[0]+6,P[1]+5); ctx.closePath(); }
       ctx.fill();
       ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
     });
+    drawThumb();
+  }
+
+  // Mini tide chart (same grammar as the 342 map thumbnail): blue
+  // predicted bay curve, dotted midnights, fixed now-line, red ball
+  // at the scrubbed hour.
+  function drawThumb() {
+    if (!SERIES || !SERIES.length) {
+      thumbC.style.display = "none"; return;
+    }
+    var c = thumbC.getContext("2d");
+    var W = thumbC.width, H = thumbC.height, P = 6;
+    c.clearRect(0, 0, W, H);
+    var vs = SERIES.map(function(p){ return p.tide_navd88; });
+    var lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
+    var wsNow = parseFloat(slider.value) - MLLW_OFF;
+    lo = Math.min(lo, wsNow); hi = Math.max(hi, wsNow);
+    function X(i){ return P + (W-2*P) * i / (SERIES.length-1); }
+    function Y(v){ return H - P - (H-2*P) * (v-lo) / (hi-lo || 1); }
+    c.strokeStyle = "#999"; c.lineWidth = 1; c.setLineDash([2,3]);
+    SERIES.forEach(function(p, i) {
+      if ((p.time || "").slice(-5) === "00:00") {
+        c.beginPath(); c.moveTo(X(i), P); c.lineTo(X(i), H-P); c.stroke();
+      }
+    });
+    c.setLineDash([]);
+    c.strokeStyle = "#222"; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(X(startI), P); c.lineTo(X(startI), H-P);
+    c.stroke();
+    c.strokeStyle = "#1a5fa8"; c.lineWidth = 1.6;
+    c.beginPath();
+    SERIES.forEach(function(p, i) {
+      if (i === 0) c.moveTo(X(i), Y(p.tide_navd88));
+      else c.lineTo(X(i), Y(p.tide_navd88));
+    });
+    c.stroke();
+    var ti = parseInt(tSlider.value, 10) || 0;
+    c.fillStyle = "#b91c1c";
+    c.beginPath();
+    c.arc(X(ti), Y(SERIES[ti] ? SERIES[ti].tide_navd88 : wsNow), 3.5, 0, 7);
+    c.fill();
   }
 
   function nearest(mx, my) {
-    var best = null, bd = 20 * 20;
+    var best = null, bd = 20*20;
     DATA.streets.forEach(function(st) {
       st.pts.forEach(function(p) {
         if (p[2] == null) return;
         var P = proj(p[0], p[1]);
-        var d = (P[0] - mx) * (P[0] - mx) + (P[1] - my) * (P[1] - my);
+        var d = (P[0]-mx)*(P[0]-mx) + (P[1]-my)*(P[1]-my);
         if (d < bd) { bd = d; best = {st: st, p: p}; }
       });
     });
@@ -172,46 +267,88 @@
     var x = (ev.clientX - r.left) * canvas.width / r.width;
     var y = (ev.clientY - r.top) * canvas.height / r.height;
     var hit = nearest(x, y);
-    if (!hit) { return; }
+    if (!hit) return;
     var e = hit.p[2];
-    var onsetM = e + MLLW_OFF;
     var ws = parseFloat(slider.value) - MLLW_OFF;
     var depth = (ws - e) * 12;
-    readout.innerHTML = "<b>" + (hit.st.name || "unnamed street")
-      + "</b> — street ≈ " + e.toFixed(1) + " ft NAVD88; tidal "
-      + "flood onset ≈ " + onsetM.toFixed(2) + " ft MLLW "
-      + "(342 corner: 6.34)"
-      + (depth > 0
-         ? " — <b>≈ " + depth.toFixed(0)
-           + "″ of water at this level</b>"
-         : " — dry at this level");
+    var town = hit.st.town ? " (" + hit.st.town + ")" : "";
+    readout.innerHTML = "<b>" + (hit.st.name || "unnamed street") +
+      town + "</b> — street ≈ " + fmtElev(e) +
+      "; tidal flood onset ≈ " + (e + MLLW_OFF).toFixed(2) +
+      " ft MLLW (342 corner: 6.34)" +
+      (depth > 0
+        ? " — <b>≈ " + depth.toFixed(0) + "″ of water here</b>"
+        : " — dry at this level");
   }
   canvas.addEventListener("mousemove", onPoint);
   canvas.addEventListener("pointerdown", onPoint);
 
-  slider.addEventListener("input", render);
+  slider.addEventListener("input", function() {
+    tLabel.textContent = "";
+    render();
+  });
+  unitsBox.addEventListener("change", function() {
+    try {
+      localStorage.setItem("barnacle-town-units",
+                           unitsBox.checked ? "1" : "0");
+    } catch (e) {}
+    render();
+  });
+  tSlider.addEventListener("input", function() {
+    if (!SERIES) return;
+    var i = parseInt(tSlider.value, 10) || 0;
+    var p = SERIES[i];
+    if (!p) return;
+    slider.value = (p.tide_navd88 + MLLW_OFF).toFixed(2);
+    tLabel.textContent = p.time + " — predicted bay level";
+    render();
+  });
   document.getElementById("town-snap").addEventListener("click",
     function() {
-      if (forecastPeak) { slider.value = forecastPeak; render(); }
+      if (!SERIES) {
+        if (forecastPeak) { slider.value = forecastPeak; render(); }
+        return;
+      }
+      tSlider.value = startI;
+      var p = SERIES[startI];
+      slider.value = (p.tide_navd88 + MLLW_OFF).toFixed(2);
+      tLabel.textContent = p.time + " — now";
+      render();
     });
 
+  buildLegend();
   fetch("highlands_streets.json?v=" + Math.floor(Date.now() / 3.6e6))
-    .then(function(r) { return r.json(); })
+    .then(function(r){ return r.json(); })
     .then(function(d) {
       DATA = d;
       proj = buildProj(d.bbox);
       render();
     });
   fetch("forecast.json?v=" + Math.floor(Date.now() / 3e5))
-    .then(function(r) { return r.json(); })
+    .then(function(r){ return r.json(); })
     .then(function(f) {
       forecastPeak = f.peak_forecast_observed_mllw || null;
-      if (forecastPeak) {
-        document.getElementById("town-snap").textContent =
-          "Snap to today's forecast peak (" +
-          forecastPeak.toFixed(2) + " ft MLLW)";
+      SERIES = (f.water_series || []).filter(function(p) {
+        return p.tide_navd88 != null;
+      });
+      if (SERIES.length) {
+        tSlider.max = SERIES.length - 1;
+        // first point at/after now (viewer clock)
+        var now = new Date();
+        startI = 0;
+        for (var i = 0; i < SERIES.length; i++) {
+          var m = (SERIES[i].time || "").match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/);
+          if (m && new Date(+m[1], m[2]-1, +m[3], +m[4], +m[5]) >= now) {
+            startI = i; break;
+          }
+        }
+        tSlider.value = startI;
+        var p = SERIES[startI];
+        slider.value = (p.tide_navd88 + MLLW_OFF).toFixed(2);
+        tLabel.textContent = p.time + " — now";
       }
-    }).catch(function() {});
+      render();
+    }).catch(function() { render(); });
 })();
 </script>
 </body>
