@@ -77,6 +77,13 @@
         342-calibrated rain view <span class="note">(Highlands only)</span></label>
       <label><input type="checkbox" id="town-elev">
         elevation view <span class="note">(magma)</span></label>
+      <span id="elev-scale-wrap" class="note" style="display:none">
+        scale:
+        <label><input type="radio" name="elev-scale" value="terrain"
+          checked> terrain</label>
+        <label><input type="radio" name="elev-scale" value="zoom">
+          flood zoom</label>
+      </span>
     </div>
     <div id="town-wrap">
       <canvas id="town-canvas" width="980" height="840"></canvas>
@@ -202,6 +209,26 @@
     [0.75, 251, 135, 97], [0.88, 254, 194, 135], [1.00, 252, 253, 191]
   ];
   var MAXE = 260;
+  // Two elevation scales (user 2026-08-03): "terrain" = sqrt over
+  // the full relief (bird's-eye); "zoom" gives the floodable band
+  // 90% of the color range — 0-15 ft NAVD88 spans t=0..0.9, 15-60
+  // squeezes into the last 10%, above 60 saturates — so Bay Ave
+  // (~4 ft) and Shore Drive (~6-8 ft) land in clearly different
+  // colors instead of adjacent purples.
+  var elevScale = "terrain";
+  try {
+    elevScale = localStorage.getItem("barnacle-town-elevscale") ||
+      "terrain";
+  } catch (e) {}
+  function elevT(e) {
+    e = Math.max(0, e);
+    if (elevScale === "zoom") {
+      if (e <= 15) return 0.9 * e / 15;
+      if (e <= 60) return 0.9 + 0.1 * (e - 15) / 45;
+      return 1;
+    }
+    return Math.sqrt(e / MAXE);
+  }
   function magma(t) {
     t = Math.max(0, Math.min(1, t));
     for (var i = 1; i < MAGMA.length; i++) {
@@ -216,7 +243,7 @@
     return "rgb(252,253,191)";
   }
   function colorForElev(e) {
-    return magma(Math.sqrt(Math.max(0, e) / MAXE));
+    return magma(elevT(e));
   }
 
   function fmtLevel(navd88) {
@@ -251,15 +278,17 @@
         return "rgb(" + m[1] + "," + m[2] + "," + m[3] + ") " +
           (m[0] * 100).toFixed(0) + "%";
       }).join(",");
-      var marks = [0, 5, 15, 40, 100, 260].map(function(e) {
-        var pos = Math.sqrt(e / MAXE) * 100;
-        return {e: e, pos: pos};
+      var markVals = elevScale === "zoom"
+        ? [0, 3.52, 6, 9, 11.6, 15, 60]
+        : [0, 5, 15, 40, 100, 260];
+      var marks = markVals.map(function(e) {
+        return {e: e, pos: elevT(e) * 100};
       });
       var lab = marks.map(function(m) {
         var txt = unitsBox.checked
           ? (((m.e - 3.52) * 12) >= 0 ? "+" : "") +
             ((m.e - 3.52) * 12).toFixed(0) + "″"
-          : m.e + " ft";
+          : (m.e === 3.52 ? "grate" : (m.e === 11.6 ? "Sandy" : m.e + " ft"));
         return '<span style="position:absolute;left:' + m.pos.toFixed(1) +
           '%;transform:translateX(-50%);font-size:10px">' + txt + "</span>";
       }).join("");
@@ -269,7 +298,10 @@
         '<div style="height:10px;border-radius:3px;background:' +
         'linear-gradient(to right,' + stops + ')"></div>' +
         '<div style="position:relative;height:14px">' + lab + "</div></div>" +
-        '(sqrt scale — low shelf stretched, hills compressed) ' +
+        (elevScale === "zoom"
+          ? '(flood zoom — 0-15 ft gets 90% of the colors; ' +
+            'above 60 ft saturates) '
+          : '(sqrt scale — low shelf stretched, hills compressed) ') +
         '&middot; &#9679; = 342 Bay corner';
       return;
     }
@@ -374,7 +406,7 @@
         if (elevMode) {
           var e = (a[2] + b[2]) / 2;
           // quantize to 40 levels so batching stays effective
-          var t = Math.round(Math.sqrt(Math.max(0, e) / MAXE) * 40) / 40;
+          var t = Math.round(elevT(e) * 40) / 40;
           col = magma(t);
           wet = true;   // uniform 3px weight in elevation mode
         } else {
@@ -604,6 +636,26 @@
     tLabel.textContent = "";
     requestRender();
   });
+  (function wireElevScale() {
+    var wrap = document.getElementById("elev-scale-wrap");
+    var radios = document.querySelectorAll('input[name="elev-scale"]');
+    function syncVis() {
+      wrap.style.display = elevBox.checked ? "inline" : "none";
+    }
+    radios.forEach(function(r) {
+      r.checked = (r.value === elevScale);
+      r.addEventListener("change", function() {
+        elevScale = r.value;
+        try {
+          localStorage.setItem("barnacle-town-elevscale", elevScale);
+        } catch (e) {}
+        buildLegend();
+        requestRender();
+      });
+    });
+    elevBox.addEventListener("change", syncVis);
+    syncVis();
+  })();
   [unitsBox, baseBox, rainBox, elevBox].forEach(function(box, i) {
     box.addEventListener("change", function() {
       try {
