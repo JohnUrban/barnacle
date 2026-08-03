@@ -174,8 +174,7 @@
     // true Bay & Central intersection: shared OSM vertex, LiDAR
     // 4.36 ft = the surveyed road-middle landmark exactly
     {lat: 40.405479, lon: -73.995195, sym: "dot",
-     label: "342 Bay corner"},
-    {lat: 40.4012, lon: -73.9862, sym: "tri", label: "140-144 Bay Ave"}
+     label: "342 Bay corner"}
   ];
   var canvas = document.getElementById("town-canvas");
   var ctx = canvas.getContext("2d");
@@ -328,8 +327,7 @@
       html += '<span class="lg-swatch" style="background:rgb(' +
         b.rgb.join(",") + ')"></span>' + b.label + " ";
     });
-    html += ' &middot; &#9679; = 342 Bay corner &middot; ' +
-      '&#9650; = 140–144 Bay Ave';
+    html += ' &middot; &#9679; = 342 Bay corner';
     el.innerHTML = html;
   }
 
@@ -543,11 +541,8 @@
                (P2[1] - m[1]) * (P2[1] - m[1]);
       if (dd < (10 / view.k) * (10 / view.k)) {
         readout.innerHTML = "<b>" + REF[ri].label + "</b> — " +
-          (ri === 0
-            ? "the calibrated intersection (342 Bay & Central); " +
-              "lowest grate 3.52 ft NAVD88 = tidal onset 6.34 MLLW"
-            : "downtown block (Fresh restaurant); ground ≈ 3.28 ft " +
-              "NAVD88 — floods ~0.24 ft of tide before the 342 corner");
+          "the calibrated intersection (342 Bay & Central); " +
+          "lowest grate 3.52 ft NAVD88 = tidal onset 6.34 MLLW";
         return;
       }
     }
