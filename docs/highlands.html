@@ -85,7 +85,12 @@
          with distance from that corner (still directionally right),
          and it is <b>not applied</b> to Atlantic Highlands, Leonardo,
          or Sea Bright — different hillsides, different drainage; those
-         streets always show the tidal surface. The base map (water,
+         streets always show the tidal surface. During burst-capable
+         hours (thunder/heavy-rain forecast) the rain view shows the
+         <b>burst potential</b> — the level a convective cell could
+         fill to at any point in those hours (navy band on the mini
+         chart); a quiet forecast makes the rain view identical to the
+         tide view, which is honesty, not a bug. The base map (water,
          parks, sand, Route 36) is built from OpenStreetMap data.
          Cross-reference: the 342 corner (&#9679;) takes tidal water at
          ~6.34 ft MLLW; each street's popup gives its own onset, so
@@ -128,7 +133,7 @@
   var baseBox = document.getElementById("town-base");
   var rainBox = document.getElementById("town-rain");
   var DATA = null, BASE = null, SERIES = null, startI = 0;
-  var forecastPeak = null, proj = null;
+  var forecastPeak = null, proj = null, POT = null;
   var view = { k: 1, tx: 0, ty: 0 };
   var raf = null;
 
@@ -205,6 +210,12 @@
     var p = SERIES[i];
     if (!p || p.water_navd88 == null) return manual;
     if ((st.town || "Highlands") === "Highlands") {
+      // burst-capable hours show the burst POTENTIAL (same rule as
+      // the 342 map's burst view: bursts have magnitude, not clock
+      // time — any flagged hour could fill to roughly this level)
+      if (p.burst_risk && POT != null) {
+        return Math.max(p.water_navd88, POT);
+      }
       return p.water_navd88;
     }
     return p.tide_navd88 != null ? p.tide_navd88 : manual;
@@ -290,6 +301,10 @@
         ? p.water_navd88 : p.tide_navd88;
     });
     var lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
+    if (useRain && POT != null &&
+        SERIES.some(function(p) { return p.burst_risk; })) {
+      hi = Math.max(hi, POT);
+    }
     function X(i) { return P + (W2 - 2 * P) * i / (SERIES.length - 1); }
     function Y(v) { return H - P - (H - 2 * P) * (v - lo) / (hi - lo || 1); }
     c.strokeStyle = "#999"; c.lineWidth = 1; c.setLineDash([2, 3]);
@@ -299,6 +314,16 @@
       }
     });
     c.setLineDash([]);
+    if (useRain && POT != null) {
+      c.fillStyle = "rgba(11,61,107,0.30)";
+      var half = (W2 - 2 * P) / (SERIES.length - 1) / 2;
+      SERIES.forEach(function(p, i) {
+        if (!p.burst_risk) return;
+        var top = Math.max(POT, vs[i] != null ? vs[i] : POT);
+        c.fillRect(X(i) - half, Y(Math.min(top, hi)),
+                   half * 2, Y(vs[i]) - Y(Math.min(top, hi)));
+      });
+    }
     c.strokeStyle = "#222"; c.lineWidth = 1.2;
     c.beginPath(); c.moveTo(X(startI), P); c.lineTo(X(startI), H - P);
     c.stroke();
@@ -457,12 +482,21 @@
     if (!p) return;
     var lvl = rainBox.checked && p.water_navd88 != null
       ? p.water_navd88 : p.tide_navd88;
+    var extra = "";
+    if (rainBox.checked) {
+      if (p.burst_risk && POT != null && POT > lvl) {
+        lvl = POT;
+        extra = " — burst-capable hour: showing burst potential" +
+          " (tide " + (p.tide_navd88 + MLLW_OFF).toFixed(2) + " ft)";
+      } else if (p.water_navd88 != null &&
+                 p.water_navd88 > (p.tide_navd88 || 0) + 0.01) {
+        extra = " — 342 rain-water (bay tide " +
+          (p.tide_navd88 + MLLW_OFF).toFixed(2) + " ft)";
+      } else {
+        extra = " — no rain signal this hour (rain view = tide)";
+      }
+    }
     slider.value = (lvl + MLLW_OFF).toFixed(2);
-    var extra = rainBox.checked && p.water_navd88 != null &&
-      p.water_navd88 > (p.tide_navd88 || 0) + 0.01
-      ? " (342 rain-water; bay tide " +
-        (p.tide_navd88 + MLLW_OFF).toFixed(2) + ")"
-      : "";
     tLabel.textContent = p.time + extra;
   }
   tSlider.addEventListener("input", function() {
@@ -497,6 +531,10 @@
     .then(function(r) { return r.json(); })
     .then(function(f) {
       forecastPeak = f.peak_forecast_observed_mllw || null;
+      var pr = f.pluvial_risk || {};
+      POT = Math.max(pr.potential_low_tide_navd88 || -99,
+                     pr.potential_low_tide_navd88_tanh || -99);
+      if (POT < -90) POT = null;
       SERIES = (f.water_series || []).filter(function(p) {
         return p.tide_navd88 != null;
       });
