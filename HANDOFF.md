@@ -2853,7 +2853,15 @@ on the FFW). Official FFW/WEA landed ~30 min AFTER this corner's
 peak. NEW: user's mud-tracer method (no mud on driveway = upper
 bound + no-second-event proof) — candidate standard post-event step.
 Full analysis: assets/observations/2026-08-03/ (README, hydrograph,
-dictation, OEM third-party photo w/ provenance caveat).
+all-anchors refresh, dictation, OEM third-party photo w/ provenance
+caveat). Ranking note: #6 is 6th of 7 measured street peaks (an
+earlier "4th-largest" draft overlooked Oct 30 and un-numbered 7/13).
+OPEN RECONCILIATION (user call): production _PLUVIAL_ANCHORS encodes
+the 7/6 peak as +15.4″ (mid of the measured 4.77–4.84 NAVD88 range,
+calibration-era pick) while HANDOFF/newer docs canonicalize +15.0″
+(the 4.77 low end) — one value should win everywhere; changing the
+constant shifts analog scenario floors, so it needs a deliberate
+decision, not a drive-by edit.
 EVENT-#6 BUGS, STATUS 2026-08-03 PM: (1) day-max regression FIXED —
 merge is now candidate-based and monotonic-per-day (street_now,
 observed-window traj peak, same-day local prev, PUBLISHED origin
