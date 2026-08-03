@@ -39,7 +39,7 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.23a";
+const WIDGET_VERSION = "v7.24a";
 const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -443,13 +443,15 @@ async function fetchForecast() {
   const req = new Request(FORECAST_URL + "?t=" + bust);
   const fc = await req.loadJSON();
   // LIVE nowcast overlay (2026-07-17): tiny separate file kept fresh
-  // by a best-effort 10-min radar Action; attach only when active and
-  // <20 min old. Stale radar must never override the forecast headline.
+  // by a best-effort Action requesting 10-min cadence; attach only when
+  // active and the newest SOURCE frame is <20 min old. Workflow write time
+  // cannot make stalled radar look fresh.
   try {
     const nreq = new Request(NOWCAST_URL + "?t=" + bust);
     const nc = await nreq.loadJSON();
-    if (nc && nc.active && nc.generated_utc &&
-        (Date.now() - Date.parse(nc.generated_utc)) / 60000 <= 20) {
+    if (nc && nc.active && nc.radar_quality === "ok" &&
+        nc.source_latest_utc &&
+        (Date.now() - Date.parse(nc.source_latest_utc)) / 60000 <= 20) {
       fc._nowcast = nc;
     }
   } catch (e) {}
@@ -762,7 +764,7 @@ function makeWidget(forecast, family) {
     }
   }
 
-  // Footer (v7.23a): the stamp is the FORECAST's generated_utc, not
+  // Footer (v7.24a): the stamp is the FORECAST's generated_utc, not
   // the widget's render time — refresh time says nothing about data
   // freshness. >2.5 h old (hourly pipeline missed ~2 slots) turns it
   // into a loud STALE flag; degraded inputs get an amber line.

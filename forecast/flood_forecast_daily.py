@@ -40,9 +40,33 @@ from zoneinfo import ZoneInfo
 STATION_TZ = ZoneInfo("America/New_York")
 
 
-def _station_local_now():
-    """Now in the Sandy Hook station's local timezone (naive)."""
-    return dt.datetime.now(STATION_TZ).replace(tzinfo=None)
+def _station_local_now(now_utc=None):
+    """Now in the Sandy Hook station's local timezone (naive).
+
+    ``now_utc`` is an injection seam for boundary/DST tests.  Production
+    callers omit it; tests can supply one aware instant and prove that every
+    local-day decision is derived from the same clock.
+    """
+    now = now_utc or dt.datetime.now(dt.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
+    return now.astimezone(STATION_TZ).replace(tzinfo=None)
+
+
+def _station_local_today(now_utc=None):
+    """Station-local calendar date from the shared injectable clock."""
+    return _station_local_now(now_utc).date()
+
+
+def utc_to_station_local(value):
+    """Parse an aware UTC/offset timestamp and convert it to station time."""
+    if isinstance(value, dt.datetime):
+        parsed = value
+    else:
+        parsed = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        raise ValueError("UTC/offset timestamp must be timezone-aware")
+    return parsed.astimezone(STATION_TZ)
 
 
 def parse_station_local_time(value):
@@ -866,7 +890,7 @@ def update_forecast_accuracy():
             pass
 
     new_rows = []
-    today = dt.date.today()
+    today = _station_local_today()
     for fname in sorted(os.listdir(ARCHIVE_DIR)):
         if not fname.endswith(".json"):
             continue
@@ -1783,7 +1807,7 @@ def build_seasonal_context(forecast):
     """Assemble dict of seasonal-context fields for injection into email/HTML.
     Always returns a dict; missing pieces are None or empty. Render code
     should handle absent fields gracefully."""
-    today = dt.date.today()
+    today = _station_local_today()
     ctx = {
         "month_name": today.strftime("%B"),
         "strata": load_seasonality_strata(today.month),  # list, possibly empty
@@ -2296,7 +2320,7 @@ def build_forecast():
     try:
         _today_str = _station_local_now().strftime("%Y-%m-%d")
     except Exception:
-        _today_str = dt.date.today().isoformat()
+        _today_str = _station_local_today().isoformat()
     _risk_today = any(p.get("burst_risk") and
                       (p.get("time") or "").startswith(_today_str)
                       for p in water_series)
@@ -2591,7 +2615,7 @@ def _attach_summary_and_confidence(forecast):
     # Unusual-forecast flag (HANDOFF 16e): where does today's peak sit in
     # the 1996-2025 distribution of daily peaks for this calendar month?
     peak = forecast.get("peak_forecast_observed_mllw")
-    month = dt.date.today().month
+    month = _station_local_today().month
     if peak is not None:
         forecast["peak_percentile"] = load_monthly_peak_percentile(peak, month)
     # Accuracy log (HANDOFF 8b): score any archived forecasts not yet
@@ -2615,7 +2639,7 @@ def _unusual_forecast_text(forecast):
     if label not in ("top 1%", "top 5%", "top 10%", "top 25%"):
         return None
     peak = forecast.get("peak_forecast_observed_mllw")
-    month_name = dt.date.today().strftime("%B")
+    month_name = _station_local_today().strftime("%B")
     return (f"Note: today's forecast peak ({peak:.2f} ft) is in the {label} "
             f"of historical daily peaks for {month_name} (1996-2025).")
 
@@ -2701,7 +2725,7 @@ def _render_day_cards_html(forecast):
     try:
         now_l = _station_local_now()
     except Exception:
-        now_l = dt.datetime.now()
+        now_l = _station_local_now()
     days = [(now_l + dt.timedelta(days=i)).strftime("%Y-%m-%d")
             for i in range(3)]
 
@@ -2749,7 +2773,9 @@ def _render_day_cards_html(forecast):
         day_alerts = list(alert_covers(day))
         rain_bits = []
         if day_alerts:
-            names = ", ".join(a.get("event", "") for a in day_alerts)
+            names = ", ".join(
+                _html_escape(str(a.get("event", ""))) for a in day_alerts
+            )
             a0 = day_alerts[0]
             on = (a0.get("onset") or "")
             span = ""
@@ -3739,8 +3765,8 @@ def _render_accuracy_html(forecast):
   {outcome_html}
   <canvas id="accuracy-chart" width="800" height="380"
           style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
   <script>
     (function() {{
       var rows = {rows_json};
@@ -4093,7 +4119,7 @@ def plain_language_summary(forecast):
     if not tides:
         return ""
     tides_sorted = sorted(tides, key=lambda t: t["time"])
-    today = dt.date.today()
+    today = _station_local_today()
 
     def time_phrase(t):
         time_str = t["time"]
@@ -4267,7 +4293,7 @@ def _unified_landmark_rows(forecast):
 def _unified_landmark_table_text(forecast, today=None):
     """Plain-text unified table: per-landmark prediction + history.
     Returns list of strings (header + rows + footnote)."""
-    today = today or dt.date.today()
+    today = today or _station_local_today()
     rows = _unified_landmark_rows(forecast)
     if not rows:
         return []
@@ -4305,7 +4331,7 @@ def _unified_landmark_table_text(forecast, today=None):
 def _unified_landmark_table_html(forecast, today=None):
     """HTML version of the unified landmark table. Returns single HTML
     string (table + caption). Empty if no rows."""
-    today = today or dt.date.today()
+    today = today or _station_local_today()
     rows = _unified_landmark_rows(forecast)
     if not rows:
         return ""
@@ -4375,7 +4401,7 @@ def _landmarks_footer_text(forecast, today=None):
     """Plain-text footer lines below the unified landmark table: month
     descriptor at the curb, peak so far this month, near-miss, SLR line.
     Each piece independent; returns list of strings (possibly empty)."""
-    today = today or dt.date.today()
+    today = today or _station_local_today()
     ctx = forecast.get("seasonal_context") or {}
     strata = ctx.get("strata") or []
     month_name = today.strftime("%B")
@@ -4462,7 +4488,7 @@ def _spot_check_block_text(forecast, today=None):
     rather than duplicating the ladder. Includes high-value calibration
     callouts when today's conditions are unusual (rain at low tide;
     cold lockout above curb)."""
-    today = today or dt.date.today()
+    today = today or _station_local_today()
     all_tides = forecast.get("all_tides") or []
     if not all_tides:
         return []
@@ -4493,7 +4519,7 @@ def _spot_check_block_html(forecast, today=None, table_ref="above"):
     landmark ladder lives relative to this block — "above" (email,
     where the table renders directly before it) or an <a> fragment
     (details.html, where the table stayed on the landing page)."""
-    today = today or dt.date.today()
+    today = today or _station_local_today()
     all_tides = forecast.get("all_tides") or []
     if not all_tides:
         return ""
@@ -4582,7 +4608,7 @@ def render_email(forecast):
     try:
         _now_k = _station_local_now()
     except Exception:
-        _now_k = dt.datetime.now()
+        _now_k = _station_local_now()
     _kick_today = _now_k.strftime("%a %b ") + str(_now_k.day)
     _kick_end = (_now_k + dt.timedelta(hours=72)).strftime("%a")
     peak_t = forecast["peak_time_local"]
@@ -4688,7 +4714,7 @@ def render_email(forecast):
 TODAY: {_today_head_text}{_lb_text}
 WORST 72H: {headline}: {peak_ft:.2f} ft at {format_time_short(peak_t)}
 
-Bay Ave Barnacle flood forecast for 342 Bay Ave - {dt.date.today().isoformat()}
+Bay Ave Barnacle flood forecast for 342 Bay Ave - {_station_local_today().isoformat()}
 
 {health_block}{summary_block}{cold_block}High tides in next 24h ( * = worst case, headlined below):
 {tide_block}
@@ -4807,7 +4833,7 @@ Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = ta
     html = f"""\
 <html><body style="font-family:sans-serif;background:{bg};padding:20px">
 <h2>Bay Ave Flood Forecast</h2>
-<p><b>{dt.date.today().isoformat()}</b></p>
+<p><b>{_station_local_today().isoformat()}</b></p>
 
 {today_block_html}
 {health_html}
@@ -4877,7 +4903,7 @@ def _past_tides_with_predictions(days=7):
     try:
         now_local = _station_local_now()
     except Exception:
-        now_local = dt.datetime.now()
+        now_local = _station_local_now()
     cutoff_min = now_local - dt.timedelta(days=days)
     cutoff_max = now_local - dt.timedelta(hours=2)   # tide has ended
     by_target = {}
@@ -4981,7 +5007,7 @@ def _oscillation_chart_data(forecast):
     try:
         now_local = _station_local_now()
     except Exception:
-        now_local = dt.datetime.now()
+        now_local = _station_local_now()
     qpf_horizon = now_local + dt.timedelta(hours=24)
     for t in (forecast.get("all_tides") or []):
         peak = t.get("forecast_peak_mllw")
@@ -5757,17 +5783,19 @@ def _today_lookback():
     try:
         with open(os.path.join(_REPO_ROOT, "docs", "nowcast.json")) as f:
             nc = json.load(f)
-        if (nc.get("generated_utc") or "").startswith(today):
+        nc_day = nc.get("day_local")
+        if not nc_day and nc.get("generated_utc"):
+            nc_day = utc_to_station_local(nc["generated_utc"]).date().isoformat()
+        if nc_day == today:
             dmx = nc.get("day_max_street_in") or 0
             if dmx > 0:
                 w_nc = GRATE_SW + dmx / 12.0
-                t_nc = (nc.get("day_max_utc") or "")[11:16]
-                # convert UTC HH:MM to local for display (approx -4)
                 try:
-                    hh = (int(t_nc[:2]) - 4) % 24
-                    t_nc = f"{hh:02d}:{t_nc[3:5]}"
+                    t_nc = utc_to_station_local(
+                        nc.get("day_max_utc")
+                    ).strftime("%H:%M")
                 except Exception:
-                    pass
+                    t_nc = ""
                 if best is None or w_nc > best[0]:
                     best = (w_nc, t_nc, "modeled (live radar)")
     except (OSError, ValueError):
@@ -6128,8 +6156,8 @@ def _render_water_series_section(forecast):
     <summary>Explain this figure</summary>
     <p class="note">{' '.join(note_bits)}</p>
     </details>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
     <script>
       (function() {{
         var cfg = {json.dumps(cfg)};
@@ -6262,8 +6290,9 @@ def _render_pluvial_advisory_html(forecast):
     alerts = pr.get("nws_flood_alerts") or []
     if alerts:
         rows = "".join(
-            f'<li><b>{a.get("event", "")}</b> ({a.get("severity", "")}) '
-            f'— {a.get("headline", "")}</li>'
+            f'<li><b>{_html_escape(str(a.get("event", "")))}</b> '
+            f'({_html_escape(str(a.get("severity", "")))}) '
+            f'— {_html_escape(str(a.get("headline", "")))}</li>'
             for a in alerts)
         alerts_html = (
             f'<p style="margin:6px 0 2px 0"><b>Active NWS alerts for '
@@ -6477,8 +6506,8 @@ def _render_live_gauge_section(forecast):
        Refreshed each workflow run (hourly).</p>
     <canvas id="live-gauge-chart" width="800" height="240"
             style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
     <script>
       (function() {{
         var series = {series_json};
@@ -6616,8 +6645,8 @@ def _render_oscillation_section(forecast):
     <div style="position:relative;height:360px;margin:8px auto">
       <canvas id="oscillation-chart"></canvas>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
     <script>
       (function() {{
         var data = {data_json};
@@ -6922,7 +6951,7 @@ def _flood_peaks_chart_data(forecast):
     try:
         today = _station_local_now().date()
     except Exception:
-        today = dt.date.today()
+        today = _station_local_today()
     for i in range(1, 8):
         d = today - dt.timedelta(days=i)
         path = os.path.join(_REPO_ROOT, "docs", "archive",
@@ -7224,8 +7253,8 @@ def _render_flood_peaks_section(forecast):
     <div style="position:relative;height:380px;margin:8px auto">
       <canvas id="flood-peaks-chart"></canvas>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
     <script>""" + js + """    </script>
   </section>
 """
@@ -7857,7 +7886,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
     <script>
       window.barnaclePoints = {points_json};
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-delaunay@6.0.4/dist/d3-delaunay.min.js" integrity="sha384-VOXGNLi40onWvNCRY7SBRxwhW7EPHDfwmHWrQ5cNblbDOBlxq2jpuCizi4/ajTCD" crossorigin="anonymous"></script>
     <script src="{_relpath_to_map_render_js(base_map_url)}"></script>
     <script>
       {shading_script}
@@ -8442,7 +8471,7 @@ def _write_tides_archive_index(tides_root):
         return
     # Most recent first
     entries.sort(key=lambda e: e["time"], reverse=True)
-    now_local_str = dt.datetime.now().strftime("%Y-%m-%d %H:%M")
+    now_local_str = _station_local_now().strftime("%Y-%m-%d %H:%M")
     rows = ""
     for e in entries:
         peak_str = (f"{e['peak']:.2f}" if e["peak"] is not None else "—")
@@ -8795,7 +8824,7 @@ def render_per_tide_page(tide, forecast,
     <canvas id="convergence-chart" width="800" height="380"
             style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
     <p id="convergence-note" class="note" style="text-align:center"></p>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
     <script>
       (function() {{
         var note = document.getElementById('convergence-note');
@@ -8956,7 +8985,9 @@ def render_html_page(forecast):
     rain_later_note = ""
     if _pr_b.get("level"):
         _alerts_b = _pr_b.get("nws_flood_alerts") or []
-        _alert_names = ", ".join(a.get("event", "") for a in _alerts_b)
+        _alert_names = ", ".join(
+            _html_escape(str(a.get("event", ""))) for a in _alerts_b
+        )
         _pot_txt = ""
         if _pr_b.get("potential_low_tide_navd88"):
             _pot_txt = (f"; a burst could bring street water to "
@@ -8997,12 +9028,12 @@ def render_html_page(forecast):
     try:
         _now_k = _station_local_now()
     except Exception:
-        _now_k = dt.datetime.now()
+        _now_k = _station_local_now()
     _kick_today = _now_k.strftime("%a %b ") + str(_now_k.day)
     _kick_end = (_now_k + dt.timedelta(hours=72)).strftime("%a")
     peak_t = forecast["peak_time_local"]
     peak_ft = forecast["peak_forecast_observed_mllw"]
-    today = dt.date.today().isoformat()
+    today = _station_local_today().isoformat()
     cold = forecast["cold_lockout"]
     all_tides = forecast.get("all_tides", [])
 
@@ -9168,23 +9199,24 @@ def render_html_page(forecast):
   <div id="nowcast-strip" style="display:none"></div>
   <script>
     // LIVE RADAR NOWCAST strip (2026-07-17): renders docs/nowcast.json
-    // client-side; a best-effort 10-min Action refreshes it during
+    // client-side; a best-effort Action requests 10-min refreshes during
     // rain-capable weather. Hidden when inactive or >20 min stale;
-    // stale radar never overrides the forecast headline.
+    // freshness is keyed to the MRMS SOURCE frame, not workflow write time.
     (function() {{
       var bust = Math.floor(Date.now() / 120000);
       fetch('nowcast.json?t=' + bust).then(function(r) {{
         return r.json();
       }}).then(function(nc) {{
-        if (!nc || !nc.active || !nc.generated_utc) return;
-        var age = (Date.now() - Date.parse(nc.generated_utc)) / 60000;
+        if (!nc || !nc.active || !nc.source_latest_utc ||
+            nc.radar_quality !== 'ok') return;
+        var age = (Date.now() - Date.parse(nc.source_latest_utc)) / 60000;
         if (age > 20) return;
         var el = document.getElementById('nowcast-strip');
         var reg = (nc.regime_now === 'dry') ? 'street water'
                   : nc.regime_now;
         el.innerHTML =
           '<section class="regime regime-severe" style="border:2px solid #b91c1c">' +
-          '<div class="regime-kicker">&#128225; LIVE RADAR NOWCAST ' +
+          '<div class="regime-kicker">&#128225; LIVE RADAR NOWCAST &middot; BEST EFFORT ' +
           '(as of ' + Math.round(age) + ' min ago)</div>' +
           '<div class="regime-label">' + reg.toUpperCase() + '</div>' +
           '<div class="regime-summary">Rain on the hillside now: ' +
@@ -9194,7 +9226,8 @@ def render_html_page(forecast):
           'projected peak ' + (nc.peak_proj_in >= 0 ? '+' : '') +
           nc.peak_proj_in.toFixed(1) + '″ around ' +
           nc.peak_proj_utc + ' UTC. Tank model on OBSERVED radar, ' +
-          'not forecast.</div></section>';
+          'not forecast; 45-min projection holds the latest observed ' +
+          'rain rate.</div></section>';
         el.style.display = 'block';
         // HEADLINE OVERRIDE (2026-07-18, user during a live flood:
         // "the app should be actively saying FLOODING at the top").

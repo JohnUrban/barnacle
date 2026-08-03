@@ -71,6 +71,53 @@ class CsvLedgerTests(unittest.TestCase):
                 json.loads(raw)["series"], [["2026-07-21 12:00", 4.2]]
             )
 
+    def test_semantic_gate_rejects_future_observation(self):
+        fields = check_artifacts.CSV_SCHEMAS["data/labeled_observations.csv"]
+        now = dt.datetime(2026, 8, 3, 14, 0, tzinfo=dt.timezone.utc)
+        row = {
+            "observation_time_local": "2026-08-03T22:26",
+            "landmark_key": "curb",
+            "landmark_label": "Curb",
+            "observed_qualitative": "wet",
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "observations.csv"
+            with path.open("w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=fields)
+                writer.writeheader()
+                writer.writerow(row)
+            failures = check_artifacts.validate_csv_semantics(
+                str(path), "data/labeled_observations.csv", now
+            )
+        self.assertTrue(any("future" in failure for failure in failures))
+
+    def test_nowcast_gate_rejects_write_time_that_masks_stale_source(self):
+        payload = {
+            "active": True,
+            "generated_utc": "2026-08-03T15:30:00Z",
+            "day_local": "2026-08-03",
+            "radar_quality": "ok",
+            "source_latest_utc": "2026-08-03T15:00:00Z",
+            "source_age_min": 30,
+            "frames_expected": 1,
+            "frames_succeeded": 1,
+            "coverage_minutes": 0,
+            "projection_assumption": "test",
+            "frames": [{"utc": "2026-08-03T15:00:00Z", "in_hr": 1.0}],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "nowcast.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            failures = check_artifacts.validate_nowcast_metadata(str(path))
+        self.assertTrue(any("older than 10" in failure for failure in failures))
+
+    def test_alert_state_gate_requires_transaction_fields(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "alert_state.json"
+            path.write_text(json.dumps({"rank": 1}), encoding="utf-8")
+            failures = check_artifacts.validate_alert_state(str(path))
+        self.assertTrue(any("last_sent_sig" in failure for failure in failures))
+
 
 if __name__ == "__main__":
     unittest.main()

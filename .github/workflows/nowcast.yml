@@ -32,10 +32,12 @@ jobs:
   nowcast:
     runs-on: ubuntu-latest
     timeout-minutes: 6
+    env:
+      TZ: America/New_York
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.11'
           # cache:pip REQUIRES a requirements file to hash — without
@@ -78,14 +80,24 @@ jobs:
           fi
 
       - name: Dispatch forecast workflow for immediate ingestion
+        id: dispatch
         if: steps.adc.outputs.dispatch == 'true'
+        continue-on-error: true
         run: |
-          curl -sf -X POST \
-            -H "Authorization: Bearer ${{ github.token }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/daily_forecast.yml/dispatches" \
-            -d '{"ref":"main","inputs":{"force_email":"false"}}' \
-            && echo "dispatched" || echo "dispatch failed (non-fatal)"
+          for attempt in 1 2 3; do
+            if curl -sf -X POST \
+              -H "Authorization: Bearer ${{ github.token }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/daily_forecast.yml/dispatches" \
+              -d '{"ref":"main","inputs":{"force_email":"false"}}'; then
+              echo "dispatched on attempt $attempt"
+              exit 0
+            fi
+            echo "::warning::alert-ingest dispatch attempt $attempt failed"
+            sleep $((attempt * 2))
+          done
+          echo "::error::alert-ingest dispatch failed after 3 attempts"
+          exit 1
 
       - name: Install radar deps
         if: steps.gate.outputs.go == 'true'
@@ -118,4 +130,12 @@ jobs:
             python forecast/check_artifacts.py
             sleep 2
           done
+          exit 1
+
+      # Let radar publication finish, then make dispatch loss impossible to
+      # mistake for a healthy green run.
+      - name: Surface alert-ingest dispatch failure
+        if: always() && steps.dispatch.outcome == 'failure'
+        run: |
+          echo "::error::radar completed, but immediate NWS alert ingestion failed"
           exit 1

@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 import tempfile
 import unittest
@@ -14,7 +15,7 @@ class DayMaxMergeTests(unittest.TestCase):
     checkout (local prev is old) or when the peak occurred inside the
     run's own observed window (street_now already receded)."""
 
-    def _write_with(self, payload, prev, origin):
+    def _write_with(self, payload, prev, origin, now_utc=None):
         tmp = Path(tempfile.mkdtemp())
         out = tmp / "nowcast.json"
         if prev is not None:
@@ -22,7 +23,7 @@ class DayMaxMergeTests(unittest.TestCase):
         with mock.patch.object(nowcast, "OUT_PATH", str(out)), \
                 mock.patch.object(nowcast, "_origin_day_max",
                                   return_value=origin):
-            nowcast._write(dict(payload))
+            nowcast._write(dict(payload), now_utc=now_utc)
         return json.loads(out.read_text())
 
     def test_origin_day_max_survives_stale_local_prev(self):
@@ -65,6 +66,30 @@ class DayMaxMergeTests(unittest.TestCase):
             origin=(13.2, "2026-08-03T14:50:00Z"),
         )
         self.assertEqual(got["day_max_street_in"], 13.2)
+
+    def test_utc_midnight_does_not_reset_local_day_max(self):
+        got = self._write_with(
+            {"active": False},
+            prev={"generated_utc": "2026-08-03T23:56:00Z",
+                  "day_max_street_in": 13.2,
+                  "day_max_utc": "2026-08-03T14:50:00Z"},
+            origin=(13.2, "2026-08-03T14:50:00Z"),
+            now_utc=dt.datetime(2026, 8, 4, 0, 5, tzinfo=dt.timezone.utc),
+        )
+        self.assertEqual(got["day_local"], "2026-08-03")
+        self.assertEqual(got["day_max_street_in"], 13.2)
+
+    def test_local_midnight_resets_day_max(self):
+        got = self._write_with(
+            {"active": True, "street_now_in": 1.0},
+            prev={"generated_utc": "2026-08-04T03:56:00Z",
+                  "day_max_street_in": 13.2,
+                  "day_max_utc": "2026-08-03T14:50:00Z"},
+            origin=(0, None),
+            now_utc=dt.datetime(2026, 8, 4, 4, 5, tzinfo=dt.timezone.utc),
+        )
+        self.assertEqual(got["day_local"], "2026-08-04")
+        self.assertEqual(got["day_max_street_in"], 1.0)
 
 
 class AlertDispatchCheckTests(unittest.TestCase):

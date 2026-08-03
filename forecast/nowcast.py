@@ -24,6 +24,7 @@ import datetime as dt
 import glob
 import gzip
 import json
+import math
 import os
 import re
 import sys
@@ -63,6 +64,34 @@ CATCH_LON_E = -73.980
 BOX = 0.015
 MRMS_BASE = "https://mrms.ncep.noaa.gov/2D/PrecipRate/"
 OUT_PATH = os.path.join(HERE, "..", "docs", "nowcast.json")
+RADAR_MAX_AGE_MIN = 10
+RADAR_MIN_SUCCESS_RATIO = 0.60
+RADAR_MIN_SUCCESS_COUNT = 4
+
+
+def _utc_iso(value):
+    """Canonical UTC ISO stamp for an aware or naive-UTC datetime."""
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=dt.timezone.utc)
+    return value.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _station_day(value):
+    """Station-local ISO date for a UTC datetime or ISO timestamp."""
+    return ff.utc_to_station_local(value).date().isoformat()
+
+
+def _unavailable_radar_meta():
+    return {
+        "radar_quality": "unavailable",
+        "source_latest_utc": None,
+        "source_age_min": None,
+        "frames_expected": 0,
+        "frames_succeeded": 0,
+        "coverage_minutes": 0.0,
+        "frames": [],
+        "projection_assumption": "last observed radar rate held for 45 min",
+    }
 
 
 def _origin_day_max(today):
@@ -87,7 +116,8 @@ def _origin_day_max(today):
                 hdrs["Accept"] = "application/vnd.github.raw+json"
             j = json.load(urllib.request.urlopen(
                 urllib.request.Request(url, headers=hdrs), timeout=6))
-            if ((j.get("day_max_utc") or "")[:10] == today
+            if (j.get("day_max_utc")
+                    and _station_day(j["day_max_utc"]) == today
                     and (j.get("day_max_street_in") or 0) > 0):
                 return j["day_max_street_in"], j["day_max_utc"]
         except Exception:
@@ -95,9 +125,11 @@ def _origin_day_max(today):
     return 0, None
 
 
-def _write(payload):
-    payload["generated_utc"] = dt.datetime.now(dt.timezone.utc).strftime(
-        "%Y-%m-%dT%H:%M:%SZ")
+def _write(payload, now_utc=None):
+    now = now_utc or dt.datetime.now(dt.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
+    payload["generated_utc"] = _utc_iso(now)
     # DAY-MAX MEMORY (2026-07-18, user autonomy requirement: "the
     # goal is Barnacle reporting stuff and looking right without our
     # live intervention"): each run previously overwrote the last, so
@@ -105,7 +137,8 @@ def _write(payload):
     # modeled street water forward across same-day runs; the site's
     # SO-FAR-TODAY line reads it as the automatic (modeled) source
     # when no tape/gauge truth exists.
-    today = payload["generated_utc"][:10]
+    today = _station_day(now)
+    payload["day_local"] = today
     # (value, utc) candidates; winner takes both fields. Monotonic
     # within the day across racing writers (2026-08-03 regression).
     cand = [(payload.get("street_now_in") or 0, payload["generated_utc"])]
@@ -115,8 +148,12 @@ def _write(payload):
     try:
         with open(OUT_PATH) as f:
             prev = json.load(f)
-        if ((prev.get("generated_utc") or "")[:10] == today
-                and (prev.get("day_max_utc") or "")[:10] == today):
+        prev_day = prev.get("day_local")
+        if not prev_day and prev.get("generated_utc"):
+            prev_day = _station_day(prev["generated_utc"])
+        max_day = (_station_day(prev["day_max_utc"])
+                   if prev.get("day_max_utc") else None)
+        if prev_day == today and max_day == today:
             cand.append((prev.get("day_max_street_in") or 0,
                          prev.get("day_max_utc")))
     except (OSError, ValueError):
@@ -163,12 +200,25 @@ def trigger_check():
     return 3
 
 
-def latest_frames(minutes=60):
+def latest_frames(minutes=60, now_utc=None):
     listing = urllib.request.urlopen(
         urllib.request.Request(MRMS_BASE, headers=UA), timeout=30).read().decode()
     stamps = sorted(set(re.findall(
         r"MRMS_PrecipRate_00\.00_(\d{8}-\d{6})\.grib2\.gz", listing)))
+    if not stamps:
+        raise RuntimeError("MRMS listing contains no precipitation-rate frames")
     newest = dt.datetime.strptime(stamps[-1], "%Y%m%d-%H%M%S")
+    now = now_utc or dt.datetime.now(dt.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
+    age_min = (now - newest.replace(tzinfo=dt.timezone.utc)).total_seconds() / 60
+    if age_min < -2:
+        raise RuntimeError(f"MRMS newest frame is {abs(age_min):.1f} min in the future")
+    if age_min > RADAR_MAX_AGE_MIN:
+        raise RuntimeError(
+            f"MRMS newest frame is stale ({age_min:.1f} min old; "
+            f"limit {RADAR_MAX_AGE_MIN} min)"
+        )
     keep = [(dt.datetime.strptime(s, "%Y%m%d-%H%M%S"), s) for s in stamps]
     keep = [k for k in keep if (newest - k[0]).total_seconds() <= minutes * 60]
     return keep[::3]   # 2-min cadence -> every 6 min
@@ -241,23 +291,57 @@ def current_bay(now_local=None):
     return predicted, "astronomical-fallback"
 
 
-def run():
+def run(now_utc=None):
+    now = now_utc or dt.datetime.now(dt.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
     ff._load_stage_curve()
     try:
         bay, bay_source = current_bay()
     except Exception as e:
         _write({"active": False, "error": f"bay level unavailable: {e}",
-                "bay_source": "unavailable"})
+                "bay_source": "unavailable", **_unavailable_radar_meta()},
+               now)
         return
-    frames = latest_frames()
+    try:
+        frames = latest_frames(now_utc=now)
+    except Exception as e:
+        _write({"active": False, "error": str(e),
+                "bay_source": bay_source, **_unavailable_radar_meta()},
+               now)
+        return
     series = []
     for t, s in frames:
         try:
             series.append((t, round(box_rate(s), 3)))
         except Exception:
             continue
-    if not series:
-        _write({"active": False, "error": "no radar frames"})
+    expected = len(frames)
+    succeeded = len(series)
+    # Freshness must describe the newest frame that actually decoded.  A fresh
+    # directory listing cannot launder an older successful frame as current.
+    source_latest = (series[-1][0] if series else frames[-1][0]).replace(
+        tzinfo=dt.timezone.utc
+    )
+    source_age_min = max(0.0, (now - source_latest).total_seconds() / 60)
+    required = max(RADAR_MIN_SUCCESS_COUNT,
+                   math.ceil(expected * RADAR_MIN_SUCCESS_RATIO))
+    coverage_min = ((series[-1][0] - series[0][0]).total_seconds() / 60
+                    if len(series) > 1 else 0.0)
+    source_meta = {
+        "source_latest_utc": _utc_iso(source_latest),
+        "source_age_min": round(source_age_min, 1),
+        "frames_expected": expected,
+        "frames_succeeded": succeeded,
+        "coverage_minutes": round(coverage_min, 1),
+        "projection_assumption": "last observed radar rate held for 45 min",
+    }
+    if succeeded < required:
+        _write({"active": False,
+                "error": (f"insufficient radar coverage: {succeeded}/{expected} "
+                          f"frames; require {required}"),
+                "bay_source": bay_source, "radar_quality": "degraded",
+                **source_meta}, now)
         return
     recent_max = max(r for _, r in series)
     drain = ff.PLUVIAL_DRAIN_RATE * min(1, max(0, (3.52 - bay) / 0.52))
@@ -267,9 +351,11 @@ def run():
         "bay_navd88": round(bay, 3),
         "bay_source": bay_source,
         "drain_in_hr": round(drain, 3),
-        "frames": [{"utc": t.strftime("%H:%M"), "in_hr": r}
+        "frames": [{"utc": _utc_iso(t), "in_hr": r}
                    for t, r in series],
         "recent_max_in_hr": round(recent_max, 2),
+        "radar_quality": "ok",
+        **source_meta,
     }
     if active:
         lag = dt.timedelta(minutes=ff.TANK_LAG_MIN)
@@ -316,7 +402,7 @@ def run():
             # a day-max candidate even if street_now has receded
             payload["_obs_max"] = (round(obs_pk, 1),
                                    obs_pk_t.strftime("%Y-%m-%dT%H:%M:%SZ"))
-    _write(payload)
+    _write(payload, now)
 
 
 def alert_dispatch_check():

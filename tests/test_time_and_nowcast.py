@@ -11,6 +11,22 @@ UTC = dt.timezone.utc
 
 
 class StationTimeTests(unittest.TestCase):
+    def test_shared_clock_maps_utc_evening_to_previous_local_day(self):
+        now = dt.datetime(2026, 8, 2, 0, 39, tzinfo=UTC)
+        self.assertEqual(
+            ff._station_local_now(now),
+            dt.datetime(2026, 8, 1, 20, 39),
+        )
+        self.assertEqual(ff._station_local_today(now), dt.date(2026, 8, 1))
+
+    def test_utc_to_station_local_uses_winter_offset(self):
+        self.assertEqual(
+            ff.utc_to_station_local("2026-01-02T00:05:00Z").strftime(
+                "%Y-%m-%d %H:%M %z"
+            ),
+            "2026-01-01 19:05 -0500",
+        )
+
     def test_summer_lead_time_uses_edt_offset(self):
         now = dt.datetime(2026, 7, 21, 14, 15, tzinfo=UTC)
         self.assertAlmostEqual(
@@ -55,6 +71,20 @@ class StationTimeTests(unittest.TestCase):
             (4.1, "2026-07-21 14:30"),
         )
 
+    def test_plain_summary_uses_station_day_near_utc_midnight(self):
+        forecast = {"all_tides": [
+            {"time": "2026-08-01 22:25", "forecast_peak_mllw": 5.5,
+             "depths_in": {"regime": "dry"}},
+            {"time": "2026-08-02 10:57", "forecast_peak_mllw": 5.5,
+             "depths_in": {"regime": "dry"}},
+        ]}
+        with mock.patch.object(
+            ff, "_station_local_today", return_value=dt.date(2026, 8, 1)
+        ):
+            text = ff.plain_language_summary(forecast)
+        self.assertIn("10:25 PM tonight", text)
+        self.assertIn("10:57 AM tomorrow morning", text)
+
 
 class NowcastBayTests(unittest.TestCase):
     class _Response:
@@ -96,6 +126,91 @@ class NowcastBayTests(unittest.TestCase):
 
         self.assertEqual(level, 3.24)
         self.assertEqual(source, "astronomical-fallback")
+
+
+class NowcastRadarFreshnessTests(unittest.TestCase):
+    class _ListingResponse:
+        def __init__(self, text):
+            self._text = text
+
+        def read(self):
+            return self._text.encode()
+
+    @staticmethod
+    def _listing(*stamps):
+        return "\n".join(
+            f'MRMS_PrecipRate_00.00_{stamp}.grib2.gz' for stamp in stamps
+        )
+
+    def test_latest_frames_rejects_stale_listing(self):
+        listing = self._listing("20260803-120000", "20260803-120200")
+        now = dt.datetime(2026, 8, 3, 12, 20, tzinfo=UTC)
+        with mock.patch.object(
+            nowcast.urllib.request, "urlopen",
+            return_value=self._ListingResponse(listing),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "stale"):
+                nowcast.latest_frames(now_utc=now)
+
+    def test_latest_frames_rejects_empty_listing(self):
+        now = dt.datetime(2026, 8, 3, 12, 20, tzinfo=UTC)
+        with mock.patch.object(
+            nowcast.urllib.request, "urlopen",
+            return_value=self._ListingResponse("no frames"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "no precipitation"):
+                nowcast.latest_frames(now_utc=now)
+
+    def test_run_degrades_when_too_few_frames_decode(self):
+        now = dt.datetime(2026, 8, 3, 12, 10, tzinfo=UTC)
+        frames = [
+            (dt.datetime(2026, 8, 3, 11, 10) + dt.timedelta(minutes=6 * i),
+             f"stamp-{i}")
+            for i in range(11)
+        ]
+        captured = []
+
+        def sparse_rate(stamp):
+            if stamp not in {"stamp-0", "stamp-10"}:
+                raise OSError("decode failed")
+            return 0.5
+
+        with mock.patch.object(nowcast.ff, "_load_stage_curve"), \
+                mock.patch.object(nowcast, "current_bay", return_value=(2.5, "observed")), \
+                mock.patch.object(nowcast, "latest_frames", return_value=frames), \
+                mock.patch.object(nowcast, "box_rate", side_effect=sparse_rate), \
+                mock.patch.object(nowcast, "_write",
+                                  side_effect=lambda payload, stamp: captured.append(payload)):
+            nowcast.run(now)
+
+        self.assertEqual(captured[0]["radar_quality"], "degraded")
+        self.assertEqual(captured[0]["frames_expected"], 11)
+        self.assertEqual(captured[0]["frames_succeeded"], 2)
+        self.assertIn("insufficient radar coverage", captured[0]["error"])
+
+    def test_run_publishes_full_source_provenance(self):
+        now = dt.datetime(2026, 8, 3, 12, 10, tzinfo=UTC)
+        frames = [
+            (dt.datetime(2026, 8, 3, 11, 10) + dt.timedelta(minutes=6 * i),
+             f"stamp-{i}")
+            for i in range(11)
+        ]
+        captured = []
+        with mock.patch.object(nowcast.ff, "_load_stage_curve"), \
+                mock.patch.object(nowcast, "current_bay", return_value=(2.5, "observed")), \
+                mock.patch.object(nowcast, "latest_frames", return_value=frames), \
+                mock.patch.object(nowcast, "box_rate", return_value=0.0), \
+                mock.patch.object(nowcast, "_write",
+                                  side_effect=lambda payload, stamp: captured.append(payload)):
+            nowcast.run(now)
+
+        payload = captured[0]
+        self.assertEqual(payload["radar_quality"], "ok")
+        self.assertEqual(payload["source_latest_utc"], "2026-08-03T12:10:00Z")
+        self.assertEqual(payload["source_age_min"], 0.0)
+        self.assertEqual(payload["frames_succeeded"], 11)
+        self.assertEqual(payload["coverage_minutes"], 60.0)
+        self.assertTrue(payload["frames"][0]["utc"].endswith("Z"))
 
 
 if __name__ == "__main__":

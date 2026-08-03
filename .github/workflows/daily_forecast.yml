@@ -33,18 +33,20 @@ jobs:
   forecast:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    env:
+      TZ: America/New_York
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.11'
 
       - name: Install chart dependency
-        run: pip install --quiet matplotlib
+        run: pip install --quiet -r forecast/requirements.txt
 
       - name: Self-heal inherited corruption (markers in data/docs)
         run: python forecast/heal_tree.py
@@ -52,7 +54,7 @@ jobs:
       - name: Determine run type (daily vs hourly)
         id: when
         run: |
-          today=$(date -u +%Y-%m-%d)
+          today=$(date +%Y-%m-%d)
           hour=$(date -u +%H)
           manual="${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.force_email || 'true') != 'false' }}"
           if [ "$manual" = "true" ] || [ "$hour" = "09" ]; then
