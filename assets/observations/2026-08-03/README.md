@@ -1,11 +1,15 @@
 # 2026-08-03 — Pluvial flood #6 (measured), ~10:33 AM ET peak
 
 **Peak: ≈ +13.8″ vs SW grate (water ≈ 4.67 NAVD88), ~10:31–10:36 AM.**
-6th of 7 measured street peaks (all-time ranking, 7/18 README: Oct 30
-≥+20.8″, #5 +19.9″, 7/13 +19.5″, #4 +18.7″, 7/6 ~+15.4″ (window 15.0–15.8), THIS +13.8″,
-Dec 19 band +10–12″). An earlier draft said "4th-largest" — that
-overlooked Oct 30 and the un-numbered 7/13 event; corrected same day
-(caught by the all-anchors refresh pass).
+**5th of 6** measured street peaks (all-time: Oct 30 ≥+20.8″, #5
++19.9″, #4 +18.7″, 7/6 ~+15.4″ (window 15.0–15.8), THIS +13.8″,
+Dec 19 band +10–12″). Ranking-correction trail, all same-day: a
+"4th" draft overlooked Oct 30; a "6th of 7" fix then counted a
+phantom "7/13 +19.5″" event that a provenance chase (user: nice-day
+photos, no flood evidence) and an all-hours MRMS QPE pull (0.00
+every hour) proved NEVER HAPPENED — fabricated in the 7/18
+write-up, now retracted in the 7/18 README. The all-anchors figure
+was right all along.
 Pure pluvial: bay 2.31→2.95 NAVD88 through the event — below every
 grate, full drain head the whole time. The peak is bracketed by TWO
 landmarks ~¼″ apart ("a little above the lawn step [4.66], not quite

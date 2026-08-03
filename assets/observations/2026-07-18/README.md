@@ -19,7 +19,7 @@ k_out fit, MRMS record, nowcast scorecard). 27 rows appended to
 |---|---|---|
 | Pulse 1 | ~1:40–2:05 | 20 min, hard middle; pockets filled, drains swallowed all of it — and PRIMED the catchment (user called it live) |
 | Lull | 2:05–2:44 | trace rain; "slowing down doesn't mean over" |
-| Pulse 2 rise | 2:44–3:37 | hard rain ~55 min. Grates over 2:56 (NE/NW FIRST — trunk signature), all five 2:57, Central sheet 2:58, **curb 3:01 (5 min!)**, +2″/min at 3:02, crown under 3:11, lawn step 3:13, porch base 3:17; passes 7/6's peak 3:19, 7/9's 3:28, 7/13's 3:33 |
+| Pulse 2 rise | 2:44–3:37 | hard rain ~55 min. Grates over 2:56 (NE/NW FIRST — trunk signature), all five 2:57, Central sheet 2:58, **curb 3:01 (5 min!)**, +2″/min at 3:02, crown under 3:11, lawn step 3:13, porch base 3:17; passes 7/6's peak 3:19, 7/9's 3:28 (~~7/13's 3:33~~ retracted — see below) |
 | PEAK | **3:37** | **6.0″ up the riser = +19.9″; #2 all-time** |
 | Recession | 3:37–4:40+ | −1″/7min quickening to −0.31″/min; off riser 4:03, crown out 4:10, curb out ~4:35, sidewalk clear 4:40 (user predicted it 2 min ahead, verified) |
 
@@ -35,12 +35,27 @@ synthesis) → north-side discharge tail ≥1 h post-rain.
 |---|---|---|---|---|
 | 1 | Oct 30 2025 | ~+21″ (≥5.25) | rain on high storm tide | 7.63 MLLW |
 | **2** | **7/18/2026** | **+19.9″** | **rain alone** | **ebbing neap ~5.3** |
-| 3 | 7/13/2026 | +19.5″ | rain (double-pulse) | modest |
+| ~~3~~ | ~~7/13/2026~~ | ~~+19.5″~~ | **RETRACTED 2026-08-03** | — |
 | 4 | 7/9/2026 | +18.7″ | rain on high tide (gauge failed) | ~6.0 |
 | 5 | 7/6/2026 | +15.4″ | rain alone, low tide | ~5.4 |
 | 6 | Dec 19 2025 | ~+11″ | rain, drains tide-blocked | 6.86 |
 
-**All six measured floods are rain events.** Four of the top five
+**RETRACTION (2026-08-03):** the 7/13 "+19.5″ rain flood" in this
+table NEVER HAPPENED. It has no ledger rows, no dictation, no photos
+(user's 7/13 photos show a nice day), no nowcast record, no MRMS
+extraction, the 7/13 daily forecast carried 0.0 rain — and a
+2026-08-03 MRMS QPE pull for 7/13 15Z→7/14 03Z reads 0.00 in for
+EVERY hour over the catchment. The number appears to have been
+fabricated during this README's write-up (the same session also cited
+it as the antecedent-wetting "type specimen" in HANDOFF — also
+retracted) and survived 16 days because rankings didn't cite primary
+records. The only real 7/13 water was that evening's minor tide event
+(+2.5″ max over grates, separately documented in
+assets/observations/2026-07-13/). `all_events_aligned.png` in
+analysis/ includes the phantom series — treat that figure's 7/13
+trace as void (no recipe script was committed to regenerate it).
+
+**All FIVE measured floods (as of this event) are rain events.** Four of the top five
 happened in THIRTEEN DAYS (July 6–18, 2026). Today at Oct-30's tide
 would have been the flood of record by several inches — the +19.9″
 was bought with zero tidal floor.

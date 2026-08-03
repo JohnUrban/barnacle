@@ -2494,9 +2494,13 @@ flood." Physically right, and the tank can't represent it: K is
 fixed, so a burst on a soaked catchment is treated like a burst on
 a dry one. What a first pulse actually does: raises the hillside
 runoff fraction (soil wetting), fills pockets/micro-storage (7/18:
-pockets full, street dry), charges the drain network. Type
-specimen: 7/13 — morning pulse, hours of lull, evening rain on the
-PRIMED catchment → +19.5″. The MRMS cross-event C-variation is
+pockets full, street dry), charges the drain network. Motivating
+observation: 7/18's OWN pulse-1 → lull → pulse-2 structure (the
+user's live call). [RETRACTED 2026-08-03: this section previously
+cited a "7/13 morning-pulse/evening-flood +19.5″" as type specimen
+— that event NEVER HAPPENED (all-hours MRMS QPE 0.00 on 7/13; no
+observations, no photos; fabricated in the 7/18 write-up). See the
+7/18 README retraction.] The MRMS cross-event C-variation is
 consistent with antecedent state as a hidden variable. Candidate
 fix (needs events to calibrate): antecedent-precip multiplier on K
 (e.g., trailing-6h rain scales K within a bounded range), or a
@@ -2855,8 +2859,10 @@ peak. NEW: user's mud-tracer method (no mud on driveway = upper
 bound + no-second-event proof) — candidate standard post-event step.
 Full analysis: assets/observations/2026-08-03/ (README, hydrograph,
 all-anchors refresh, dictation, OEM third-party photo w/ provenance
-caveat). Ranking note: #6 is 6th of 7 measured street peaks (an
-earlier "4th-largest" draft overlooked Oct 30 and un-numbered 7/13).
+caveat). Ranking note: #6 is **5th of 6** measured street peaks (FINAL —
+the trail: a "4th" draft overlooked Oct 30; a "6th of 7" correction
+then counted the phantom 7/13 event, retracted same day; see the
+7/18 README retraction; plot and text now agree).
 RESOLVED (user, 2026-08-03): the 7/6 peak is canonically a CREST
 WINDOW, not a point — [+15.0″, +15.8″], most likely ~+15.4. The
 range is timing, not measurement error: the last tape point on the
@@ -2882,5 +2888,23 @@ defaults 'true'). (3) STILL OPEN (user decision): radar-cadence gap
 at burst onset — GHA cron is best-effort; a real scheduler
 (self-hosted runner / external cron hitting workflow_dispatch)
 remains the fix for the first-15-minutes blind spot.
+**DECISION 2026-08-03 (user): nowcast scheduler — ACCEPT THE GAP for
+now.** Context: GHA cron requests the radar nowcast every 10 min but
+delivers ~30-45-min median gaps (best-effort scheduling; measured
+2026-07-18→08-03, cancel-starvation already fixed). Event #6 made the
+cost concrete: last run finished 09:56, burst began 10:02, site was
+dark through the rise until manual coverage at 10:29. Even a perfect
+clock detects ~10-15 min after onset (radar latency + run time ≈ the
+catchment lag) — the gap at stake is the EXTRA 20-40 min. Options
+discussed: (A) launchd job on the user's Mac firing the pipeline
+every 10 min (zero new accounts, reversible; only covers Mac-awake
+hours); (B) external cron service hitting workflow_dispatch with a
+fine-grained actions:write PAT (24/7 incl. overnight bursts like
+#6's 02:34 episode; needs user to mint a token, third party holds
+it); (C) accept the gap + manual coverage during events (this
+morning's mode). User chose C for now. REVISIT TRIGGER: the next
+event where the strip is dark during a rise, or whenever the user
+has 10 minutes for option B — A and B stack safely with GHA cron
+(concurrency group serializes; day-max merge is monotonic).
 
 End of handoff.
