@@ -2584,7 +2584,8 @@ all pushed.
   section beneath it (kept side-by-side; single-user A/B, keep/retire
   later): continuous TIME axis + local units; measured flood peaks
   from labeled_observations auto-plot as orange diamonds at their
-  ACTUAL times (7/6 renders at 11:34 AM +15.0″ — the rain flood a
+  ACTUAL times (7/6 renders at 11:34 AM +15.0″, the last measured
+  point of its crest window — the rain flood a
   per-tide axis cannot represent); day-wide navy dashes = archived
   burst risk (no honest clock time in the daily archive — it holds
   the day's LAST run); rain-burst compound-potential triangles on
@@ -2856,12 +2857,16 @@ Full analysis: assets/observations/2026-08-03/ (README, hydrograph,
 all-anchors refresh, dictation, OEM third-party photo w/ provenance
 caveat). Ranking note: #6 is 6th of 7 measured street peaks (an
 earlier "4th-largest" draft overlooked Oct 30 and un-numbered 7/13).
-OPEN RECONCILIATION (user call): production _PLUVIAL_ANCHORS encodes
-the 7/6 peak as +15.4″ (mid of the measured 4.77–4.84 NAVD88 range,
-calibration-era pick) while HANDOFF/newer docs canonicalize +15.0″
-(the 4.77 low end) — one value should win everywhere; changing the
-constant shifts analog scenario floors, so it needs a deliberate
-decision, not a drive-by edit.
+RESOLVED (user, 2026-08-03): the 7/6 peak is canonically a CREST
+WINDOW, not a point — [+15.0″, +15.8″], most likely ~+15.4. The
+range is timing, not measurement error: the last tape point on the
+rise was 4.77 NAVD88 at 11:34, water was already falling by 11:41,
+so the crest sits in the unmeasured 7-minute gap; the +15.8 ceiling
+is the user's own real-time porch-base constraint ("1 inch or so,
+2 in at most" over the 4.68 base). Calibration keeps +15.4 (window
+center — unchanged, so no refit); docs cite the window when quoting
+the event; the 4.77/+15.0 figure is "last measured point," never
+"the peak".
 EVENT-#6 BUGS, STATUS 2026-08-03 PM: (1) day-max regression FIXED —
 merge is now candidate-based and monotonic-per-day (street_now,
 observed-window traj peak, same-day local prev, PUBLISHED origin

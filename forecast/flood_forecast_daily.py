@@ -5144,6 +5144,10 @@ _STAGE_CURVE = None              # [(stage_in, area_cells), ...]
 # The three calibration anchors, in the model's input space:
 # (net rate in/hr after drainage, fill stages: base_in -> peak_in).
 # 7/6/2026: input 1.7, bay 2.6 -> drain 0.25 -> net 1.45; 0 -> +15.4
+#   (15.4 = center of the crest window [15.0, 15.8]: last tape
+#   point 4.77 NAVD88 at 11:34, crest in the unmeasured 11:34-
+#   11:41 gap, ceiling 4.84 from the porch-base '2 in at most'
+#   constraint — 2026-07-06 README, photo-timeline section)
 # Oct 30 25: input 1.45, bay 4.81 -> drain 0 -> net 1.45; +15.5 -> +20.9
 # Dec 19 25: input 0.44, bay 4.04 -> drain 0 -> net 0.44; +6.2 -> +11.2
 _PLUVIAL_ANCHORS = [

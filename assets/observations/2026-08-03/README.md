@@ -2,7 +2,7 @@
 
 **Peak: ≈ +13.8″ vs SW grate (water ≈ 4.67 NAVD88), ~10:31–10:36 AM.**
 6th of 7 measured street peaks (all-time ranking, 7/18 README: Oct 30
-≥+20.8″, #5 +19.9″, 7/13 +19.5″, #4 +18.7″, 7/6 +15.0″, THIS +13.8″,
+≥+20.8″, #5 +19.9″, 7/13 +19.5″, #4 +18.7″, 7/6 ~+15.4″ (window 15.0–15.8), THIS +13.8″,
 Dec 19 band +10–12″). An earlier draft said "4th-largest" — that
 overlooked Oct 30 and the un-numbered 7/13 event; corrected same day
 (caught by the all-anchors refresh pass).

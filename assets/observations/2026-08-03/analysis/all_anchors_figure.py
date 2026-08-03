@@ -28,7 +28,7 @@ events = [
      13.8, 0.1, 0.1, "+13.8″\n(measured 13.7–13.9)",
      R["aug3"][0], ""),
     ("Jul 6 2026\nburst 2.95 in/hr\nbay LOW (2.6)",
-     15.0, 0.0, 0.0, "+15.0″\n(measured)",
+     15.4, 0.4, 0.4, "+15.4″\n(crest window 15.0–15.8)",
      R["jul6"][0], ""),
     ("Jul 9 2026 — #4\nburst 5.53 in/hr\nbay at grates (3.2)",
      18.7, 0.0, 0.0, "+18.7″\n(measured)",
