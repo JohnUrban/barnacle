@@ -34,11 +34,13 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
 
 ## RIGHT NOW
 
-- Ask Claude to review audit-a2 round 04 Phase 2 implementation. The
-  audit remains open until that independent review reconciles M2/L2.
-- Town map covers Highlands, Atlantic Highlands, Leonardo, and Sea
-  Bright: 7,227 LiDAR street points, bridge-over-water guard, widened
-  base layer; rain view remains Highlands-only.
+- Audit a2 is CLOSED (round 05): Phase 2 reviewed PASS — cold
+  reproduction verified, no retuning, M2/L2 closed; residuals below.
+- Town map covers the FULL map view: nine towns (Highlands, AH,
+  Leonardo, Sea Bright, Rumson, Fair Haven, Red Bank,
+  Navesink/Locust, Belford edge) + all of Route 36 — 27,457 LiDAR
+  street points, magma elevation view, historic-flood slider
+  ticks/chips, Sandy-class range. Rain view remains Highlands-only.
 - Phase 3 is the production-module split and additive evidence schemas;
   do it only after a quiet stretch and behind the new goldens.
 - Accepted residual risk: GitHub's requested 10-min nowcast cadence is
