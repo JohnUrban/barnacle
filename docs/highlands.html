@@ -83,6 +83,8 @@
           checked> terrain</label>
         <label><input type="radio" name="elev-scale" value="zoom">
           flood zoom</label>
+        <label><input type="radio" name="elev-scale" value="max">
+          max zoom</label>
       </span>
     </div>
     <div id="town-wrap">
@@ -227,6 +229,13 @@
       if (e <= 60) return 0.9 + 0.1 * (e - 15) / 45;
       return 1;
     }
+    if (elevScale === "max") {
+      // 95% of the colors over 0-10 ft: maximum low-shelf
+      // resolving power (Bay ~4 vs Shore ~6-8 ≈ 40% of the map apart)
+      if (e <= 10) return 0.95 * e / 10;
+      if (e <= 30) return 0.95 + 0.05 * (e - 10) / 20;
+      return 1;
+    }
     return Math.sqrt(e / MAXE);
   }
   function magma(t) {
@@ -280,7 +289,9 @@
       }).join(",");
       var markVals = elevScale === "zoom"
         ? [0, 3.52, 6, 9, 11.6, 15, 60]
-        : [0, 5, 15, 40, 100, 260];
+        : (elevScale === "max"
+           ? [0, 2, 3.52, 5, 6.5, 8, 10, 30]
+           : [0, 5, 15, 40, 100, 260]);
       var marks = markVals.map(function(e) {
         return {e: e, pos: elevT(e) * 100};
       });
@@ -301,7 +312,10 @@
         (elevScale === "zoom"
           ? '(flood zoom — 0-15 ft gets 90% of the colors; ' +
             'above 60 ft saturates) '
-          : '(sqrt scale — low shelf stretched, hills compressed) ') +
+          : (elevScale === "max"
+             ? '(max zoom — 0-10 ft gets 95% of the colors; ' +
+               'above 30 ft saturates) '
+             : '(sqrt scale — low shelf stretched, hills compressed) ')) +
         '&middot; &#9679; = 342 Bay corner';
       return;
     }
