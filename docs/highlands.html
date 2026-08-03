@@ -422,7 +422,9 @@
     if (keys.length === 2 && pinch0) {
       var a = pointers[keys[0]], b = pointers[keys[1]];
       var d = Math.hypot(a[0] - b[0], a[1] - b[1]);
-      var f = d / (pinch0.d || 1);
+      // super-linear pinch (user 2026-08-03: 1:1 ratio "takes
+      // forever") — exponent amplifies the gesture
+      var f = Math.pow(d / (pinch0.d || 1), 1.8);
       var k2 = Math.max(0.8, Math.min(30, pinch0.k * f));
       var f2 = k2 / pinch0.k;
       view.k = k2;
@@ -470,11 +472,11 @@
   canvas.addEventListener("wheel", function(ev) {
     ev.preventDefault();
     var q = cpos(ev);
-    zoomAt(q[0], q[1], Math.pow(1.0015, -ev.deltaY));
+    zoomAt(q[0], q[1], Math.pow(1.003, -ev.deltaY));
   }, { passive: false });
   canvas.addEventListener("dblclick", function(ev) {
     var q = cpos(ev);
-    zoomAt(q[0], q[1], 1.7);
+    zoomAt(q[0], q[1], 2.0);
   });
   document.getElementById("town-reset").addEventListener("click",
     function() { view = { k: 1, tx: 0, ty: 0 }; requestRender(); });
