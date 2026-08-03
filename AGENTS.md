@@ -24,11 +24,20 @@ live obligation) → `BACKLOG.md` OPEN LOOPS. On a flood event:
    `data/predictions_log.csv`, `data/forecast_accuracy.csv`: append,
    never rewrite. Strict CSV enforced by gate + CI
    (`tests/test_csv_ledgers.py`).
-3. **Station time.** Never hand-construct station-local times; use
+3. **Station time & DATE DISCIPLINE (hard rule; 4 incidents).**
+   Never hand-construct station-local times; use
    `parse_station_local_time()` / `hours_until_station_time()` /
-   `_station_local_now()`. This bug family shipped four times.
-   Run `date` before writing any relative-time word (yesterday/
-   today/tomorrow) — 4 incidents, including same-day drift.
+   `_station_local_now()`. Make EXTRA effort to know the exact
+   current date and time: run `date` (or read the `[clock]` line the
+   repo's UserPromptSubmit hook injects each turn) BEFORE writing
+   any relative-time word — yesterday/today/tomorrow/tonight/"X days
+   ago" — and derive the word from the clock, never from narrative
+   memory. Known repo-specific trap: sessions here span days-to-
+   weeks across compactions, the tree is dense with dated history,
+   and a same-day event that has already been written up READS as
+   past — agents repeatedly call the same morning "yesterday."
+   Prefer absolute dates in prose, commits, and docs. NOAA stamps
+   are 24-hour station-local (10:18 = AM).
 4. **Provenance or it didn't happen.** A "measured" claim in any
    ranking/table/README must cite its primary record (ledger row,
    dictation file, gauge pull). Numbers first appearing in narrative
