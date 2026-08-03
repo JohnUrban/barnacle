@@ -24,12 +24,27 @@ import sys
 
 _REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OSM = os.path.join(_REPO, "history", "data", "highlands_streets_osm.json")
+OSM2 = os.path.join(_REPO, "history", "data", "bayshore_streets_osm.json")
 ELEV = os.path.join(_REPO, "history", "data", "highlands_street_elevations.csv")
 OUT = os.path.join(_REPO, "docs", "highlands_streets.json")
 
 
+def _town_of(lat, lon):
+    if lon < -74.048:
+        return "Leonardo"
+    if lat < 40.402 and lon > -73.990:
+        return "Sea Bright"
+    if lon < -74.008:
+        return "Atlantic Highlands"
+    return "Highlands"
+
+
 def main():
-    ways = json.load(open(OSM))["elements"]
+    ways = [(w, "Highlands") for w in json.load(open(OSM))["elements"]]
+    if os.path.exists(OSM2):
+        for w in json.load(open(OSM2))["elements"]:
+            g = (w.get("geometry") or [{}])[0]
+            ways.append((w, _town_of(g.get("lat", 0), g.get("lon", 0))))
     grid = {}
     with open(ELEV) as f:
         for r in csv.DictReader(f):
@@ -51,7 +66,7 @@ def main():
         return best
 
     streets, lats, lons = [], [], []
-    for w in ways:
+    for w, town in ways:
         geom = w.get("geometry") or []
         if len(geom) < 2:
             continue
@@ -63,7 +78,7 @@ def main():
             lats.append(g["lat"])
             lons.append(g["lon"])
         streets.append({"name": (w.get("tags") or {}).get("name", ""),
-                        "pts": pts})
+                        "town": town, "pts": pts})
 
     out = {"bbox": [round(min(lats), 5), round(min(lons), 5),
                     round(max(lats), 5), round(max(lons), 5)],

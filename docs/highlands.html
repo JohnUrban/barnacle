@@ -8,9 +8,9 @@
 <link rel="stylesheet" href="style.css">
 <style>
   #town-wrap { position: relative; }
-  #town-canvas { width: 100%; height: auto; background: #f4f6f8;
+  #town-canvas { width: 100%; height: auto; background: #eef0e9;
                  border: 1px solid #ccc; border-radius: 6px;
-                 touch-action: none; }
+                 touch-action: none; cursor: grab; }
   #town-thumb { position: absolute; top: 8px; left: 8px;
                 background: rgba(255,255,255,0.93);
                 border: 1px solid #999; border-radius: 5px; }
@@ -37,8 +37,7 @@
       <b style="font-size:14px">Water surface:</b>
       <span id="town-level-label" style="font-size:14px"></span>
       <button type="button" id="town-snap">Snap to current forecast</button>
-      <label><input type="checkbox" id="town-units">
-        342 Bay Ave relative (&Prime; vs SW grate)</label>
+      <button type="button" id="town-reset">Reset view</button>
       <input type="range" id="town-level" min="4.0" max="11.0"
              step="0.05" value="6.3">
     </div>
@@ -47,12 +46,21 @@
       <span id="town-time-label" class="note"></span>
       <input type="range" id="town-time" min="0" max="0" step="1" value="0">
     </div>
+    <div class="town-slider">
+      <label><input type="checkbox" id="town-units">
+        342 Bay Ave relative (&Prime; vs SW grate)</label>
+      <label><input type="checkbox" id="town-base" checked>
+        base map</label>
+      <label><input type="checkbox" id="town-rain">
+        342-calibrated rain view <span class="note">(Highlands only)</span></label>
+    </div>
     <div id="town-wrap">
-      <canvas id="town-canvas" width="980" height="1150"></canvas>
+      <canvas id="town-canvas" width="980" height="840"></canvas>
       <canvas id="town-thumb" width="190" height="82"></canvas>
     </div>
     <p id="town-readout" class="note">Tap or hover a street for its
-       elevation and flood-onset level.</p>
+       elevation and flood-onset level. Drag to pan; scroll, pinch, or
+       double-click to zoom.</p>
     <p class="note" style="margin-top:2px" id="town-legend"></p>
     <details class="chart-explain">
       <summary>Explain this figure</summary>
@@ -64,36 +72,37 @@
          approximation: LiDAR carries a few tenths of a foot of error
          near buildings; one town-wide water surface is exactly right
          for <b>tidal</b> flooding (the bay is one connected level) but
-         only a rough envelope for <b>rain</b> flooding, where each low
-         spot ponds by its own drainage. <b>Water on a property is a
+         only a rough envelope for rain. <b>Water on a property is a
          function of the building's base height relative to its
-         street</b>: a house that sits well above the street sees far
-         less water than the street number suggests; one at street
-         level sees all of it — the colors deliberately stop at the
-         streets because this map does not know any building's floor
-         height. The forecast slider replays the predicted bay level
-         from the live forecast (tide pathway only — rain-burst
-         overlays are calibrated to the 342 catchment and are not
-         claimed town-wide). The "342 Bay Ave relative" toggle restates
-         all heights in inches vs the SW grate (3.52 ft NAVD88), the
-         reference every other Barnacle surface uses. Cross-reference:
-         the 342 corner (&#9679;) takes tidal water at ~6.34 ft MLLW;
-         each street's popup gives its own onset, so "floods
-         before/after 342" is directly readable.</p>
+         street</b>: a house well above its street sees far less water
+         than the street number suggests; one at street level sees all
+         of it — colors deliberately stop at the streets because this
+         map does not know any building's floor height.
+         <b>The rain view</b> replays the 342-corner rain+tide water
+         level (the calibrated tank hydrograph) instead of the bay
+         tide. It is calibrated at the Bay/Central corner: expect it
+         to be close across downtown Highlands with error growing
+         with distance from that corner (still directionally right),
+         and it is <b>not applied</b> to Atlantic Highlands, Leonardo,
+         or Sea Bright — different hillsides, different drainage; those
+         streets always show the tidal surface. The base map (water,
+         parks, sand, Route 36) is built from OpenStreetMap data.
+         Cross-reference: the 342 corner (&#9679;) takes tidal water at
+         ~6.34 ft MLLW; each street's popup gives its own onset, so
+         "floods before/after 342" is directly readable.</p>
     </details>
   </section>
 
   <footer>
     <p class="note">Elevations: USGS 3DEP 1-m LiDAR (NAVD88) &middot;
-       streets: OpenStreetMap contributors &middot; conversions:
-       NAVD88 = MLLW &minus; 2.82 ft at Sandy Hook; SW grate = 3.52 ft
-       NAVD88 = 6.34 ft MLLW.</p>
+       streets &amp; base map: &copy; OpenStreetMap contributors (ODbL)
+       &middot; NAVD88 = MLLW &minus; 2.82 ft at Sandy Hook; SW grate =
+       3.52 ft NAVD88 = 6.34 ft MLLW.</p>
   </footer>
 </main>
 <script>
 (function() {
   var MLLW_OFF = 2.82, GRATE = 3.52;
-  // Same bands as docs/map-render.js (depth in feet above the street)
   var BANDS = [
     { max: 0.33, rgb: [158,202,225], label: "<4″ splash" },
     { max: 1.0,  rgb: [66,146,198],  label: "4″–1′ ankle–shin" },
@@ -116,20 +125,24 @@
   var tSlider = document.getElementById("town-time");
   var tLabel = document.getElementById("town-time-label");
   var unitsBox = document.getElementById("town-units");
-  var DATA = null, proj = null, SERIES = null, startI = 0;
-  var forecastPeak = null;
+  var baseBox = document.getElementById("town-base");
+  var rainBox = document.getElementById("town-rain");
+  var DATA = null, BASE = null, SERIES = null, startI = 0;
+  var forecastPeak = null, proj = null;
+  var view = { k: 1, tx: 0, ty: 0 };
+  var raf = null;
 
   try {
-    unitsBox.checked =
-      localStorage.getItem("barnacle-town-units") === "1";
+    unitsBox.checked = localStorage.getItem("barnacle-town-units") === "1";
+    baseBox.checked = localStorage.getItem("barnacle-town-base") !== "0";
+    rainBox.checked = localStorage.getItem("barnacle-town-rain") === "1";
   } catch (e) {}
 
   function fmtLevel(navd88) {
     if (unitsBox.checked) {
       var g = (navd88 - GRATE) * 12;
-      return (g >= 0 ? "+" : "") + g.toFixed(0) +
-        "″ vs SW grate (" + (navd88 + MLLW_OFF).toFixed(2) +
-        " ft MLLW)";
+      return (g >= 0 ? "+" : "") + g.toFixed(0) + "″ vs SW grate (" +
+        (navd88 + MLLW_OFF).toFixed(2) + " ft MLLW)";
     }
     return (navd88 + MLLW_OFF).toFixed(2) + " ft MLLW (" +
       navd88.toFixed(2) + " ft NAVD88)";
@@ -141,13 +154,13 @@
     }
     return navd88.toFixed(1) + " ft NAVD88";
   }
-
   function colorFor(depthFt) {
     if (depthFt <= 0) return DRY;
     for (var i = 0; i < BANDS.length; i++) {
-      if (depthFt <= BANDS[i].max) return "rgb(" + BANDS[i].rgb.join(",") + ")";
+      if (depthFt <= BANDS[i].max)
+        return "rgb(" + BANDS[i].rgb.join(",") + ")";
     }
-    return "rgb(" + BANDS[BANDS.length-1].rgb.join(",") + ")";
+    return "rgb(" + BANDS[BANDS.length - 1].rgb.join(",") + ")";
   }
 
   function buildLegend() {
@@ -163,114 +176,165 @@
     el.innerHTML = html;
   }
 
-  function buildProj(bbox) {
-    var s = bbox[0], w = bbox[1], n = bbox[2], e = bbox[3];
-    var cosLat = Math.cos((s + n) / 2 * Math.PI / 180);
-    var spanX = (e - w) * cosLat, spanY = n - s;
-    var P = 14;
+  function setupProj() {
+    var bbox = (BASE && BASE.bbox) || DATA.bbox;
+    var S = bbox[0], W = bbox[1], N = bbox[2], E = bbox[3];
+    var cosLat = Math.cos((S + N) / 2 * Math.PI / 180);
+    var spanX = (E - W) * cosLat, spanY = N - S;
+    canvas.height = Math.round(canvas.width * spanY / spanX);
+    var P = 8;
     var sc = Math.min((canvas.width - 2 * P) / spanX,
                       (canvas.height - 2 * P) / spanY);
-    return function(lat, lon) {
-      return [P + (lon - w) * cosLat * sc,
-              canvas.height - P - (lat - s) * sc];
+    proj = function(lat, lon) {
+      return [P + (lon - W) * cosLat * sc,
+              canvas.height - P - (lat - S) * sc];
     };
+  }
+  function T(p) { return [p[0] * view.k + view.tx,
+                          p[1] * view.k + view.ty]; }
+  function sxy(lat, lon) { return T(proj(lat, lon)); }
+  function inv(x, y) { return [(x - view.tx) / view.k,
+                               (y - view.ty) / view.k]; }
+
+  // Current water surface (ft NAVD88) for a street, honoring the
+  // rain view's Highlands-only scope.
+  function surfaceFor(st) {
+    var manual = parseFloat(slider.value) - MLLW_OFF;
+    if (!rainBox.checked || !SERIES) return manual;
+    var i = parseInt(tSlider.value, 10) || 0;
+    var p = SERIES[i];
+    if (!p || p.water_navd88 == null) return manual;
+    if ((st.town || "Highlands") === "Highlands") {
+      return p.water_navd88;
+    }
+    return p.tide_navd88 != null ? p.tide_navd88 : manual;
+  }
+
+  function poly(ring) {
+    ctx.beginPath();
+    for (var i = 0; i < ring.length; i++) {
+      var P2 = sxy(ring[i][0], ring[i][1]);
+      if (i === 0) ctx.moveTo(P2[0], P2[1]);
+      else ctx.lineTo(P2[0], P2[1]);
+    }
+    ctx.closePath();
   }
 
   function render() {
     if (!DATA) return;
-    var ws = parseFloat(slider.value) - MLLW_OFF;   // slider is MLLW
-    label.textContent = fmtLevel(ws);
+    var ws = parseFloat(slider.value) - MLLW_OFF;
+    label.textContent = fmtLevel(ws) +
+      (rainBox.checked ? " · rain view" : "");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (BASE && baseBox.checked) {
+      ctx.fillStyle = "#eef0e9";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#a6cbe3";
+      BASE.water.forEach(function(r) { poly(r); ctx.fill(); });
+      ctx.fillStyle = "#c7e2c0";
+      BASE.green.forEach(function(r) { poly(r); ctx.fill(); });
+      ctx.fillStyle = "#f0e3c0";
+      BASE.sand.forEach(function(r) { poly(r); ctx.fill(); });
+      ctx.strokeStyle = "#9aa3ad"; ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      BASE.roads_ctx.forEach(function(ln) {
+        ctx.beginPath();
+        ln.forEach(function(p, i) {
+          var Q = sxy(p[0], p[1]);
+          if (i === 0) ctx.moveTo(Q[0], Q[1]); else ctx.lineTo(Q[0], Q[1]);
+        });
+        ctx.stroke();
+      });
+    }
     DATA.streets.forEach(function(st) {
+      var sws = surfaceFor(st);
       var pts = st.pts;
       for (var i = 1; i < pts.length; i++) {
-        var a = pts[i-1], b = pts[i];
+        var a = pts[i - 1], b = pts[i];
         if (a[2] == null || b[2] == null) continue;
-        var depthFt = ws - (a[2] + b[2]) / 2;
-        var A = proj(a[0], a[1]), B = proj(b[0], b[1]);
+        var depthFt = sws - (a[2] + b[2]) / 2;
+        var A = sxy(a[0], a[1]), B = sxy(b[0], b[1]);
         ctx.strokeStyle = colorFor(depthFt);
         ctx.lineWidth = depthFt > 0 ? 4 : 2.5;
         ctx.lineCap = "round";
-        ctx.beginPath(); ctx.moveTo(A[0],A[1]); ctx.lineTo(B[0],B[1]);
+        ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]);
         ctx.stroke();
       }
     });
     REF.forEach(function(r) {
-      var P = proj(r.lat, r.lon);
+      var P2 = sxy(r.lat, r.lon);
       ctx.fillStyle = "#b91c1c";
       ctx.beginPath();
-      if (r.sym === "dot") ctx.arc(P[0], P[1], 6, 0, 7);
-      else { ctx.moveTo(P[0],P[1]-7); ctx.lineTo(P[0]-6,P[1]+5);
-             ctx.lineTo(P[0]+6,P[1]+5); ctx.closePath(); }
+      if (r.sym === "dot") ctx.arc(P2[0], P2[1], 6, 0, 7);
+      else { ctx.moveTo(P2[0], P2[1] - 7); ctx.lineTo(P2[0] - 6, P2[1] + 5);
+             ctx.lineTo(P2[0] + 6, P2[1] + 5); ctx.closePath(); }
       ctx.fill();
       ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.5; ctx.stroke();
     });
     drawThumb();
   }
+  function requestRender() {
+    if (raf) return;
+    raf = requestAnimationFrame(function() { raf = null; render(); });
+  }
 
-  // Mini tide chart (same grammar as the 342 map thumbnail): blue
-  // predicted bay curve, dotted midnights, fixed now-line, red ball
-  // at the scrubbed hour.
   function drawThumb() {
-    if (!SERIES || !SERIES.length) {
-      thumbC.style.display = "none"; return;
-    }
+    if (!SERIES || !SERIES.length) { thumbC.style.display = "none"; return; }
     var c = thumbC.getContext("2d");
-    var W = thumbC.width, H = thumbC.height, P = 6;
-    c.clearRect(0, 0, W, H);
-    var vs = SERIES.map(function(p){ return p.tide_navd88; });
+    var W2 = thumbC.width, H = thumbC.height, P = 6;
+    c.clearRect(0, 0, W2, H);
+    var useRain = rainBox.checked;
+    var vs = SERIES.map(function(p) {
+      return useRain && p.water_navd88 != null
+        ? p.water_navd88 : p.tide_navd88;
+    });
     var lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
-    var wsNow = parseFloat(slider.value) - MLLW_OFF;
-    lo = Math.min(lo, wsNow); hi = Math.max(hi, wsNow);
-    function X(i){ return P + (W-2*P) * i / (SERIES.length-1); }
-    function Y(v){ return H - P - (H-2*P) * (v-lo) / (hi-lo || 1); }
-    c.strokeStyle = "#999"; c.lineWidth = 1; c.setLineDash([2,3]);
+    function X(i) { return P + (W2 - 2 * P) * i / (SERIES.length - 1); }
+    function Y(v) { return H - P - (H - 2 * P) * (v - lo) / (hi - lo || 1); }
+    c.strokeStyle = "#999"; c.lineWidth = 1; c.setLineDash([2, 3]);
     SERIES.forEach(function(p, i) {
       if ((p.time || "").slice(-5) === "00:00") {
-        c.beginPath(); c.moveTo(X(i), P); c.lineTo(X(i), H-P); c.stroke();
+        c.beginPath(); c.moveTo(X(i), P); c.lineTo(X(i), H - P); c.stroke();
       }
     });
     c.setLineDash([]);
     c.strokeStyle = "#222"; c.lineWidth = 1.2;
-    c.beginPath(); c.moveTo(X(startI), P); c.lineTo(X(startI), H-P);
+    c.beginPath(); c.moveTo(X(startI), P); c.lineTo(X(startI), H - P);
     c.stroke();
-    c.strokeStyle = "#1a5fa8"; c.lineWidth = 1.6;
+    c.strokeStyle = useRain ? "#d97706" : "#1a5fa8"; c.lineWidth = 1.6;
     c.beginPath();
-    SERIES.forEach(function(p, i) {
-      if (i === 0) c.moveTo(X(i), Y(p.tide_navd88));
-      else c.lineTo(X(i), Y(p.tide_navd88));
+    vs.forEach(function(v, i) {
+      if (i === 0) c.moveTo(X(i), Y(v)); else c.lineTo(X(i), Y(v));
     });
     c.stroke();
     var ti = parseInt(tSlider.value, 10) || 0;
     c.fillStyle = "#b91c1c";
     c.beginPath();
-    c.arc(X(ti), Y(SERIES[ti] ? SERIES[ti].tide_navd88 : wsNow), 3.5, 0, 7);
+    c.arc(X(ti), Y(vs[ti] != null ? vs[ti] : vs[0]), 3.5, 0, 7);
     c.fill();
   }
 
   function nearest(mx, my) {
-    var best = null, bd = 20*20;
+    var m = inv(mx, my);
+    var best = null, bd = (20 / view.k) * (20 / view.k);
     DATA.streets.forEach(function(st) {
       st.pts.forEach(function(p) {
         if (p[2] == null) return;
-        var P = proj(p[0], p[1]);
-        var d = (P[0]-mx)*(P[0]-mx) + (P[1]-my)*(P[1]-my);
-        if (d < bd) { bd = d; best = {st: st, p: p}; }
+        var P2 = proj(p[0], p[1]);
+        var d = (P2[0] - m[0]) * (P2[0] - m[0]) +
+                (P2[1] - m[1]) * (P2[1] - m[1]);
+        if (d < bd) { bd = d; best = { st: st, p: p }; }
       });
     });
     return best;
   }
 
-  function onPoint(ev) {
-    if (!DATA) return;
-    var r = canvas.getBoundingClientRect();
-    var x = (ev.clientX - r.left) * canvas.width / r.width;
-    var y = (ev.clientY - r.top) * canvas.height / r.height;
+  function showReadout(x, y) {
     var hit = nearest(x, y);
     if (!hit) return;
     var e = hit.p[2];
-    var ws = parseFloat(slider.value) - MLLW_OFF;
-    var depth = (ws - e) * 12;
+    var sws = surfaceFor(hit.st);
+    var depth = (sws - e) * 12;
     var town = hit.st.town ? " (" + hit.st.town + ")" : "";
     readout.innerHTML = "<b>" + (hit.st.name || "unnamed street") +
       town + "</b> — street ≈ " + fmtElev(e) +
@@ -280,52 +344,156 @@
         ? " — <b>≈ " + depth.toFixed(0) + "″ of water here</b>"
         : " — dry at this level");
   }
-  canvas.addEventListener("mousemove", onPoint);
-  canvas.addEventListener("pointerdown", onPoint);
 
+  // --- pan / zoom / tap ---
+  var pointers = {}, panStart = null, moved = false, pinch0 = null;
+  function cpos(ev) {
+    var r = canvas.getBoundingClientRect();
+    return [(ev.clientX - r.left) * canvas.width / r.width,
+            (ev.clientY - r.top) * canvas.height / r.height];
+  }
+  canvas.addEventListener("pointerdown", function(ev) {
+    canvas.setPointerCapture(ev.pointerId);
+    pointers[ev.pointerId] = cpos(ev);
+    var keys = Object.keys(pointers);
+    if (keys.length === 1) {
+      panStart = { x: pointers[ev.pointerId][0],
+                   y: pointers[ev.pointerId][1],
+                   tx: view.tx, ty: view.ty };
+      moved = false;
+    } else if (keys.length === 2) {
+      var a = pointers[keys[0]], b = pointers[keys[1]];
+      pinch0 = { d: Math.hypot(a[0] - b[0], a[1] - b[1]),
+                 k: view.k, tx: view.tx, ty: view.ty,
+                 cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2 };
+      panStart = null;
+    }
+  });
+  canvas.addEventListener("pointermove", function(ev) {
+    if (!(ev.pointerId in pointers)) return;
+    pointers[ev.pointerId] = cpos(ev);
+    var keys = Object.keys(pointers);
+    if (keys.length === 2 && pinch0) {
+      var a = pointers[keys[0]], b = pointers[keys[1]];
+      var d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      var f = d / (pinch0.d || 1);
+      var k2 = Math.max(0.8, Math.min(30, pinch0.k * f));
+      var f2 = k2 / pinch0.k;
+      view.k = k2;
+      view.tx = pinch0.cx - (pinch0.cx - pinch0.tx) * f2;
+      view.ty = pinch0.cy - (pinch0.cy - pinch0.ty) * f2;
+      moved = true;
+      requestRender();
+    } else if (panStart) {
+      var p = pointers[ev.pointerId];
+      var dx = p[0] - panStart.x, dy = p[1] - panStart.y;
+      if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+      view.tx = panStart.tx + dx;
+      view.ty = panStart.ty + dy;
+      requestRender();
+    } else if (keys.length === 0 && DATA) {
+      var q = cpos(ev);
+      showReadout(q[0], q[1]);
+    }
+  });
+  canvas.addEventListener("pointerup", function(ev) {
+    var p = pointers[ev.pointerId];
+    delete pointers[ev.pointerId];
+    if (Object.keys(pointers).length < 2) pinch0 = null;
+    if (p && !moved && DATA) showReadout(p[0], p[1]);
+    panStart = null;
+  });
+  canvas.addEventListener("pointercancel", function(ev) {
+    delete pointers[ev.pointerId];
+    pinch0 = null; panStart = null;
+  });
+  canvas.addEventListener("mousemove", function(ev) {
+    if (Object.keys(pointers).length === 0 && DATA) {
+      var q = cpos(ev);
+      showReadout(q[0], q[1]);
+    }
+  });
+  function zoomAt(cx, cy, factor) {
+    var k2 = Math.max(0.8, Math.min(30, view.k * factor));
+    var f = k2 / view.k;
+    view.k = k2;
+    view.tx = cx - (cx - view.tx) * f;
+    view.ty = cy - (cy - view.ty) * f;
+    requestRender();
+  }
+  canvas.addEventListener("wheel", function(ev) {
+    ev.preventDefault();
+    var q = cpos(ev);
+    zoomAt(q[0], q[1], Math.pow(1.0015, -ev.deltaY));
+  }, { passive: false });
+  canvas.addEventListener("dblclick", function(ev) {
+    var q = cpos(ev);
+    zoomAt(q[0], q[1], 1.7);
+  });
+  document.getElementById("town-reset").addEventListener("click",
+    function() { view = { k: 1, tx: 0, ty: 0 }; requestRender(); });
+
+  // --- controls ---
   slider.addEventListener("input", function() {
     tLabel.textContent = "";
-    render();
+    requestRender();
   });
-  unitsBox.addEventListener("change", function() {
-    try {
-      localStorage.setItem("barnacle-town-units",
-                           unitsBox.checked ? "1" : "0");
-    } catch (e) {}
-    render();
+  [unitsBox, baseBox, rainBox].forEach(function(box, i) {
+    box.addEventListener("change", function() {
+      try {
+        localStorage.setItem(
+          ["barnacle-town-units", "barnacle-town-base",
+           "barnacle-town-rain"][i], box.checked ? "1" : "0");
+      } catch (e) {}
+      syncScrub();
+      requestRender();
+    });
   });
-  tSlider.addEventListener("input", function() {
+  function syncScrub() {
     if (!SERIES) return;
     var i = parseInt(tSlider.value, 10) || 0;
     var p = SERIES[i];
     if (!p) return;
-    slider.value = (p.tide_navd88 + MLLW_OFF).toFixed(2);
-    tLabel.textContent = p.time + " — predicted bay level";
-    render();
+    var lvl = rainBox.checked && p.water_navd88 != null
+      ? p.water_navd88 : p.tide_navd88;
+    slider.value = (lvl + MLLW_OFF).toFixed(2);
+    var extra = rainBox.checked && p.water_navd88 != null &&
+      p.water_navd88 > (p.tide_navd88 || 0) + 0.01
+      ? " (342 rain-water; bay tide " +
+        (p.tide_navd88 + MLLW_OFF).toFixed(2) + ")"
+      : "";
+    tLabel.textContent = p.time + extra;
+  }
+  tSlider.addEventListener("input", function() {
+    syncScrub();
+    requestRender();
   });
   document.getElementById("town-snap").addEventListener("click",
     function() {
       if (!SERIES) {
-        if (forecastPeak) { slider.value = forecastPeak; render(); }
+        if (forecastPeak) { slider.value = forecastPeak; requestRender(); }
         return;
       }
       tSlider.value = startI;
-      var p = SERIES[startI];
-      slider.value = (p.tide_navd88 + MLLW_OFF).toFixed(2);
-      tLabel.textContent = p.time + " — now";
-      render();
+      syncScrub();
+      tLabel.textContent += " — now";
+      requestRender();
     });
 
   buildLegend();
-  fetch("highlands_streets.json?v=" + Math.floor(Date.now() / 3.6e6))
-    .then(function(r){ return r.json(); })
-    .then(function(d) {
-      DATA = d;
-      proj = buildProj(d.bbox);
-      render();
-    });
+  Promise.all([
+    fetch("highlands_streets.json?v=" + Math.floor(Date.now() / 3.6e6))
+      .then(function(r) { return r.json(); }),
+    fetch("highlands_base.json?v=" + Math.floor(Date.now() / 3.6e6))
+      .then(function(r) { return r.json(); })
+      .catch(function() { return null; })
+  ]).then(function(res) {
+    DATA = res[0]; BASE = res[1];
+    setupProj();
+    render();
+  });
   fetch("forecast.json?v=" + Math.floor(Date.now() / 3e5))
-    .then(function(r){ return r.json(); })
+    .then(function(r) { return r.json(); })
     .then(function(f) {
       forecastPeak = f.peak_forecast_observed_mllw || null;
       SERIES = (f.water_series || []).filter(function(p) {
@@ -333,22 +501,21 @@
       });
       if (SERIES.length) {
         tSlider.max = SERIES.length - 1;
-        // first point at/after now (viewer clock)
         var now = new Date();
         startI = 0;
         for (var i = 0; i < SERIES.length; i++) {
-          var m = (SERIES[i].time || "").match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/);
-          if (m && new Date(+m[1], m[2]-1, +m[3], +m[4], +m[5]) >= now) {
+          var m = (SERIES[i].time || "")
+            .match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/);
+          if (m && new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) >= now) {
             startI = i; break;
           }
         }
         tSlider.value = startI;
-        var p = SERIES[startI];
-        slider.value = (p.tide_navd88 + MLLW_OFF).toFixed(2);
-        tLabel.textContent = p.time + " — now";
+        syncScrub();
+        tLabel.textContent += " — now";
       }
-      render();
-    }).catch(function() { render(); });
+      requestRender();
+    }).catch(function() { requestRender(); });
 })();
 </script>
 </body>
