@@ -518,6 +518,22 @@
   }
 
   function showReadout(x, y) {
+    // reference markers answer first when tapped directly
+    var m = inv(x, y);
+    for (var ri = 0; ri < REF.length; ri++) {
+      var P2 = proj(REF[ri].lat, REF[ri].lon);
+      var dd = (P2[0] - m[0]) * (P2[0] - m[0]) +
+               (P2[1] - m[1]) * (P2[1] - m[1]);
+      if (dd < (10 / view.k) * (10 / view.k)) {
+        readout.innerHTML = "<b>" + REF[ri].label + "</b> — " +
+          (ri === 0
+            ? "the calibrated intersection (342 Bay & Central); " +
+              "lowest grate 3.52 ft NAVD88 = tidal onset 6.34 MLLW"
+            : "downtown block (Fresh restaurant); ground ≈ 3.28 ft " +
+              "NAVD88 — floods ~0.24 ft of tide before the 342 corner");
+        return;
+      }
+    }
     var hit = nearest(x, y);
     if (!hit) return;
     var e = hit.p[2];
