@@ -31,6 +31,18 @@
   .lg-swatch { display: inline-block; width: 22px; height: 10px;
                border-radius: 2px; vertical-align: middle;
                margin-right: 4px; }
+  #flood-ticks { position: relative; height: 12px; flex: 1 1 100%;
+                 margin: 0 8px -6px 8px; }
+  #flood-ticks span { position: absolute; top: 0; width: 2px;
+                      height: 10px; background: #b45f00;
+                      cursor: pointer; padding: 0 4px;
+                      background-clip: content-box; }
+  #flood-chips { flex: 1 1 100%; display: flex; flex-wrap: wrap;
+                 gap: 4px; }
+  #flood-chips button { font-size: 11px; padding: 2px 7px;
+                        border: 1px solid #c9a; border-radius: 10px;
+                        background: #fff7f0; cursor: pointer;
+                        color: #7a4a00; }
 </style>
 </head>
 <body>
@@ -46,8 +58,10 @@
       <span id="town-level-label" style="font-size:14px"></span>
       <button type="button" id="town-snap">Snap to current forecast</button>
       <button type="button" id="town-reset">Reset view</button>
+      <div id="flood-ticks"></div>
       <input type="range" id="town-level" min="4.0" max="15.0"
              step="0.05" value="6.3">
+      <div id="flood-chips"></div>
     </div>
     <div class="town-slider">
       <span class="note">Slide through the forecast:</span>
@@ -131,6 +145,20 @@
     { max: 1e9,  rgb: [103,0,13],    label: ">5′ over head" }
   ];
   var DRY = "#c9ced4";
+  // Top-10 historic floods (instantaneous ft MLLW) — source:
+  // history/data/top10_floods.csv (site's 10-worst table)
+  var FLOODS = [
+    ["Sandy", "2012-10-29", 14.4],
+    ["Donna", "1960-09-12", 10.08],
+    ["Dec '92 nor'easter", "1992-12-11", 10.08],
+    ["Irene", "2011-08-28", 9.76],
+    ["Nov '53 nor'easter", "1953-11-07", 9.69],
+    ["Ash Wednesday '62", "1962-03-06", 9.39],
+    ["1944 hurricane", "1944-09-14", 9.39],
+    ["Mar 2010 nor'easter", "2010-03-13", 9.03],
+    ["Appalachian Storm '50", "1950-11-25", 8.99],
+    ["Jan '66 nor'easter", "1966-01-23", 8.89]
+  ];
   var REF = [
     {lat: 40.4015, lon: -73.9910, sym: "dot", label: "342 Bay corner"},
     {lat: 40.4012, lon: -73.9862, sym: "tri", label: "140-144 Bay Ave"}
@@ -559,6 +587,29 @@
       requestRender();
     });
 
+  function setFlood(f) {
+    slider.value = f[2].toFixed(2);
+    tLabel.textContent = f[0] + " (" + f[1] + ") — " +
+      f[2].toFixed(2) + " ft MLLW historic peak";
+    render();
+  }
+  (function buildFloodUI() {
+    var ticks = document.getElementById("flood-ticks");
+    var chips = document.getElementById("flood-chips");
+    FLOODS.forEach(function(f) {
+      var t = document.createElement("span");
+      t.style.left = "calc(" +
+        (((f[2] - 4.0) / (15.0 - 4.0)) * 100).toFixed(2) + "% - 5px)";
+      t.title = f[0] + " " + f[2].toFixed(2) + " ft";
+      t.addEventListener("click", function() { setFlood(f); });
+      ticks.appendChild(t);
+      var b = document.createElement("button");
+      b.type = "button";
+      b.textContent = f[0];
+      b.addEventListener("click", function() { setFlood(f); });
+      chips.appendChild(b);
+    });
+  })();
   buildLegend();
   Promise.all([
     fetch("highlands_streets.json?v=" + Math.floor(Date.now() / 3.6e6))
