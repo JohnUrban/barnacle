@@ -11,7 +11,7 @@
   #town-canvas { width: 100%; height: auto; background: #eef0e9;
                  border: 1px solid #ccc; border-radius: 6px;
                  touch-action: none; cursor: grab; }
-  #town-thumb { position: absolute; top: 8px; left: 8px;
+  #town-thumb { position: absolute; top: 8px; left: 46px;
                 background: rgba(255,255,255,0.93);
                 border: 1px solid #999; border-radius: 5px; }
   #town-readout { min-height: 1.5em; font-size: 13px; color: #444; }
@@ -64,6 +64,12 @@
     </div>
     <div id="town-wrap">
       <canvas id="town-canvas" width="980" height="840"></canvas>
+      <button type="button" id="town-thumb-btn"
+              title="show/hide the tide chart"
+              style="position:absolute;top:8px;left:8px;font-size:15px;
+                     padding:2px 7px;border:1px solid #999;
+                     border-radius:5px;background:rgba(255,255,255,0.9);
+                     cursor:pointer">&#128200;</button>
       <canvas id="town-thumb" width="190" height="82"></canvas>
     </div>
     <p id="town-readout" class="note">Tap or hover a street for its
@@ -142,6 +148,10 @@
   var rainBox = document.getElementById("town-rain");
   var DATA = null, BASE = null, SERIES = null, startI = 0;
   var forecastPeak = null, proj = null, POT = null;
+  var thumbOn = true;
+  try {
+    thumbOn = localStorage.getItem("barnacle-town-thumb") !== "0";
+  } catch (e) {}
   var view = { k: 1, tx: 0, ty: 0 };
   var raf = null;
 
@@ -298,7 +308,9 @@
   }
 
   function drawThumb() {
-    if (!SERIES || !SERIES.length) { thumbC.style.display = "none"; return; }
+    if (!thumbOn || !SERIES || !SERIES.length) {
+      thumbC.style.display = "none"; return;
+    }
     thumbC.style.display = "block";
     var c = thumbC.getContext("2d");
     var W2 = thumbC.width, H = thumbC.height, P = 6;
@@ -466,6 +478,14 @@
   });
   document.getElementById("town-reset").addEventListener("click",
     function() { view = { k: 1, tx: 0, ty: 0 }; requestRender(); });
+  document.getElementById("town-thumb-btn").addEventListener("click",
+    function() {
+      thumbOn = !thumbOn;
+      try {
+        localStorage.setItem("barnacle-town-thumb", thumbOn ? "1" : "0");
+      } catch (e) {}
+      drawThumb();
+    });
 
   // --- controls ---
   slider.addEventListener("input", function() {
