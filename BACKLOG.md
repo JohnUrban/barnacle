@@ -104,6 +104,14 @@ all findings verified — see audits/2026-08-03-a2/)**
 - [ ] Audit a2 closeout: Phases 0–1 verified PASS in Claude round 03;
       close only after independent Phase 2 review reconciles M2/L2.
 
+- [ ] House-point constant (40.4015, -73.991 in mrms_point_rain.py /
+      nowcast UA context) sits ~568 m SE of the true Bay & Central
+      intersection (40.405479, -73.995195 — OSM shared vertex, LiDAR
+      4.36 ft = surveyed road middle). Harmless for catchment-box
+      means (explicit CATCH_* bounds) but shifts the informational
+      MRMS "point" column ~1 cell; correct deliberately, not
+      drive-by, and note comparability in the MRMS cache README.
+
 **Standing obligations**
 - List `audits/` at session start; reply to open reports.
 - Keep the living-documents registry (AGENTS.md) satisfied.
