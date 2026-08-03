@@ -17,6 +17,15 @@ looks stale, trust this file. Ledger lines are append-only:
 - [ ] Town map, staged features: bands/classic shading toggle;
       per-building doorsill tagging (user point-and-click, feeds
       freeboard); possible georeferenced user snapshot base layer.
+- [ ] RAIN PONDING IN LOCAL MINIMA (user idea 2026-08-03): detect
+      sag points along the street network from the LiDAR profile —
+      vertices lower than both neighbors, scored by basin depth
+      below the enclosing saddle — and badge them as rain-ponding
+      candidates ("collects water in downpours") independent of the
+      tidal surface. Type example: the Route 36 valley between two
+      hills in Highlands that floods in rain despite high elevation.
+      Geometry-only (no drainage physics claimed); the region street
+      elevations shipped 2026-08-03 already contain the needed data.
 - [ ] Antecedent wetting (model gap, user field insight 7/18): tank
       is memoryless about hillside priming; every double-pulse event
       is a calibration pair. Candidate: trailing-rain multiplier on
@@ -76,18 +85,24 @@ all findings verified — see audits/2026-08-03-a2/)**
       inputs); semantic gate checks (timestamps, enums, future-time
       rejection, freshness); dispatch-failure visibility + retry;
       pin actions/deps/CDN (SRI); _html_escape NWS feed text — shipped
-      `5332dd70`; 67 tests + gate green, pending Claude review.
-- [ ] Phase 2: repo-relative v0.10.1 refit/hindcast command +
+      `5332dd70`; 67 tests + gate green; Claude round-03 PASS
+      (`e9dcdff0`).
+- [x] Phase 2: repo-relative v0.10.1 refit/hindcast command +
       golden/physics tests (freeze behavior, no retuning);
       evidence-count prose precision (six anchors / two hydrographs /
-      one recession constraint); move all_anchors recipe off the
-      scratchpad import.
+      one recession constraint); all_anchors recipe moved off the
+      scratchpad import — implemented with 77 tests, pending Claude
+      round-04 review.
+- [ ] Versioned model follow-up: `_pluvial_fill()` starts a non-grid
+      base at the preceding 0.1-inch stage bin, so tiny positive
+      storage can calculate up to ~0.08″ below the base. Assess impact,
+      fix only with a model version bump, and update goldens in lockstep.
 - [ ] corrects_row_id / erratum convention for append-only ledgers
       (first hand-written erratum row shipped 2026-08-03).
 - [ ] Cadence SLO monitor (within accepted-risk posture). "BEST
       EFFORT" site wording shipped in `5332dd70`.
-- [ ] Audit a2 closeout: Claude verify round-03 implementation diff;
-      close only after findings/fixes are reconciled.
+- [ ] Audit a2 closeout: Phases 0–1 verified PASS in Claude round 03;
+      close only after independent Phase 2 review reconciles M2/L2.
 
 **Standing obligations**
 - List `audits/` at session start; reply to open reports.
@@ -107,3 +122,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-08-03 | FACT | audit-2026-08-03-a2 | Codex full-repo audit: 5 high + 7 med/low, ALL verified in reply; M1 data errors (row-151 AM/PM, day-max 9.0→13.2) fixed same day; remediation program queued above [VERIFIED: audits/2026-08-03-a2/]
 2026-08-03 | DONE | audit-a2-phases-0-1 | station-local clock, source-aged radar/coverage, fail-closed transactional recovery, semantic gates/all-path CI, dispatch visibility, supply-chain pins/SRI, external HTML escaping; 67 tests green [VERIFIED: 5332dd70 + audits/2026-08-03-a2/03-remediation-implementation-codex.md]
 2026-08-03 | DONE | town-map-expansion | all four towns live: 739 ways / 8,067 vertices / 7,227 LiDAR points (0 missing; Rumson-bridge water reads nulled); widened base layer; rain view Highlands-only confirmed [VERIFIED: docs/highlands_streets.json + this commit]
+2026-08-03 | DONE | audit-a2-phase-2 | frozen v0.10.1 reproduction: versioned 24-point fit + six-event hindcast fixture, RMS 1.3168→reported 1.32, event goldens/timing, stage/drain/rise/recession physics gates, exact evidence taxonomy, scratchpad path removed; no retuning; 77 tests green [VERIFIED: history/scripts/reproduce_v0_10_1.py + tests/test_model_reproduction.py]

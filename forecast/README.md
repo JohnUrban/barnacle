@@ -30,3 +30,13 @@ rewrites, or model-version changes.
 The nowcast intentionally imports the production facade so it shares the
 same tank, drainage, station-time, and health semantics. Move that import only
 after `model_core` and `data_sources` have stable public interfaces.
+
+## Frozen v0.10.1 reproduction
+
+Run `python history/scripts/reproduce_v0_10_1.py` from any directory to replay
+the production parameter vector, 24-point fit RMS, six measured-event
+hindcasts, and prediction-log version cutover. The command is offline and
+read-only. Its source-controlled inputs and expected outputs are in
+`model/data/v0.10.1-reproduction.json`; `tests/test_model_reproduction.py`
+holds the corresponding behavioral and physics gates. This is a frozen replay,
+not authorization to search for or promote new parameters.

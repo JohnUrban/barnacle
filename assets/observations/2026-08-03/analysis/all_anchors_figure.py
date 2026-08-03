@@ -3,15 +3,15 @@
 (peak stems, landmark palette, sub-labels with rate + bay state) with
 the v0.10.1 tank hindcast added beside each measured peak.
 """
-import runpy, sys
+import runpy
+from pathlib import Path
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 
-ns = runpy.run_path(
-    "/private/tmp/claude-501/-Users-johnurban-searchPaths-github-barnacle/"
-    "1a69cbe4-fab4-41f2-a2fb-9aad0a4a00ea/scratchpad/all_anchors_model.py")
+HERE = Path(__file__).resolve().parent
+ns = runpy.run_path(str(HERE / "all_anchors_model.py"))
 R = ns["RESULTS"]
 for k, (v, t) in R.items():
     print(f"{k:12s} +{v:.2f} @ {t:%H:%M}")
@@ -111,7 +111,6 @@ fig.text(0.5, 0.015,
     ha="center", fontsize=7.5, color="#666666")
 
 fig.tight_layout(rect=(0, 0.045, 1, 1))
-out = ("/Users/johnurban/searchPaths/github/barnacle/assets/observations/"
-       "2026-08-03/analysis/all_anchors.png")
+out = HERE / "all_anchors.png"
 fig.savefig(out, dpi=150, bbox_inches="tight")
 print("wrote", out)

@@ -3727,9 +3727,10 @@ def _render_accuracy_html(forecast):
         'cannot see rain-driven street floods (the gauge is 4 miles '
         'away and tide-only): pluvial skill is tracked separately '
         'against the spot-check log in '
-        '<code>data/labeled_observations.csv</code>, currently four '
-        'measured rain events, all fit by the v0.10 tank model — '
-            'one parameter set, including two full measured hydrographs.</p>'
+        '<code>data/labeled_observations.csv</code>. The evidence registry '
+        'currently has six measured flood-peak anchors; the v0.10.1 fit set '
+        'is two full tape-measured hydrographs, with the other events used '
+        'as independent peak, recession, or out-of-sample checks.</p>'
     )
 
     rows = _load_accuracy_rows()
@@ -5314,9 +5315,10 @@ def estimate_pluvial_water(rain_rate_in_hr, bay_water_navd88,
 # v0.10.1 (2026-07-18 evening): k_out MEASURED from event #5's clean
 # recession limb (rain ~0, 16:03-16:40): 3.50/h — and with jets still
 # feeding, that's a floor. K/gamma/lag jointly refit against the 7/6
-# + 7/9 hydrographs with k_out pinned; RMS IMPROVED 1.44 -> 1.32 in.
-# The rare legitimate tuning: input-independent measurement first,
-# refit second, validation better everywhere.
+# + 7/9 hydrographs with k_out pinned. The retained recipe replays the
+# production vector at RMS 1.3168 in (reported 1.32); the original 1.44-in
+# v0.10 baseline and optimizer trace were not retained independently. Frozen,
+# read-only reproduction: history/scripts/reproduce_v0_10_1.py.
 TANK_K = 1.296e6        # cell-inches per hour at 1 in/hr net (refit v0.10.1)
 TANK_GAMMA = 0.78       # intensity exponent (refit v0.10.1)
 TANK_KOUT = 3.50        # /hour — MEASURED 2026-07-18 (e-fold ~17 min)
@@ -7495,7 +7497,8 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
        stage-storage curve. Default = the v0.10 tank's steady state
        (the level reached within ~1 h of sustained rain; it drains
        back in ~20 min once rain stops — same calibration as the
-       hydrograph on the chart, validated on four measured floods).
+       hydrograph on the chart: two full fit hydrographs, checked against
+       six measured peak anchors and one measured recession constraint).
        The models agree below ~2 in/hr and diverge for violent
        bursts, where event #4 (+18.7&Prime; measured at sustained
        3.4 in/hr) sits exactly on the tank curve. "Extra" because
@@ -8194,10 +8197,11 @@ def _render_equation_widget_html(forecast, wrapper="section"):
        tank's <b>steady state</b> (the level a sustained rate holds,
        reached within ~1&nbsp;h), bracketed against the saturating
        <b>tanh</b> alternative (a conservative floor — the 7/9 flood
-       exceeded it). Calibration: ONE parameter set fits all four
-       measured floods — 7/6 and 7/9/2026 (full measured
-       hydrographs), Oct 30 2025 (compound), Dec 19 2025 (moderate)
-       — all with MRMS-radar-measured rain forcing.</p>
+       exceeded it). Fit set: ONE parameter set on the 7/6 and 7/9/2026
+       full measured hydrographs. The evidence registry has six measured
+       peak anchors: Oct 30 and Dec 19 are independent peak checks, Jul 18
+       supplies the measured recession constraint, and Aug 3 is an
+       out-of-sample hindcast — all with MRMS-radar-measured forcing.</p>
 {pluv_calc_html}
     <script>
       (function() {{
@@ -9420,7 +9424,7 @@ def render_html_page(forecast):
 
   <footer>
     <p>Model {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph —
-       timing calibrated on two measured floods; scenarios = tank
+       timing calibrated on two full measured hydrographs; scenarios = tank
        steady-state / tanh bracket; stage-storage fill,
        head-dependent drainage). Local enhancement
        {LOCAL_ENHANCEMENT_FT:+.2f} ft.

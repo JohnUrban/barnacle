@@ -11,7 +11,7 @@
 <main>
   <header>
     <h1><a href="index.html" style="text-decoration:none;color:inherit">Bay Ave Barnacle</a> — details</h1>
-    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated Mon Aug 03, 05:44 PM ET</p>
+    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated Mon Aug 03, 06:21 PM ET</p>
   </header>
 
   <div id="how"></div>
@@ -260,10 +260,11 @@
        tank's <b>steady state</b> (the level a sustained rate holds,
        reached within ~1&nbsp;h), bracketed against the saturating
        <b>tanh</b> alternative (a conservative floor — the 7/9 flood
-       exceeded it). Calibration: ONE parameter set fits all four
-       measured floods — 7/6 and 7/9/2026 (full measured
-       hydrographs), Oct 30 2025 (compound), Dec 19 2025 (moderate)
-       — all with MRMS-radar-measured rain forcing.</p>
+       exceeded it). Fit set: ONE parameter set on the 7/6 and 7/9/2026
+       full measured hydrographs. The evidence registry has six measured
+       peak anchors: Oct 30 and Dec 19 are independent peak checks, Jul 18
+       supplies the measured recession constraint, and Aug 3 is an
+       out-of-sample hindcast — all with MRMS-radar-measured forcing.</p>
 
     <div class="eqn-line">
       <span class="eqn-lhs">Rain burst</span>
@@ -556,7 +557,7 @@
       });
     })();
   </script>
-  <p class="note">Positive mean error = model over-predicts on average. Each point is one archived daily forecast (since the JSON archive started). x = predicted Sandy Hook peak, y = actual NOAA observed peak. The dashed diagonal is perfect prediction (y=x); points above the line = model under-predicted, below = over-predicted. Raw data: <code>data/forecast_accuracy.csv</code>.</p><p class="note">Scope: this scores the <b>tide-keyed input</b> — each day's predicted vs observed peak at the Sandy Hook gauge, as the forecast actually ran that day (an append-only record; rows are never recomputed under newer models). It cannot see rain-driven street floods (the gauge is 4 miles away and tide-only): pluvial skill is tracked separately against the spot-check log in <code>data/labeled_observations.csv</code>, currently four measured rain events, all fit by the v0.10 tank model — one parameter set, including two full measured hydrographs.</p>
+  <p class="note">Positive mean error = model over-predicts on average. Each point is one archived daily forecast (since the JSON archive started). x = predicted Sandy Hook peak, y = actual NOAA observed peak. The dashed diagonal is perfect prediction (y=x); points above the line = model under-predicted, below = over-predicted. Raw data: <code>data/forecast_accuracy.csv</code>.</p><p class="note">Scope: this scores the <b>tide-keyed input</b> — each day's predicted vs observed peak at the Sandy Hook gauge, as the forecast actually ran that day (an append-only record; rows are never recomputed under newer models). It cannot see rain-driven street floods (the gauge is 4 miles away and tide-only): pluvial skill is tracked separately against the spot-check log in <code>data/labeled_observations.csv</code>. The evidence registry currently has six measured flood-peak anchors; the v0.10.1 fit set is two full tape-measured hydrographs, with the other events used as independent peak, recession, or out-of-sample checks.</p>
 </section>
 
   <div id="glossary"></div>
