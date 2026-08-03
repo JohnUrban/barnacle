@@ -9098,6 +9098,7 @@ def render_html_page(forecast):
   <header>
     <h1>Bay Ave Barnacle</h1>
     <p class="subtitle">Hyperlocal flood forecast for the intersection of Bay Ave &amp; Central Ave in Highlands NJ &mdash; water levels referenced to 342 Bay Ave</p>
+    <p class="subtitle">For general street predictions across Highlands, Atlantic Highlands, Leonardo, and Sea Bright, see our <a href="highlands.html">new barnacle street map</a>.</p>
     <p class="last-updated"
        data-generated-at="{forecast.get('generated_utc', '')}">
       <span id="last-updated-display">Last updated …</span>
