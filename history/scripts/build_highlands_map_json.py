@@ -25,26 +25,58 @@ import sys
 _REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OSM = os.path.join(_REPO, "history", "data", "highlands_streets_osm.json")
 OSM2 = os.path.join(_REPO, "history", "data", "bayshore_streets_osm.json")
+OSM3 = os.path.join(_REPO, "history", "data", "region_streets_osm.json")
 ELEV = os.path.join(_REPO, "history", "data", "highlands_street_elevations.csv")
 OUT = os.path.join(_REPO, "docs", "highlands_streets.json")
 
 
 def _town_of(lat, lon):
-    if lon < -74.048:
-        return "Leonardo"
-    if lat < 40.402 and lon > -73.990:
+    """Crude municipal labels for the street readout — approximate
+    rectangles, cosmetic only, EXCEPT that the rain view applies only
+    to town == "Highlands", so the Highlands rule must stay TIGHT
+    (never leak south of the borough or west of Many Mind Creek)."""
+    north = lat >= 40.392
+    if north:
+        if lon < -74.075:
+            return "Belford/Port Monmouth"
+        if lon < -74.048:
+            return "Leonardo"
+        if lat < 40.402 and lon > -73.990:
+            return "Sea Bright"
+        if lon < -74.008:
+            return "Atlantic Highlands"
+        return "Highlands"
+    if lon > -73.995:
         return "Sea Bright"
-    if lon < -74.008:
-        return "Atlantic Highlands"
-    return "Highlands"
+    if lon > -74.035:
+        return "Rumson"
+    if lon > -74.062:
+        return "Fair Haven"
+    return "Red Bank"
+
+
+def _town_of_way(geom):
+    g = geom[len(geom) // 2]
+    lat, lon = g.get("lat", 0), g.get("lon", 0)
+    if 40.375 <= lat < 40.392 and -74.062 <= lon <= -73.995:
+        return "Navesink/Locust (Middletown)"
+    return _town_of(lat, lon)
 
 
 def main():
-    ways = [(w, "Highlands") for w in json.load(open(OSM))["elements"]]
-    if os.path.exists(OSM2):
-        for w in json.load(open(OSM2))["elements"]:
-            g = (w.get("geometry") or [{}])[0]
-            ways.append((w, _town_of(g.get("lat", 0), g.get("lon", 0))))
+    seen = set()
+    ways = []
+    for w in json.load(open(OSM))["elements"]:
+        seen.add(w.get("id"))
+        ways.append((w, "Highlands"))
+    for path in (OSM2, OSM3):
+        if not os.path.exists(path):
+            continue
+        for w in json.load(open(path))["elements"]:
+            if w.get("id") in seen:
+                continue
+            seen.add(w.get("id"))
+            ways.append((w, _town_of_way(w.get("geometry") or [{}])))
     grid = {}
     with open(ELEV) as f:
         for r in csv.DictReader(f):
