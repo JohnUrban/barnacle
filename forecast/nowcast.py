@@ -65,6 +65,36 @@ MRMS_BASE = "https://mrms.ncep.noaa.gov/2D/PrecipRate/"
 OUT_PATH = os.path.join(HERE, "..", "docs", "nowcast.json")
 
 
+def _origin_day_max(today):
+    """(day_max_in, day_max_utc) from the PUBLISHED nowcast.json, or
+    (0, None). Guards the day-max merge against stale checkouts: on
+    2026-08-03 a cron runner whose checkout predated the flood's
+    manual-loop pushes recomputed day-max from its own window (9.0)
+    and overwrote the true 13.2 — the merge must see the freshest
+    published value, not just the local file. Uses the API with
+    GITHUB_TOKEN when available (raw.githubusercontent caches ~5 min
+    and unauthenticated api.github.com rate-limits shared runners)."""
+    token = os.environ.get("GITHUB_TOKEN", "").strip()
+    urls = ["https://api.github.com/repos/JohnUrban/barnacle/contents/"
+            "docs/nowcast.json?ref=main"] if token else [
+            "https://raw.githubusercontent.com/JohnUrban/barnacle/main/"
+            "docs/nowcast.json"]
+    for url in urls:
+        try:
+            hdrs = dict(UA)
+            if token:
+                hdrs["Authorization"] = "Bearer " + token
+                hdrs["Accept"] = "application/vnd.github.raw+json"
+            j = json.load(urllib.request.urlopen(
+                urllib.request.Request(url, headers=hdrs), timeout=6))
+            if ((j.get("day_max_utc") or "")[:10] == today
+                    and (j.get("day_max_street_in") or 0) > 0):
+                return j["day_max_street_in"], j["day_max_utc"]
+        except Exception:
+            continue
+    return 0, None
+
+
 def _write(payload):
     payload["generated_utc"] = dt.datetime.now(dt.timezone.utc).strftime(
         "%Y-%m-%dT%H:%M:%SZ")
@@ -75,23 +105,27 @@ def _write(payload):
     # modeled street water forward across same-day runs; the site's
     # SO-FAR-TODAY line reads it as the automatic (modeled) source
     # when no tape/gauge truth exists.
+    today = payload["generated_utc"][:10]
+    # (value, utc) candidates; winner takes both fields. Monotonic
+    # within the day across racing writers (2026-08-03 regression).
+    cand = [(payload.get("street_now_in") or 0, payload["generated_utc"])]
+    obs_max = payload.pop("_obs_max", None)
+    if obs_max:
+        cand.append(obs_max)
     try:
         with open(OUT_PATH) as f:
             prev = json.load(f)
-        prev_day = (prev.get("generated_utc") or "")[:10]
-        today = payload["generated_utc"][:10]
-        cand = [payload.get("street_now_in") or 0]
-        if prev_day == today:
-            cand.append(prev.get("day_max_street_in") or 0)
-            if prev.get("day_max_street_in", 0) > (payload.get("street_now_in") or 0):
-                payload["day_max_utc"] = prev.get("day_max_utc")
-        if "day_max_utc" not in payload and (payload.get("street_now_in") or 0) > 0:
-            payload["day_max_utc"] = payload["generated_utc"]
-        payload["day_max_street_in"] = round(max(cand), 1)
+        if ((prev.get("generated_utc") or "")[:10] == today
+                and (prev.get("day_max_utc") or "")[:10] == today):
+            cand.append((prev.get("day_max_street_in") or 0,
+                         prev.get("day_max_utc")))
     except (OSError, ValueError):
-        if (payload.get("street_now_in") or 0) > 0:
-            payload["day_max_street_in"] = payload["street_now_in"]
-            payload["day_max_utc"] = payload["generated_utc"]
+        pass
+    cand.append(_origin_day_max(today))
+    best, best_utc = max(cand, key=lambda x: x[0] or 0)
+    if best and best_utc:
+        payload["day_max_street_in"] = round(best, 1)
+        payload["day_max_utc"] = best_utc
     tmp = OUT_PATH + ".tmp"
     with open(tmp, "w") as f:
         json.dump(payload, f)
@@ -265,6 +299,9 @@ def run():
             t += dt.timedelta(minutes=2)
         now_stage = next((st for tt, st in traj if tt >= end_obs),
                          traj[-1][1])
+        obs_pk_t, obs_pk = max(((tt, st) for tt, st in traj
+                                if tt <= end_obs),
+                               key=lambda x: x[1], default=(None, 0))
         pk_t, pk = max(traj, key=lambda x: x[1])
         payload.update({
             "street_now_in": round(now_stage, 1),
@@ -274,10 +311,47 @@ def run():
             "traj": [{"utc": tt.strftime("%H:%M"), "in": round(st, 1)}
                      for tt, st in traj[::5]],
         })
+        if obs_pk_t is not None and obs_pk > 0:
+            # peak already realized inside this run's observed window —
+            # a day-max candidate even if street_now has receded
+            payload["_obs_max"] = (round(obs_pk, 1),
+                                   obs_pk_t.strftime("%Y-%m-%dT%H:%M:%SZ"))
     _write(payload)
+
+
+def alert_dispatch_check():
+    """Exit 0 when an active NWS flood alert is NOT yet reflected in
+    data/alert_state.json — the workflow then dispatches the forecast
+    workflow immediately instead of letting the alert wait for the
+    next hourly slot (2026-08-03: the Flash Flood Warning was cut at
+    ~10:36 and ingested at 11:00 — ~30 min after the street peaked).
+    Exit 3 = nothing new. Failure-open is NOT wanted here: unknown
+    alert status must not spam dispatches, so failures exit 3."""
+    try:
+        alerts = ff.fetch_nws_flood_alerts()
+    except Exception:
+        alerts = None
+    if not alerts:
+        print("alert-dispatch: no active alerts (or status unknown)")
+        return 3
+    try:
+        with open(os.path.join(HERE, "..", "data",
+                               "alert_state.json")) as f:
+            sig = json.load(f).get("sig", "") or ""
+    except (OSError, ValueError):
+        sig = ""
+    for a in alerts:
+        key = f"{a.get('event', '')}@{a.get('onset', '')}"
+        if key.strip("@") and key not in sig:
+            print(f"alert-dispatch: NEW alert not in state: {key}")
+            return 0
+    print("alert-dispatch: all active alerts already ingested")
+    return 3
 
 
 if __name__ == "__main__":
     if "--check" in sys.argv:
         sys.exit(trigger_check())
+    if "--alert-dispatch-check" in sys.argv:
+        sys.exit(alert_dispatch_check())
     run()

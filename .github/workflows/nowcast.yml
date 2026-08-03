@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # alert-ingest dispatch of the forecast workflow
 
 concurrency:
   group: barnacle-nowcast
@@ -58,12 +59,42 @@ jobs:
             exit $code
           fi
 
+      # ALERT-INGEST FAST PATH (2026-08-03: FFW cut ~10:36, ingested
+      # 11:00 — official-alert latency was ~30 min after street peak).
+      # If an active NWS alert isn't in alert_state yet, dispatch the
+      # forecast workflow NOW (force_email=false: normal transactional
+      # evaluation decides delivery; no daily archive side effects).
+      - name: Alert-ingest dispatch check (stdlib, cheap)
+        id: adc
+        run: |
+          set +e
+          python forecast/nowcast.py --alert-dispatch-check
+          code=$?
+          set -e
+          if [ "$code" = "0" ]; then
+            echo "dispatch=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dispatch=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dispatch forecast workflow for immediate ingestion
+        if: steps.adc.outputs.dispatch == 'true'
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/daily_forecast.yml/dispatches" \
+            -d '{"ref":"main","inputs":{"force_email":"false"}}' \
+            && echo "dispatched" || echo "dispatch failed (non-fatal)"
+
       - name: Install radar deps
         if: steps.gate.outputs.go == 'true'
         run: pip install --quiet -r forecast/nowcast-requirements.txt
 
       - name: Run nowcast
         if: steps.gate.outputs.go == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: python forecast/nowcast.py
 
       - name: Publish gate (no markers, strict JSON)

@@ -2345,6 +2345,11 @@ Read these for context if needed:
 2. Photos are documentary: flood EXTENT (wet/dry lines!), drainage
    behavior (grate jetting), timestamps matter more than framing.
    Every wrack-line photo = a future `edge_YYYYMMDD_*` map point.
+3. MUD-TRACER SURVEY once water is down (user method, validated
+   event #6): rain floods run muddy and deposit mud where water
+   stood — walk the driveway/sidewalk margins and note where mud
+   reaches (or doesn't). Cheap independent bound on the peak AND
+   proof of no-missed-second-event while unobserved.
 
 **In the session after (Claude, cold start) — follow this RECIPE
 in order; every step has been needed at least once:**
@@ -2849,10 +2854,20 @@ peak. NEW: user's mud-tracer method (no mud on driveway = upper
 bound + no-second-event proof) — candidate standard post-event step.
 Full analysis: assets/observations/2026-08-03/ (README, hydrograph,
 dictation, OEM third-party photo w/ provenance caveat).
-OPEN BUGS FROM THE EVENT: (1) nowcast day-max regressed 13.2→9.0 via
-a stale-checkout cron writer — make the day-max merge monotonic or
-refresh nowcast.json from origin pre-merge; (2) cadence gap at burst
-onset (09:56 run, 10:02 burst, manual coverage from 10:29) — the
-nowcast-off-GHA-cron decision is now field-validated as necessary.
+EVENT-#6 BUGS, STATUS 2026-08-03 PM: (1) day-max regression FIXED —
+merge is now candidate-based and monotonic-per-day (street_now,
+observed-window traj peak, same-day local prev, PUBLISHED origin
+value via API w/ GITHUB_TOKEN); tests in
+tests/test_daymax_and_dispatch.py. (2) Official-alert ingestion
+latency FIXED-ADJACENT: nowcast workflow (every ~10 min) now runs
+`nowcast.py --alert-dispatch-check` (stdlib) — an active NWS alert
+missing from alert_state.json dispatches daily_forecast.yml
+immediately with force_email=false (normal transactional evaluation
+decides delivery; dispatch runs are treated as hourly, no daily
+archive). Manual Actions-tab dispatches unchanged (force_email
+defaults 'true'). (3) STILL OPEN (user decision): radar-cadence gap
+at burst onset — GHA cron is best-effort; a real scheduler
+(self-hosted runner / external cron hitting workflow_dispatch)
+remains the fix for the first-15-minutes blind spot.
 
 End of handoff.
