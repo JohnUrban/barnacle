@@ -35,11 +35,12 @@ widget v7.24a, per-tide pages, and town-wide street flood map. Model
 
 ## RIGHT NOW
 
-- User's active elevation sweep for Atlantic Highlands / Leonardo /
-  Sea Bright remains uncommitted and must not be staged with audit
-  work. When complete, regenerate `docs/highlands_streets.json` via
-  `history/scripts/build_highlands_map_json.py`; rain view remains
+- Town map now covers all FOUR towns (Highlands, Atlantic
+  Highlands, Leonardo, Sea Bright — 7,227 LiDAR street points,
+  bridge-over-water guard, widened base layer); rain view stays
   Highlands-only.
+- Audit a2 Phases 0–1: implemented by Codex, verified PASS in
+  `audits/2026-08-03-a2/03-…` (67/67 tests).
 - Audit a2 Phase 2 remains: reproducible repo-relative v0.10.1
   refit/hindcast + physics/golden tests + precise evidence-count prose,
   with **no retuning**. Phase 3 is the production-module split/schema
