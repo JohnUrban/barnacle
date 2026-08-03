@@ -18,8 +18,16 @@
   .town-slider { display: flex; flex-wrap: wrap; gap: 8px;
                  align-items: center; margin: 6px 0; font-size: 13px; }
   .town-slider input[type=range] { flex: 1 1 100%; }
-  #town-time-label { min-height: 1.3em; display: block;
-                     font-size: 13px; color: #444; }
+  /* Label owns a full-width reserved line (2026-07-20 intersection-
+     map lesson: length-changing label text in a shared flex row
+     resizes the row and shoves the map/track mid-drag). flex-basis
+     100% = its own row; min-height reserves worst-case wrap. */
+  #town-time-label { flex: 1 1 100%; display: block;
+                     min-height: 1.4em; font-size: 13px; color: #444; }
+  @media (max-width: 640px) {
+    #town-time-label { min-height: 2.8em; }
+  }
+  #town-level-label { display: inline-block; min-width: 15em; }
   .lg-swatch { display: inline-block; width: 22px; height: 10px;
                border-radius: 2px; vertical-align: middle;
                margin-right: 4px; }
