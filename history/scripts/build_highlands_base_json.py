@@ -22,7 +22,7 @@ import sys
 _REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = os.path.join(_REPO, "history", "data", "highlands_base_osm.json")
 OUT = os.path.join(_REPO, "docs", "highlands_base.json")
-BBOX = (40.350, -74.080, 40.430, -73.955)   # S, W, N, E
+BBOX = (40.330, -74.096, 40.430, -73.955)   # S, W, N, E (widened 2026-08-03 for full Sea Bright + Leonardo west)
 
 
 def _chains(ways):

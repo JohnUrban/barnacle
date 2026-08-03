@@ -9,10 +9,6 @@ looks stale, trust this file. Ledger lines are append-only:
 ## OPEN LOOPS (force-ranked)
 
 **Active / near-term**
-- [ ] Town-map expansion: fold Atlantic Highlands / Leonardo / Sea
-      Bright street elevations into `docs/highlands_streets.json`
-      (sweep + regen via `history/scripts/`; generator has town tags
-      ready; rain view must stay Highlands-only).
 - [ ] Nowcast scheduler: user chose ACCEPT-THE-GAP 2026-08-03.
       Revisit trigger: next event where the radar strip is dark
       during a rise, or when user has ~10 min for the external-cron
@@ -110,3 +106,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-08-03 | DONE | audit-2026-08-03-a1 | distillation audit: 0 critical, 7 edge findings, all confirmed + patched same day (porch-tape stale-import, PLAYBOOK dead ref + fragment, collectors/someday-queue pointers restored) [VERIFIED: audits/2026-08-03-a1/]
 2026-08-03 | FACT | audit-2026-08-03-a2 | Codex full-repo audit: 5 high + 7 med/low, ALL verified in reply; M1 data errors (row-151 AM/PM, day-max 9.0→13.2) fixed same day; remediation program queued above [VERIFIED: audits/2026-08-03-a2/]
 2026-08-03 | DONE | audit-a2-phases-0-1 | station-local clock, source-aged radar/coverage, fail-closed transactional recovery, semantic gates/all-path CI, dispatch visibility, supply-chain pins/SRI, external HTML escaping; 67 tests green [VERIFIED: 5332dd70 + audits/2026-08-03-a2/03-remediation-implementation-codex.md]
+2026-08-03 | DONE | town-map-expansion | all four towns live: 739 ways / 8,067 vertices / 7,227 LiDAR points (0 missing; Rumson-bridge water reads nulled); widened base layer; rain view Highlands-only confirmed [VERIFIED: docs/highlands_streets.json + this commit]

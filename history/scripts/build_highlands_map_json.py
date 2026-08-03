@@ -54,7 +54,10 @@ def main():
     def elev_near(lat, lon):
         k = (round(lat, 4), round(lon, 4))
         if k in grid:
-            return grid[k]
+            # sub-0.5 ft NAVD88 = water surface under a bridge span
+            # (Rumson Rd bridge reads -2.9); no street is below +2.9.
+            return grid[k] if grid[k] >= 0.5 else None
+        
         best, bd = None, 1e9
         for dlat in (-2, -1, 0, 1, 2):
             for dlon in (-3, -2, -1, 0, 1, 2, 3):
@@ -63,7 +66,7 @@ def main():
                     d = (abs(dlat) * 11.1) ** 2 + (abs(dlon) * 8.5) ** 2
                     if d < bd:
                         bd, best = d, grid[kk]
-        return best
+        return best if (best is None or best >= 0.5) else None
 
     streets, lats, lons = [], [], []
     for w, town in ways:
