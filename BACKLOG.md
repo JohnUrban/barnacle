@@ -9,11 +9,12 @@ looks stale, trust this file. Ledger lines are append-only:
 ## OPEN LOOPS (force-ranked)
 
 **Active / near-term**
-- [ ] Nowcast scheduler: user chose ACCEPT-THE-GAP 2026-08-03.
-      Revisit trigger: next event where the radar strip is dark
-      during a rise, or when user has ~10 min for the external-cron
-      + fine-grained-PAT option (options analyzed in the 2026-08-03
-      HANDOFF-archive entry).
+- [ ] Nowcast scheduler: trigger TRIPPED by event #7 (18-min publish
+      gap covered the entire rise). Half-A (launchd, Mac-awake hours)
+      INSTALLED 2026-08-07 via bin/install_local_scheduler.sh;
+      half-B (external cron, 24/7) ready-to-execute in
+      history/plans/external-cron-scheduler.md — needs the user's
+      ~10 min for a fine-grained PAT.
 - [ ] Town map, staged features: bands/classic shading toggle;
       per-building doorsill tagging (user point-and-click, feeds
       freeboard); possible georeferenced user snapshot base layer.
@@ -132,3 +133,9 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-08-03 | DONE | town-map-expansion | all four towns live: 739 ways / 8,067 vertices / 7,227 LiDAR points (0 missing; Rumson-bridge water reads nulled); widened base layer; rain view Highlands-only confirmed [VERIFIED: docs/highlands_streets.json + this commit]
 2026-08-03 | DONE | audit-a2-phase-2 | frozen v0.10.1 reproduction: versioned 24-point fit + six-event hindcast fixture, RMS 1.3168→reported 1.32, event goldens/timing, stage/drain/rise/recession physics gates, exact evidence taxonomy, scratchpad path removed; no retuning; 77 tests green [VERIFIED: history/scripts/reproduce_v0_10_1.py + tests/test_model_reproduction.py]
 2026-08-03 | DONE | region-map | full map-view street coverage: 9 towns (incl. Rumson/Fair Haven/Red Bank/Navesink/Belford edge) + all of Rt 36; 2,347 ways / 26,116 vertices / 27,457 LiDAR points, 0.2% missing (bridges); magma elevation view + historic-flood ticks shipped same evening [VERIFIED: docs/highlands_streets.json]
+2026-08-07 | FACT | event-#7 | surprise pluvial flood: lawn step 18:30-34, porch base 18:37, peak >= +14.9 (backcast ~+15.5 @18:40), 7 water fixes + drain phases + tilted pool (2nd) + north-pair tail (3rd) [VERIFIED: ledger + assets/observations/2026-08-07/]
+2026-08-07 | FACT | event-#7-surfaces | app said NO FLOODING through the rise: 18-min publish gap, headline owned by outlook, radar had no alert pathway, no text (state file: rank 0 all evening) [VERIFIED: screenshots + git nowcast history]
+2026-08-07 | DONE | radar-alerts | live radar street/projection now ranks alerts (transactional + daily cap + falling-trend guard) + workflow dispatch; 92 tests [VERIFIED: tests/test_radar_alerts.py]
+2026-08-07 | DONE | worst-truth-headline | strip regime_display (rising→projected class, falling→drain clock); widget v7.25a live-class override; SMS leads with radar line [VERIFIED: commit + site regen]
+2026-08-07 | DONE | scheduler-half-A | launchd 10-min local tick from dedicated clone ~/.barnacle/repo; first tick pushed 23:23Z [VERIFIED: origin log "local tick"]
+2026-08-07 | OPEN | event-#7-analysis | README + plots + 2-min hindcast (rising-undershoot/falling-overshoot question; day-max +16.9 vs measured ~+15.5) + mud-line peak refinement [STATED plan]
