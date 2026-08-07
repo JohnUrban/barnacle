@@ -67,6 +67,14 @@ class RadarAlertRankTests(unittest.TestCase):
         self.assertIn("LIVE radar", label)
         self.assertIn("radar:2026-08-07:severe", sig)
 
+    def test_falling_pool_ignores_projection(self):
+        # event #7 falling limb: proj +17.1 while street drains at
+        # +5 — no severe text during recession
+        rank, label, _ = self._level(
+            _fresh_nc(street_now_in=5.0, peak_proj_in=17.1,
+                      trend="falling"))
+        self.assertLessEqual(rank, 1)
+
     def test_current_street_alone_alerts_at_curb_class(self):
         rank, label, _ = self._level(
             _fresh_nc(street_now_in=8.5, peak_proj_in=9.0,
@@ -126,6 +134,11 @@ class RadarDispatchCheckTests(unittest.TestCase):
     def test_stale_never_dispatches(self):
         self.assertEqual(
             self._run(_fresh_nc(source_age_min=40.0), ""), 3)
+
+    def test_falling_projection_does_not_dispatch(self):
+        self.assertEqual(
+            self._run(_fresh_nc(street_now_in=5.0, peak_proj_in=17.1,
+                                trend="falling"), ""), 3)
 
     def test_below_thresholds_no_dispatch(self):
         self.assertEqual(

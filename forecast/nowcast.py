@@ -485,11 +485,15 @@ def radar_alert_check():
     proj = nc.get("peak_proj_in") or 0
     curb_in = (4.16 - 3.52) * 12      # light class floor
     lawn_in = (4.66 - 3.52) * 12      # moderate class floor
-    if street < curb_in and proj < lawn_in:
-        print(f"radar-alert: below thresholds (now {street}, proj {proj})")
+    # falling pool: the projection is a stateless-window overshoot
+    # artifact (event #7) — only current street water counts
+    proj_ok = proj >= lawn_in and nc.get("trend") != "falling"
+    if street < curb_in and not proj_ok:
+        print(f"radar-alert: below thresholds (now {street}, proj {proj},"
+              f" trend {nc.get('trend')})")
         return 3
     live_class = ff.classify_regime_from_water(
-        3.52 + max(street, proj if proj >= lawn_in else 0) / 12.0)
+        3.52 + max(street, proj if proj_ok else 0) / 12.0)
     day = nc.get("day_local") or (nc.get("generated_utc") or "")[:10]
     bit = f"radar:{day}:{live_class}"
     try:

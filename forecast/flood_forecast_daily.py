@@ -5567,7 +5567,14 @@ def compute_alert_level(forecast):
         _street = nc.get("street_now_in") or 0
         _proj = nc.get("peak_proj_in") or 0
         _lawn_in = (4.66 - 3.52) * 12
-        _eff = max(_street, _proj if _proj >= _lawn_in else 0)
+        # trend-consistency (same rule as the headline): a FALLING
+        # pool ignores the projection — the stateless window
+        # overshoots the falling limb (event #7: proj +17.1 while
+        # the street drained below the sidewalk). Missing trend
+        # (older files) counts as rising = conservative.
+        _proj_ok = (_proj >= _lawn_in
+                    and nc.get("trend") != "falling")
+        _eff = max(_street, _proj if _proj_ok else 0)
         if _eff > 0:
             radar_class = classify_regime_from_water(3.52 + _eff / 12.0)
             radar_rank = _ALERT_RANKS.get(radar_class, 0)
