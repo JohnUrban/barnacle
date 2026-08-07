@@ -43,3 +43,26 @@ by 19:16 (rate-held assumption), regime_now "light".
              "rain on the hillside now: 4.4" three minutes after rain
              STOPPED. Cadence revisit-trigger in BACKLOG is formally
              TRIPPED by this event.
+18:49        PUBLICATION TIMELINE RECONSTRUCTED (git, docs/nowcast.json)
+             — the user's "first time it said anything other than No
+             flooding" is CORRECT. What production published:
+               17:57Z-run: quiet (recent_max 0.09)          [pre-burst]
+               22:17Z (6:17): active TRUE but street_now +0.0 —
+                 the 6:02 burst was in frames (2.14) but 15-min lag +
+                 stateless window = zero street water at compute time.
+                 Red strip, empty message.
+               —— 18-MINUTE PUBLISH GAP 6:17→6:35 ——
+                 (sidewalk, lawn step, porch base ALL crossed in it)
+               22:35Z (6:35): first real numbers — street +10.9,
+                 4.4 in/hr, proj +16.9 — published AFTER lawn step
+                 (6:30-34), roughly AT the true peak (~6:40).
+             With a true 10-min clock: a 6:22 run would have seen
+             4.4@6:20 and projected the flood BEFORE the lawn step;
+             a radar-fed alert would have pushed ~6:23-6:25. The
+             event's onset-to-peak was ~38 min; the publish record
+             has an 18-min hole in the middle of it.
+             FIX IMPLICATIONS (queue for post-event program):
+             (1) radar/projection-fed alerting; (2) headline from
+             TRAJECTORY not lagged street_now (6:17's honest-but-
+             useless "+0.0" and 6:35's "LIGHT" both misled);
+             (3) scheduler decision REOPENED — revisit trigger tripped.
