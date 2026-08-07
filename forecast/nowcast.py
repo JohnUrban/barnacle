@@ -389,11 +389,33 @@ def run(now_utc=None):
                                 if tt <= end_obs),
                                key=lambda x: x[1], default=(None, 0))
         pk_t, pk = max(traj, key=lambda x: x[1])
+        regime_now = ff.classify_regime_from_water(3.52 + now_stage / 12.0)
+        regime_proj = ff.classify_regime_from_water(3.52 + pk / 12.0)
+        # WORST TRUTH WINS THE HEADLINE (event #7, 2026-08-07: the
+        # strip said LIGHT while water climbed the porch riser, and
+        # the widget said NO FLOODING above a live +10.9 line).
+        # rising = the projected peak is ahead of the observed window
+        # and meaningfully above the current stage; then the headline
+        # class is the PROJECTED class with an arrow. Falling = trust
+        # the drain clock (current stage), not the stale projection.
+        rising = (pk_t > end_obs) and (pk > now_stage + 0.5)
+        headline_in = pk if rising else now_stage
+        regime_headline = regime_proj if rising else regime_now
+        display = (regime_now.upper() + " → " + regime_proj.upper()
+                   + " (rising)"
+                   if rising and regime_proj != regime_now
+                   else regime_headline.upper()
+                   + (" (rising)" if rising else ""))
         payload.update({
             "street_now_in": round(now_stage, 1),
             "peak_proj_in": round(pk, 1),
             "peak_proj_utc": pk_t.strftime("%H:%M"),
-            "regime_now": ff.classify_regime_from_water(3.52 + now_stage / 12.0),
+            "regime_now": regime_now,
+            "regime_proj": regime_proj,
+            "trend": "rising" if rising else "falling",
+            "headline_in": round(headline_in, 1),
+            "regime_headline": regime_headline,
+            "regime_display": display,
             "traj": [{"utc": tt.strftime("%H:%M"), "in": round(st, 1)}
                      for tt, st in traj[::5]],
         })
@@ -435,9 +457,59 @@ def alert_dispatch_check():
     return 3
 
 
+RADAR_ALERT_MAX_AGE_MIN = 25
+
+
+def radar_alert_check():
+    """Exit 0 when the just-written nowcast shows alertable street
+    water that alert_state has not yet alerted on (event #7: Barnacle
+    projected +16.9 in live and no alert pathway existed). Alertable:
+    CURRENT street water at curb class or higher, or PROJECTED peak
+    at lawn-step class or higher. Fail-closed: stale/degraded radar
+    never dispatches. The forecast run it dispatches makes the actual
+    send decision transactionally (incl. the daily cap)."""
+    try:
+        with open(os.path.join(HERE, "..", "docs", "nowcast.json")) as f:
+            nc = json.load(f)
+    except (OSError, ValueError):
+        print("radar-alert: no readable nowcast.json")
+        return 3
+    if not nc.get("active") or nc.get("radar_quality") != "ok":
+        print("radar-alert: inactive or degraded radar")
+        return 3
+    if (nc.get("source_age_min") or 999) > RADAR_ALERT_MAX_AGE_MIN:
+        print("radar-alert: source too old "
+              f"({nc.get('source_age_min')} min)")
+        return 3
+    street = nc.get("street_now_in") or 0
+    proj = nc.get("peak_proj_in") or 0
+    curb_in = (4.16 - 3.52) * 12      # light class floor
+    lawn_in = (4.66 - 3.52) * 12      # moderate class floor
+    if street < curb_in and proj < lawn_in:
+        print(f"radar-alert: below thresholds (now {street}, proj {proj})")
+        return 3
+    live_class = ff.classify_regime_from_water(
+        3.52 + max(street, proj if proj >= lawn_in else 0) / 12.0)
+    day = nc.get("day_local") or (nc.get("generated_utc") or "")[:10]
+    bit = f"radar:{day}:{live_class}"
+    try:
+        with open(os.path.join(HERE, "..", "data",
+                               "alert_state.json")) as f:
+            sig = json.load(f).get("sig", "") or ""
+    except (OSError, ValueError):
+        sig = ""
+    if bit in sig:
+        print(f"radar-alert: already alerted this class ({bit})")
+        return 3
+    print(f"radar-alert: DISPATCH ({bit}; now {street}, proj {proj})")
+    return 0
+
+
 if __name__ == "__main__":
     if "--check" in sys.argv:
         sys.exit(trigger_check())
     if "--alert-dispatch-check" in sys.argv:
         sys.exit(alert_dispatch_check())
+    if "--radar-alert-check" in sys.argv:
+        sys.exit(radar_alert_check())
     run()

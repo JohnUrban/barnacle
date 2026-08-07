@@ -5508,6 +5508,33 @@ _PLUVIAL_RANKS = {None: 0, "possible": 1, "elevated": 3}
 ALERT_DAILY_CAP = 2
 
 
+RADAR_ALERT_MAX_AGE_MIN = 25
+
+
+def _radar_live_state(now_utc=None):
+    """Fresh, healthy live-radar street state from docs/nowcast.json,
+    or None. Fail-closed on any doubt (event #7 rule: radar feeds the
+    alarm, but never on stale/degraded data)."""
+    path = os.path.join(_REPO_ROOT, "docs", "nowcast.json")
+    try:
+        with open(path) as f:
+            nc = json.load(f)
+    except (OSError, ValueError):
+        return None
+    if not nc.get("active") or nc.get("radar_quality") != "ok":
+        return None
+    try:
+        latest = dt.datetime.strptime(
+            nc.get("source_latest_utc") or "", "%Y-%m-%dT%H:%M:%SZ"
+        ).replace(tzinfo=dt.timezone.utc)
+    except (ValueError, TypeError):
+        return None
+    now = now_utc or dt.datetime.now(dt.timezone.utc)
+    if (now - latest).total_seconds() / 60 > RADAR_ALERT_MAX_AGE_MIN:
+        return None
+    return nc
+
+
 def compute_alert_level(forecast):
     """(rank, label, signature) for the event-driven alert policy
     (user, 2026-07-17: the daily-morning email became ignorable —
@@ -5527,8 +5554,30 @@ def compute_alert_level(forecast):
             tide_label = f"{regime_display(r)} tide {tide_time}"
     pr = forecast.get("pluvial_risk") or {}
     pl_rank = _PLUVIAL_RANKS.get(pr.get("level"), 0)
-    rank = max(tide_rank, pl_rank)
-    if pl_rank >= tide_rank and pl_rank > 0:
+    # LIVE RADAR pathway (event #7, 2026-08-07: the nowcast computed
+    # +16.9 in projected street water during a surprise burst and had
+    # no wire into alerting — no NWS product existed, QPF was blind).
+    # CURRENT street water alerts from curb class up; the PROJECTION
+    # counts only at lawn-step class or higher (rate-held caveat).
+    radar_rank = 0
+    radar_label = ""
+    radar_class = None
+    nc = _radar_live_state()
+    if nc:
+        _street = nc.get("street_now_in") or 0
+        _proj = nc.get("peak_proj_in") or 0
+        _lawn_in = (4.66 - 3.52) * 12
+        _eff = max(_street, _proj if _proj >= _lawn_in else 0)
+        if _eff > 0:
+            radar_class = classify_regime_from_water(3.52 + _eff / 12.0)
+            radar_rank = _ALERT_RANKS.get(radar_class, 0)
+            radar_label = (f"LIVE radar: street {_street:+.1f}\u2033 now"
+                           f" \u2192 {_proj:+.1f}\u2033 projected"
+                           f" ({radar_class})")
+    rank = max(tide_rank, pl_rank, radar_rank)
+    if radar_rank == rank and radar_rank > 0:
+        label = radar_label
+    elif pl_rank >= tide_rank and pl_rank > 0:
         label = f"rain risk {pr.get('level')}"
         if pr.get("nws_flood_alerts"):
             label += " (" + pr["nws_flood_alerts"][0]["event"] + ")"
@@ -5540,6 +5589,10 @@ def compute_alert_level(forecast):
     sig_bits = []
     if tide_rank == rank and tide_rank > 0:
         sig_bits.append("tide:" + tide_time)
+    if radar_rank > 0 and radar_rank >= max(tide_rank, pl_rank):
+        _day = (nc.get("day_local")
+                or (nc.get("generated_utc") or "")[:10])
+        sig_bits.append(f"radar:{_day}:{radar_class}")
     if pl_rank == rank and pl_rank > 0:
         sig_bits.append("pluv")
         # Event + onset is stable across headline/expiry refreshes but
@@ -5703,6 +5756,11 @@ def build_sms_text(forecast):
     pr = forecast.get("pluvial_risk") or {}
     pl_rank = _PLUVIAL_RANKS.get(pr.get("level"), 0)
     bits = []
+    # LIVE RADAR wins the first slot when it fired the alert
+    # (event #7: the text must SAY "street water now", not an outlook)
+    if label.startswith("LIVE radar"):
+        bits.append("FLOODING (radar): " + label[len("LIVE radar: "):]
+                    + ". Verify on the site chart.")
     if pl_rank > 0 and pl_rank >= tide_rank:
         ev = ""
         alerts = pr.get("nws_flood_alerts") or []
@@ -9216,13 +9274,17 @@ def render_html_page(forecast):
         var age = (Date.now() - Date.parse(nc.source_latest_utc)) / 60000;
         if (age > 20) return;
         var el = document.getElementById('nowcast-strip');
-        var reg = (nc.regime_now === 'dry') ? 'street water'
-                  : nc.regime_now;
+        // WORST TRUTH WINS (event #7): headline = server-computed
+        // regime_display (projected class while rising, drain-clock
+        // class while falling), never the lagging instant alone.
+        var reg = nc.regime_display ||
+                  ((nc.regime_now === 'dry') ? 'street water'
+                   : nc.regime_now).toUpperCase();
         el.innerHTML =
           '<section class="regime regime-severe" style="border:2px solid #b91c1c">' +
           '<div class="regime-kicker">&#128225; LIVE RADAR NOWCAST &middot; BEST EFFORT ' +
           '(as of ' + Math.round(age) + ' min ago)</div>' +
-          '<div class="regime-label">' + reg.toUpperCase() + '</div>' +
+          '<div class="regime-label">' + reg + '</div>' +
           '<div class="regime-summary">Rain on the hillside now: ' +
           nc.recent_max_in_hr.toFixed(1) + ' in/hr (radar). Street ' +
           'water ≈ ' + (nc.street_now_in >= 0 ? '+' : '') +
@@ -9237,7 +9299,9 @@ def render_html_page(forecast):
         // "the app should be actively saying FLOODING at the top").
         // When observed-radar street water is real, the TODAY label
         // becomes the live truth, not the QPF outlook.
-        if (nc.street_now_in >= 1) {{
+        var live_eff = Math.max(nc.street_now_in || 0,
+          (nc.trend === 'rising' ? (nc.peak_proj_in || 0) : 0));
+        if (live_eff >= 1) {{
           // Target the TODAY block explicitly — the first '.regime'
           // in the DOM is this strip itself (bug caught by the user
           // MID-FLOOD: strip said FLOODING NOW while TODAY still

@@ -46,8 +46,14 @@ def _tide_forecast(regime, when="2026-07-21 14:30"):
 
 
 class AlertDecisionTests(unittest.TestCase):
+
     def setUp(self):
         self.t0 = dt.datetime(2026, 7, 21, 16, 0, tzinfo=UTC)
+        # Unit isolation: these scenarios predate the radar pathway;
+        # keep the REAL docs/nowcast.json (possibly live!) out of them.
+        p = mock.patch.object(ff, "_radar_live_state", return_value=None)
+        p.start()
+        self.addCleanup(p.stop)
 
     def test_appearance_sends_without_mutating_state(self):
         state = _state()

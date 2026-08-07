@@ -39,7 +39,7 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.24a";
+const WIDGET_VERSION = "v7.25a";
 const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -561,9 +561,33 @@ function makeWidget(forecast, family) {
     hdr.font = Font.mediumSystemFont(9);
     hdr.textColor = new Color("#777");
 
-    const regLabel = left.addText(todayLabel);
-    regLabel.font = Font.boldSystemFont(todayLabel.length > 8 ? 15 : 20);
-    regLabel.textColor = new Color(style.text);
+    // WORST TRUTH WINS THE HEADLINE (event #7, 2026-08-07: this
+    // widget showed green "NO FLOODING" directly under a red live
+    // "+10.9 -> +16.9" line). If fresh live radar implies a higher
+    // flood class than the outlook, the live class takes the big
+    // word, in red, tagged LIVE.
+    let headlineLabel = todayLabel;
+    let headlineColor = new Color(style.text);
+    if (forecast._nowcast) {
+      const nc = forecast._nowcast;
+      const eff = Math.max(nc.street_now_in || 0,
+        nc.trend === "rising" ? (nc.peak_proj_in || 0) : 0);
+      const liveCls = eff >= 22.7 ? ["SEVERE", 4]
+        : eff >= 13.7 ? ["MODERATE", 3]
+        : eff >= 7.7 ? ["LIGHT", 2]
+        : eff >= 1 ? ["STREET WATER", 1] : null;
+      const t = todayLabel.toUpperCase();
+      const outRank = t.includes("SEVERE") ? 4
+        : t.includes("MODERATE") ? 3 : t.includes("LIGHT") ? 2
+        : t.includes("STREET") ? 1 : 0;
+      if (liveCls && liveCls[1] > outRank) {
+        headlineLabel = liveCls[0] + " · LIVE";
+        headlineColor = new Color("#b91c1c");
+      }
+    }
+    const regLabel = left.addText(headlineLabel);
+    regLabel.font = Font.boldSystemFont(headlineLabel.length > 8 ? 15 : 20);
+    regLabel.textColor = headlineColor;
     regLabel.lineLimit = 1;
     regLabel.minimumScaleFactor = 0.6;
     if (todaySub) {

@@ -113,6 +113,34 @@ jobs:
         if: steps.gate.outputs.go == 'true'
         run: python forecast/check_artifacts.py
 
+      # RADAR-FED ALERTING (event #7, 2026-08-07: +16.9 in projected,
+      # no NWS product, no alert). Fresh alertable street water that
+      # alert_state hasn't covered dispatches the forecast workflow;
+      # the transactional pipeline + daily cap decide the actual send.
+      - name: Radar alert dispatch check
+        if: steps.gate.outputs.go == 'true'
+        id: rac
+        run: |
+          set +e
+          python forecast/nowcast.py --radar-alert-check
+          code=$?
+          set -e
+          if [ "$code" = "0" ]; then
+            echo "dispatch=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "dispatch=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dispatch forecast for radar alert
+        if: steps.rac.outputs.dispatch == 'true'
+        run: |
+          curl -sf -X POST \
+            -H "Authorization: Bearer ${{ github.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/daily_forecast.yml/dispatches" \
+            -d '{"ref":"main","inputs":{"force_email":"false"}}' \
+            && echo "dispatched" || echo "dispatch failed (non-fatal)"
+
       - name: Commit nowcast.json
         if: steps.gate.outputs.go == 'true'
         run: |
