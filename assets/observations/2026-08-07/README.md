@@ -74,7 +74,10 @@ mean, revised 4.4+) is the **2nd-highest rate on record** (after #4's
 - Second observer (household) debut; observer-calibration caveat
   logged honestly; a 5-minute dry-day landmark walk-through would
   make household-2 readings anchorable.
-- Mud line on the riser: still collectable for crest refinement.
+- Mud line: NONE expected or collected (user doctrine 2026-08-09):
+  evening flood + continued weekend drizzle = preservation
+  conditions failed; the photo-timed landmark crossings are the
+  primary record and fully sufficient.
 
 ## Infrastructure consequences (all SHIPPED same evening / weekend)
 
