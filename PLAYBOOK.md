@@ -26,7 +26,11 @@ as any lesson that changes it.
    slightly LOW). Continued rain washes the evidence; evening/night
    floods don't dry readably. ABSENCE of mud is evidence ONLY when
    presence would have survived (event #6's driveway-negative:
-   valid; a rain-washed clean surface proves nothing). Expect NO
+   valid; a rain-washed clean surface proves nothing). The valid
+   negative test is ANY mud at all — presence/absence, a generous
+   binary — not a precise line reading; a preserved negative is
+   therefore MORE robust than any line-derived level (user
+   refinement 2026-08-09). Expect NO
    mud data as a rule. Tidal floods leave WRACK lines
    (debris/seaweed/silt film) instead — those become
    edge_YYYYMMDD map points.
