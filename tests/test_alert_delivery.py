@@ -151,7 +151,9 @@ class AlertDecisionTests(unittest.TestCase):
             original = _state()
             path.write_text(json.dumps(original))
             with mock.patch.object(ff, "ALERT_STATE_PATH", str(path)):
-                send, _reason = ff.should_send_alert(_rain_forecast())
+                send, _reason = ff.should_send_alert(
+                    _rain_forecast(),
+                    now_utc=dt.datetime(2026, 7, 21, 16, 0, tzinfo=UTC))
             after = json.loads(path.read_text())
 
         self.assertTrue(send)
@@ -306,3 +308,70 @@ class WarningFirstTextTests(unittest.TestCase):
         txt = ff.build_sms_text(forecast)
         self.assertIn("RAIN FLOOD RISK", txt)
         self.assertIn("Flood Watch", txt)
+
+
+class QuietHoursTests(unittest.TestCase):
+    """User policy 2026-08-09 (after 1:23 AM / 2:18 AM texts about a
+    next-evening minor tide): all channels hold 20:00-07:00 local
+    unless the alert is about THAT night."""
+
+    def setUp(self):
+        p = mock.patch.object(ff, "_radar_live_state", return_value=None)
+        p.start()
+        self.addCleanup(p.stop)
+        self.state = {"rank": 0, "sig": "", "last_sent_rank": 0,
+                      "last_sent_sig": "", "last_sent_ts": ""}
+
+    def _tide_forecast(self, when):
+        return {"all_tides": [{"time": when,
+                               "depths_in": {"regime": "street"}}],
+                "pluvial_risk": {}}
+
+    def test_night_outlook_tide_is_held(self):
+        # 2:18 AM EDT = 06:18 UTC; tide next evening 17:37
+        fc = self._tide_forecast("2026-08-09 17:37")
+        d = ff.evaluate_alert(fc, state=self.state,
+                              now_utc=dt.datetime(2026, 8, 9, 6, 18,
+                                                  tzinfo=UTC))
+        self.assertFalse(d["send"])
+        self.assertIn("quiet hours", d["reason"])
+
+    def test_night_tide_before_7am_sends(self):
+        fc = self._tide_forecast("2026-08-09 03:55")
+        d = ff.evaluate_alert(fc, state=self.state,
+                              now_utc=dt.datetime(2026, 8, 9, 6, 0,
+                                                  tzinfo=UTC))  # 2 AM
+        self.assertTrue(d["send"])
+
+    def test_night_live_radar_sends(self):
+        nc = {"active": True, "radar_quality": "ok",
+              "source_latest_utc": "2026-08-09T06:10:00Z",
+              "day_local": "2026-08-09",
+              "street_now_in": 10.9, "peak_proj_in": 16.9,
+              "trend": "rising"}
+        with mock.patch.object(ff, "_radar_live_state",
+                               return_value=nc):
+            d = ff.evaluate_alert({"all_tides": [], "pluvial_risk": {}},
+                                  state=self.state,
+                                  now_utc=dt.datetime(2026, 8, 9, 6, 15,
+                                                      tzinfo=UTC))
+        self.assertTrue(d["send"])
+
+    def test_night_active_warning_sends(self):
+        fc = {"all_tides": [],
+              "pluvial_risk": {"level": "elevated",
+                               "nws_flood_alerts": [
+                                   {"event": "Flash Flood Warning",
+                                    "onset": "2026-08-09T01:00:00-04:00"}]}}
+        d = ff.evaluate_alert(fc, state=self.state,
+                              now_utc=dt.datetime(2026, 8, 9, 6, 0,
+                                                  tzinfo=UTC))
+        self.assertTrue(d["send"])
+
+    def test_morning_delivers_held_alert(self):
+        fc = self._tide_forecast("2026-08-09 17:37")
+        d = ff.evaluate_alert(fc, state=self.state,
+                              now_utc=dt.datetime(2026, 8, 9, 12, 5,
+                                                  tzinfo=UTC))  # 8:05 AM
+        self.assertTrue(d["send"])
+

@@ -5628,6 +5628,40 @@ def _normalize_alert_sig(value):
     return re.sub(r"^\d+\|", "", value or "")
 
 
+QUIET_HOURS_START = 20      # 8 PM station-local
+QUIET_HOURS_END = 7         # 7 AM station-local
+
+
+def _night_urgent(forecast, label, sig, now_local):
+    """During quiet hours, only alerts about THIS night may send
+    (user 2026-08-09 after 1:23 AM + 2:18 AM texts about a next-
+    EVENING minor tide): live radar street water (imminent by
+    definition), a tide peaking before 07:00, or an active NWS
+    WARNING (not watch) covering the night. Everything else holds —
+    unacknowledged — and delivers naturally after 07:00."""
+    if label.startswith("LIVE radar"):
+        return True
+    next7 = now_local.replace(hour=QUIET_HOURS_END, minute=0,
+                              second=0, microsecond=0)
+    if now_local.hour >= QUIET_HOURS_END:
+        next7 += dt.timedelta(days=1)
+    for bit in sig.split("|"):
+        if bit.startswith("tide:"):
+            try:
+                tide_t = dt.datetime.strptime(
+                    bit[5:], "%Y-%m-%d %H:%M").replace(
+                    tzinfo=now_local.tzinfo)
+                if now_local <= tide_t <= next7:
+                    return True
+            except ValueError:
+                pass
+    for a in ((forecast.get("pluvial_risk") or {})
+              .get("nws_flood_alerts") or []):
+        if "warning" in (a.get("event") or "").lower():
+            return True
+    return False
+
+
 def evaluate_alert(forecast, state=None, now_utc=None):
     """Return a side-effect-free alert delivery decision.
 
@@ -5685,6 +5719,15 @@ def evaluate_alert(forecast, state=None, now_utc=None):
                       f"{hrs:.1f}h ago (24h cooldown; a higher rank "
                       f"would send immediately)")
     if send:
+        _local = now_utc.astimezone(STATION_TZ)
+        _night = (_local.hour >= QUIET_HOURS_START
+                  or _local.hour < QUIET_HOURS_END)
+        if _night and not _night_urgent(forecast, label, sig, _local):
+            send = False
+            reason = (f"quiet hours ({QUIET_HOURS_START}:00-0"
+                      f"{QUIET_HOURS_END}:00 local): held — not about "
+                      f"tonight; re-evaluates after 0{QUIET_HOURS_END}:00")
+    if send:
         today_local = now_utc.astimezone(STATION_TZ).date().isoformat()
         sc = st.get("sends_today") or {}
         sent_count = sc.get("count", 0) if sc.get("date") == today_local \
@@ -5740,9 +5783,9 @@ def persist_alert_state(decision, delivered_channels=None, path=None):
     return new_state
 
 
-def should_send_alert(forecast):
+def should_send_alert(forecast, now_utc=None):
     """Compatibility wrapper: evaluate without mutating alert state."""
-    decision = evaluate_alert(forecast)
+    decision = evaluate_alert(forecast, now_utc=now_utc)
     return decision["send"], decision["reason"]
 
 
@@ -9977,7 +10020,14 @@ def main():
         print(f"No alert delivery: {decision['reason']}")
         return
 
-    subject = "[ALERT] " + subject
+    _rank, _label, _sig = compute_alert_level(forecast)
+    subject = f"[ALERT] {_label} | " + subject
+    text = f"ALERT: {_label}\n\n" + text
+    if html:
+        html = html.replace(
+            "<body>",
+            f"<body><p style=\"font-size:16px\"><b>ALERT: {_label}"
+            f"</b></p>", 1)
     _png = None
     if all(os.environ.get(name, "").strip() for name in
            ("SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM", "SMTP_TO")):
