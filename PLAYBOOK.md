@@ -17,11 +17,19 @@ as any lesson that changes it.
    with PIL in ~/.barnacle/venv; event #7's crest bracket came from
    photo times).
    Every wrack-line photo = a future `edge_YYYYMMDD_*` map point.
-3. MUD-TRACER SURVEY once water is down (user method, validated
-   event #6): rain floods run muddy and deposit mud where water
-   stood — walk the driveway/sidewalk margins and note where mud
-   reaches (or doesn't). Cheap independent bound on the peak AND
-   proof of no-missed-second-event while unobserved.
+3. RESIDUE EVIDENCE — optional detective work, NOT a standard
+   measurement (user doctrine 2026-08-09; primary data is always
+   the direct landmark-crossing observations). Mud lines: RAIN
+   floods only (hillside transport + muddy grate jets; tidal water
+   doesn't paint them), and only when preservation held — transient
+   daytime downpour, abrupt clearing, sun-dried in place (may read
+   slightly LOW). Continued rain washes the evidence; evening/night
+   floods don't dry readably. ABSENCE of mud is evidence ONLY when
+   presence would have survived (event #6's driveway-negative:
+   valid; a rain-washed clean surface proves nothing). Expect NO
+   mud data as a rule. Tidal floods leave WRACK lines
+   (debris/seaweed/silt film) instead — those become
+   edge_YYYYMMDD map points.
 
 **In the session after (Claude, cold start) — follow this RECIPE
 in order; every step has been needed at least once:**
@@ -94,9 +102,8 @@ in order; every step has been needed at least once:**
   crest call.
 - Give the user the crest/recession forecast out loud (tank timing:
   peak minutes after the rain-rate break at full drain head).
-- MUD-TRACER SURVEY once water is down: rain floods run muddy and
-  mark their reach; absence of mud on the driveway = upper bound +
-  no-missed-event proof.
+- Residue evidence (mud/wrack) is OPTIONAL detective work under
+  the step-3 conditions above — never expected, never primary.
 - COASTAL-FLOOD events only: capture the NWS coastal product and
   validate nws_surge_parser.py against it — live in production,
   never yet seen a real product (BACKLOG passive collector c).
