@@ -139,3 +139,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-08-07 | DONE | worst-truth-headline | strip regime_display (rising→projected class, falling→drain clock); widget v7.25a live-class override; SMS leads with radar line [VERIFIED: commit + site regen]
 2026-08-07 | DONE | scheduler-half-A | launchd 10-min local tick from dedicated clone ~/.barnacle/repo; first tick pushed 23:23Z [VERIFIED: origin log "local tick"]
 2026-08-07 | OPEN | event-#7-analysis | README + plots + 2-min hindcast (rising-undershoot/falling-overshoot question; day-max +16.9 vs measured ~+15.5) + mud-line peak refinement [STATED plan]
+2026-08-09 | DONE | event-#7-wrapup | README + photo-EXIF timeline (lawn 18:33:16, porch base 18:37:00) + hydrograph/hindcast (+16.9@18:50 vs ~+15.4@18:40 — first HIGH-side miss; live undershoot was MRMS first-pass latency) + gauge sanity + QPE 1.59in/35min; crest ~+15.4 TIES 7/6 for 4th of 7 [VERIFIED: assets/observations/2026-08-07/]
+2026-08-09 | DONE | quiet-hours | all alert channels hold 20:00-07:00 local unless about THAT night; email warning-first fixed (1:23 AM NO FLOODING email); 97 tests [VERIFIED: tests + commit]
+2026-08-09 | OPEN | model-session-menu | event-#7 additions: MRMS first-pass vs revised latency handling; k_out at maximum head (bay -33in); stateless-window state persistence [STATED hypotheses, do NOT retune casually]

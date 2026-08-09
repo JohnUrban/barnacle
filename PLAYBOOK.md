@@ -12,7 +12,10 @@ as any lesson that changes it.
    fast cadence; mainly NE grate + sidewalk-under-lawn-step wall.
    Even "no water" observations are calibration data.
 2. Photos are documentary: flood EXTENT (wet/dry lines!), drainage
-   behavior (grate jetting), timestamps matter more than framing.
+   behavior (grate jetting), timestamps matter more than framing —
+   EXIF DateTimeOriginal pins the timeline to the second (extract
+   with PIL in ~/.barnacle/venv; event #7's crest bracket came from
+   photo times).
    Every wrack-line photo = a future `edge_YYYYMMDD_*` map point.
 3. MUD-TRACER SURVEY once water is down (user method, validated
    event #6): rain floods run muddy and deposit mud where water
