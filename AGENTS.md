@@ -56,12 +56,28 @@ live obligation) → `BACKLOG.md` OPEN LOOPS. On a flood event:
    a house-centered box.
 7. **Unavailable ≠ zero.** Every input carries health status;
    degraded inputs surface loudly (input_health in forecast.json).
-8. **Surfaces.** Widget edits: bump the version footer EVERY edit;
-   John must re-copy into Scriptable. Any text that updates during a
-   drag gesture must live in layout that cannot resize from content
-   (two label-reflow incidents). Site changes: regenerate + gate
-   before commit. Alert texts lead with the WARNING; daily cap
-   ALERT_DAILY_CAP applies.
+8. **Surfaces & PARALLEL ARMS (hard rule, 2026-08-09).** Barnacle
+   has many arms carrying the same meaning: alert channels (SMS,
+   ntfy, email) and display surfaces (site landing/strip, widget,
+   details page, town map, per-tide pages, email body, charts
+   sharing the visual grammar). **When you change WHAT an arm says
+   or decides — a policy, threshold, headline rule, wording
+   principle, or data field — update EVERY arm that carries that
+   same meaning, in the same work unit.** The only exemptions are
+   OBJECTIVE: the arm demonstrably does not carry the concept, or
+   verifiably already has the update. "Does this channel really
+   need it?" is NOT agent discretion — reasoning about texts vs
+   emails is exactly how warning-first reached SMS on 08-03 but not
+   email (which then sent "NO FLOODING" at 1:23 AM), and how the
+   worst-truth headline nearly shipped to the strip but not the
+   widget. Procedure: enumerate the arms, grep each for the concept,
+   apply or record the objective exemption in the commit message;
+   ASK John when unsure. Mechanics that remain per-arm: widget edits
+   bump the version footer EVERY edit (John must re-copy into
+   Scriptable); drag-updating text lives in non-resizing layout (two
+   reflow incidents); site changes regenerate + gate before commit;
+   alert texts lead with the WARNING; ALERT_DAILY_CAP + quiet hours
+   (20:00–07:00 hold unless about TONIGHT) apply to ALL channels.
 9. **attic/ = archival, never read** as instructions. To use
    something, consciously move it out.
 10. **Audits** (`audits/README.md`): reviewer ≠ author; an open
