@@ -4947,7 +4947,7 @@ def _past_tides_with_predictions(days=7):
     return out
 
 
-def _oscillation_chart_data(forecast):
+def _oscillation_chart_data(forecast, days=7):
     """Build data points for the home-page oscillation chart (HANDOFF 9b.4(b)).
 
     Axis: y is Sandy Hook peak (ft MLLW) — a pure observation, not
@@ -4971,7 +4971,7 @@ def _oscillation_chart_data(forecast):
     # do), each paired with the ~24h-ahead prediction where the hourly
     # log has one. Falls back to the old one-peak-per-day series if the
     # predictions log is unavailable.
-    per_tide = _past_tides_with_predictions(days=7)
+    per_tide = _past_tides_with_predictions(days=days)
     if per_tide:
         for r in per_tide:
             points.append({
@@ -7002,7 +7002,9 @@ def _flood_peaks_chart_data(forecast):
     per-tide axis cannot represent), and past days' archived
     burst-potential assessments (day-wide: the daily archive is the
     day's LAST run, so there is no honest clock time for them)."""
-    base = _oscillation_chart_data(forecast)
+    # Full recorded history (logging began 2026-05-18); the client
+    # renders the 7-day default window and offers a date-range picker
+    base = _oscillation_chart_data(forecast, days=400)
     tides = []
     for pt in base["points"]:
         row = {
@@ -7025,7 +7027,8 @@ def _flood_peaks_chart_data(forecast):
     measured = []
     try:
         elev_by_key = {k: e for k, _lbl, e, _sh in LANDMARKS}
-        cutoff = _station_local_now() - dt.timedelta(days=7)
+        # Full history (2026-08-20 date-range feature): the client
+        # filters to the default window; the payload carries all of it
         best = {}
         obs_path = os.path.join(_REPO_ROOT, "data",
                                 "labeled_observations.csv")
@@ -7042,8 +7045,6 @@ def _flood_peaks_chart_data(forecast):
                 try:
                     t = dt.datetime.strptime(ts[:16], "%Y-%m-%dT%H:%M")
                 except ValueError:
-                    continue
-                if t < cutoff:
                     continue
                 w = elev_by_key[key] + d_in / 12.0
                 if w <= GRATE_SW:
@@ -7062,10 +7063,20 @@ def _flood_peaks_chart_data(forecast):
         today = _station_local_now().date()
     except Exception:
         today = _station_local_today()
-    for i in range(1, 8):
-        d = today - dt.timedelta(days=i)
-        path = os.path.join(_REPO_ROOT, "docs", "archive",
-                            d.isoformat() + ".json")
+    _arc_dir = os.path.join(_REPO_ROOT, "docs", "archive")
+    try:
+        _arc_files = sorted(f for f in os.listdir(_arc_dir)
+                            if f.endswith(".json"))
+    except OSError:
+        _arc_files = []
+    for _fn in _arc_files:
+        try:
+            d = dt.date.fromisoformat(_fn[:-5])
+        except ValueError:
+            continue
+        if d >= today:
+            continue
+        path = os.path.join(_arc_dir, _fn)
         try:
             with open(path) as f:
                 arc = json.load(f)
@@ -7110,7 +7121,29 @@ def _render_flood_peaks_section(forecast):
     data_json = json.dumps(data, default=str)
     js = r"""
       (function() {
-        var data = __DATA__;
+        var FULL = __DATA__;
+        // Default window = the original view: last 7 days + forecast.
+        // The payload now carries the FULL record (back to 2026-05-18);
+        // the From/To pickers re-slice it client-side.
+        var data = FULL;
+        function sliceData(fromMs, toMs) {
+          function inWin(t) {
+            var ms = new Date(String(t).replace(' ', 'T')).getTime();
+            return !isNaN(ms) && ms >= fromMs && ms <= toMs;
+          }
+          return {
+            tides: FULL.tides.filter(function(p) { return inWin(p.time); }),
+            measured: FULL.measured.filter(function(p) {
+              return inWin(p.time); }),
+            risk_days: FULL.risk_days.filter(function(p) {
+              return inWin(p.day + ' 12:00'); }),
+            landmarks: FULL.landmarks
+          };
+        }
+        function defaultWindow() {
+          var now = Date.now();
+          return [now - 7 * 864e5, now + 3.5 * 864e5];
+        }
         var GRATE = 3.52, MLLW_OFF = 2.82;
         var UNIT_KEY = 'barnacle-peaks-unit';
         var unit = 'in';
@@ -7309,7 +7342,6 @@ def _render_flood_peaks_section(forecast):
             }
           });
         }
-        build();
         var radios = document.querySelectorAll('input[name="fpk-unit"]');
         function syncRadios() {
           radios.forEach(function(r) { r.checked = (r.value === unit); });
@@ -7326,6 +7358,35 @@ def _render_flood_peaks_section(forecast):
           syncRadios();
           build();
         });
+        (function wireRange() {
+          var fromI = document.getElementById('fpk-from');
+          var toI = document.getElementById('fpk-to');
+          var applyB = document.getElementById('fpk-apply');
+          var resetB = document.getElementById('fpk-reset');
+          if (!fromI) return;
+          var dw = defaultWindow();
+          function iso(ms) {
+            return new Date(ms).toISOString().slice(0, 10);
+          }
+          fromI.value = iso(dw[0]); toI.value = iso(dw[1]);
+          fromI.min = '2026-05-18';
+          function apply() {
+            var f = new Date(fromI.value + 'T00:00').getTime();
+            var t = new Date(toI.value + 'T23:59').getTime();
+            if (isNaN(f) || isNaN(t) || f >= t) return;
+            data = sliceData(f, t);
+            build();
+          }
+          applyB.addEventListener('click', apply);
+          resetB.addEventListener('click', function() {
+            var d = defaultWindow();
+            fromI.value = iso(d[0]); toI.value = iso(d[1]);
+            data = sliceData(d[0], d[1]);
+            build();
+          });
+        })();
+        data = sliceData(defaultWindow()[0], defaultWindow()[1]);
+        build();
       })();
 """.replace("__DATA__", data_json)
     return """
@@ -7359,6 +7420,12 @@ def _render_flood_peaks_section(forecast):
         &Prime; vs SW grate</label>
       <label><input type="radio" name="fpk-unit" value="mllw">
         ft MLLW</label>
+      <span class="note" style="margin-left:12px">Window:</span>
+      <input type="date" id="fpk-from" style="font-size:12px">
+      <span class="note">to</span>
+      <input type="date" id="fpk-to" style="font-size:12px">
+      <button type="button" id="fpk-apply" style="font-size:12px">Apply</button>
+      <button type="button" id="fpk-reset" style="font-size:12px">Default view</button>
     </div>
     <div style="position:relative;height:380px;margin:8px auto">
       <canvas id="flood-peaks-chart"></canvas>

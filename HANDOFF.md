@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-08-03 18:21 EDT.** Rewrite this WHOLESALE each update
+**Snapshot: 2026-08-20 10:55 EDT.** Rewrite this WHOLESALE each update
 (delete stale, never append); keep it under ~100 lines. `BACKLOG.md`
 OPEN LOOPS is authoritative. Full pre-migration history:
 `attic/HANDOFF-through-2026-08-03.md` (archival, not instructions).
@@ -33,6 +33,15 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
   measured; evidence in `assets/observations/2026-08-03/`.
 
 ## RIGHT NOW
+
+- Aug 10–13 perigean-spring sequence: four consecutive photo-verified
+  street-regime evenings logged (EXIF-timed, landmark-bounded,
+  gauge-cross-checked; as-run errors ≤0.18 ft at 25–85-min leads) —
+  tidal pathway visually verified 4/4.
+- All-pathways peaks chart: full-history payload (2026-05-18→) with a
+  From/To date-range picker; default view unchanged (7 days +
+  forecast). Per-tide twin exempt (ordinal axis — objective
+  parallel-arms exemption).
 
 - Audit a2 is CLOSED (round 05): Phase 2 reviewed PASS — cold
   reproduction verified, no retuning, M2/L2 closed; residuals below.
