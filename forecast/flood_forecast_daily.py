@@ -6881,7 +6881,7 @@ def _render_oscillation_section(forecast):
                   data: cmap(pred24Data),
                   borderColor: 'rgba(31, 111, 235, 0.45)',
                   backgroundColor: 'rgba(31, 111, 235, 0.25)',
-                  pointStyle: 'circle', pointRadius: r(7),
+                  pointStyle: 'circle', pointRadius: 7,
                   pointBorderWidth: 1.5,
                   spanGaps: true, showLine: false,
                 }}
@@ -7368,7 +7368,7 @@ def _render_flood_peaks_section(forecast):
         function build() {
           derive();
           var sf = sizeFactor();
-          function r(base) { return Math.max(1.5, base * sf); }
+          function r(base) { return Math.max(0.6, base * sf); }
           var sizeSlider = document.getElementById('fpk-size');
           if (sizeSlider && sizeAuto) sizeSlider.value = sf.toFixed(2);
           if (chart) chart.destroy();
@@ -7411,7 +7411,7 @@ def _render_flood_peaks_section(forecast):
             { label: 'as predicted ~24 h ahead', data: cpts(p24P),
               borderColor: 'rgba(31,111,235,0.45)',
               backgroundColor: 'rgba(31,111,235,0.25)',
-              pointStyle: 'circle', pointRadius: 7,
+              pointStyle: 'circle', pointRadius: r(7),
               pointBorderWidth: 1.5, showLine: false },
           ];
           if (measP.length) core.push(
@@ -7634,7 +7634,7 @@ def _render_flood_peaks_section(forecast):
       <label style="margin-left:10px"><input type="checkbox" id="fpk-lows">
         <span class="note">low tides</span></label>
       <span class="note" style="margin-left:10px">marker size:</span>
-      <input type="range" id="fpk-size" min="0.3" max="1.5" step="0.05"
+      <input type="range" id="fpk-size" min="0.1" max="2.0" step="0.05"
              value="1.0" style="width:90px;vertical-align:middle">
       <label><input type="checkbox" id="fpk-size-auto" checked>
         <span class="note">auto</span></label>
