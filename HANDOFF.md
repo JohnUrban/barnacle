@@ -38,10 +38,12 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
   street-regime evenings logged (EXIF-timed, landmark-bounded,
   gauge-cross-checked; as-run errors ≤0.18 ft at 25–85-min leads) —
   tidal pathway visually verified 4/4.
-- All-pathways peaks chart: full-history payload (2026-05-18→) with a
-  From/To date-range picker; default view unchanged (7 days +
-  forecast). Per-tide twin exempt (ordinal axis — objective
-  parallel-arms exemption).
+- All-pathways peaks chart: full-history payload (2026-05-18→) with
+  From/To picker (default view = 7 days + forecast; axis bounds now
+  derive per-render — first-paint full-span bug fixed same day) and
+  a low-tides toggle (astronomical lows, cached, default off).
+  Per-tide twin exempt (ordinal axis — objective parallel-arms
+  exemption).
 
 - Audit a2 is CLOSED (round 05): Phase 2 reviewed PASS — cold
   reproduction verified, no retuning, M2/L2 closed; residuals below.

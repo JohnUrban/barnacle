@@ -6993,6 +6993,50 @@ def _render_oscillation_section(forecast):
 """
 
 
+LOW_TIDES_CACHE_PATH = os.path.join(_REPO_ROOT, "data",
+                                    "low_tides_cache.json")
+
+
+def _low_tides_span(start="2026-05-18", now_utc=None):
+    """All astronomical LOW tides from `start` through now+4d, for the
+    all-pathways chart's low-tide toggle (2026-08-20). Astronomy is
+    immutable, so the cache only ever grows at the tail; one small
+    NOAA predictions call per run tops it up. Fail-quiet to cache-only
+    (the toggle is context, not safety-critical)."""
+    cache = {"rows": []}
+    try:
+        with open(LOW_TIDES_CACHE_PATH) as f:
+            cache = json.load(f)
+    except (OSError, ValueError):
+        pass
+    rows = {r[0]: r[1] for r in cache.get("rows", [])}
+    now_l = _station_local_now()
+    end = (now_l + dt.timedelta(days=4)).strftime("%Y%m%d")
+    last = max(rows) if rows else ""
+    fetch_from = (dt.datetime.strptime(last[:10], "%Y-%m-%d")
+                  - dt.timedelta(days=1)).strftime("%Y%m%d") if last \
+        else start.replace("-", "")
+    try:
+        d = _get(
+            "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+            {"product": "predictions", "interval": "hilo",
+             "station": NOAA_STATION, "datum": "MLLW",
+             "time_zone": "lst_ldt", "units": "english",
+             "begin_date": fetch_from, "end_date": end,
+             "format": "json"})
+        for prow in (d or {}).get("predictions", []):
+            if prow.get("type") == "L":
+                rows[prow["t"]] = round(float(prow["v"]), 3)
+        out = sorted(rows.items())
+        with open(LOW_TIDES_CACHE_PATH, "w") as f:
+            json.dump({"rows": out}, f, indent=1)
+            f.write("\n")
+    except Exception:
+        out = sorted(rows.items())
+    return [{"time": t, "navd88": round(v + MLLW_TO_NAVD88_OFFSET, 3)}
+            for t, v in out]
+
+
 def _flood_peaks_chart_data(forecast):
     """Data for the all-pathways flood-peaks timeline (2026-07-07,
     user design). Everything in ft NAVD88 (client converts to the
@@ -7104,7 +7148,11 @@ def _flood_peaks_chart_data(forecast):
 
     landmarks = [{"key": l["key"], "navd88": l["navd88"]}
                  for l in base["landmarks"]]
-    return {"tides": tides, "measured": measured,
+    try:
+        lows = _low_tides_span()
+    except Exception:
+        lows = []
+    return {"tides": tides, "measured": measured, "lows": lows,
             "risk_days": risk_days, "landmarks": landmarks}
 
 
@@ -7134,6 +7182,8 @@ def _render_flood_peaks_section(forecast):
           return {
             tides: FULL.tides.filter(function(p) { return inWin(p.time); }),
             measured: FULL.measured.filter(function(p) {
+              return inWin(p.time); }),
+            lows: (FULL.lows || []).filter(function(p) {
               return inWin(p.time); }),
             risk_days: FULL.risk_days.filter(function(p) {
               return inWin(p.day + ' 12:00'); }),
@@ -7175,43 +7225,58 @@ def _render_flood_peaks_section(forecast):
           porch_step1_top: { color: '#6d4c2f', name: 'porch step' }
         };
         var nowMs = Date.now();
-        var allX = [];
-        function pts(rows, field, kindFilter) {
-          var out = [];
-          rows.forEach(function(r) {
-            if (kindFilter && r.kind !== kindFilter) return;
-            var v = field ? r[field] : r.navd88;
-            var x = T(r.time);
-            if (v == null || x == null) return;
-            allX.push(x);
-            out.push({ x: x, y: v, src: r });
+        var LOWS_KEY = 'barnacle-peaks-lows';
+        var showLows = false;
+        try { showLows = localStorage.getItem(LOWS_KEY) === '1'; }
+        catch (e) {}
+        // All point arrays + axis bounds derive from the CURRENT
+        // window (2026-08-20 fix: these were computed once from the
+        // full payload, so the first render ignored the default
+        // 7-day slice and pinned the axis at the earliest measured
+        // flood — Oct 30 2025).
+        var allX, obsP, futP, p24P, burstP, measP, lowP, riskSeg,
+            xMin, xMax, allY;
+        function derive() {
+          allX = [];
+          function pts(rows, field, kindFilter) {
+            var out = [];
+            (rows || []).forEach(function(r) {
+              if (kindFilter && r.kind !== kindFilter) return;
+              var v = field ? r[field] : r.navd88;
+              var x = T(r.time);
+              if (v == null || x == null) return;
+              allX.push(x);
+              out.push({ x: x, y: v, src: r });
+            });
+            return out;
+          }
+          obsP    = pts(data.tides, null, 'observed');
+          futP    = pts(data.tides, null, 'predicted');
+          p24P    = pts(data.tides, 'pred24_navd88', null);
+          burstP  = pts(data.tides, 'burst_navd88', null);
+          measP   = pts(data.measured, null, null);
+          lowP    = showLows ? pts(data.lows, null, null) : [];
+          // Day-wide archived-risk segments: pairs separated by a
+          // null gap so each day is its own dash.
+          riskSeg = [];
+          data.risk_days.forEach(function(r) {
+            var d0 = T(r.day + ' 00:00'), d1 = T(r.day + ' 23:59');
+            if (d0 == null) return;
+            allX.push(d0, d1);
+            riskSeg.push({ x: d0, y: r.navd88, src: r });
+            riskSeg.push({ x: d1, y: r.navd88, src: r });
+            riskSeg.push({ x: (d0 + d1) / 2, y: null });
           });
-          return out;
+          xMin = Math.min.apply(null, allX.concat([nowMs])) - 6*3600e3;
+          xMax = Math.max.apply(null, allX.concat([nowMs])) + 6*3600e3;
+          allY = [];
+          [obsP, futP, p24P, burstP, measP, lowP].forEach(function(a) {
+            a.forEach(function(q) { allY.push(q.y); });
+          });
+          riskSeg.forEach(function(q) { if (q.y != null) allY.push(q.y); });
+          data.landmarks.forEach(function(l) { allY.push(l.navd88); });
         }
-        var obsP    = pts(data.tides, null, 'observed');
-        var futP    = pts(data.tides, null, 'predicted');
-        var p24P    = pts(data.tides, 'pred24_navd88', null);
-        var burstP  = pts(data.tides, 'burst_navd88', null);
-        var measP   = pts(data.measured, null, null);
-        // Day-wide archived-risk segments: pairs separated by a null
-        // gap so each day is its own dash.
-        var riskSeg = [];
-        data.risk_days.forEach(function(r) {
-          var d0 = T(r.day + ' 00:00'), d1 = T(r.day + ' 23:59');
-          if (d0 == null) return;
-          allX.push(d0, d1);
-          riskSeg.push({ x: d0, y: r.navd88, src: r });
-          riskSeg.push({ x: d1, y: r.navd88, src: r });
-          riskSeg.push({ x: (d0 + d1) / 2, y: null });
-        });
-        var xMin = Math.min.apply(null, allX.concat([nowMs])) - 6*3600e3;
-        var xMax = Math.max.apply(null, allX.concat([nowMs])) + 6*3600e3;
-        var allY = [];
-        [obsP, futP, p24P, burstP, measP].forEach(function(a) {
-          a.forEach(function(q) { allY.push(q.y); });
-        });
-        riskSeg.forEach(function(q) { if (q.y != null) allY.push(q.y); });
-        data.landmarks.forEach(function(l) { allY.push(l.navd88); });
+        derive();
         var ctx = document.getElementById('flood-peaks-chart')
                     .getContext('2d');
         var chart = null;
@@ -7221,6 +7286,7 @@ def _render_flood_peaks_section(forecast):
           });
         }
         function build() {
+          derive();
           if (chart) chart.destroy();
           var lmDatasets = data.landmarks.map(function(l) {
             var st = LM_STYLE[l.key] || { color: '#888', name: l.key };
@@ -7235,6 +7301,14 @@ def _render_flood_peaks_section(forecast):
             };
           });
           var core = [
+            { label: 'Predicted LOW tide (astronomy)',
+              data: cpts(lowP),
+              pointStyle: 'triangle', rotation: 180, pointRadius: 2.5,
+              pointBackgroundColor: 'rgba(112,128,144,0.7)',
+              pointBorderColor: 'rgba(112,128,144,0.9)',
+              borderColor: 'rgba(112,128,144,0.9)',
+              backgroundColor: 'rgba(112,128,144,0.7)',
+              showLine: false },
             { label: 'Observed tide peak', data: cpts(obsP),
               borderColor: 'rgba(60,60,60,0.85)',
               backgroundColor: 'rgba(60,60,60,0.85)',
@@ -7366,8 +7440,20 @@ def _render_flood_peaks_section(forecast):
           if (!fromI) return;
           var dw = defaultWindow();
           function iso(ms) {
-            return new Date(ms).toISOString().slice(0, 10);
+            var d = new Date(ms);   // LOCAL date, not a UTC slice
+            return d.getFullYear() + '-' +
+              String(d.getMonth() + 1).padStart(2, '0') + '-' +
+              String(d.getDate()).padStart(2, '0');
           }
+          var lowsBox = document.getElementById('fpk-lows');
+          lowsBox.checked = showLows;
+          lowsBox.addEventListener('change', function() {
+            showLows = lowsBox.checked;
+            try {
+              localStorage.setItem(LOWS_KEY, showLows ? '1' : '0');
+            } catch (e) {}
+            build();
+          });
           fromI.value = iso(dw[0]); toI.value = iso(dw[1]);
           fromI.min = '2026-05-18';
           function apply() {
@@ -7426,6 +7512,8 @@ def _render_flood_peaks_section(forecast):
       <input type="date" id="fpk-to" style="font-size:12px">
       <button type="button" id="fpk-apply" style="font-size:12px">Apply</button>
       <button type="button" id="fpk-reset" style="font-size:12px">Default view</button>
+      <label style="margin-left:10px"><input type="checkbox" id="fpk-lows">
+        <span class="note">low tides</span></label>
     </div>
     <div style="position:relative;height:380px;margin:8px auto">
       <canvas id="flood-peaks-chart"></canvas>
