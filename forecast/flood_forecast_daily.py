@@ -6881,7 +6881,7 @@ def _render_oscillation_section(forecast):
                   data: cmap(pred24Data),
                   borderColor: 'rgba(31, 111, 235, 0.45)',
                   backgroundColor: 'rgba(31, 111, 235, 0.25)',
-                  pointStyle: 'circle', pointRadius: 7,
+                  pointStyle: 'circle', pointRadius: r(7),
                   pointBorderWidth: 1.5,
                   spanGaps: true, showLine: false,
                 }}
@@ -7226,6 +7226,16 @@ def _render_flood_peaks_section(forecast):
         };
         var nowMs = Date.now();
         var LOWS_KEY = 'barnacle-peaks-lows';
+        // Marker scaling (2026-08-20): auto-shrink as the window
+        // widens (sqrt law: ~1.0 at <=10 days, floor 0.35) unless the
+        // user drags the size slider (manual until auto re-checked).
+        var sizeAuto = true, sizeManual = 1.0;
+        function sizeFactor() {
+          if (!sizeAuto) return sizeManual;
+          var spanD = (xMax - xMin) / 864e5;
+          return Math.max(0.35, Math.min(1.0,
+            Math.sqrt(10 / Math.max(spanD, 1))));
+        }
         var showLows = false;
         try { showLows = localStorage.getItem(LOWS_KEY) === '1'; }
         catch (e) {}
@@ -7287,6 +7297,10 @@ def _render_flood_peaks_section(forecast):
         }
         function build() {
           derive();
+          var sf = sizeFactor();
+          function r(base) { return Math.max(1.5, base * sf); }
+          var sizeSlider = document.getElementById('fpk-size');
+          if (sizeSlider && sizeAuto) sizeSlider.value = sf.toFixed(2);
           if (chart) chart.destroy();
           var lmDatasets = data.landmarks.map(function(l) {
             var st = LM_STYLE[l.key] || { color: '#888', name: l.key };
@@ -7303,7 +7317,7 @@ def _render_flood_peaks_section(forecast):
           var core = [
             { label: 'Predicted LOW tide (astronomy)',
               data: cpts(lowP),
-              pointStyle: 'triangle', rotation: 180, pointRadius: 2.5,
+              pointStyle: 'triangle', rotation: 180, pointRadius: r(2.5),
               pointBackgroundColor: 'rgba(112,128,144,0.7)',
               pointBorderColor: 'rgba(112,128,144,0.9)',
               borderColor: 'rgba(112,128,144,0.9)',
@@ -7312,11 +7326,11 @@ def _render_flood_peaks_section(forecast):
             { label: 'Observed tide peak', data: cpts(obsP),
               borderColor: 'rgba(60,60,60,0.85)',
               backgroundColor: 'rgba(60,60,60,0.85)',
-              pointStyle: 'rect', pointRadius: 4, showLine: false },
+              pointStyle: 'rect', pointRadius: r(4), showLine: false },
             { label: 'Predicted tide peak', data: cpts(futP),
               borderColor: 'rgba(31,111,235,0.9)',
               backgroundColor: 'rgba(31,111,235,0.9)',
-              pointStyle: 'circle', pointRadius: 4, showLine: false },
+              pointStyle: 'circle', pointRadius: r(4), showLine: false },
             { label: 'as predicted ~24 h ahead', data: cpts(p24P),
               borderColor: 'rgba(31,111,235,0.45)',
               backgroundColor: 'rgba(31,111,235,0.25)',
@@ -7328,13 +7342,13 @@ def _render_flood_peaks_section(forecast):
               data: cpts(measP),
               borderColor: 'rgba(11,61,107,1)',
               backgroundColor: 'rgba(217,119,6,0.9)',
-              pointStyle: 'rectRot', pointRadius: 7,
+              pointStyle: 'rectRot', pointRadius: r(7),
               pointBorderWidth: 2, showLine: false });
           if (burstP.length) core.push(
             { label: 'rain-burst compound potential', data: cpts(burstP),
               borderColor: 'rgba(11,61,107,0.95)',
               backgroundColor: 'rgba(11,61,107,0.35)',
-              pointStyle: 'triangle', pointRadius: 6, showLine: false });
+              pointStyle: 'triangle', pointRadius: r(6), showLine: false });
           if (riskSeg.length) core.push(
             { label: 'burst potential archived that day', data: cpts(riskSeg),
               borderColor: 'rgba(11,61,107,0.45)',
@@ -7445,6 +7459,17 @@ def _render_flood_peaks_section(forecast):
               String(d.getMonth() + 1).padStart(2, '0') + '-' +
               String(d.getDate()).padStart(2, '0');
           }
+          var sizeS = document.getElementById('fpk-size');
+          var sizeA = document.getElementById('fpk-size-auto');
+          sizeS.addEventListener('input', function() {
+            sizeManual = parseFloat(sizeS.value) || 1.0;
+            sizeAuto = false; sizeA.checked = false;
+            build();
+          });
+          sizeA.addEventListener('change', function() {
+            sizeAuto = sizeA.checked;
+            build();
+          });
           var lowsBox = document.getElementById('fpk-lows');
           lowsBox.checked = showLows;
           lowsBox.addEventListener('change', function() {
@@ -7531,6 +7556,11 @@ def _render_flood_peaks_section(forecast):
       <button type="button" id="fpk-reset" style="font-size:12px">Default view</button>
       <label style="margin-left:10px"><input type="checkbox" id="fpk-lows">
         <span class="note">low tides</span></label>
+      <span class="note" style="margin-left:10px">marker size:</span>
+      <input type="range" id="fpk-size" min="0.3" max="1.5" step="0.05"
+             value="1.0" style="width:90px;vertical-align:middle">
+      <label><input type="checkbox" id="fpk-size-auto" checked>
+        <span class="note">auto</span></label>
     </div>
     <div style="position:relative;height:380px;margin:8px auto">
       <canvas id="flood-peaks-chart"></canvas>
