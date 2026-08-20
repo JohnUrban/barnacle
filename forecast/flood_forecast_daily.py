@@ -7046,9 +7046,13 @@ def _low_tides_span(start="2025-10-01", now_utc=None):
     except (OSError, ValueError):
         pass
     rows = {r[0]: r[1] for r in cache.get("rows", [])}
+    hrows = {r[0]: r[1] for r in cache.get("hrows", [])}
     now_l = _station_local_now()
-    end = (now_l + dt.timedelta(days=4)).strftime("%Y%m%d")
-    last = max(rows) if rows else ""
+    # +60 days of astronomy (2026-08-20: the chart's future was capped
+    # at the 72-h forecast horizon; beyond it only tide-only astronomy
+    # is honest, and it is downloadable arbitrarily far forward)
+    end = (now_l + dt.timedelta(days=60)).strftime("%Y%m%d")
+    last = min(max(rows), max(hrows)) if rows and hrows else ""
     fetch_from = (dt.datetime.strptime(last[:10], "%Y-%m-%d")
                   - dt.timedelta(days=1)).strftime("%Y%m%d") if last \
         else start.replace("-", "")
@@ -7063,14 +7067,29 @@ def _low_tides_span(start="2025-10-01", now_utc=None):
         for prow in (d or {}).get("predictions", []):
             if prow.get("type") == "L":
                 rows[prow["t"]] = round(float(prow["v"]), 3)
+            elif prow.get("type") == "H":
+                hrows[prow["t"]] = round(float(prow["v"]), 3)
         out = sorted(rows.items())
         with open(LOW_TIDES_CACHE_PATH, "w") as f:
-            json.dump({"rows": out}, f, indent=1)
+            json.dump({"rows": out, "hrows": sorted(hrows.items())},
+                      f, indent=1)
             f.write("\n")
     except Exception:
         out = sorted(rows.items())
     return [{"time": t, "navd88": round(v + MLLW_TO_NAVD88_OFFSET, 3)}
             for t, v in out]
+
+
+def _astro_high_tides():
+    """Predicted HIGH tides (astronomy only, no surge) from the hilo
+    cache — the chart's beyond-forecast future."""
+    try:
+        with open(LOW_TIDES_CACHE_PATH) as f:
+            hrows = json.load(f).get("hrows", [])
+    except (OSError, ValueError):
+        return []
+    return [{"time": t, "navd88": round(v + MLLW_TO_NAVD88_OFFSET, 3),
+             "kind": "astro"} for t, v in hrows]
 
 
 def _flood_peaks_chart_data(forecast):
@@ -7195,6 +7214,12 @@ def _flood_peaks_chart_data(forecast):
         lows = _low_tides_span()
     except Exception:
         lows = []
+    try:
+        _last_t = max((r["time"] for r in tides), default="")
+        tides.extend(r for r in _astro_high_tides()
+                     if r["time"] > _last_t)
+    except Exception:
+        pass
     return {"tides": tides, "measured": measured, "lows": lows,
             "risk_days": risk_days, "landmarks": landmarks}
 
@@ -7287,8 +7312,8 @@ def _render_flood_peaks_section(forecast):
         // full payload, so the first render ignored the default
         // 7-day slice and pinned the axis at the earliest measured
         // flood — Oct 30 2025).
-        var allX, obsP, futP, p24P, burstP, measP, lowP, riskSeg,
-            xMin, xMax, allY;
+        var allX, obsP, futP, astroP, p24P, burstP, measP, lowP,
+            riskSeg, xMin, xMax, allY;
         function derive() {
           allX = [];
           function pts(rows, field, kindFilter) {
@@ -7305,6 +7330,7 @@ def _render_flood_peaks_section(forecast):
           }
           obsP    = pts(data.tides, null, 'observed');
           futP    = pts(data.tides, null, 'predicted');
+          astroP  = pts(data.tides, null, 'astro');
           p24P    = pts(data.tides, 'pred24_navd88', null);
           burstP  = pts(data.tides, 'burst_navd88', null);
           measP   = pts(data.measured, null, null);
@@ -7323,7 +7349,8 @@ def _render_flood_peaks_section(forecast):
           xMin = Math.min.apply(null, allX.concat([nowMs])) - 6*3600e3;
           xMax = Math.max.apply(null, allX.concat([nowMs])) + 6*3600e3;
           allY = [];
-          [obsP, futP, p24P, burstP, measP, lowP].forEach(function(a) {
+          [obsP, futP, astroP, p24P, burstP, measP, lowP].forEach(
+            function(a) {
             a.forEach(function(q) { allY.push(q.y); });
           });
           riskSeg.forEach(function(q) { if (q.y != null) allY.push(q.y); });
@@ -7370,6 +7397,13 @@ def _render_flood_peaks_section(forecast):
               borderColor: 'rgba(60,60,60,0.85)',
               backgroundColor: 'rgba(60,60,60,0.85)',
               pointStyle: 'rect', pointRadius: r(4), showLine: false },
+            { label: 'Astronomical peak (no surge)', data: cpts(astroP),
+              pointStyle: 'circle', pointRadius: r(3),
+              pointBackgroundColor: 'rgba(26,95,168,0.30)',
+              pointBorderColor: 'rgba(26,95,168,0.45)',
+              borderColor: 'rgba(26,95,168,0.45)',
+              backgroundColor: 'rgba(26,95,168,0.30)',
+              showLine: false },
             { label: 'Predicted tide peak', data: cpts(futP),
               borderColor: 'rgba(31,111,235,0.9)',
               backgroundColor: 'rgba(31,111,235,0.9)',
