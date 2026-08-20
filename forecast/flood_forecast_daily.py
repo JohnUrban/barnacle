@@ -7455,7 +7455,24 @@ def _render_flood_peaks_section(forecast):
             build();
           });
           fromI.value = iso(dw[0]); toI.value = iso(dw[1]);
-          fromI.min = '2026-05-18';
+          // picker bounds from the payload itself: earliest record
+          // (Oct 30 2025 measured flood) → last forecast point,
+          // applied to BOTH pickers so neither scrolls into empty
+          // decades (2026-08-20 fix: min was on From only, and too
+          // late by seven months)
+          var dataMs = [];
+          [FULL.tides, FULL.measured, FULL.lows || []].forEach(
+            function(a) {
+              a.forEach(function(q) {
+                var t = new Date(String(q.time).replace(' ', 'T'))
+                  .getTime();
+                if (!isNaN(t)) dataMs.push(t);
+              });
+            });
+          var lo = iso(Math.min.apply(null, dataMs));
+          var hi = iso(Math.max.apply(null, dataMs) + 3 * 864e5);
+          fromI.min = lo; toI.min = lo;
+          fromI.max = hi; toI.max = hi;
           function apply() {
             var f = new Date(fromI.value + 'T00:00').getTime();
             var t = new Date(toI.value + 'T23:59').getTime();
