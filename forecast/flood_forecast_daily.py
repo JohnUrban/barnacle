@@ -6993,11 +6993,47 @@ def _render_oscillation_section(forecast):
 """
 
 
+PEAKS_BACKFILL_CACHE_PATH = os.path.join(_REPO_ROOT, "data",
+                                         "observed_peaks_backfill.json")
+
+
+def _observed_peaks_backfill():
+    """NOAA-verified observed tide peaks (H/HH) from 2025-10-01 until
+    the live per-tide record begins (2026-05-19), for the all-pathways
+    chart backfill (user 2026-08-20: "back-fill at least through the
+    earliest 2025 event"). Verified data never changes → fetched once,
+    cached forever. Pre-Barnacle era: OBSERVED squares only — no
+    predictions/halos existed to show."""
+    try:
+        with open(PEAKS_BACKFILL_CACHE_PATH) as f:
+            rows = json.load(f)["rows"]
+    except (OSError, ValueError, KeyError):
+        try:
+            d = _get(
+                "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
+                {"product": "high_low", "station": NOAA_STATION,
+                 "datum": "MLLW", "time_zone": "lst_ldt",
+                 "units": "english", "begin_date": "20251001",
+                 "end_date": "20260518", "format": "json"})
+            rows = [[r["t"], round(float(r["v"]), 3)]
+                    for r in (d or {}).get("data", [])
+                    if (r.get("ty") or "").strip() in ("H", "HH")]
+            with open(PEAKS_BACKFILL_CACHE_PATH, "w") as f:
+                json.dump({"rows": rows,
+                           "source": "NOAA verified high_low",
+                           "fetched": "2026-08-20"}, f, indent=1)
+                f.write("\n")
+        except Exception:
+            rows = []
+    return [{"time": t, "navd88": round(v + MLLW_TO_NAVD88_OFFSET, 3),
+             "kind": "observed"} for t, v in rows]
+
+
 LOW_TIDES_CACHE_PATH = os.path.join(_REPO_ROOT, "data",
                                     "low_tides_cache.json")
 
 
-def _low_tides_span(start="2026-05-18", now_utc=None):
+def _low_tides_span(start="2025-10-01", now_utc=None):
     """All astronomical LOW tides from `start` through now+4d, for the
     all-pathways chart's low-tide toggle (2026-08-20). Astronomy is
     immutable, so the cache only ever grows at the tail; one small
@@ -7050,6 +7086,13 @@ def _flood_peaks_chart_data(forecast):
     # renders the 7-day default window and offers a date-range picker
     base = _oscillation_chart_data(forecast, days=400)
     tides = []
+    _first_live = min((pt["time"] for pt in base["points"]),
+                      default="9999")
+    try:
+        tides.extend(r for r in _observed_peaks_backfill()
+                     if r["time"] < _first_live)
+    except Exception:
+        pass
     for pt in base["points"]:
         row = {
             "time": pt["time"],
