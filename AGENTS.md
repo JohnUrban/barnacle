@@ -88,7 +88,17 @@ live obligation) → `BACKLOG.md` OPEN LOOPS. On a flood event:
    `*-original-unpublished.*` (gitignored — never committed).
 10. **attic/ = archival, never read** as instructions. To use
    something, consciously move it out.
-11. **Audits** (`audits/README.md`): reviewer ≠ author; an open
+11. **Edit-batch integrity (5 incidents).** A multi-edit script
+    must make the ENTIRE ship chain fail when any edit fails: apply
+    all edits in one script that writes only after every anchor
+    asserts, never chain regenerate/commit/push as separate
+    statements that run regardless, and when a batch is rebuilt
+    after a failure, diff it against the failed batch so no edit is
+    silently dropped (a dropped listener shipped 2026-09-02; four
+    earlier no-op commits carried messages claiming unapplied
+    changes). Verify the DEPLOYED artifact, not the edit script's
+    claims.
+12. **Audits** (`audits/README.md`): reviewer ≠ author; an open
     report needs an independent reply before close-out; confirm
     criticism of your own work rather than defending it.
 

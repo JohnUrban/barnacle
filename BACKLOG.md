@@ -41,6 +41,16 @@ looks stale, trust this file. Ledger lines are append-only:
       grate-backup probability by drainage position — deliberately
       out of scope until the 342-corner methodology earns extension.
 
+- [ ] WATCH: nowcast.yml step reorder (dispatch after push, shipped
+      2026-09-02) is untested in production until the next radar
+      trigger — verify the first triggered run completes all steps
+      and, if an alert-worthy burst, that dispatch fires post-push.
+- [ ] Extra-rain slider on the town map (DEFERRED low-priority,
+      user 2026-09-02): if built, option (a) only — drive the
+      calibrated 342 models and repaint Highlands low-shelf streets,
+      parity with the main page's scope; no town-wide fabricated
+      depths.
+
 **Parked (user-gated or seasonal)**
 - [ ] Falling-tide stall experiment (user field task; drain coupling
       "breathing" first written up 7/13 tide event).
@@ -159,3 +169,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-02 | DECISION | photo-privacy | standing rule: blur every identifiable face except John before committing photos (public repo); John has standing consent [STATED by user; AGENTS.md rule 9]
 2026-09-02 | DONE | ponding-dips | user's 2026-08-03 local-minima idea shipped: 1-D road-profile sag detector (history/scripts/detect_street_sags.py) -> 414 dips (>=1 ft, >=6 ft elev, cap 10) -> town-map toggle w/ tap readouts; VALIDATED: the Rt 36/Navesink valley type-example detected (10 ft dip @ 74 ft + 8.4 @ 49). Two earlier graph-based attempts produced absurd 140-ft basins (road-graph pour ignores overland flow) — rejected before shipping [VERIFIED: docs/highlands_sags.json]
 2026-09-02 | DONE | ponding-v2 | cross-street discount (71 drained), low-shelf tier (56 purple), top-20 GPS field list; DIAGNOSTIC: the 342 corner does NOT register — its bowl is curb-scale + drain-driven, below 25-m profile resolution — documented as the scope boundary between this layer and the calibrated corner model [VERIFIED: docs/highlands_sags.json + explainer]
+2026-09-02 | DECISION | town-rain-slider | deferred low priority; if ever built, calibrated-scope option only [STATED by user]
