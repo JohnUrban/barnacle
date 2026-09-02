@@ -84,6 +84,8 @@ live obligation) → `BACKLOG.md` OPEN LOOPS. On a flood event:
    be associated with Barnacle). Blur from the original, keep EXIF,
    verify the render visually, and hold the original uncommitted.
    When in doubt about whether someone is identifiable, blur or ask.
+   Keep the unblurred original on disk for provenance, renamed
+   `*-original-unpublished.*` (gitignored — never committed).
 10. **attic/ = archival, never read** as instructions. To use
    something, consciously move it out.
 11. **Audits** (`audits/README.md`): reviewer ≠ author; an open
