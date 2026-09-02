@@ -78,9 +78,15 @@ live obligation) → `BACKLOG.md` OPEN LOOPS. On a flood event:
    reflow incidents); site changes regenerate + gate before commit;
    alert texts lead with the WARNING; ALERT_DAILY_CAP + quiet hours
    (20:00–07:00 hold unless about TONIGHT) apply to ALL channels.
-9. **attic/ = archival, never read** as instructions. To use
+9. **Published-imagery privacy (standing rule, 2026-09-02).** The
+   repo is public: before committing any photo, BLUR the face of
+   every identifiable person EXCEPT John (he has standing consent to
+   be associated with Barnacle). Blur from the original, keep EXIF,
+   verify the render visually, and hold the original uncommitted.
+   When in doubt about whether someone is identifiable, blur or ask.
+10. **attic/ = archival, never read** as instructions. To use
    something, consciously move it out.
-10. **Audits** (`audits/README.md`): reviewer ≠ author; an open
+11. **Audits** (`audits/README.md`): reviewer ≠ author; an open
     report needs an independent reply before close-out; confirm
     criticism of your own work rather than defending it.
 
