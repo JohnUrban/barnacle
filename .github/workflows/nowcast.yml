@@ -61,6 +61,57 @@ jobs:
             exit $code
           fi
 
+      - name: Install radar deps
+        if: steps.gate.outputs.go == 'true'
+        run: pip install --quiet -r forecast/nowcast-requirements.txt
+
+      - name: Run nowcast
+        if: steps.gate.outputs.go == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python forecast/nowcast.py
+
+      - name: Publish gate (no markers, strict JSON)
+        if: steps.gate.outputs.go == 'true'
+        run: python forecast/check_artifacts.py
+
+      # RADAR-FED ALERTING (event #7, 2026-08-07: +16.9 in projected,
+      # no NWS product, no alert). Fresh alertable street water that
+      # alert_state hasn't covered dispatches the forecast workflow;
+      # the transactional pipeline + daily cap decide the actual send.
+      - name: Commit nowcast.json
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          git config user.name "barnacle-nowcast"
+          git config user.email "actions@users.noreply.github.com"
+          git add docs/nowcast.json
+          if git diff --cached --quiet; then
+            echo "no change"; exit 0
+          fi
+          git commit -m "nowcast $(date -u +'%Y-%m-%d %H:%M') UTC"
+          for i in 1 2 3; do
+            git push && exit 0
+            git fetch origin main
+            git rebase origin/main || { git rebase --abort; echo "rebase conflict - abort publish"; exit 1; }
+            python forecast/check_artifacts.py
+            sleep 2
+          done
+          exit 1
+
+      # Let radar publication finish, then make dispatch loss impossible to
+      # mistake for a healthy green run.
+      - name: Surface alert-ingest dispatch failure
+        if: always() && steps.dispatch.outcome == 'failure'
+        run: |
+          echo "::error::radar completed, but immediate NWS alert ingestion failed"
+          exit 1
+
+      # DISPATCHES RUN AFTER THE PUSH (event #8, 2026-09-01: the
+      # 23:15Z run projected +14.3 and dispatched, but the forecast
+      # run checked out main seconds BEFORE the nowcast commit
+      # landed — it read the pre-burst file and never saw the radar
+      # signal. Alert evaluation depends on committed state, so
+      # dispatch must follow the push, not the local write.
       # ALERT-INGEST FAST PATH (2026-08-03: FFW cut ~10:36, ingested
       # 11:00 — official-alert latency was ~30 min after street peak).
       # If an active NWS alert isn't in alert_state yet, dispatch the
@@ -98,25 +149,6 @@ jobs:
           done
           echo "::error::alert-ingest dispatch failed after 3 attempts"
           exit 1
-
-      - name: Install radar deps
-        if: steps.gate.outputs.go == 'true'
-        run: pip install --quiet -r forecast/nowcast-requirements.txt
-
-      - name: Run nowcast
-        if: steps.gate.outputs.go == 'true'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: python forecast/nowcast.py
-
-      - name: Publish gate (no markers, strict JSON)
-        if: steps.gate.outputs.go == 'true'
-        run: python forecast/check_artifacts.py
-
-      # RADAR-FED ALERTING (event #7, 2026-08-07: +16.9 in projected,
-      # no NWS product, no alert). Fresh alertable street water that
-      # alert_state hasn't covered dispatches the forecast workflow;
-      # the transactional pipeline + daily cap decide the actual send.
       - name: Radar alert dispatch check
         if: steps.gate.outputs.go == 'true'
         id: rac
@@ -140,30 +172,3 @@ jobs:
             "https://api.github.com/repos/${{ github.repository }}/actions/workflows/daily_forecast.yml/dispatches" \
             -d '{"ref":"main","inputs":{"force_email":"false"}}' \
             && echo "dispatched" || echo "dispatch failed (non-fatal)"
-
-      - name: Commit nowcast.json
-        if: steps.gate.outputs.go == 'true'
-        run: |
-          git config user.name "barnacle-nowcast"
-          git config user.email "actions@users.noreply.github.com"
-          git add docs/nowcast.json
-          if git diff --cached --quiet; then
-            echo "no change"; exit 0
-          fi
-          git commit -m "nowcast $(date -u +'%Y-%m-%d %H:%M') UTC"
-          for i in 1 2 3; do
-            git push && exit 0
-            git fetch origin main
-            git rebase origin/main || { git rebase --abort; echo "rebase conflict - abort publish"; exit 1; }
-            python forecast/check_artifacts.py
-            sleep 2
-          done
-          exit 1
-
-      # Let radar publication finish, then make dispatch loss impossible to
-      # mistake for a healthy green run.
-      - name: Surface alert-ingest dispatch failure
-        if: always() && steps.dispatch.outcome == 'failure'
-        run: |
-          echo "::error::radar completed, but immediate NWS alert ingestion failed"
-          exit 1
