@@ -7,3 +7,8 @@ Expected contents, if obtained:
   approximate location shown in each, and whether EXIF is intact
   (a messaging-app re-send usually strips it — original files
   preserve capture time).
+
+Received 2026-09-02 (Kevin, via messaging — EXIF times intact, GPS
+stripped): photos 1, 2, 5 committed (streetscape only; photo 5 has
+the NORTH 36 shield). Photos 3-4 HELD uncommitted (identifiable
+faces; public repo) pending John's decision.

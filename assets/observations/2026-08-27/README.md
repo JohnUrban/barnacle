@@ -20,10 +20,33 @@ The user was in California; evidence assembled 2026-09-02:
   this event AT OR ABOVE lawn-step class [INFERRED bound].
   Preservation held (presence is robust to later wash; deposit was
   heavy enough to survive to 8/29).
-- **Witness [STATED, second-hand]:** the user's brother (cat visit)
-  reported flooding and photographed Route 36 flooding elsewhere in
-  Highlands (photos not yet in repo — add to `third-party/` if
-  obtained).
+- **Witness record [STATED + photos, added 2026-09-02]:** the
+  user's brother Kevin made the cat visit ~1:50–2:41 PM and drove
+  home into the storm's peak. Texts (ET — confirmed by the user's
+  2:17 PM screenshot-time cross-check and photo EXIF): 1:43 "It's
+  flash flooding" + 1:44 WEA "no one should be driving" (the storm
+  hit western Middletown BEFORE our catchment — radar shows our
+  heavy rain from ~2:30); 2:59 "It's completely up the sidewalks";
+  3:13 report of a violently smashed SUV from a speeding driver.
+  Five photos, EXIF **3:03:36–3:08:54 PM** — inside the radar peak
+  window: sheet flooding across a signalized divided highway
+  (photo 1), a vehicle rooster-tailing through ponded lanes
+  (photo 2), and a **NORTH 36 route shield over a bank-to-bank
+  flooded roadway (photo 5)** — Route 36 confirmed by signage. GPS
+  was stripped in transit (messaging preserves times, drops
+  location); exact positions unknown — original files from Kevin
+  would restore them. Photos 3–4 show identifiable faces and are
+  HELD OUT of the public repo pending the user's decision
+  (exclude / blur / include).
+- **Timeline verdict (user's question, answered from radar+hindcast):
+  CONFIRMED** — the corner flooding most likely began right at or
+  just after Kevin's ~2:41 departure. Catchment heavy rain started
+  ~2:30; street response (5–15 min delivery) ≈ 2:40–2:50; hindcast
+  peak 3:24. That explains the absence of any "waded to the car"
+  report, and the 2:59 "up the sidewalks" text — sent 18 min into
+  the drive, minutes before photographing Rt 36 flooding — most
+  plausibly describes Route 36, though the corner would also have
+  been sidewalk-deep by ~2:55–3:05.
 - **Barnacle's calls [VERIFIED]:** pluvial risk escalated through
   the day; **two alert deliveries** — 10:43 AM (Flood Watch) and
   2:35 PM (Flash Flood Warning, mid-burst) — hitting the daily cap.
