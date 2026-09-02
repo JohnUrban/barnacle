@@ -35,18 +35,33 @@ The user was in California; evidence assembled 2026-09-02:
   flooded roadway (photo 5)** — Route 36 confirmed by signage. GPS
   was stripped in transit (messaging preserves times, drops
   location); exact positions unknown — original files from Kevin
-  would restore them. Photos 3–4 show identifiable faces and are
-  HELD OUT of the public repo pending the user's decision
-  (exclude / blur / include).
-- **Timeline verdict (user's question, answered from radar+hindcast):
-  CONFIRMED** — the corner flooding most likely began right at or
-  just after Kevin's ~2:41 departure. Catchment heavy rain started
-  ~2:30; street response (5–15 min delivery) ≈ 2:40–2:50; hindcast
-  peak 3:24. That explains the absence of any "waded to the car"
-  report, and the 2:59 "up the sidewalks" text — sent 18 min into
-  the drive, minutes before photographing Rt 36 flooding — most
-  plausibly describes Route 36, though the corner would also have
-  been sidewalk-deep by ~2:55–3:05.
+  would restore them. Photos 3–4 carried identifiable faces: committed as `-blurred`
+  versions per AGENTS rule 9 (originals retained on disk as
+  `-original-unpublished`, gitignored, for provenance). - **Timeline, REVISED with Kevin+Jackie's accounts and the cat-bowl
+  EXIF (2026-09-02 follow-up):** cat-bowl photo 2:21:03 PM, taken
+  "almost immediately upon entry" → **arrival ≈ 2:19–2:21** (not
+  1:50–2:00); lights text 2:41 + "left within 5 min" (Kevin and
+  Jackie agree) → **departure ≈ 2:41–2:46**; visit ~22–26 min
+  (their 35–40-min feel overestimates; timestamps win). Extended
+  radar frames show heavy rain from **2:16 PM** (29–60 mm/hr box) —
+  they ARRIVED four minutes into the burst ("roads just starting to
+  flood at the sides": early real accumulation, with the
+  drainage-transit caveat fair for those first minutes), the kids
+  narrated the rise from the window, and **water was "coming into
+  the driveway" as they left ~2:43** — driveway-reach ≈ at least
+  9/1-class (~+13.9″), 27 min after heavy onset [STATED +
+  EXIF-anchored]. "The intersection was unusable" at departure
+  [STATED; threshold undefined]. They escaped around the block via
+  the parking lot; the 2:59 "up the sidewalks" text and the
+  3:03–3:09 photos describe Route 36. Earlier verdict REVISED:
+  corner flooding began ~2:30–2:40, DURING the visit's second half
+  — already driveway-class as they pulled out.
+- **Hindcast, full window (18:00–20:30Z): +16.4″ @ 3:24 PM ET**
+  (bay −1.32). Witness driveway-reach at 2:43 implies ~+13–14″ some
+  40 min before the modeled peak — the near-core lag/underread bias,
+  4th event; the unwitnessed crest (~2:45–3:30) plausibly exceeded
+  the hindcast. Ranking unchanged: evidenced-unmeasured.
+
 - **Barnacle's calls [VERIFIED]:** pluvial risk escalated through
   the day; **two alert deliveries** — 10:43 AM (Flood Watch) and
   2:35 PM (Flash Flood Warning, mid-burst) — hitting the daily cap.
