@@ -38,7 +38,14 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
   bottom) on a DEAD-LOW bay; 19-photo EXIF timeline; nowcast's best
   showing (+14.3 projected 8 min early) but the radar alert LOST A
   RACE to the push and no text went out — dispatch now runs after the
-  commit step (fixed 2026-09-02). Analysis pass queued in BACKLOG.
+  commit step (fixed 2026-09-02). Analysis DONE: hindcast +12.0
+  (−1.9, +11 min — 3rd near-core-lag + tail-overhold confirmations);
+  all-anchors now 7 measured.
+- **2026-08-27:** evidenced-unmeasured flood while user traveled —
+  radar 1.9–3.8 in/hr ×45 min, hindcast +16.1 [INFERRED], mud up the
+  driveway [VERIFIED residue], 2 alerts delivered incl. mid-burst
+  FFW; nowcast dark 7 h (the launchd tick was in California) —
+  strongest case yet for external-cron half-B.
 - Aug 10–13 perigean-spring sequence: four consecutive photo-verified
   street-regime evenings logged (EXIF-timed, landmark-bounded,
   gauge-cross-checked; as-run errors ≤0.18 ft at 25–85-min leads) —

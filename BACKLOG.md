@@ -39,11 +39,9 @@ looks stale, trust this file. Ledger lines are append-only:
       Candidate: persist V with decay across runs. (Documented
       design; day-max memory partially compensates.)
 
-- [ ] Event #8 analysis pass: standard hydrograph + model-test plots
-      (frames cached), QPE storm total (fetch 2026-09-02 0000), full
-      2-min tank hindcast vs the 19-photo timeline, ranking-table
-      touch (ties #6 class), edge_20260901 map points from photos
-      14-16.
+- [ ] edge_20260901 map points from event-#8 photos 14-16 (Central
+      arm extent at peak) — needs user pick_coords clicks.
+- [ ] Aug 27 brother's Rt 36 photos → third-party/ when obtainable.
 
 **Parked (user-gated or seasonal)**
 - [ ] Falling-tide stall experiment (user field task; drain coupling
@@ -158,3 +156,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-02 | FACT | event-#8 | 2026-09-01 ~19:25 ET pluvial peak ~+13.9 (lawn-step bottom, bracket 13.7-14.2) on DEAD-LOW bay; burst 1.9-2.0 in/hr box-mean x ~10 min; 19 EXIF photos [VERIFIED: assets/observations/2026-09-01/]
 2026-09-02 | FACT | nowcast-skill | 19:15 run projected +14.3 with street 0.0 — 8 min early, err +0.4 vs measured; cadence 10-13 min throughout [VERIFIED: nowcast commits a39ad6704..]
 2026-09-02 | DONE | radar-alert-race | dispatched run raced the nowcast push and read the pre-burst file — NO text for a projected lawn-step flood; nowcast.yml dispatch steps moved AFTER commit/push [VERIFIED: event README + workflow]
+2026-09-02 | DONE | event-#8-analysis | hindcast +12.0 @19:36 (-1.9, +11 min vs photos) — 3rd confirmation of near-core lag overestimate + tail-recession overhold; as-run projection beat the hindcast; all-anchors refreshed to 7 [VERIFIED: 2026-09-01/analysis/]
+2026-09-02 | FACT | 2026-08-27-event | EVIDENCED UNMEASURED flood (user in CA): radar 1.9-3.8 in/hr ~45 min, hindcast +16.1 [INFERRED]; residue mud up driveway >= lawn-step class; 2 alerts delivered incl. mid-burst FFW; nowcast dark 12:53-19:40 (launchd traveled) [VERIFIED: 2026-08-27/README.md]

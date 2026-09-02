@@ -53,8 +53,20 @@ fastest recorded, on the LOWEST bay of any measured event.
   projection (+14.3) essentially matched reality (+13.9) because the
   burst died right as the projection's holding assumption would have
   overshot — same shape as event #7.
-- QPE storm-total cross-check + standard hydrograph/model-test plots:
-  queued (BACKLOG) — frames are cached; hour-ending-00:00 QPE needs a
-  2026-09-02-dated fetch.
+- **Hindcast (2026-09-02, `analysis/hydrograph.png`):** true 2-min
+  rates → **+12.0″ @ 19:36 — −1.9″ low and ~11 min late** vs the
+  photographed +13.9 @ ~19:25. Two known biases, both now on their
+  third confirmation: (1) the 15-min lag overestimates delivery when
+  the storm core sits ON the house (point 2.9–3.2 vs box 1.9–2.0 —
+  reality responded in ~5–7 min); (2) the recession over-holds under
+  a light tail (tank kept water above the curb until ~20:10; the
+  street cleared by 19:32). Notably the as-run rate-held projection
+  (+14.3) beat the hindcast — the holding assumption compensated the
+  lag+underread. Model-session queue: shortened/dynamic lag +
+  tail-recession drainage are two of the standing six insights.
+- QPE storm total (fetched 2026-09-02): 0.57″ box-mean in the
+  event hour — a small storm, delivered fast, on a dead-low bay.
+- `analysis/all_anchors.png`: refreshed with #8 — **seven measured
+  anchors** (‡ = hindcast via the shared event_hindcast.py recipe).
 - Photo 14–16: hydrant/driveway/sidewalk extent documents the Central
   Ave arm at peak — candidate edge_20260901 map points.
