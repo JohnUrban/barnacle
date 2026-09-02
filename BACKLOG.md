@@ -34,6 +34,13 @@ looks stale, trust this file. Ledger lines are append-only:
       arm extent at peak) — needs user pick_coords clicks.
 - [ ] Aug 27 brother's Rt 36 photos → third-party/ when obtainable.
 
+- [ ] Ponding-dip field verification: user drives the top-20 list
+      (history/data/ponding_top20.md, GPS-ready coords) as time and
+      events allow — each yes/no calibrates layer precision. Future:
+      pooled-volume routing to final minima (user sketch 2026-09-02);
+      grate-backup probability by drainage position — deliberately
+      out of scope until the 342-corner methodology earns extension.
+
 **Parked (user-gated or seasonal)**
 - [ ] Falling-tide stall experiment (user field task; drain coupling
       "breathing" first written up 7/13 tide event).
@@ -151,3 +158,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-02 | FACT | 2026-08-27-event | EVIDENCED UNMEASURED flood (user in CA): radar 1.9-3.8 in/hr ~45 min, hindcast +16.1 [INFERRED]; residue mud up driveway >= lawn-step class; 2 alerts delivered incl. mid-burst FFW; nowcast dark 12:53-19:40 (launchd traveled) [VERIFIED: 2026-08-27/README.md]
 2026-09-02 | DECISION | photo-privacy | standing rule: blur every identifiable face except John before committing photos (public repo); John has standing consent [STATED by user; AGENTS.md rule 9]
 2026-09-02 | DONE | ponding-dips | user's 2026-08-03 local-minima idea shipped: 1-D road-profile sag detector (history/scripts/detect_street_sags.py) -> 414 dips (>=1 ft, >=6 ft elev, cap 10) -> town-map toggle w/ tap readouts; VALIDATED: the Rt 36/Navesink valley type-example detected (10 ft dip @ 74 ft + 8.4 @ 49). Two earlier graph-based attempts produced absurd 140-ft basins (road-graph pour ignores overland flow) — rejected before shipping [VERIFIED: docs/highlands_sags.json]
+2026-09-02 | DONE | ponding-v2 | cross-street discount (71 drained), low-shelf tier (56 purple), top-20 GPS field list; DIAGNOSTIC: the 342 corner does NOT register — its bowl is curb-scale + drain-driven, below 25-m profile resolution — documented as the scope boundary between this layer and the calibrated corner model [VERIFIED: docs/highlands_sags.json + explainer]

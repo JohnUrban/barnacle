@@ -34,10 +34,13 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
 
 ## RIGHT NOW
 
-- Ponding-dips layer shipped (2026-09-02 evening): road-profile sag
-  detector → 414 teal dip markers on the town map (toggle, default
-  off; tap for street/depth); the Rt 36 valley type-example
-  validated out of the math. Terrain-only claim, drains unmodeled.
+- Ponding-dips layer shipped + v2 same evening: road-profile sags
+  with cross-street-drain discount (71 pruned), two tiers (teal
+  rain-only / purple tide-reachable low shelf), tap readouts, top-20
+  GPS field list (history/data/ponding_top20.md). Validated: Rt 36
+  valley detected; 342 corner correctly does NOT register (curb-
+  scale, drain-driven — the calibrated model's territory), boundary
+  documented in the explainer.
 
 - **Event #8 (2026-09-01 ~19:25 ET):** pluvial peak ~+13.9″ (lawn-step
   bottom) on a DEAD-LOW bay; 19-photo EXIF timeline; nowcast's best

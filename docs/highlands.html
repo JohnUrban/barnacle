@@ -138,7 +138,15 @@
          regardless of elevation or tide (the Route 36 valley through
          Highlands is the type example). Terrain geometry only: storm
          drains, shoulders, and overland flow are not modeled, so a
-         marked dip with a good drain may never pond. The base map (water,
+         marked dip with a good drain may never pond. Teal dips sit
+         above tidal reach (rain-only); purple dips are on the low
+         shelf where tide and rain both collect. Candidates that a
+         cross-street drains (a lower road at the junction) are
+         removed. And an instructive boundary: curb-scale bowls
+         smaller than the 25-m sampling — including the 342 Bay
+         corner itself — do NOT register here; that corner's ponding
+         is drain-and-curb hydraulics, which is exactly what its own
+         calibrated model (the main page) exists to capture. The base map (water,
          parks, sand, Route 36) is built from OpenStreetMap data.
          Cross-reference: the 342 corner (&#9679;) takes tidal water at
          ~6.34 ft MLLW; each street's popup gives its own onset, so
@@ -469,7 +477,10 @@
         var rad = 1.5 + g.depth * 0.55;
         ctx.beginPath();
         ctx.arc(P2[0], P2[1], rad, 0, 7);
-        ctx.fillStyle = "rgba(0,131,143,0.55)";
+        // low tier = tide-reachable bowl (rain AND tide collect);
+        // high tier = rain-only valley
+        ctx.fillStyle = g.tier === "low"
+          ? "rgba(124,77,188,0.6)" : "rgba(0,131,143,0.55)";
         ctx.fill();
         ctx.lineWidth = 1;
         ctx.strokeStyle = "rgba(255,255,255,0.9)";
@@ -587,7 +598,10 @@
       if (bestG) {
         readout.innerHTML = "<b>Ponding dip: " + bestG.street +
           "</b> (" + bestG.town + ") — " + bestG.depth.toFixed(1) +
-          " ft dip at " + bestG.elev.toFixed(0) + " ft elevation. " +
+          " ft dip at " + bestG.elev.toFixed(0) + " ft elevation" +
+          (bestG.tier === "low"
+           ? " — LOW SHELF: tides reach here too (purple tier). "
+           : ". ") +
           "Terrain collects water here in downpours (road profile " +
           "only — storm drains and shoulders not modeled).";
         return;

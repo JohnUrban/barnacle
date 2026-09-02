@@ -32,14 +32,38 @@ _REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 SRC = os.path.join(_REPO, "docs", "highlands_streets.json")
 OUT = os.path.join(_REPO, "docs", "highlands_sags.json")
 MIN_DEPTH_FT = 1.0
-MIN_ELEV_FT = 6.0     # above routine spring-tide reach
+MIN_ELEV_FT = 3.0     # include the low shelf as its own TIER
+LOW_TIER_FT = 6.0     # below this, tides reach too ("low" tier)
+CROSS_EPS_FT = 0.2    # cross-street escape must descend by more than
+                      # LiDAR noise to count (user rule 2026-09-02:
+                      # a candidate intersected by another road where
+                      # it is NOT a local minimum does not pool)
 MAX_DEPTH_FT = 10.0   # street ponds deeper than this don't happen
 
 
 def main():
     d = json.load(open(SRC))
+    # junction graph with way provenance, for the cross-street test
+    key = lambda p: (round(p[0], 4), round(p[1], 4))
+    elev, adj = {}, {}
+    for wi, st in enumerate(d["streets"]):
+        prev = None
+        for p in st["pts"]:
+            if p[2] is None:
+                prev = None
+                continue
+            k = key(p)
+            if k not in elev or p[2] < elev[k]:
+                elev[k] = p[2]
+            adj.setdefault(k, set())
+            if prev is not None and prev != k:
+                adj[k].add((prev, wi))
+                adj[prev].add((k, wi))
+            prev = k
+
     sags = []
-    for st in d["streets"]:
+    drained = 0
+    for wi, st in enumerate(d["streets"]):
         pts = [p for p in st["pts"] if p[2] is not None]
         n = len(pts)
         if n < 5:
@@ -59,12 +83,21 @@ def main():
                     j += step
                 rises.append(mx - e)
             depth = min(min(rises), MAX_DEPTH_FT)
-            if depth >= MIN_DEPTH_FT:
-                sags.append({"lat": pts[i][0], "lon": pts[i][1],
-                             "elev": round(e, 1),
-                             "depth": round(depth, 1),
-                             "street": st.get("name") or "(unnamed)",
-                             "town": st.get("town") or ""})
+            if depth < MIN_DEPTH_FT:
+                continue
+            # cross-street escape: a neighbor on a DIFFERENT way that
+            # sits meaningfully lower drains this candidate
+            k = key(pts[i])
+            if any(wj != wi and elev[n] < e - CROSS_EPS_FT
+                   for n, wj in adj.get(k, ())):
+                drained += 1
+                continue
+            sags.append({"lat": pts[i][0], "lon": pts[i][1],
+                         "elev": round(e, 1),
+                         "depth": round(depth, 1),
+                         "tier": "low" if e < LOW_TIER_FT else "high",
+                         "street": st.get("name") or "(unnamed)",
+                         "town": st.get("town") or ""})
 
     sags.sort(key=lambda s: -s["depth"])
     kept = []
@@ -78,7 +111,8 @@ def main():
                    "min_elev_ft": MIN_ELEV_FT, "sags": kept}, f,
                   separators=(",", ":"))
         f.write("\n")
-    print(f"wrote {OUT}: {len(kept)} sags (from {len(sags)} raw)")
+    print(f"wrote {OUT}: {len(kept)} sags (from {len(sags)} raw; "
+          f"{drained} drained by cross-streets)")
     for s2 in kept[:14]:
         print(f"  {s2['depth']:4.1f} ft dip @ {s2['elev']:5.1f} ft — "
               f"{s2['street']} ({s2['town']})")
