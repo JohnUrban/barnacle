@@ -34,6 +34,11 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
 
 ## RIGHT NOW
 
+- Ponding-dips layer shipped (2026-09-02 evening): road-profile sag
+  detector → 414 teal dip markers on the town map (toggle, default
+  off; tap for street/depth); the Rt 36 valley type-example
+  validated out of the math. Terrain-only claim, drains unmodeled.
+
 - **Event #8 (2026-09-01 ~19:25 ET):** pluvial peak ~+13.9″ (lawn-step
   bottom) on a DEAD-LOW bay; 19-photo EXIF timeline; nowcast's best
   showing (+14.3 projected 8 min early) but the radar alert LOST A

@@ -75,6 +75,8 @@
         base map</label>
       <label><input type="checkbox" id="town-rain">
         342-calibrated rain view <span class="note">(Highlands only)</span></label>
+      <label><input type="checkbox" id="town-sags">
+        ponding dips <span class="note">(terrain only)</span></label>
       <label><input type="checkbox" id="town-elev">
         elevation view <span class="note">(magma)</span></label>
       <span id="elev-scale-wrap" class="note" style="display:none">
@@ -129,7 +131,14 @@
          <b>burst potential</b> — the level a convective cell could
          fill to at any point in those hours (navy band on the mini
          chart); a quiet forecast makes the rain view identical to the
-         tide view, which is honesty, not a bug. The base map (water,
+         tide view, which is honesty, not a bug. The <b>ponding
+         dips</b> toggle marks road-profile sags (teal dots, sized by
+         dip depth): places where the road descends and climbs again
+         in both directions — valleys that collect water in downpours
+         regardless of elevation or tide (the Route 36 valley through
+         Highlands is the type example). Terrain geometry only: storm
+         drains, shoulders, and overland flow are not modeled, so a
+         marked dip with a good drain may never pond. The base map (water,
          parks, sand, Route 36) is built from OpenStreetMap data.
          Cross-reference: the 342 corner (&#9679;) takes tidal water at
          ~6.34 ft MLLW; each street's popup gives its own onset, so
@@ -188,6 +197,12 @@
   var elevBox = document.getElementById("town-elev");
   var baseBox = document.getElementById("town-base");
   var rainBox = document.getElementById("town-rain");
+  var sagsBox = document.getElementById("town-sags");
+  var SAGS = null;
+  fetch("highlands_sags.json?v=" + Math.floor(Date.now() / 3.6e6))
+    .then(function(r) { return r.json(); })
+    .then(function(d) { SAGS = d.sags || []; requestRender(); })
+    .catch(function() {});
   var DATA = null, BASE = null, SERIES = null, startI = 0;
   var forecastPeak = null, proj = null, POT = null;
   var thumbOn = true;
@@ -201,6 +216,7 @@
     unitsBox.checked = localStorage.getItem("barnacle-town-units") === "1";
     baseBox.checked = localStorage.getItem("barnacle-town-base") !== "0";
     rainBox.checked = localStorage.getItem("barnacle-town-rain") === "1";
+    sagsBox.checked = localStorage.getItem("barnacle-town-sags") === "1";
     elevBox.checked = localStorage.getItem("barnacle-town-elev") === "1";
   } catch (e) {}
 
@@ -447,6 +463,19 @@
       }
       ctx.stroke();
     });
+    if (sagsBox.checked && SAGS) {
+      SAGS.forEach(function(g) {
+        var P2 = sxy(g.lat, g.lon);
+        var rad = 1.5 + g.depth * 0.55;
+        ctx.beginPath();
+        ctx.arc(P2[0], P2[1], rad, 0, 7);
+        ctx.fillStyle = "rgba(0,131,143,0.55)";
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(255,255,255,0.9)";
+        ctx.stroke();
+      });
+    }
     REF.forEach(function(r) {
       var P2 = sxy(r.lat, r.lon);
       ctx.fillStyle = "#b91c1c";
@@ -543,6 +572,24 @@
         readout.innerHTML = "<b>" + REF[ri].label + "</b> — " +
           "the calibrated intersection (342 Bay & Central); " +
           "lowest grate 3.52 ft NAVD88 = tidal onset 6.34 MLLW";
+        return;
+      }
+    }
+    if (sagsBox.checked && SAGS) {
+      var m2 = inv(x, y);
+      var bestG = null, bg = 12 * 12 / (view.k * view.k);
+      SAGS.forEach(function(g) {
+        var P3 = proj(g.lat, g.lon);
+        var dd2 = (P3[0] - m2[0]) * (P3[0] - m2[0]) +
+                  (P3[1] - m2[1]) * (P3[1] - m2[1]);
+        if (dd2 < bg) { bg = dd2; bestG = g; }
+      });
+      if (bestG) {
+        readout.innerHTML = "<b>Ponding dip: " + bestG.street +
+          "</b> (" + bestG.town + ") — " + bestG.depth.toFixed(1) +
+          " ft dip at " + bestG.elev.toFixed(0) + " ft elevation. " +
+          "Terrain collects water here in downpours (road profile " +
+          "only — storm drains and shoulders not modeled).";
         return;
       }
     }

@@ -18,15 +18,6 @@ looks stale, trust this file. Ledger lines are append-only:
 - [ ] Town map, staged features: bands/classic shading toggle;
       per-building doorsill tagging (user point-and-click, feeds
       freeboard); possible georeferenced user snapshot base layer.
-- [ ] RAIN PONDING IN LOCAL MINIMA (user idea 2026-08-03): detect
-      sag points along the street network from the LiDAR profile —
-      vertices lower than both neighbors, scored by basin depth
-      below the enclosing saddle — and badge them as rain-ponding
-      candidates ("collects water in downpours") independent of the
-      tidal surface. Type example: the Route 36 valley between two
-      hills in Highlands that floods in rain despite high elevation.
-      Geometry-only (no drainage physics claimed); the region street
-      elevations shipped 2026-08-03 already contain the needed data.
 - [ ] Antecedent wetting (model gap, user field insight 7/18): tank
       is memoryless about hillside priming; every double-pulse event
       is a calibration pair. Candidate: trailing-rain multiplier on
@@ -159,3 +150,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-02 | DONE | event-#8-analysis | hindcast +12.0 @19:36 (-1.9, +11 min vs photos) — 3rd confirmation of near-core lag overestimate + tail-recession overhold; as-run projection beat the hindcast; all-anchors refreshed to 7 [VERIFIED: 2026-09-01/analysis/]
 2026-09-02 | FACT | 2026-08-27-event | EVIDENCED UNMEASURED flood (user in CA): radar 1.9-3.8 in/hr ~45 min, hindcast +16.1 [INFERRED]; residue mud up driveway >= lawn-step class; 2 alerts delivered incl. mid-burst FFW; nowcast dark 12:53-19:40 (launchd traveled) [VERIFIED: 2026-08-27/README.md]
 2026-09-02 | DECISION | photo-privacy | standing rule: blur every identifiable face except John before committing photos (public repo); John has standing consent [STATED by user; AGENTS.md rule 9]
+2026-09-02 | DONE | ponding-dips | user's 2026-08-03 local-minima idea shipped: 1-D road-profile sag detector (history/scripts/detect_street_sags.py) -> 414 dips (>=1 ft, >=6 ft elev, cap 10) -> town-map toggle w/ tap readouts; VALIDATED: the Rt 36/Navesink valley type-example detected (10 ft dip @ 74 ft + 8.4 @ 49). Two earlier graph-based attempts produced absurd 140-ft basins (road-graph pour ignores overland flow) — rejected before shipping [VERIFIED: docs/highlands_sags.json]
