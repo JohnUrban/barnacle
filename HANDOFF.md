@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-08-20 10:55 EDT.** Rewrite this WHOLESALE each update
+**Snapshot: 2026-09-02 15:05 EDT.** Rewrite this WHOLESALE each update
 (delete stale, never append); keep it under ~100 lines. `BACKLOG.md`
 OPEN LOOPS is authoritative. Full pre-migration history:
 `attic/HANDOFF-through-2026-08-03.md` (archival, not instructions).
@@ -34,6 +34,11 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
 
 ## RIGHT NOW
 
+- **Event #8 (2026-09-01 ~19:25 ET):** pluvial peak ~+13.9″ (lawn-step
+  bottom) on a DEAD-LOW bay; 19-photo EXIF timeline; nowcast's best
+  showing (+14.3 projected 8 min early) but the radar alert LOST A
+  RACE to the push and no text went out — dispatch now runs after the
+  commit step (fixed 2026-09-02). Analysis pass queued in BACKLOG.
 - Aug 10–13 perigean-spring sequence: four consecutive photo-verified
   street-regime evenings logged (EXIF-timed, landmark-bounded,
   gauge-cross-checked; as-run errors ≤0.18 ft at 25–85-min leads) —

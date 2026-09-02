@@ -39,6 +39,12 @@ looks stale, trust this file. Ledger lines are append-only:
       Candidate: persist V with decay across runs. (Documented
       design; day-max memory partially compensates.)
 
+- [ ] Event #8 analysis pass: standard hydrograph + model-test plots
+      (frames cached), QPE storm total (fetch 2026-09-02 0000), full
+      2-min tank hindcast vs the 19-photo timeline, ranking-table
+      touch (ties #6 class), edge_20260901 map points from photos
+      14-16.
+
 **Parked (user-gated or seasonal)**
 - [ ] Falling-tide stall experiment (user field task; drain coupling
       "breathing" first written up 7/13 tide event).
@@ -149,3 +155,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-08-20 | DONE | peaks-chart-fixes | default-window bug fixed (axis bounds now derive per build from the sliced window — first render had pinned to Oct 30 full span); picker dates local not UTC; low-tide toggle added (191 astronomical lows 2026-05-18→, cached data/low_tides_cache.json, small slate down-triangles, default off) [VERIFIED: docs/index.html node-checked]
 2026-08-20 | DONE | peaks-chart-backfill | observed tide peaks backfilled 2025-10-01→2026-05-18 from NOAA VERIFIED high_low (624 observed peaks now in payload; fetched once, cached forever); lows cache extended to same start (633). Pre-Barnacle era shows observed squares only — no fabricated predictions [VERIFIED: docs/index.html payload]
 2026-08-20 | DONE | peaks-chart-future | future extended +60 days via astronomy: 111 tide-only peaks (paler circles, 'no surge' label) + lows to same horizon; payload now spans 2025-10-01 → 2026-10-19 [VERIFIED: payload counts]
+2026-09-02 | FACT | event-#8 | 2026-09-01 ~19:25 ET pluvial peak ~+13.9 (lawn-step bottom, bracket 13.7-14.2) on DEAD-LOW bay; burst 1.9-2.0 in/hr box-mean x ~10 min; 19 EXIF photos [VERIFIED: assets/observations/2026-09-01/]
+2026-09-02 | FACT | nowcast-skill | 19:15 run projected +14.3 with street 0.0 — 8 min early, err +0.4 vs measured; cadence 10-13 min throughout [VERIFIED: nowcast commits a39ad6704..]
+2026-09-02 | DONE | radar-alert-race | dispatched run raced the nowcast push and read the pre-burst file — NO text for a projected lawn-step flood; nowcast.yml dispatch steps moved AFTER commit/push [VERIFIED: event README + workflow]
