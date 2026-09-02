@@ -76,9 +76,15 @@ looks stale, trust this file. Ledger lines are append-only:
       Consciously move an item OUT of the attic to activate it.
 - [ ] Datum line for widget + map-overlay chart (single chosen datum;
       deferred from the 2026-07-21 datums feature).
-- [ ] forecast/flood_forecast_daily.py file split (seams documented
-      in `forecast/README.md`; do after a quiet stretch, not
-      mid-season).
+- [ ] forecast/flood_forecast_daily.py split — REGATED 2026-09-02:
+      not season-gated (there is no off-season here: convective
+      May–Sep, tropical Jun–Nov peaking ~Sep 10, nor'easters
+      Oct–Apr); gate is a quiet WEATHER WINDOW per extraction, one
+      seam at a time per forecast/README.md. Low-risk seams first
+      (station_time, rendering — any calm evening); model_core and
+      alerts only in a verified 7–10-day quiet spell; never with
+      weather inbound. Additive evidence schemas + SLO monitor +
+      erratum convention are NOT gated at all.
 - [ ] Choose/retire duplicated peaks charts after longer A/B (user
       single-user A/B since 7/07).
 
@@ -170,3 +176,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-02 | DONE | ponding-dips | user's 2026-08-03 local-minima idea shipped: 1-D road-profile sag detector (history/scripts/detect_street_sags.py) -> 414 dips (>=1 ft, >=6 ft elev, cap 10) -> town-map toggle w/ tap readouts; VALIDATED: the Rt 36/Navesink valley type-example detected (10 ft dip @ 74 ft + 8.4 @ 49). Two earlier graph-based attempts produced absurd 140-ft basins (road-graph pour ignores overland flow) — rejected before shipping [VERIFIED: docs/highlands_sags.json]
 2026-09-02 | DONE | ponding-v2 | cross-street discount (71 drained), low-shelf tier (56 purple), top-20 GPS field list; DIAGNOSTIC: the 342 corner does NOT register — its bowl is curb-scale + drain-driven, below 25-m profile resolution — documented as the scope boundary between this layer and the calibrated corner model [VERIFIED: docs/highlands_sags.json + explainer]
 2026-09-02 | DECISION | town-rain-slider | deferred low priority; if ever built, calibrated-scope option only [STATED by user]
+2026-09-02 | DECISION | phase3-regate | split gated on quiet weather windows per-seam, not on a season; additive items ungated [STATED by user concern -> assessed; forecast/README.md seams]
