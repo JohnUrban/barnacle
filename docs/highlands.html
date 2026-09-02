@@ -225,6 +225,13 @@
     baseBox.checked = localStorage.getItem("barnacle-town-base") !== "0";
     rainBox.checked = localStorage.getItem("barnacle-town-rain") === "1";
     sagsBox.checked = localStorage.getItem("barnacle-town-sags") === "1";
+    sagsBox.addEventListener("change", function() {
+      try {
+        localStorage.setItem("barnacle-town-sags",
+                             sagsBox.checked ? "1" : "0");
+      } catch (e) {}
+      requestRender();
+    });
     elevBox.checked = localStorage.getItem("barnacle-town-elev") === "1";
   } catch (e) {}
 
