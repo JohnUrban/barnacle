@@ -120,6 +120,37 @@ could be re-decomposed into multiple landmark observations and added
 here — useful if the precision becomes load-bearing for some future
 refinement, not blocking otherwise.
 
+## Non-model landmark keys (documented 2026-09-03; audit-sweep loop)
+
+`landmark_key` values in this ledger are NOT limited to the 18
+registered model landmarks (`ff.LANDMARKS`). Four keys live only
+here, with the elevation context this section carries:
+
+- **`driveway_central`** — Central Ave driveway apron (mid-width),
+  the mud-tracer/extent reference. **Cross-fit elevation: threshold
+  13.8–13.9″ above the SW grate ≈ 4.67 ft NAVD88** [INFERRED,
+  bracket]: event #6 (peak +13.8″) left the driveway mud-NEGATIVE;
+  event #8 (peak ~+13.9″) photographed water entering it (and the
+  2026-08-27 residue + witness accounts concur). Corroboration: the
+  bracket lands within 0.01 ft of the independently surveyed
+  `porch_step_base` (4.68 NAVD88, walkway grade) — driveway apron
+  and walkway sit at the same grade, as they visibly do on site.
+  Registration in `ff.LANDMARKS` is DEFERRED to the next model
+  version bump (a landmark addition is a versioned model change,
+  AGENTS rule 5); until then rows keep the key and this section is
+  the elevation record.
+- **`fire_hydrant_central`** — qualitative extent reference near the
+  Central Ave hydrant; no surveyed elevation; used for residue and
+  photo-extent narratives, never for depth arithmetic.
+- **`pocket_SE_retention`** — the SE retention pocket
+  (`assets/map_points.csv`), outside the 18-landmark corner set.
+- **`porch_step`** — LEGACY v0.5-era key (5.08 NAVD88) retracted in
+  v0.9 ("corresponded to no physical step"; replaced by
+  `porch_step_base` 4.68 / `porch_step1_top` 5.41). The
+  2025-10-30T14:54 row retains it for provenance — see its erratum
+  row; the observation itself (water at the porch first-step area)
+  stands.
+
 ## Erratum convention (codified 2026-09-02; audit a2 residual)
 
 Rows are NEVER rewritten. A correction is a new appended row:

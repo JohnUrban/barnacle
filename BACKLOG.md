@@ -11,7 +11,8 @@ looks stale, trust this file. Ledger lines are append-only:
 **Active / near-term**
 - [ ] Nowcast scheduler: trigger TRIPPED by event #7 (18-min publish
       gap covered the entire rise). Half-A (launchd, Mac-awake hours)
-      INSTALLED 2026-08-07 via bin/install_local_scheduler.sh;
+      believed installed 2026-08-07 but NEVER fired until revived
+      2026-09-02 (see scheduler-half-A-correction ledger line);
       half-B (external cron, 24/7) ready-to-execute in
       history/plans/external-cron-scheduler.md — needs the user's
       ~10 min for a fine-grained PAT.
@@ -135,14 +136,17 @@ all findings verified — see audits/2026-08-03-a2/)**
       out of the committed PNG); ‡ footnote added; titles/docstring/
       README/HANDOFF counts reconciled. Spec + tests correctly kept
       at six.
-- [ ] driveway_central landmark (2026-09-02 sweep): elevation still
-      TBD while load-bearing (8/27 residue bound, #6/#8 driveway
-      bracket) — cross-fit from the bracket (+13.8 negative / +13.9
-      positive) and register, or document why it stays out of
-      ff.LANDMARKS. Same pass: pocket_SE_retention +
-      fire_hydrant_central are ledger keys unregistered in the
-      model; the 2026-06-14 porch_step row predates the v0.9
-      retraction of that landmark and needs an erratum or note.
+- [x] driveway_central landmark (2026-09-02 sweep; CLOSED
+      2026-09-03): cross-fit DONE — threshold 13.8–13.9″ vs SW grate
+      ≈ 4.67 NAVD88 from the #6-negative/#8-positive bracket, landing
+      within 0.01 ft of the independently surveyed porch_step_base
+      (4.68) — two methods, same grade. Documented in the ledger
+      README's new "Non-model landmark keys" section along with
+      fire_hydrant_central, pocket_SE_retention, and legacy
+      porch_step (erratum row appended for the 2025-10-30T14:54 row
+      — the retracted-key row was the Oct 30 reconstruction, not
+      2026-06-14). Registration in ff.LANDMARKS deferred to the next
+      model version bump per rule 5.
 - [ ] WATCH (2026-09-02): first timer-fired (non-kickstart) launchd
       tick after half-A revival; nowcast.yml storm-path dispatch
       still untested until the next radar trigger.
@@ -224,3 +228,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-02 | FACT | scheduler-half-A-correction | half-A NEVER ran: 2,077 consecutive launchd failures since 2026-08-07 — the dedicated clone was created 42 s before bin/ existed on origin and never pulled. The 08-07 DONE line's [VERIFIED: origin log "local tick"] was a manual main-tree run, not launchd. GH cron was the SOLE nowcast scheduler 8/7-9/2 incl. the 8/27 dark window (post-mortem cause corrected via ledger erratum). Fixed: clone pulled current, installer now always-syncs, kickstart-verified genuine tick e6f6c05dd 03:52Z, launchctl status 0 [VERIFIED: ~/.barnacle/logs/launchd.log + clone log]
 2026-09-02 | DONE | audit-sweep-records | records batch: public "calibrated on FOUR events" claim (survived closed audit a2/L2 in the one renderer its close-out missed) fixed + guard test widened to BOTH split halves; a2 closeout checkbox closed (BACKLOG lagged audits/); +16.1-vs-+16.4 hindcast discrepancy resolved by ledger erratum + README supersession markers; HANDOFF drift fixed (v7.25a, 100 tests, nine-town, launchd cause); forecast/README.md seam statuses marked; 7 new OPEN loops queued (anchor-count, driveway_central, doc-drift batch, local paths, tanh placeholder, launchd watch) [VERIFIED: 100 tests + gate]
 2026-09-03 | DONE | all-anchors-eight | figure rebuilt: Aug 7 (#7, +15.4 crest window 15.0-15.8, hindcast +16.9 ‡) added for the FIRST time; stale six-event xlim had been clipping Oct 30 (+20.8, largest measured) out of the committed PNG while title said six and docstring said 7; ‡ footnote defined (post-cutover recipe hindcasts vs six frozen fixture anchors — spec/tests correctly stay at six); README/HANDOFF counts reconciled [VERIFIED: regenerated all_anchors.png, all 8 visible]
+2026-09-03 | DONE | driveway-central-crossfit | threshold cross-fit from the #6/#8 bracket: 13.8-13.9 in vs SW grate ~ 4.67 NAVD88, within 0.01 ft of the independently surveyed porch_step_base (4.68) — driveway apron and walkway share a grade, two methods agree. Documented in ledger README "Non-model landmark keys" (with fire_hydrant_central, pocket_SE_retention, legacy porch_step + erratum row for 2025-10-30T14:54); ff.LANDMARKS registration deferred to next model version bump per rule 5 [VERIFIED: ledger tests + README]
