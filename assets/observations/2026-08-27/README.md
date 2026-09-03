@@ -74,6 +74,16 @@ The user was in California; evidence assembled 2026-09-02:
   as events #5/#7/#8, this time from testimony rather than photos.
   Bound semantics: a lower bound can only convict the model of
   reading LOW — the model sitting above a bound proves nothing.
+- **Nine-storm comparison [added 2026-09-02, for the witnesses]:**
+  `analysis/event_comparison.png` (script beside it) — every logged
+  storm's v0.10.1 replay curve on one axis, aligned at t=0 = rain
+  first exceeding drain capacity (0.25 in/hr), Aug 27 emphasized;
+  measured peaks in the legend are the ground truth. Model curves
+  reproduce each event's committed hindcast peak exactly. On the
+  replay, Aug 27 shows the longest above-curb duration of any
+  low-bay rain flood in the log (~2 h); Kevin+Jackie's 2:43
+  driveway bound is marked. Audience: the witnesses — Kevin and
+  Jackie asked to see the data.
 
 - **Barnacle's calls [VERIFIED]:** pluvial risk escalated through
   the day; **two alert deliveries** — 10:43 AM (Flood Watch) and

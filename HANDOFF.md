@@ -34,8 +34,8 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
 
 ## RIGHT NOW
 
-- Phase-3 wave 1 COMPLETE (2026-09-02 evening): seam 1 station_time
-  + seam 2 rendering extracted (facade 10,339→7,007, all names
+- Phase-3 wave 1 COMPLETE (2026-09-02 evening): seams 1 and 2
+  (station_time, rendering) extracted (facade 10,339→7,007, all names
   re-exported); additive residuals closed (nowcast_schema_version,
   cadence SLO heartbeats + details ops line, erratum convention +
   test). Remaining seams (model_core, data_sources, ledgers, alerts)
@@ -65,7 +65,8 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
   (companion plot): model −2.1″ short / ~19 min late vs the 2:43
   driveway bound — 4th near-core-lag quantification, first from
   testimony. Hindcast recipe now committed
-  (`history/scripts/event_hindcast.py`).
+  (`history/scripts/event_hindcast.py`); nine-storm onset-aligned
+  comparison figure added for the witnesses (event_comparison.png).
 - Aug 10–13 perigean-spring sequence: four consecutive photo-verified
   street-regime evenings logged (EXIF-timed, landmark-bounded,
   gauge-cross-checked; as-run errors ≤0.18 ft at 25–85-min leads) —
