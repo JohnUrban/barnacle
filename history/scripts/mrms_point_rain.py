@@ -42,7 +42,13 @@ import tempfile
 import time
 import urllib.request
 
-LAT, LON = 40.4015, -73.991     # 342 Bay Ave (MRMS longitudes are 0-360)
+LAT, LON = 40.405479, -73.995195   # true Bay & Central intersection
+# (OSM shared vertex; LiDAR 4.36 ft = the surveyed road middle).
+# CORRECTED 2026-09-02 from 40.4015,-73.991, which sat ~568 m SE on
+# the bluff toe (fine for a 1-km MRMS cell, wrong as a map point).
+# COMPARABILITY: cached "point" rows extracted before 2026-09-03 used
+# the OLD point and can differ by ~1 radar cell; box_mean/box_max
+# (the model inputs, explicit CATCH_* bounds) are unaffected.
 # CATCHMENT sampling region (2026-07-18 evening, user directive:
 # "capture the rain over me and over all the parts that drain to
 # me"). The old +/-0.015-deg box was CENTERED on the house — which

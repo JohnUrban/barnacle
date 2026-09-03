@@ -125,13 +125,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 - [ ] Audit a2 closeout: Phases 0–1 verified PASS in Claude round 03;
       close only after independent Phase 2 review reconciles M2/L2.
 
-- [ ] House-point constant (40.4015, -73.991 in mrms_point_rain.py /
-      nowcast UA context) sits ~568 m SE of the true Bay & Central
-      intersection (40.405479, -73.995195 — OSM shared vertex, LiDAR
-      4.36 ft = surveyed road middle). Harmless for catchment-box
-      means (explicit CATCH_* bounds) but shifts the informational
-      MRMS "point" column ~1 cell; correct deliberately, not
-      drive-by, and note comparability in the MRMS cache README.
 
 **Standing obligations**
 - List `audits/` at session start; reply to open reports.
@@ -181,3 +174,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-02 | DECISION | phase3-regate | split gated on quiet weather windows per-seam, not on a season; additive items ungated [STATED by user concern -> assessed; forecast/README.md seams]
 2026-09-02 | DONE | phase3-wave1 | seam 1 (station_time) extracted w/ facade re-exports; additive items shipped: nowcast_schema_version, cadence SLO monitor, erratum convention+test; rendering seam extraction delegated to a worktree agent for review [VERIFIED: 98 tests + gate + both import modes]
 2026-09-02 | DONE | phase3-seam2 | rendering seam landed: 37 renderers / 3,460 lines to forecast/rendering.py, facade 10,339->7,007 w/ full re-exports; worktree agent extraction (killed by session limit AFTER committing), independently verified + landed post-reset [VERIFIED: 98 tests + gate + dual-mode imports + live-data-only docs diff]
+2026-09-02 | DONE | house-point-fix | constant corrected to the true intersection (40.405479,-73.995195) at all 5 sites; MRMS point-column comparability noted (pre-2026-09-03 rows used the old bluff-toe point; box means unaffected) [VERIFIED: grep + 98 tests]

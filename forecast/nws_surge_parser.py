@@ -36,8 +36,8 @@ import datetime as dt
 from urllib.request import Request, urlopen
 
 UA = "barnacle/0.1 (bayavebarnacle@example.com)"
-HIGHLANDS_LAT = 40.4015
-HIGHLANDS_LON = -73.991
+HIGHLANDS_LAT = 40.405479   # true Bay & Central (2026-09-02 fix)
+HIGHLANDS_LON = -73.995195  # (2026-09-02 fix)
 
 # ---------------------------------------------------------------------------
 # Sample text for self-test (real Mt Holly CFW from Aug 21 2025)

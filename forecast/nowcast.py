@@ -46,7 +46,7 @@ except ImportError:
     import flood_forecast_daily as ff
 
 UA = {"User-Agent": "barnacle flood model (dr.john.urban@gmail.com)"}
-LAT, LON = 40.4015, -73.991
+LAT, LON = 40.405479, -73.995195  # true intersection (2026-09-02 fix)
 # CATCHMENT sampling region (2026-07-18 evening, user directive:
 # "capture the rain over me and over all the parts that drain to
 # me"). The old +/-0.015-deg box was CENTERED on the house — which
