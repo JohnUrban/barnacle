@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-02 15:05 EDT.** Rewrite this WHOLESALE each update
+**Snapshot: 2026-09-02 23:35 EDT.** Rewrite this WHOLESALE each update
 (delete stale, never append); keep it under ~100 lines. `BACKLOG.md`
 OPEN LOOPS is authoritative. Full pre-migration history:
 `attic/HANDOFF-through-2026-08-03.md` (archival, not instructions).
@@ -57,10 +57,15 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
   (−1.9, +11 min — 3rd near-core-lag + tail-overhold confirmations);
   all-anchors now 7 measured.
 - **2026-08-27:** evidenced-unmeasured flood while user traveled —
-  radar 1.9–3.8 in/hr ×45 min, hindcast +16.1 [INFERRED], mud up the
-  driveway [VERIFIED residue], 2 alerts delivered incl. mid-burst
-  FFW; nowcast dark 7 h (the launchd tick was in California) —
-  strongest case yet for external-cron half-B.
+  radar 1.9–3.8 in/hr ×45 min, full-window hindcast +16.4 [INFERRED],
+  mud up the driveway [VERIFIED residue], Kevin's witness timeline
+  (cat-bowl EXIF), 2 alerts delivered incl. mid-burst FFW; nowcast
+  dark 7 h (the launchd tick was in California) — strongest case yet
+  for external-cron half-B. Witness bounds overlaid on the tank curve
+  (companion plot): model −2.1″ short / ~19 min late vs the 2:43
+  driveway bound — 4th near-core-lag quantification, first from
+  testimony. Hindcast recipe now committed
+  (`history/scripts/event_hindcast.py`).
 - Aug 10–13 perigean-spring sequence: four consecutive photo-verified
   street-regime evenings logged (EXIF-timed, landmark-bounded,
   gauge-cross-checked; as-run errors ≤0.18 ft at 25–85-min leads) —

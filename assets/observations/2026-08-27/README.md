@@ -9,7 +9,8 @@ The user was in California; evidence assembled 2026-09-02:
   Frames cached in `history/data/mrms/mrms_extracted.csv`.
 - **Tank hindcast [INFERRED]:** **+16.1″ @ ~3:24 PM ET** (bay
   −1.30 NAVD88 dead low, full drain) — `analysis/hydrograph.png`,
-  via the shared `event_hindcast.py` recipe. Given the model's
+  via the shared recipe (now committed:
+  `history/scripts/event_hindcast.py`). Given the model's
   recent −1–2″ near-core bias, the true peak plausibly reached
   +15–18″: top-five territory, unwitnessed.
 - **Residue [VERIFIED, per the residue doctrine]:** on 2026-08-29
@@ -61,6 +62,18 @@ The user was in California; evidence assembled 2026-09-02:
   40 min before the modeled peak — the near-core lag/underread bias,
   4th event; the unwitnessed crest (~2:45–3:30) plausibly exceeded
   the hindcast. Ranking unchanged: evidenced-unmeasured.
+- **Witness-bound overlay [added 2026-09-02]:**
+  `analysis/hydrograph_witness.png` (companion plot; the original
+  `hydrograph.png` is untouched) plots Kevin's testimony as LOWER
+  BOUNDS (`witness_bounds.json`, hollow markers + up-arrows,
+  [STATED]) on the tank curve, quantifying the bias in both
+  dimensions: at the ~2:43 departure the model reads **+11.7″
+  against the ≥13.8″ driveway bound (−2.1″ short)**, and it first
+  reaches driveway-class (13.8″, the #6/#8 bracket) at **3:02 PM —
+  ~19 min after the witnesses saw it**. Same −1–2″ near-core band
+  as events #5/#7/#8, this time from testimony rather than photos.
+  Bound semantics: a lower bound can only convict the model of
+  reading LOW — the model sitting above a bound proves nothing.
 
 - **Barnacle's calls [VERIFIED]:** pluvial risk escalated through
   the day; **two alert deliveries** — 10:43 AM (Flood Watch) and
