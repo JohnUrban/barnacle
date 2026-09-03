@@ -13,7 +13,7 @@
 > **overstate** curb flooding by using the lower old threshold, and
 > depth columns run ~0.40 ft high. The regenerated CSVs in
 > `history/data/` (refreshed 2026-07-06 at v0.9 thresholds) are the
-> numbers to act on; current spec: `model/v0.9.md`. The narrative
+> numbers to act on; spec at writing: `model/archive/v0.9.md`; current: `model/v0.10.1.md`. The narrative
 > below is preserved as-written — it's part of the project's
 > reasoning record.
 
@@ -289,7 +289,7 @@ Full data: `history/data/calibration_check.csv`, `history/data/342_bay_flood_eve
 | `history/scripts/build_dataset.py` | Build hourly + events from raw chunks |
 | `history/scripts/analyze.py` | Regenerate every output above |
 
-To regenerate everything from scratch: `python scripts/pull_sandy_hook_history.py && python scripts/build_dataset.py && python scripts/analyze.py`. The pull resumes from on-disk chunks, so deleting the parquet files but keeping `raw_chunks/` re-runs in seconds.
+To regenerate everything from scratch: `python history/scripts/pull_sandy_hook_history.py && python history/scripts/build_dataset.py && python history/scripts/analyze.py`. The pull resumes from on-disk chunks, so deleting the parquet files but keeping `raw_chunks/` re-runs in seconds.
 
 ---
 
@@ -297,7 +297,7 @@ To regenerate everything from scratch: `python scripts/pull_sandy_hook_history.p
 
 1. **Hourly is not the instantaneous max.** NOAA's `hourly_height` product is a centered-hour value. Storm peaks reported here (e.g., Sandy 12.03 ft) will be lower than the 6-minute instantaneous max (Sandy 13.31 ft). The GEV fit is on annual hourly maxima, so the return-level numbers are also in that frame; multiply by ~1.05–1.10 for instantaneous-equivalent at the very extreme tail.
 2. **Pre-1932 data is sparse.** Only 7 usable years 1910–1929 in this pull. They're included but don't drive the SLR fit (the post-1932 trends are the load-bearing ones).
-3. **`+0.40 ft` local enhancement is treated as constant.** All depth-at-landmark numbers in this report assume this is a fixed offset. **[Superseded 2026-06: four tape-measured events showed the enhancement is ~0.00 (the +0.40 was over-fit to memory-based observations); every depth column in this report runs ~0.40 ft (≈5″) high. See model/v0.9.md.]**
+3. **`+0.40 ft` local enhancement is treated as constant.** All depth-at-landmark numbers in this report assume this is a fixed offset. **[Superseded 2026-06: four tape-measured events showed the enhancement is ~0.00 (the +0.40 was over-fit to memory-based observations); every depth column in this report runs ~0.40 ft (≈5″) high. See model/archive/v0.9.md.]**
 4. **The cold-weather override is not applied here.** Section 3e counts every above-threshold event as a flood. The model spec says cold events with `SH < 8.0` and `temp_72h < 32°F` don't actually flood the property because the storm drain backflow pathway is ice-locked. Without historical temperature data joined into this dataset, I don't filter those out — so a small fraction of cold-snap events counted here may not have produced any visible flooding at the house.
 5. **Hurricane Sandy as a ~5000-year event.** This is the GEV fit's verdict, not a physical claim. Sandy was a tropical-extratropical hybrid whose particular geometry (left-of-track to Sandy Hook, full-moon spring tide, right-angle land approach) is not well represented by 98 ordinary annual maxima. The CI on the 500-yr level alone already runs to 14 ft. Treat anything past the 100-yr level as a planning floor, not a probability statement.
 

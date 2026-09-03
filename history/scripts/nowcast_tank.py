@@ -4,14 +4,14 @@
 Manual v0 of the HANDOFF-designated MRMS nowcast (built 2026-07-17,
 eve of a Flood Watch with QPF smeared to ~0). Run during rain:
 
-    scratchpad-venv/bin/python history/scripts/nowcast_tank.py
+    ~/.barnacle/venv/bin/python history/scripts/nowcast_tank.py
 
 Pulls the last ~75 min of MRMS PrecipRate frames (NCEP real-time,
 2-min cadence) over the hillside catchment box, integrates the v0.10
 tank with the calibrated 14-min lag from a dry start at window open,
 then projects 45 min forward under two scenarios (rain persists /
 rain stops now). Prints street-water trajectory vs the landmark
-ladder. Needs xarray+cfgrib (scratchpad venv) + network.
+ladder. Needs xarray+cfgrib (~/.barnacle/venv) + network.
 """
 import datetime as dt
 import glob

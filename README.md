@@ -19,9 +19,11 @@ flood risk appears, escalates, or a genuinely new same-rank event begins;
 the 09:00 UTC run retains the daily archive snapshot under `docs/archive/`
 but does not imply a routine morning email.
 
-**For state-of-the-project / model spec / future work, start with
-[HANDOFF.md](HANDOFF.md).** It's the authoritative document; this
-README is just a pointer.
+**For state-of-the-project / model spec / future work: read
+[AGENTS.md](AGENTS.md) first (the charter and read order), then
+[HANDOFF.md](HANDOFF.md) (2-minute snapshot); `BACKLOG.md` OPEN
+LOOPS is authoritative for what's unfinished.** This README is just
+a pointer.
 
 
 ## To install on your iPhone after you push + the Action runs:
@@ -46,7 +48,7 @@ README is just a pointer.
 - Paste into the empty Scriptable script → Done
 - The widget on your home screen will pick up the new code on its next refresh (or long-press → Edit Widget → Done to force one)
 
-Recent refresh (2026-05-19) added: hours-to-peak, confidence ±,
-"next watch" date from the look-ahead table, and a cold-conditions
-hint. See widget header comments for the up-to-date list of fields
-shown.
+The widget evolves continuously (v7.25a as of 2026-08-07 — the
+version footer bumps on every edit and requires re-copying into
+Scriptable); see the header comments in `docs/barnacle-widget.js`
+for the current field list.

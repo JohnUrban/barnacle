@@ -150,22 +150,28 @@ all findings verified — see audits/2026-08-03-a2/)**
 - [ ] WATCH (2026-09-02): first timer-fired (non-kickstart) launchd
       tick after half-A revival; nowcast.yml storm-path dispatch
       still untested until the next radar trigger.
-- [ ] Doc-drift batch (2026-09-02 sweep, tier 3, low risk):
-      top-level README authority pointer + 2026-05-19 staleness;
-      archived spec paths cited without model/archive/ (7 files);
-      orphaned analysis/{cross_ref,rain_analysis}.py with
-      nonexistent inputs → attic; audits/a2 duplicate 03- index
-      (note in audits/README); nowcast_tank.py runner-path
-      docstring; cold_weather_retrospective placeholder rain_24h_in
-      column; forecast_accuracy.csv has no 2026-08-27 row (document
-      the objective reason: no measured peak); 2026-07-13 dir has
-      no analysis/ (retracted event — decide the standard);
-      2026-05-19 photos live under 2026-05-18/pocket-SE-retention/.
-- [ ] Machine-local paths (2026-09-02 sweep): tank_model_fit.py +
-      fit_crdt.py hardcode /Users/johnurban; the 2026-09-01
-      all_anchors copies sit outside the guard test's file list;
-      event_hindcast.py is CWD-relative by documented design.
-      Widen the tests/test_model_reproduction.py guard or fix.
+- [x] Doc-drift batch (2026-09-02 sweep; CLOSED 2026-09-03): README
+      authority pointer → AGENTS-first + stale widget-refresh line
+      replaced; archived spec paths now cite model/archive/ (5
+      READMEs + flood_history_report, which also got its scripts/
+      → history/scripts/ command fix); orphaned pre-v0.5
+      analysis/{cross_ref,rain_analysis}.py (inputs don't exist)
+      moved to attic/; audits/README documents the a2 03- index
+      collision as a standing exception; nowcast_tank.py runner
+      path corrected to ~/.barnacle/venv; cold_weather report now
+      flags rain_24h_in as an unpopulated placeholder; 2026-08-27
+      README documents the objective forecast_accuracy omission
+      (no measured peak); 2026-07-13 README documents analysis/
+      absence (tide event — PLAYBOOK plots target pluvial);
+      2026-05-18 README points at the 5/19 photo subdir.
+      (2026-07-13 was NOT the retracted event — it is a real
+      measured tide session; the fabricated flood merely claimed
+      its date.)
+- [x] Machine-local paths (2026-09-02 sweep; CLOSED 2026-09-03):
+      tank_model_fit.py + fit_crdt.py now repo-relative via
+      __file__; guard test widened to both all_anchors copies +
+      all three history/scripts recipes (event_hindcast.py made
+      the list by already being clean).
 - [ ] tanh 1.2 in/hr scale in the pluvial advisory self-labels as
       PLACEHOLDER in the live model path — promote to the
       model-session menu (assess, never retune casually).
@@ -229,3 +235,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-02 | DONE | audit-sweep-records | records batch: public "calibrated on FOUR events" claim (survived closed audit a2/L2 in the one renderer its close-out missed) fixed + guard test widened to BOTH split halves; a2 closeout checkbox closed (BACKLOG lagged audits/); +16.1-vs-+16.4 hindcast discrepancy resolved by ledger erratum + README supersession markers; HANDOFF drift fixed (v7.25a, 100 tests, nine-town, launchd cause); forecast/README.md seam statuses marked; 7 new OPEN loops queued (anchor-count, driveway_central, doc-drift batch, local paths, tanh placeholder, launchd watch) [VERIFIED: 100 tests + gate]
 2026-09-03 | DONE | all-anchors-eight | figure rebuilt: Aug 7 (#7, +15.4 crest window 15.0-15.8, hindcast +16.9 ‡) added for the FIRST time; stale six-event xlim had been clipping Oct 30 (+20.8, largest measured) out of the committed PNG while title said six and docstring said 7; ‡ footnote defined (post-cutover recipe hindcasts vs six frozen fixture anchors — spec/tests correctly stay at six); README/HANDOFF counts reconciled [VERIFIED: regenerated all_anchors.png, all 8 visible]
 2026-09-03 | DONE | driveway-central-crossfit | threshold cross-fit from the #6/#8 bracket: 13.8-13.9 in vs SW grate ~ 4.67 NAVD88, within 0.01 ft of the independently surveyed porch_step_base (4.68) — driveway apron and walkway share a grade, two methods agree. Documented in ledger README "Non-model landmark keys" (with fire_hydrant_central, pocket_SE_retention, legacy porch_step + erratum row for 2025-10-30T14:54); ff.LANDMARKS registration deferred to next model version bump per rule 5 [VERIFIED: ledger tests + README]
+2026-09-03 | DONE | doc-drift-batch | tier-3 sweep findings closed in one pass: README authority+staleness, archive spec paths (6 files), orphan scripts -> attic, audits 03- collision documented, nowcast_tank runner path, rain_24h_in placeholder flagged, forecast_accuracy 8/27 omission documented, 07-13 analysis-absence + 05-19 photo-location notes; machine-local paths fixed (tank_model_fit, fit_crdt -> __file__-relative) and the local-path guard test widened to 7 files; pre-existing joined-bullet formatting in 8/27 README repaired [VERIFIED: 100 tests + py_compile + gate]

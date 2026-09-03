@@ -99,7 +99,7 @@ was off).
 
 When making a model change driven by observations:
 1. Don't delete or rewrite past rows — append new ones
-2. Note the model-version change in `model/v0.5.md` (or its successor)
+2. Note the model-version change in the current `model/v0.X.md` spec
 3. Reference the specific row(s) that drove the change in the commit
    message
 

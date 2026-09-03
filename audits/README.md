@@ -25,3 +25,9 @@ live here rather than being pasted between chat sessions.
 - Verify against primary records (ledgers, dictation, gauge pulls,
   git history) — the 7/13 phantom event survived 16 days because
   narrative prose went unchecked.
+
+Known index collision (noted 2026-09-03, audit sweep):
+`2026-08-03-a2/` contains two `03-` files (implementation-review
+and remediation-implementation) — it predates strict enforcement
+of the never-reuse-an-index rule above. Committed reports are
+never renumbered; the collision stands as a documented exception.

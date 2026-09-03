@@ -319,3 +319,7 @@ If the user prefers a different scheme (e.g., "user_corner",
 "sibling", "proximal", "distal"), we'll adjust before v0.7 lands.
 The compass names have the advantage of being self-documenting if
 someone else picks this up — no project-specific lookup needed.
+
+Note (2026-09-03): the 2026-05-19 ledger rows' photos live under
+`pocket-SE-retention/2026-05-19/` in THIS directory — there is no
+top-level `2026-05-19/` event directory.

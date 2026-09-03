@@ -205,7 +205,7 @@ back-to-back pair.
 
 ## Cross-references
 
-- Model spec: `model/v0.8.md`
+- Model spec: `model/archive/v0.8.md`
 - Wind adjustment function:
   `forecast/flood_forecast_daily.py:compute_wind_adjustment()`
 - Per-photo notes (less formalized than 6/14): subfolder READMEs

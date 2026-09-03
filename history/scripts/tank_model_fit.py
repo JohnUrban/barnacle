@@ -4,12 +4,13 @@ measured hydrographs (7/6, 7/9), sanity-check Oct 30 + Dec 19 peaks.
   dV/dt = K * max(0, R(t - lag) - D(bay))^gamma  -  k_out * V
   stage = stage_curve(V from tide-set base);  water = 3.52 + stage/12
 """
-import csv, math, sys
-sys.path.insert(0, "/Users/johnurban/searchPaths/github/barnacle/forecast")
+import csv, math, os, sys
+_REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(_REPO, "forecast"))
 
 # ---- stage curve ----
 rows = list(csv.DictReader(open(
-    "/Users/johnurban/searchPaths/github/barnacle/history/data/stage_storage_curve.csv")))
+    os.path.join(_REPO, "history", "data", "stage_storage_curve.csv"))))
 S = [float(r["stage_in_vs_sw_grate"]) for r in rows]
 A = [float(r["wet_area_cells"]) for r in rows]
 def vol_of_stage(st):

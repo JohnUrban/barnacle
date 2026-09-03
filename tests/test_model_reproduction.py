@@ -74,11 +74,21 @@ class ModelReproductionTests(unittest.TestCase):
         )
 
     def test_all_anchor_recipe_has_no_machine_local_path(self):
-        analysis = ROOT / "assets" / "observations" / "2026-08-03" / "analysis"
-        for name in ("all_anchors_model.py", "all_anchors_figure.py"):
-            source = (analysis / name).read_text(encoding="utf-8")
-            self.assertNotIn("/private/tmp/", source)
-            self.assertNotIn("/Users/", source)
+        # widened 2026-09-03 (audit sweep): the 2026-09-01 copies and two
+        # fit scripts sat outside the original guard's file list
+        targets = [
+            ROOT / "assets" / "observations" / d / "analysis" / name
+            for d in ("2026-08-03", "2026-09-01")
+            for name in ("all_anchors_model.py", "all_anchors_figure.py")
+        ] + [
+            ROOT / "history" / "scripts" / "tank_model_fit.py",
+            ROOT / "history" / "scripts" / "fit_crdt.py",
+            ROOT / "history" / "scripts" / "event_hindcast.py",
+        ]
+        for path in targets:
+            source = path.read_text(encoding="utf-8")
+            self.assertNotIn("/private/tmp/", source, path.name)
+            self.assertNotIn("/Users/", source, path.name)
 
 
 class ModelPhysicsTests(unittest.TestCase):

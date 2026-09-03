@@ -6,10 +6,12 @@ If C is roughly constant, the linear rate×duration input model holds
 and the tanh proxy can be retired.
 """
 import csv
+import os
 from datetime import datetime, timedelta
 
-CURVE = "/Users/johnurban/searchPaths/github/barnacle/history/data/stage_storage_curve.csv"
-MRMS = "/Users/johnurban/searchPaths/github/barnacle/history/data/mrms/mrms_extracted.csv"
+_REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+CURVE = os.path.join(_REPO, "history", "data", "stage_storage_curve.csv")
+MRMS = os.path.join(_REPO, "history", "data", "mrms", "mrms_extracted.csv")
 
 rows = list(csv.DictReader(open(CURVE)))
 stages = [float(r["stage_in_vs_sw_grate"]) for r in rows]

@@ -39,3 +39,8 @@ at 19:48, so the final sweep is treated as peak-concurrent (soft
 confirmation, not independent evidence).
 
 Logged: 7 rows in `data/labeled_observations.csv`.
+
+No `analysis/` directory by design (noted 2026-09-03): the
+PLAYBOOK step-7 standard plots (hydrograph, model test, all-anchors
+refresh) target pluvial flood events; this was a measured TIDE
+event — its record is the grate table above + ledger rows.

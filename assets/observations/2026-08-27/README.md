@@ -42,7 +42,8 @@ The user was in California; evidence assembled 2026-09-02:
   location); exact positions unknown — original files from Kevin
   would restore them. Photos 3–4 carried identifiable faces: committed as `-blurred`
   versions per AGENTS rule 9 (originals retained on disk as
-  `-original-unpublished`, gitignored, for provenance). - **Timeline, REVISED with Kevin+Jackie's accounts and the cat-bowl
+  `-original-unpublished`, gitignored, for provenance).
+- **Timeline, REVISED with Kevin+Jackie's accounts and the cat-bowl
   EXIF (2026-09-02 follow-up):** cat-bowl photo 2:21:03 PM, taken
   "almost immediately upon entry" → **arrival ≈ 2:19–2:21** (not
   1:50–2:00); lights text 2:41 + "left within 5 min" (Kevin and
@@ -94,6 +95,10 @@ The user was in California; evidence assembled 2026-09-02:
   2:35 PM (Flash Flood Warning, mid-burst) — hitting the daily cap.
   The user saw the flood prediction from California: directional
   confirmation of the full alert chain.
+- **No `data/forecast_accuracy.csv` row for this event [objective]:**
+  accuracy rows require a measured peak; this flood is
+  evidenced-unmeasured (noted 2026-09-03 so the absence reads as a
+  decision, not an omission).
 - **Coverage gap [VERIFIED; cause CORRECTED 2026-09-02]:** nowcast
   published at 12:53 PM, then NOTHING until 7:40 PM — GH cron alone
   collapsed across the entire storm. The original post-mortem blamed

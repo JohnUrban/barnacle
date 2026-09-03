@@ -71,7 +71,7 @@ as guesses. All three categories feed the heat-map equally; the
 category only affects the dot color on the base annotated map.
 
 The CSV is committed and pre-seeded with the 9 canonical landmarks
-(values matching `model/v0.6.md`). On first use, their x/y are empty —
+(values matching `model/archive/v0.6.md`). On first use, their x/y are empty —
 the picker will guide you through placing each.
 
 ### Typical workflow

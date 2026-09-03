@@ -155,7 +155,9 @@ condition as part of v0.7.
    v0.6 model (commit 88d1f54).
 2. ✅ DONE 2026-05-19: script extended with 4 new columns
    (predicted_depth_at_curb_without_lockout_in, rain_24h_in,
-   wind_speed_max_kts, wind_dir_deg, wind_dir).
+   wind_speed_max_kts, wind_dir_deg, wind_dir). (NOTE 2026-09-03:
+   `rain_24h_in` is a PLACEHOLDER the script never populates —
+   it writes pd.NA; treat the column as empty, not zero.)
 3. **FUTURE**: every cold-conditions-met event observed at 342
    Bay going forward adds to the validation dataset. With ~3-5
    more events in either direction, the rule's status (drop or

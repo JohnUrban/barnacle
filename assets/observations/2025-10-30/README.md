@@ -224,7 +224,7 @@ within tape precision.
 
 ## Cross-references
 
-- Model spec: `model/v0.7.md` (Calibration evidence → Historical
+- Model spec: `model/archive/v0.7.md` (Calibration evidence → Historical
   events re-evaluated)
 - The original calibration writeups (now archived):
   `model/archive/v0.5.md`, `model/archive/v0.6.md`
