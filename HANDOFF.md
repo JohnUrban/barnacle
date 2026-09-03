@@ -8,11 +8,13 @@ OPEN LOOPS is authoritative. Full pre-migration history:
 ## What this is
 
 Production hyperlocal flood forecaster for 342 Bay Ave, Highlands NJ.
-Sandy Hook gauge + NWS + MRMS radar → depth at 18 surveyed landmarks;
+Sandy Hook gauge + NWS + MRMS radar → depth at 19 landmarks;
 hourly site/JSON bot, best-effort radar nowcast (10-min requested
 cadence), transactional alerts (ntfy/email/SMS, daily cap 2), iOS
-widget v7.25a, per-tide pages, and nine-town street flood map. Model
-**v0.10.1** (`model/v0.10.1.md`): tide pathway + dynamic pluvial tank.
+widget v7.26a (RE-COPY PENDING — user must paste into Scriptable),
+per-tide pages, and nine-town street flood map. Model
+**v0.10.2** (`model/v0.10.2.md`): tide pathway + dynamic pluvial tank
+(v0.10.2 = additive driveway_central threshold landmark, 2026-09-03).
 
 ## Where it stands
 
@@ -46,11 +48,13 @@ widget v7.25a, per-tide pages, and nine-town street flood map. Model
   loops were then CLOSED overnight (user green-light): all-anchors
   figure rebuilt with all EIGHT measured floods (Aug 7 added for
   the first time; a stale xlim had been clipping Oct 30 from the
-  PNG); driveway_central cross-fit 13.8–13.9″ ≈ 4.67 NAVD88
-  (corroborates porch_step_base 4.68; ff.LANDMARKS registration
-  rides the next version bump); tier-3 doc-drift + machine-local
-  paths batch closed. Half-A verified by three timer-fired 10-min
-  ticks (04:03–04:23Z, status 0).
+  PNG); driveway_central cross-fit 13.8–13.9″ ≈ 4.67 NAVD88 and
+  REGISTERED via model bump v0.10.2 (user-ordered) as a THRESHOLD
+  OBSERVABLE — the driveway is a ramp, not a point (user field
+  correction; the "shares a grade" overreach retracted in the
+  ledger README); tier-3 doc-drift + machine-local paths batch
+  closed. Half-A verified by three timer-fired 10-min ticks
+  (04:03–04:23Z, status 0).
 - Phase-3 wave 1 COMPLETE (2026-09-02 evening): seams 1 and 2
   (station_time, rendering) extracted (facade 10,339→7,007, all names
   re-exported); additive residuals closed (nowcast_schema_version,
@@ -112,8 +116,9 @@ widget v7.25a, per-tide pages, and nine-town street flood map. Model
   best effort and much slower in practice; cadence SLO monitoring and
   an external scheduler remain open.
 - Newly characterized model debt: `_pluvial_fill()` can quantize a
-  non-grid base downward by <0.1″ for tiny positive storage. Do not fix
-  silently under v0.10.1; assess and version the behavior change.
+  non-grid base downward by <0.1″ for tiny positive storage. Do not
+  fix silently; it needs its own assessed version bump with goldens
+  regenerated in lockstep (deliberately NOT folded into v0.10.2).
 
 ## Key traps
 

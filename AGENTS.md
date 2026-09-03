@@ -2,10 +2,11 @@
 
 Bay Ave Barnacle is **production software**: a hyperlocal flood
 forecaster for 342 Bay Ave, Highlands NJ (Sandy Hook gauge + NWS +
-MRMS radar → water depth at 18 surveyed landmarks). An hourly GitHub
+MRMS radar → water depth at 19 landmarks — 18 surveyed + 1
+cross-fit threshold). An hourly GitHub
 Actions bot and a ~10-min radar nowcast publish continuously; real
-people receive its alerts. Current model: **v0.10.1**
-(`model/v0.10.1.md`). The human is John (technically capable; offer
+people receive its alerts. Current model: **v0.10.2**
+(`model/v0.10.2.md`). The human is John (technically capable; offer
 trade-offs, not tutorials; the barnacle mascot voice is intentional).
 
 **Read order (cold start):** this file → `HANDOFF.md` (2-minute

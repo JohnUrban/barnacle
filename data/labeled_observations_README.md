@@ -55,7 +55,8 @@ fabricated ones. A few dozen observations over months would be plenty.
 `landmark_key` should match one of the keys defined in
 `forecast/flood_forecast_daily.py` LANDMARKS:
 `lowest_road_corner`, `gutter_walkway`, `curb`, `road_middle`,
-`intersection_highpoint`, `lawn_step`, `porch_step_base`, etc. — see LANDMARKS in `forecast/flood_forecast_daily.py` for the current 18.
+`intersection_highpoint`, `lawn_step`, `porch_step_base`, etc. — see LANDMARKS in `forecast/flood_forecast_daily.py` for the current 19
+(`driveway_central` registered in v0.10.2 as a threshold observable).
 
 ## How `sh_obs_mllw_actual` and `model_predicted_depth_in` get filled in
 
@@ -122,23 +123,30 @@ refinement, not blocking otherwise.
 
 ## Non-model landmark keys (documented 2026-09-03; audit-sweep loop)
 
-`landmark_key` values in this ledger are NOT limited to the 18
-registered model landmarks (`ff.LANDMARKS`). Four keys live only
-here, with the elevation context this section carries:
+`landmark_key` values in this ledger are NOT limited to the
+registered model landmarks (`ff.LANDMARKS`). Three keys live only
+here (a fourth, `driveway_central`, was promoted into the model —
+see below), with the elevation context this section carries:
 
-- **`driveway_central`** — Central Ave driveway apron (mid-width),
-  the mud-tracer/extent reference. **Cross-fit elevation: threshold
-  13.8–13.9″ above the SW grate ≈ 4.67 ft NAVD88** [INFERRED,
-  bracket]: event #6 (peak +13.8″) left the driveway mud-NEGATIVE;
-  event #8 (peak ~+13.9″) photographed water entering it (and the
-  2026-08-27 residue + witness accounts concur). Corroboration: the
-  bracket lands within 0.01 ft of the independently surveyed
-  `porch_step_base` (4.68 NAVD88, walkway grade) — driveway apron
-  and walkway sit at the same grade, as they visibly do on site.
-  Registration in `ff.LANDMARKS` is DEFERRED to the next model
-  version bump (a landmark addition is a versioned model change,
-  AGENTS rule 5); until then rows keep the key and this section is
-  the elevation record.
+- **`driveway_central`** — PROMOTED to `ff.LANDMARKS` in model
+  **v0.10.2** (2026-09-03) at 4.67 NAVD88 as a **threshold
+  observable, not a surveyed point** — see `model/v0.10.2.md`.
+  RAMP CORRECTION (user field description, 2026-09-03): the
+  driveway is not one elevation — the sidewalk drops to the street
+  at the curb cut, the road rises from the intersection toward the
+  driveway, and past the sidewalk the driveway climbs ~one SUV
+  length to the garage; some stretch beyond the sidewalk plausibly
+  sits near the adjacent yard grade. 4.67 is the CORNER STAGE at
+  which "water entering the driveway" flips (#6 mud-negative at
+  +13.8″ / #8 photographed positive at ~+13.9″; lower edge is
+  mud-based). Which point of the ramp that corresponds to is
+  unresolved. An earlier version of this entry claimed the apron
+  and walkway "visibly share a grade" — that was an agent overreach
+  asserting an unverified field fact, RETRACTED same-night on the
+  user's correction. Mud caveat (user): mud deposits preferentially
+  along Central (NE corner → hydrant → driveway) and thinly on the
+  lawn-step walkway, so mud-reach and water-reach are not the same
+  ruler.
 - **`fire_hydrant_central`** — qualitative extent reference near the
   Central Ave hydrant; no surveyed elevation; used for residue and
   photo-extent narratives, never for depth arithmetic.

@@ -18,10 +18,11 @@ The user was in California; evidence assembled 2026-09-02:
   the user found mud across the Central Ave sidewalk, near the fire
   hydrant, and UP THE DRIVEWAY. Driveway mud-reach matches event
   #8's photographed water extent at ~+13.9″, and event #6 (+13.8,
-  driveway-negative) bounds the threshold (that #6/#8 pair now
-  cross-fits it formally: 13.8–13.9″ ≈ 4.67 NAVD88, within 0.01 ft
-  of the surveyed porch_step_base — ledger README, "Non-model
-  landmark keys", 2026-09-03) — so residue alone puts
+  driveway-negative) bounds the threshold (that #6/#8 pair
+  cross-fits the driveway-entering THRESHOLD: corner stage
+  13.8–13.9″ ≈ 4.67 NAVD88, registered in model v0.10.2 as a
+  threshold observable — the driveway itself is a ramp, not one
+  elevation; see the ledger README entry and spec) — so residue alone puts
   this event AT OR ABOVE lawn-step class [INFERRED bound].
   Preservation held (presence is robust to later wash; deposit was
   heavy enough to survive to 8/29).

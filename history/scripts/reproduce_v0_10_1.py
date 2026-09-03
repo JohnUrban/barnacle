@@ -264,7 +264,19 @@ def verify_reproduction(fixture: dict | None = None) -> dict:
         ff.TANK_LAG_MIN,
     )
     if ff.CURRENT_MODEL_VERSION != fixture["model_version"]:
-        raise AssertionError("production model version differs from fixture")
+        # A later production stamp is legitimate ONLY for a documented
+        # rule-5 bump: the fixture version's spec must have been moved
+        # to model/archive/ (v0.10.2, 2026-09-03, was the first such
+        # additive bump — landmark registration, no physics change).
+        # The constants equality check below remains the hard guard
+        # against retuning under ANY version stamp.
+        archived_spec = (
+            REPO_ROOT / "model" / "archive" / f"{fixture['model_version']}.md"
+        )
+        if not archived_spec.exists():
+            raise AssertionError(
+                "production model version differs from fixture and "
+                f"{archived_spec} does not exist — undocumented restamp")
     if actual_parameters != expected_parameters:
         raise AssertionError(
             f"production parameters differ: {actual_parameters} != {expected_parameters}"

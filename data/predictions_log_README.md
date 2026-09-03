@@ -55,7 +55,7 @@ Each workflow run appends one row per upcoming high tide in
 | `regime_predicted` | `dry` / `street` / `light` / `moderate` / `severe` / `cold_lockout` |
 | `cold_lockout` | `true` / `false` — whether the cold-weather drain-backflow suppression applies |
 | `confidence_level` | `high` / `medium` / `low` — forecast-stability indicator (HANDOFF 9b.6 will refine the wording around this) |
-| `model_version` | Model spec used for that as-run prediction. Current production stamp is `v0.10.1`; historical rows intentionally retain their original version. |
+| `model_version` | Model spec used for that as-run prediction. Current production stamp is `v0.10.2` (since 2026-09-03; additive landmark registration, no physics change). Historical rows intentionally retain their original version (`v0.10.1` and earlier). |
 
 ## Append-only convention
 

@@ -6,8 +6,8 @@ hourly-updated public page plus event-driven flood alerts at
 predict water depth at 18 named landmarks at the property — from the
 SW storm grate across Bay (first water) up through the porch deck —
 using NOAA Sandy Hook tide + surge data, NWS rainfall + wind +
-temperature forecasts, and the v0.10.1 model calibrated against
-tape-measured flood observations (see `model/v0.10.1.md` and
+temperature forecasts, and the v0.10.2 model calibrated against
+tape-measured flood observations (see `model/v0.10.2.md` and
 `data/labeled_observations.csv`). Includes a pluvial (rain-only)
 flood advisory — heavy rain floods this intersection with no tidal
 contribution at all.
