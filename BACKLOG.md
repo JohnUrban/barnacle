@@ -147,9 +147,11 @@ all findings verified — see audits/2026-08-03-a2/)**
       — the retracted-key row was the Oct 30 reconstruction, not
       2026-06-14). Registration in ff.LANDMARKS deferred to the next
       model version bump per rule 5.
-- [ ] WATCH (2026-09-02): first timer-fired (non-kickstart) launchd
-      tick after half-A revival; nowcast.yml storm-path dispatch
-      still untested until the next radar trigger.
+- [ ] WATCH: nowcast.yml storm-path dispatch still untested until
+      the next radar trigger. (The launchd half of this watch
+      CLOSED 2026-09-03: three timer-fired ticks at exact 10-min
+      cadence, 04:03/04:13/04:23Z, all status 0 — half-A verified
+      in production, not just kickstarted.)
 - [x] Doc-drift batch (2026-09-02 sweep; CLOSED 2026-09-03): README
       authority pointer → AGENTS-first + stale widget-refresh line
       replaced; archived spec paths now cite model/archive/ (5
@@ -236,3 +238,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-03 | DONE | all-anchors-eight | figure rebuilt: Aug 7 (#7, +15.4 crest window 15.0-15.8, hindcast +16.9 ‡) added for the FIRST time; stale six-event xlim had been clipping Oct 30 (+20.8, largest measured) out of the committed PNG while title said six and docstring said 7; ‡ footnote defined (post-cutover recipe hindcasts vs six frozen fixture anchors — spec/tests correctly stay at six); README/HANDOFF counts reconciled [VERIFIED: regenerated all_anchors.png, all 8 visible]
 2026-09-03 | DONE | driveway-central-crossfit | threshold cross-fit from the #6/#8 bracket: 13.8-13.9 in vs SW grate ~ 4.67 NAVD88, within 0.01 ft of the independently surveyed porch_step_base (4.68) — driveway apron and walkway share a grade, two methods agree. Documented in ledger README "Non-model landmark keys" (with fire_hydrant_central, pocket_SE_retention, legacy porch_step + erratum row for 2025-10-30T14:54); ff.LANDMARKS registration deferred to next model version bump per rule 5 [VERIFIED: ledger tests + README]
 2026-09-03 | DONE | doc-drift-batch | tier-3 sweep findings closed in one pass: README authority+staleness, archive spec paths (6 files), orphan scripts -> attic, audits 03- collision documented, nowcast_tank runner path, rain_24h_in placeholder flagged, forecast_accuracy 8/27 omission documented, 07-13 analysis-absence + 05-19 photo-location notes; machine-local paths fixed (tank_model_fit, fit_crdt -> __file__-relative) and the local-path guard test widened to 7 files; pre-existing joined-bullet formatting in 8/27 README repaired [VERIFIED: 100 tests + py_compile + gate]
+2026-09-03 | FACT | half-A-timer-verified | three consecutive timer-fired launchd ticks at exact 10-min cadence (04:03/04:13/04:23Z, status 0, each pushing nowcast + heartbeat row) — half-A production-verified end to end; watch item narrowed to the nowcast.yml storm-path dispatch [VERIFIED: origin log + launchctl]

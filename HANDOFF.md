@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-02 23:59 EDT.** Rewrite this WHOLESALE each update
+**Snapshot: 2026-09-03 00:55 EDT.** Rewrite this WHOLESALE each update
 (delete stale, never append); keep it under ~100 lines. `BACKLOG.md`
 OPEN LOOPS is authoritative. Full pre-migration history:
 `attic/HANDOFF-through-2026-08-03.md` (archival, not instructions).
@@ -42,9 +42,15 @@ widget v7.25a, per-tide pages, and nine-town street flood map. Model
   (fixed + union-merge); launchd half-A had never fired once in 26
   days (clone predated bin/; revived, first tick 03:52Z); public
   "FOUR events" claim survived a closed audit (fixed + test);
-  Aug 27 post-mortem cause corrected by ledger erratum. Remaining
-  findings queued as BACKLOG OPEN LOOPS (anchor-count
-  reconciliation, driveway_central elevation, doc-drift batch).
+  Aug 27 post-mortem cause corrected by ledger erratum. The queued
+  loops were then CLOSED overnight (user green-light): all-anchors
+  figure rebuilt with all EIGHT measured floods (Aug 7 added for
+  the first time; a stale xlim had been clipping Oct 30 from the
+  PNG); driveway_central cross-fit 13.8–13.9″ ≈ 4.67 NAVD88
+  (corroborates porch_step_base 4.68; ff.LANDMARKS registration
+  rides the next version bump); tier-3 doc-drift + machine-local
+  paths batch closed. Half-A verified by three timer-fired 10-min
+  ticks (04:03–04:23Z, status 0).
 - Phase-3 wave 1 COMPLETE (2026-09-02 evening): seams 1 and 2
   (station_time, rendering) extracted (facade 10,339→7,007, all names
   re-exported); additive residuals closed (nowcast_schema_version,
