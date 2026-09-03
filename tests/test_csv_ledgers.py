@@ -119,5 +119,40 @@ class CsvLedgerTests(unittest.TestCase):
         self.assertTrue(any("last_sent_sig" in failure for failure in failures))
 
 
+class ErratumConventionTests(unittest.TestCase):
+    """Erratum rows (codified 2026-09-02) must reference a timestamp
+    that exists EARLIER in the observations ledger — a correction
+    that corrects nothing is either a typo or a fabrication."""
+
+    def test_erratum_rows_reference_prior_timestamps(self):
+        import csv as _csv
+        import re as _re
+        path = (Path(__file__).resolve().parent.parent
+                / "data" / "labeled_observations.csv")
+        seen, problems = set(), []
+        with open(path) as f:
+            for i, row in enumerate(_csv.DictReader(f), 2):
+                label = (row.get("landmark_label") or "").strip()
+                # convention enforced from 2026-09-02; the two
+                # 2026-08-03 errata predate it (they cite the
+                # erroneous value, since corrected) — grandfathered
+                if label == "ERRATUM" and (
+                        row.get("observation_time_local") or ""
+                ) >= "2026-09-02":
+                    q = row.get("observed_qualitative") or ""
+                    m = _re.search(
+                        r"timestamp (\d{4}-\d{2}-\d{2}T\d{2}:\d{2})", q)
+                    if not m:
+                        problems.append(f"line {i}: no timestamp cited")
+                    elif m.group(1) not in seen:
+                        problems.append(
+                            f"line {i}: cites {m.group(1)} which does "
+                            f"not appear earlier in the ledger")
+                ts = (row.get("observation_time_local") or "")[:16]
+                if ts:
+                    seen.add(ts)
+        self.assertEqual(problems, [])
+
+
 if __name__ == "__main__":
     unittest.main()

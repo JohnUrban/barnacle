@@ -125,6 +125,37 @@ def _origin_day_max(today):
     return 0, None
 
 
+HEARTBEAT_PATH = os.path.join(HERE, "..", "data",
+                              "nowcast_heartbeats.csv")
+HEARTBEAT_KEEP_DAYS = 30
+
+
+def _append_heartbeat(payload, now):
+    """Rolling OPS log (cadence SLO, audit a2 residual): one line per
+    nowcast run. NOT an evidence ledger — 30-day window, pruned on
+    write; the details page computes active-period gap stats from it.
+    Fail-quiet: cadence accounting must never break a nowcast run."""
+    try:
+        rows = []
+        try:
+            with open(HEARTBEAT_PATH) as f:
+                rows = [ln.strip() for ln in f if ln.strip()][1:]
+        except OSError:
+            pass
+        cutoff = (now - dt.timedelta(days=HEARTBEAT_KEEP_DAYS)
+                  ).strftime("%Y-%m-%dT%H:%M:%SZ")
+        rows = [r for r in rows if r.split(",")[0] >= cutoff]
+        rows.append("{},{},{}".format(
+            payload.get("generated_utc", ""),
+            "1" if payload.get("active") else "0",
+            payload.get("source_age_min", "")))
+        with open(HEARTBEAT_PATH, "w") as f:
+            f.write("generated_utc,active,source_age_min\n")
+            f.write("\n".join(rows) + "\n")
+    except Exception:
+        pass
+
+
 def _write(payload, now_utc=None):
     now = now_utc or dt.datetime.now(dt.timezone.utc)
     if now.tzinfo is None:
@@ -163,6 +194,9 @@ def _write(payload, now_utc=None):
     if best and best_utc:
         payload["day_max_street_in"] = round(best, 1)
         payload["day_max_utc"] = best_utc
+    payload.setdefault("nowcast_schema_version", "1.0")
+    _append_heartbeat(payload,
+                      now_utc or dt.datetime.now(dt.timezone.utc))
     tmp = OUT_PATH + ".tmp"
     with open(tmp, "w") as f:
         json.dump(payload, f)

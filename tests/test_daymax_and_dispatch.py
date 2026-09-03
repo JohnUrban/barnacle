@@ -21,6 +21,8 @@ class DayMaxMergeTests(unittest.TestCase):
         if prev is not None:
             out.write_text(json.dumps(prev))
         with mock.patch.object(nowcast, "OUT_PATH", str(out)), \
+                mock.patch.object(nowcast, "HEARTBEAT_PATH",
+                                  str(tmp / "heartbeats.csv")), \
                 mock.patch.object(nowcast, "_origin_day_max",
                                   return_value=origin):
             nowcast._write(dict(payload), now_utc=now_utc)

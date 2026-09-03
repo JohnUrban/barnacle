@@ -2910,6 +2910,21 @@ def _render_glossary_html(forecast):
 """
 
 
+def _render_cadence_ops_html():
+    c = _nowcast_cadence_stats()
+    if not c:
+        return ('<p class="note">Radar cadence (ops): collecting — '
+                'stats appear once the heartbeat log has enough '
+                'active-period runs.</p>')
+    return (f'<p class="note">Radar cadence (ops, last {c["days"]} d, '
+            f'active periods): median {c["median_min"]:.0f} min '
+            f'between runs, p90 {c["p90_min"]:.0f}, worst '
+            f'{c["max_min"]:.0f} ({c["n_gaps"]} gaps / '
+            f'{c["n_runs"]} runs). Requested cadence is 10 min; '
+            f'GitHub scheduling is BEST EFFORT — this line is the '
+            f'measured truth of it.</p>')
+
+
 def render_details_page(forecast):
     """The "For more information" page (docs/details.html, 2026-07-20
     multi-page split): deep reference material off the landing scroll —
@@ -2951,6 +2966,7 @@ def render_details_page(forecast):
                                      'the home page</a>')}
   <div id="accuracy"></div>
   {_render_accuracy_html(forecast)}
+  {_render_cadence_ops_html()}
   <div id="glossary"></div>
 {_render_glossary_html(forecast)}
 
@@ -3503,6 +3519,42 @@ def _load_accuracy_rows():
     except OSError:
         return []
     return rows
+
+
+def _nowcast_cadence_stats(days=14):
+    """Active-period radar cadence from the rolling heartbeat log
+    (ops SLO, audit a2 residual — details page only; other arms carry
+    no ops diagnostics). Gap sample = consecutive heartbeats where
+    either endpoint was ACTIVE (quiet-to-quiet gaps are by design and
+    excluded). Returns None until enough data exists."""
+    path = os.path.join(_REPO_ROOT, "data", "nowcast_heartbeats.csv")
+    try:
+        with open(path) as f:
+            rows = [ln.strip().split(",") for ln in f
+                    if ln.strip()][1:]
+    except OSError:
+        return None
+    cutoff = (dt.datetime.now(dt.timezone.utc)
+              - dt.timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    pts = []
+    for r in rows:
+        if len(r) >= 2 and r[0] >= cutoff:
+            try:
+                t = dt.datetime.strptime(r[0], "%Y-%m-%dT%H:%M:%SZ")
+            except ValueError:
+                continue
+            pts.append((t, r[1] == "1"))
+    gaps = []
+    for (t0, a0), (t1, a1) in zip(pts, pts[1:]):
+        if a0 or a1:
+            gaps.append((t1 - t0).total_seconds() / 60.0)
+    if len(gaps) < 3:
+        return None
+    gaps.sort()
+    return {"n_runs": len(pts), "n_gaps": len(gaps),
+            "median_min": gaps[len(gaps) // 2],
+            "p90_min": gaps[int(len(gaps) * 0.9)],
+            "max_min": gaps[-1], "days": days}
 
 
 def _render_accuracy_html(forecast):

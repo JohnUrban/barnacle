@@ -119,3 +119,23 @@ The Oct 30 / Apr 17 / Apr 18 / Dec 19 events in `labeled_events.csv`
 could be re-decomposed into multiple landmark observations and added
 here — useful if the precision becomes load-bearing for some future
 refinement, not blocking otherwise.
+
+## Erratum convention (codified 2026-09-02; audit a2 residual)
+
+Rows are NEVER rewritten. A correction is a new appended row:
+
+- `landmark_key` = `none`, `landmark_label` = `ERRATUM`
+- `observed_qualitative` begins `correction record (<source>): row
+  with timestamp <YYYY-MM-DDTHH:MM> ...` and states exactly what was
+  wrong and what is right, citing primary evidence
+- the referenced timestamp must match an EARLIER row in this file
+  (enforced by tests/test_csv_ledgers.py)
+- consumers treat the latest erratum for a row as authoritative;
+  the original row stands as-written for provenance
+
+Cite the corrected row's CURRENT timestamp (the one now in the
+file), naming the erroneous value in prose if relevant. Enforced for
+errata dated 2026-09-02 onward; the two 2026-08-03 originals (which
+cite the erroneous 22:26 value, since corrected to 10:26 by the
+audit-a2 M1 repair) predate the convention and stand grandfathered —
+they are the precedent this convention formalizes.
