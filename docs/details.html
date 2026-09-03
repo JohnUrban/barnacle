@@ -11,7 +11,7 @@
 <main>
   <header>
     <h1><a href="index.html" style="text-decoration:none;color:inherit">Bay Ave Barnacle</a> — details</h1>
-    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated Thu Sep 03, 06:12 AM ET</p>
+    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated Thu Sep 03, 07:10 AM ET</p>
   </header>
 
   <div id="how"></div>
@@ -160,7 +160,7 @@
     <div class="eqn-line">
       <span class="eqn-lhs">Water level (NAVD88) =</span>
       <input type="number" id="eq-shpeak" step="0.01"
-             value="6.25" data-default="6.2500">
+             value="6.30" data-default="6.2970">
       <span class="eqn-termname">ft &mdash; Sandy Hook peak (MLLW)</span>
     </div>
     <div class="eqn-line">
@@ -269,7 +269,7 @@
     <div class="eqn-line">
       <span class="eqn-lhs">Rain burst</span>
       <input type="number" id="pv-rate" step="0.05" min="0" max="6"
-             value="0.51" data-default="0.5100">
+             value="0.40" data-default="0.4000">
       <span class="eqn-termname">in/hr &mdash; effective sustained rate</span>
     </div>
     <div class="eqn-line">
@@ -560,7 +560,7 @@
   <p class="note">Positive mean error = model over-predicts on average. Each point is one archived daily forecast (since the JSON archive started). x = predicted Sandy Hook peak, y = actual NOAA observed peak. The dashed diagonal is perfect prediction (y=x); points above the line = model under-predicted, below = over-predicted. Raw data: <code>data/forecast_accuracy.csv</code>.</p><p class="note">Scope: this scores the <b>tide-keyed input</b> — each day's predicted vs observed peak at the Sandy Hook gauge, as the forecast actually ran that day (an append-only record; rows are never recomputed under newer models). It cannot see rain-driven street floods (the gauge is 4 miles away and tide-only): pluvial skill is tracked separately against the spot-check log in <code>data/labeled_observations.csv</code>. The evidence registry currently has six measured flood-peak anchors; the v0.10.1 fit set is two full tape-measured hydrographs, with the other events used as independent peak, recession, or out-of-sample checks.</p>
 </section>
 
-  <p class="note">Radar cadence (ops, last 14 d, active periods): median 10 min between runs, p90 10, worst 10 (4 gaps / 55 runs). Requested cadence is 10 min; GitHub scheduling is BEST EFFORT — this line is the measured truth of it.</p>
+  <p class="note">Radar cadence (ops, last 14 d, active periods): median 10 min between runs, p90 10, worst 10 (4 gaps / 61 runs). Requested cadence is 10 min; GitHub scheduling is BEST EFFORT — this line is the measured truth of it.</p>
   <div id="glossary"></div>
 
   <section class="reference">
