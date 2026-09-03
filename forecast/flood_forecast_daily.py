@@ -3006,6 +3006,7 @@ def _nowcast_cadence_stats(days=14):
             except ValueError:
                 continue
             pts.append((t, r[1] == "1"))
+    pts.sort()   # union merges may interleave writer rows out of order
     gaps = []
     for (t0, a0), (t1, a1) in zip(pts, pts[1:]):
         if a0 or a1:

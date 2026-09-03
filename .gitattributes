@@ -1,0 +1,6 @@
+# Rolling ops ledger appended by every nowcast writer (GH workflow +
+# local launchd tick): union-merge so two racing appends never turn a
+# publication push into a rebase conflict (AGENTS rule 1: ledger
+# conflicts resolve by UNION). The reader sorts rows, so interleaved
+# order from a union merge is harmless.
+data/nowcast_heartbeats.csv merge=union

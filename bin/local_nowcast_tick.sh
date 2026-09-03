@@ -15,7 +15,7 @@ cd "$R" || exit 0
 git pull --rebase -q 2>/dev/null || { git rebase --abort 2>/dev/null; exit 0; }
 "$V" forecast/nowcast.py >> ~/.barnacle/logs/tick.log 2>&1 || exit 0
 python3 forecast/check_artifacts.py >/dev/null 2>&1 || exit 0
-git add docs/nowcast.json
+git add docs/nowcast.json data/nowcast_heartbeats.csv
 git diff --staged --quiet && exit 0
 git -c user.name="barnacle-local" -c user.email="actions@users.noreply.github.com" \
   commit -q -m "nowcast $(date -u +'%Y-%m-%d %H:%M') UTC (local tick)"
