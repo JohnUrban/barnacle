@@ -66,7 +66,9 @@ widget v7.25a, per-tide pages, and nine-town street flood map. Model
   RACE to the push and no text went out — dispatch now runs after the
   commit step (fixed 2026-09-02). Analysis DONE: hindcast +12.0
   (−1.9, +11 min — 3rd near-core-lag + tail-overhold confirmations);
-  all-anchors now 7 measured.
+  all-anchors figure now ALL EIGHT measured floods (2026-09-03: the
+  sweep's anchor-count loop closed — Aug 7 had never been added and
+  a stale xlim had been clipping Oct 30 from the committed PNG).
 - **2026-08-27:** evidenced-unmeasured flood while user traveled —
   radar 1.9–3.8 in/hr ×45 min, full-window hindcast +16.4 [INFERRED],
   mud up the driveway [VERIFIED residue], Kevin's witness timeline

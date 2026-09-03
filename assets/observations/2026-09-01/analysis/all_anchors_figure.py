@@ -1,7 +1,18 @@
-"""All-anchors model-vs-measured comparison, refreshed for EVENT #8 (7 measured anchors; ‡ = hindcast via event_hindcast.py, 2026-09-02)
-(2026-08-03). Replicates the 2026-07-09 four_rain_floods.png grammar
-(peak stems, landmark palette, sub-labels with rate + bay state) with
-the v0.10.1 tank hindcast added beside each measured peak.
+"""All-anchors model-vs-measured comparison: ALL EIGHT measured
+floods — the six frozen v0.10.1 anchors plus the two post-cutover
+events (Aug 7 #7, Sep 1 #8), whose hindcasts (‡) come from the
+committed event_hindcast recipe, not the frozen fixture.
+
+2026-09-03 refresh (audit-sweep loop closure): added Aug 7 — the one
+measured flood that had NEVER been in this figure (it post-dated the
+original six-anchor build and the #8 refresh only appended Sep 1) —
+and fixed the stale six-event xlim that had been CLIPPING Oct 30
+(the largest measured flood) out of the committed PNG while the
+title said "six" and the docstring said "7".
+
+Replicates the 2026-07-09 four_rain_floods.png grammar (peak stems,
+landmark palette, sub-labels with rate + bay state) with the v0.10.1
+tank hindcast beside each measured peak.
 """
 import runpy
 from pathlib import Path
@@ -25,14 +36,17 @@ events = [
      11.15, 1.05, 1.05, "+11.2″\n(band 10.1–12.2″)",
      R["dec19_at_obs"][0], "†"),
     ("Aug 3 2026 — #6\nburst 2.84 in/hr × 14 min\nbay LOW (2.3)",
-     13.8, 0.1, 0.1, "+13.8″\n(measured 13.7–13.9)",
+     13.8, 0.1, 0.1, "+13.8″\n(13.7–13.9)",
      R["aug3"][0], ""),
-    ("Sep 1 2026 — #8 NEW\nburst 1.9–2.0 in/hr × 10 min\nbay DEAD LOW (−0.7)",
-     13.9, 0.2, 0.3, "+13.9″\n(bracket 13.7–14.2)",
+    ("Sep 1 2026 — #8\n~2.0 in/hr × 10 min\nbay DEAD LOW (−0.7)",
+     13.9, 0.2, 0.3, "+13.9″\n(13.7–14.2)",
      12.0, "‡"),
     ("Jul 6 2026\nburst 2.95 in/hr\nbay LOW (2.6)",
-     15.4, 0.4, 0.4, "+15.4″\n(crest window 15.0–15.8)",
+     15.4, 0.4, 0.4, "+15.4″\n(15.0–15.8)",
      R["jul6"][0], ""),
+    ("Aug 7 2026 — #7\npulses 2.1→4.4 in/hr\nbay DEAD LOW (0.77)",
+     15.4, 0.4, 0.4, "+15.4″\n(15.0–15.8)",
+     16.9, "‡"),
     ("Jul 9 2026 — #4\nburst 5.53 in/hr\nbay at grates (3.2)",
      18.7, 0.0, 0.0, "+18.7″\n(measured)",
      R["jul9"][0], ""),
@@ -44,7 +58,7 @@ events = [
      R["oct30"][0], ""),
 ]
 
-fig, ax = plt.subplots(figsize=(11.5, 7.4))
+fig, ax = plt.subplots(figsize=(13.5, 7.4))
 
 # landmark ladder (site chart grammar)
 landmarks = [
@@ -61,9 +75,9 @@ for y, c, ls, lw, lbl in landmarks:
         ax.text(-0.5, y + 0.25, lbl, color=c, fontsize=9,
                 fontweight="bold", ha="left")
     elif y == 13.7:                     # lawn step below its line: porch base above
-        ax.text(5.62, y - 0.85, lbl, color=c, fontsize=9)
+        ax.text(7.62, y - 0.85, lbl, color=c, fontsize=9)
     else:
-        ax.text(5.62, y + 0.25, lbl, color=c, fontsize=9,
+        ax.text(7.62, y + 0.25, lbl, color=c, fontsize=9,
                 fontweight="bold" if y == 0.0 else "normal")
 
 xs = range(len(events))
@@ -78,14 +92,15 @@ for x, (lbl, meas, elo, ehi, annot, model, tag) in zip(xs, events):
                 ha="center", fontsize=10, fontweight="bold", zorder=5)
     ax.plot([x + 0.22], [model], "D", ms=9, color=MODEL,
             markeredgecolor="white", markeredgewidth=1.2, zorder=4)
+    dy = -16 if lbl.startswith("Aug 7") else -4   # clear the twin +15.4 annot
     ax.annotate(f"model +{model:.1f}″{tag}", xy=(x + 0.22, model),
-                xytext=(9, -4), textcoords="offset points",
+                xytext=(9, dy), textcoords="offset points",
                 ha="left", va="center", fontsize=8.5, color=MODEL,
                 fontweight="bold", zorder=5)
 
 ax.set_xticks(list(xs))
-ax.set_xticklabels([e[0] for e in events], fontsize=9)
-ax.set_xlim(-0.55, 5.7)
+ax.set_xticklabels([e[0] for e in events], fontsize=8.5)
+ax.set_xlim(-0.55, 7.7)
 ax.set_ylim(-0.8, 27)
 ax.set_ylabel("peak street water (inches vs SW grate)", fontsize=11)
 ax.grid(axis="y", color="0.93", zorder=0)
@@ -93,7 +108,7 @@ ax.set_axisbelow(True)
 for sp in ("top", "right"):
     ax.spines[sp].set_visible(False)
 
-ax.set_title("All six measured flood anchors — every one is rain-driven;\n"
+ax.set_title("All eight measured floods — every one is rain-driven;\n"
              "measured peak vs v0.10.1 tank on measured MRMS rain",
              fontsize=14, fontweight="bold", pad=14)
 
@@ -110,7 +125,10 @@ fig.text(0.5, 0.015,
     "* Jul 18: MRMS underread the storm core (catchment-box rates) — the gap is input, "
     "not physics.   † Dec 19: model at the 08:12 observation time; "
     "modeled crest +%.1f″ @07:34 was unobserved.   Oct 30: photo-anchor lower bound "
-    "(≥5.25 NAVD88)." % R["dec19"][0],
+    "(≥5.25 NAVD88).\n"
+    "‡ Aug 7 / Sep 1: post-cutover events (not among the six frozen v0.10.1 "
+    "anchors); hindcast via the committed event_hindcast recipe, same physics, "
+    "one pass." % R["dec19"][0],
     ha="center", fontsize=7.5, color="#666666")
 
 fig.tight_layout(rect=(0, 0.045, 1, 1))

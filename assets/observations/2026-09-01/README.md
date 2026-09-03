@@ -66,7 +66,12 @@ fastest recorded, on the LOWEST bay of any measured event.
   tail-recession drainage are two of the standing six insights.
 - QPE storm total (fetched 2026-09-02): 0.57″ box-mean in the
   event hour — a small storm, delivered fast, on a dead-low bay.
-- `analysis/all_anchors.png`: refreshed with #8 — **seven measured
-  anchors** (‡ = hindcast via the shared event_hindcast.py recipe).
+- `analysis/all_anchors.png`: refreshed with #8, then re-refreshed
+  2026-09-03 to **all eight measured floods** — the audit sweep found
+  event #7 (Aug 7) had never been added, and the stale six-event xlim
+  had been clipping Oct 30 (the largest measured flood) out of the
+  committed PNG entirely. Six frozen v0.10.1 anchors + ‡ post-cutover
+  events (Aug 7, Sep 1) hindcast via the committed
+  `history/scripts/event_hindcast.py` recipe.
 - Photo 14–16: hydrant/driveway/sidewalk extent documents the Central
   Ave arm at peak — candidate edge_20260901 map points.

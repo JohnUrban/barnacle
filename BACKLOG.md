@@ -126,13 +126,15 @@ all findings verified — see audits/2026-08-03-a2/)**
       M2/L2 reconciled — audits/2026-08-03-a2/05). This checkbox
       lagged HANDOFF/audits until the 2026-09-02 sweep caught the
       contradiction in the file declared authoritative.
-- [ ] Anchor-count reconciliation (2026-09-02 sweep): event #7
-      (Aug 7, measured ~+15.4, hindcast +16.9) was never added to
-      the all-anchors figure or fixture evidence; records now read
-      six (spec/site/tests) vs "7" (figure title) vs eight measured
-      floods in fact. Decide the canonical set, add aug7 + sep1 as
-      ‡ anchors, update spec prose + tests in the same commit.
-      Daylight work.
+- [x] Anchor-count reconciliation (2026-09-02 sweep; CLOSED
+      2026-09-03): canonical framing settled — SIX frozen v0.10.1
+      anchors (fixture/spec/tests, immutable model provenance) +
+      post-cutover measured events as ‡ recipe hindcasts. Figure
+      rebuilt with all EIGHT measured floods (Aug 7 added for the
+      first time; the stale six-event xlim had been CLIPPING Oct 30
+      out of the committed PNG); ‡ footnote added; titles/docstring/
+      README/HANDOFF counts reconciled. Spec + tests correctly kept
+      at six.
 - [ ] driveway_central landmark (2026-09-02 sweep): elevation still
       TBD while load-bearing (8/27 residue bound, #6/#8 driveway
       bracket) — cross-fit from the bracket (+13.8 negative / +13.9
@@ -221,3 +223,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-02 | DONE | heartbeat-staging-fix | audit-sweep findings 3+4: data/nowcast_heartbeats.csv was written every nowcast run but staged by NEITHER publish path — SLO ledger stuck at 1 row ("collecting..." forever) AND the dirty tracked file would fail the rebase-retry on any push race (same class as the event-#8 dispatch race). Fixed: both git-add lines stage it; .gitattributes union-merge so racing appenders never conflict; cadence reader now sorts rows [VERIFIED: grep both paths + 100 tests + gate]
 2026-09-02 | FACT | scheduler-half-A-correction | half-A NEVER ran: 2,077 consecutive launchd failures since 2026-08-07 — the dedicated clone was created 42 s before bin/ existed on origin and never pulled. The 08-07 DONE line's [VERIFIED: origin log "local tick"] was a manual main-tree run, not launchd. GH cron was the SOLE nowcast scheduler 8/7-9/2 incl. the 8/27 dark window (post-mortem cause corrected via ledger erratum). Fixed: clone pulled current, installer now always-syncs, kickstart-verified genuine tick e6f6c05dd 03:52Z, launchctl status 0 [VERIFIED: ~/.barnacle/logs/launchd.log + clone log]
 2026-09-02 | DONE | audit-sweep-records | records batch: public "calibrated on FOUR events" claim (survived closed audit a2/L2 in the one renderer its close-out missed) fixed + guard test widened to BOTH split halves; a2 closeout checkbox closed (BACKLOG lagged audits/); +16.1-vs-+16.4 hindcast discrepancy resolved by ledger erratum + README supersession markers; HANDOFF drift fixed (v7.25a, 100 tests, nine-town, launchd cause); forecast/README.md seam statuses marked; 7 new OPEN loops queued (anchor-count, driveway_central, doc-drift batch, local paths, tanh placeholder, launchd watch) [VERIFIED: 100 tests + gate]
+2026-09-03 | DONE | all-anchors-eight | figure rebuilt: Aug 7 (#7, +15.4 crest window 15.0-15.8, hindcast +16.9 ‡) added for the FIRST time; stale six-event xlim had been clipping Oct 30 (+20.8, largest measured) out of the committed PNG while title said six and docstring said 7; ‡ footnote defined (post-cutover recipe hindcasts vs six frozen fixture anchors — spec/tests correctly stay at six); README/HANDOFF counts reconciled [VERIFIED: regenerated all_anchors.png, all 8 visible]
