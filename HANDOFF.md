@@ -34,6 +34,13 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
 
 ## RIGHT NOW
 
+- Phase-3 wave 1 COMPLETE (2026-09-02 evening): seam 1 station_time
+  + seam 2 rendering extracted (facade 10,339→7,007, all names
+  re-exported); additive residuals closed (nowcast_schema_version,
+  cadence SLO heartbeats + details ops line, erratum convention +
+  test). Remaining seams (model_core, data_sources, ledgers, alerts)
+  need a verified quiet weather window each.
+
 - Ponding-dips layer shipped + v2 same evening: road-profile sags
   with cross-street-drain discount (71 pruned), two tiers (teal
   rain-only / purple tide-reachable low shelf), tap readouts, top-20
