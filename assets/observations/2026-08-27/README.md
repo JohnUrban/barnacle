@@ -7,9 +7,10 @@ The user was in California; evidence assembled 2026-09-02:
   sustained ~18:30–19:14Z (2:30–3:14 PM ET), peak **3.8 in/hr at
   2:58 PM** — more total water (~2.15″ in two hours) than event #8.
   Frames cached in `history/data/mrms/mrms_extracted.csv`.
-- **Tank hindcast [INFERRED]:** **+16.1″ @ ~3:24 PM ET** (bay
-  −1.30 NAVD88 dead low, full drain) — `analysis/hydrograph.png`,
-  via the shared recipe (now committed:
+- **Tank hindcast [INFERRED]:** **+16.1″ @ ~3:24 PM ET** (initial
+  run, bay −1.30; SUPERSEDED by the full-window **+16.4** — see the
+  full-window bullet below and the 2026-09-02 ledger erratum) —
+  `analysis/hydrograph.png`, via the shared recipe (now committed:
   `history/scripts/event_hindcast.py`). Given the model's
   recent −1–2″ near-core bias, the true peak plausibly reached
   +15–18″: top-five territory, unwitnessed.
@@ -90,11 +91,17 @@ The user was in California; evidence assembled 2026-09-02:
   2:35 PM (Flash Flood Warning, mid-burst) — hitting the daily cap.
   The user saw the flood prediction from California: directional
   confirmation of the full alert chain.
-- **Coverage gap [VERIFIED]:** nowcast published at 12:53 PM, then
-  NOTHING until 7:40 PM — the launchd half of the scheduler was in
-  California with the user's laptop, and GH cron alone collapsed
-  across the entire storm. The strongest field evidence yet for the
-  external-cron half-B (BACKLOG).
+- **Coverage gap [VERIFIED; cause CORRECTED 2026-09-02]:** nowcast
+  published at 12:53 PM, then NOTHING until 7:40 PM — GH cron alone
+  collapsed across the entire storm. The original post-mortem blamed
+  "the launchd tick was in California"; the audit sweep proved the
+  launchd half-A had NEVER fired once — its dedicated clone was
+  created 42 s before `bin/` existed on origin and never pulled
+  (2,077 consecutive "No such file" failures in
+  `~/.barnacle/logs/launchd.log`). Laptop location was irrelevant.
+  Still the strongest field evidence for external-cron half-B;
+  half-A itself was fixed and revived 2026-09-02 (first genuine
+  tick: origin commit e6f6c05dd, 03:52Z).
 
 Ledger rows: `data/labeled_observations.csv` 2026-08-29 (residue) —
 the flood itself has no observation row (nothing was directly

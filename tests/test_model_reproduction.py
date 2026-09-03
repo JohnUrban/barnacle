@@ -56,10 +56,13 @@ class ModelReproductionTests(unittest.TestCase):
 
         source = (ROOT / "forecast" / "flood_forecast_daily.py").read_text(
             encoding="utf-8"
-        )
+        ) + (ROOT / "forecast" / "rendering.py").read_text(encoding="utf-8")
         spec = (ROOT / "model" / "v0.10.1.md").read_text(encoding="utf-8")
         self.assertNotIn("validated on four measured floods", source)
         self.assertNotIn("currently four measured rain events", source)
+        # survived audit a2/L2 in the one renderer its close-out missed
+        # (found 2026-09-02 sweep); guard both halves of the split
+        self.assertNotIn("calibrated on FOUR events", source)
         self.assertIn("six measured peak anchors", source)
         self.assertIn("Measured peak anchors: six", spec)
         self.assertIn("Full fit hydrographs: two", spec)

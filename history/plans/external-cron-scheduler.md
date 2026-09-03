@@ -2,8 +2,14 @@
 
 Status: written 2026-08-07 (event #7 tripped the revisit trigger).
 Half-A (launchd on the user's Mac, `bin/install_local_scheduler.sh`)
-is INSTALLED and covers Mac-awake hours. This plan closes nights/
-travel. Needs ~10 minutes of the user; no agent can do step 1.
+was BELIEVED installed 2026-08-07 but never fired once: the clone
+was created 42 s before `bin/` existed on origin and never pulled
+(2,077 consecutive failures; found by the 2026-09-02 audit sweep;
+fixed + revived that night — first genuine tick 03:52Z). It now
+covers Mac-awake hours. This plan closes nights/travel — its case
+is STRONGER than written, since GH cron was the ONLY nowcast
+scheduler for the entire 8/7–9/2 span, including the 8/27 dark
+window. Needs ~10 minutes of the user; no agent can do step 1.
 
 1. USER: github.com → Settings → Developer settings → Fine-grained
    personal access tokens → Generate new token.

@@ -110,8 +110,8 @@ all findings verified — see audits/2026-08-03-a2/)**
       golden/physics tests (freeze behavior, no retuning);
       evidence-count prose precision (six anchors / two hydrographs /
       one recession constraint); all_anchors recipe moved off the
-      scratchpad import — implemented with 77 tests, pending Claude
-      round-04 review.
+      scratchpad import — implemented (77 tests then, 100 now);
+      Phase 2 reviewed PASS in round 05.
 - [ ] Versioned model follow-up: `_pluvial_fill()` starts a non-grid
       base at the preceding 0.1-inch stage bin, so tiny positive
       storage can calculate up to ~0.08″ below the base. Assess impact,
@@ -122,8 +122,47 @@ all findings verified — see audits/2026-08-03-a2/)**
 - [x] Cadence SLO monitor shipped 2026-09-02: rolling heartbeat
       ops ledger (data/nowcast_heartbeats.csv, 30 d) + details-page
       active-period gap stats line ("measured truth" of best-effort).
-- [ ] Audit a2 closeout: Phases 0–1 verified PASS in Claude round 03;
-      close only after independent Phase 2 review reconciles M2/L2.
+- [x] Audit a2 closeout: CLOSED round 05 (Phase 2 reviewed PASS,
+      M2/L2 reconciled — audits/2026-08-03-a2/05). This checkbox
+      lagged HANDOFF/audits until the 2026-09-02 sweep caught the
+      contradiction in the file declared authoritative.
+- [ ] Anchor-count reconciliation (2026-09-02 sweep): event #7
+      (Aug 7, measured ~+15.4, hindcast +16.9) was never added to
+      the all-anchors figure or fixture evidence; records now read
+      six (spec/site/tests) vs "7" (figure title) vs eight measured
+      floods in fact. Decide the canonical set, add aug7 + sep1 as
+      ‡ anchors, update spec prose + tests in the same commit.
+      Daylight work.
+- [ ] driveway_central landmark (2026-09-02 sweep): elevation still
+      TBD while load-bearing (8/27 residue bound, #6/#8 driveway
+      bracket) — cross-fit from the bracket (+13.8 negative / +13.9
+      positive) and register, or document why it stays out of
+      ff.LANDMARKS. Same pass: pocket_SE_retention +
+      fire_hydrant_central are ledger keys unregistered in the
+      model; the 2026-06-14 porch_step row predates the v0.9
+      retraction of that landmark and needs an erratum or note.
+- [ ] WATCH (2026-09-02): first timer-fired (non-kickstart) launchd
+      tick after half-A revival; nowcast.yml storm-path dispatch
+      still untested until the next radar trigger.
+- [ ] Doc-drift batch (2026-09-02 sweep, tier 3, low risk):
+      top-level README authority pointer + 2026-05-19 staleness;
+      archived spec paths cited without model/archive/ (7 files);
+      orphaned analysis/{cross_ref,rain_analysis}.py with
+      nonexistent inputs → attic; audits/a2 duplicate 03- index
+      (note in audits/README); nowcast_tank.py runner-path
+      docstring; cold_weather_retrospective placeholder rain_24h_in
+      column; forecast_accuracy.csv has no 2026-08-27 row (document
+      the objective reason: no measured peak); 2026-07-13 dir has
+      no analysis/ (retracted event — decide the standard);
+      2026-05-19 photos live under 2026-05-18/pocket-SE-retention/.
+- [ ] Machine-local paths (2026-09-02 sweep): tank_model_fit.py +
+      fit_crdt.py hardcode /Users/johnurban; the 2026-09-01
+      all_anchors copies sit outside the guard test's file list;
+      event_hindcast.py is CWD-relative by documented design.
+      Widen the tests/test_model_reproduction.py guard or fix.
+- [ ] tanh 1.2 in/hr scale in the pluvial advisory self-labels as
+      PLACEHOLDER in the live model path — promote to the
+      model-session menu (assess, never retune casually).
 
 
 **Standing obligations**
@@ -180,3 +219,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-02 | FACT | seam2-revert-incident | rule-11 incident #6: the 23:19 house-point ship's conflict-ritual recovery reapplied a STALE pre-seam-2 facade copy from the scratchpad, silently reverting the rendering extraction (~40 min; 3 nowcast runs executed the behaviorally-identical monolith — so the "refactored facade's first production run" claim was FALSE). Caught by the loose-ends audit sweep; confirmed via git show --stat 0398f0416 (+3,514 lines on a 2-line commit) [VERIFIED]
 2026-09-02 | DONE | seam2-restore | facade restored from 5854089db, house-point 2-line fix reapplied via all-assert batch; NEW tests/test_module_split.py makes facade/module duplication itself a test failure (the exact mode 98 green tests could not see); 100 tests green [VERIFIED: wc 7,007 + gate + dual-mode imports]
 2026-09-02 | DONE | heartbeat-staging-fix | audit-sweep findings 3+4: data/nowcast_heartbeats.csv was written every nowcast run but staged by NEITHER publish path — SLO ledger stuck at 1 row ("collecting..." forever) AND the dirty tracked file would fail the rebase-retry on any push race (same class as the event-#8 dispatch race). Fixed: both git-add lines stage it; .gitattributes union-merge so racing appenders never conflict; cadence reader now sorts rows [VERIFIED: grep both paths + 100 tests + gate]
+2026-09-02 | FACT | scheduler-half-A-correction | half-A NEVER ran: 2,077 consecutive launchd failures since 2026-08-07 — the dedicated clone was created 42 s before bin/ existed on origin and never pulled. The 08-07 DONE line's [VERIFIED: origin log "local tick"] was a manual main-tree run, not launchd. GH cron was the SOLE nowcast scheduler 8/7-9/2 incl. the 8/27 dark window (post-mortem cause corrected via ledger erratum). Fixed: clone pulled current, installer now always-syncs, kickstart-verified genuine tick e6f6c05dd 03:52Z, launchctl status 0 [VERIFIED: ~/.barnacle/logs/launchd.log + clone log]
+2026-09-02 | DONE | audit-sweep-records | records batch: public "calibrated on FOUR events" claim (survived closed audit a2/L2 in the one renderer its close-out missed) fixed + guard test widened to BOTH split halves; a2 closeout checkbox closed (BACKLOG lagged audits/); +16.1-vs-+16.4 hindcast discrepancy resolved by ledger erratum + README supersession markers; HANDOFF drift fixed (v7.25a, 100 tests, nine-town, launchd cause); forecast/README.md seam statuses marked; 7 new OPEN loops queued (anchor-count, driveway_central, doc-drift batch, local paths, tanh placeholder, launchd watch) [VERIFIED: 100 tests + gate]

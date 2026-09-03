@@ -7,6 +7,9 @@ mkdir -p ~/.barnacle/logs
 [ -d ~/.barnacle/venv ] || python3 -m venv ~/.barnacle/venv
 ~/.barnacle/venv/bin/pip install --quiet xarray cfgrib eccodes
 [ -d ~/.barnacle/repo ] || git clone -q "https://github.com/JohnUrban/barnacle.git" ~/.barnacle/repo
+# ALWAYS sync: the 2026-08-07 install cloned 42 s before bin/ existed
+# on origin and never pulled — 26 days / 2,077 silent launchd failures
+git -C ~/.barnacle/repo pull --rebase -q
 cat > ~/Library/LaunchAgents/com.barnacle.nowcast.plist <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

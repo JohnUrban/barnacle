@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-02 23:35 EDT.** Rewrite this WHOLESALE each update
+**Snapshot: 2026-09-02 23:59 EDT.** Rewrite this WHOLESALE each update
 (delete stale, never append); keep it under ~100 lines. `BACKLOG.md`
 OPEN LOOPS is authoritative. Full pre-migration history:
 `attic/HANDOFF-through-2026-08-03.md` (archival, not instructions).
@@ -11,7 +11,7 @@ Production hyperlocal flood forecaster for 342 Bay Ave, Highlands NJ.
 Sandy Hook gauge + NWS + MRMS radar → depth at 18 surveyed landmarks;
 hourly site/JSON bot, best-effort radar nowcast (10-min requested
 cadence), transactional alerts (ntfy/email/SMS, daily cap 2), iOS
-widget v7.24a, per-tide pages, and four-town street flood map. Model
+widget v7.25a, per-tide pages, and nine-town street flood map. Model
 **v0.10.1** (`model/v0.10.1.md`): tide pathway + dynamic pluvial tank.
 
 ## Where it stands
@@ -24,7 +24,8 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
 - Phase 2 is implemented for independent review: repository-relative,
   read-only v0.10.1 replay; versioned fit/hindcast fixture; six event
   goldens; stage/drain/rise/recession physics tests; exact evidence
-  taxonomy; scratchpad dependency removed. **77 tests green**; model
+  taxonomy; scratchpad dependency removed. **100 tests green** (77
+  at the phase-2 review); model
   constants and outputs were not retuned.
 - M1 facts were repaired with provenance: August 3 day-max +13.2″
   @14:50Z; observation corrected to 10:26; appended erratum clarifies
@@ -34,6 +35,16 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
 
 ## RIGHT NOW
 
+- **Audit sweep (2026-09-02 ~midnight)** found and fixed same-night:
+  seam-2 extraction had been SILENTLY REVERTED by a stale-copy
+  recovery (rule-11 #6; restored + `tests/test_module_split.py`
+  guard); heartbeat SLO ledger was staged by neither publish path
+  (fixed + union-merge); launchd half-A had never fired once in 26
+  days (clone predated bin/; revived, first tick 03:52Z); public
+  "FOUR events" claim survived a closed audit (fixed + test);
+  Aug 27 post-mortem cause corrected by ledger erratum. Remaining
+  findings queued as BACKLOG OPEN LOOPS (anchor-count
+  reconciliation, driveway_central elevation, doc-drift batch).
 - Phase-3 wave 1 COMPLETE (2026-09-02 evening): seams 1 and 2
   (station_time, rendering) extracted (facade 10,339→7,007, all names
   re-exported); additive residuals closed (nowcast_schema_version,
@@ -60,7 +71,9 @@ widget v7.24a, per-tide pages, and four-town street flood map. Model
   radar 1.9–3.8 in/hr ×45 min, full-window hindcast +16.4 [INFERRED],
   mud up the driveway [VERIFIED residue], Kevin's witness timeline
   (cat-bowl EXIF), 2 alerts delivered incl. mid-burst FFW; nowcast
-  dark 7 h (the launchd tick was in California) — strongest case yet
+  dark 7 h (GH cron collapse; the launchd half-A turned out to have
+  NEVER fired — its clone predated bin/ on origin; fixed + revived
+  2026-09-02, first genuine tick 03:52Z) — strongest case yet
   for external-cron half-B. Witness bounds overlaid on the tank curve
   (companion plot): model −2.1″ short / ~19 min late vs the 2:43
   driveway bound — 4th near-core-lag quantification, first from
