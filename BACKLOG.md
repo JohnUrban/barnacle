@@ -116,10 +116,12 @@ all findings verified — see audits/2026-08-03-a2/)**
       base at the preceding 0.1-inch stage bin, so tiny positive
       storage can calculate up to ~0.08″ below the base. Assess impact,
       fix only with a model version bump, and update goldens in lockstep.
-- [ ] corrects_row_id / erratum convention for append-only ledgers
-      (first hand-written erratum row shipped 2026-08-03).
-- [ ] Cadence SLO monitor (within accepted-risk posture). "BEST
-      EFFORT" site wording shipped in `5332dd70`.
+- [x] Erratum convention codified + test-enforced (2026-09-02;
+      pre-convention rows grandfathered) — see
+      data/labeled_observations_README.md.
+- [x] Cadence SLO monitor shipped 2026-09-02: rolling heartbeat
+      ops ledger (data/nowcast_heartbeats.csv, 30 d) + details-page
+      active-period gap stats line ("measured truth" of best-effort).
 - [ ] Audit a2 closeout: Phases 0–1 verified PASS in Claude round 03;
       close only after independent Phase 2 review reconciles M2/L2.
 
@@ -177,3 +179,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-02 | DONE | ponding-v2 | cross-street discount (71 drained), low-shelf tier (56 purple), top-20 GPS field list; DIAGNOSTIC: the 342 corner does NOT register — its bowl is curb-scale + drain-driven, below 25-m profile resolution — documented as the scope boundary between this layer and the calibrated corner model [VERIFIED: docs/highlands_sags.json + explainer]
 2026-09-02 | DECISION | town-rain-slider | deferred low priority; if ever built, calibrated-scope option only [STATED by user]
 2026-09-02 | DECISION | phase3-regate | split gated on quiet weather windows per-seam, not on a season; additive items ungated [STATED by user concern -> assessed; forecast/README.md seams]
+2026-09-02 | DONE | phase3-wave1 | seam 1 (station_time) extracted w/ facade re-exports; additive items shipped: nowcast_schema_version, cadence SLO monitor, erratum convention+test; rendering seam extraction delegated to a worktree agent for review [VERIFIED: 98 tests + gate + both import modes]
