@@ -47,7 +47,16 @@ per-tide pages, and nine-town street flood map. Model
   falsification yet; street responded in ~3–7 min), −1.5
   near-core low, recession overhold. Driveway-entering
   photographed at ~+13.7 (v0.10.2 observable). All-anchors now
-  NINE. **Barnacle was DARK the
+  NINE. ROUND 2 same morning: first live-observed + photographed
+  COMPOUND flood (astro high 09:58 + ~1 ft surge, bay 3.95 over
+  grates, tidal base +5.2 + ~2 rain; crest ~curb-top; recession
+  call verified by 10:59 photos); nowcast compound overread ~+4
+  logged. Triple-text forensics -> user-approved SMS POLICY
+  SHIPPED same day: evaluate_sms_gate — SMS = imminent street
+  impact only (fresh nowcast, fires past base sig-dedup), one per
+  event (re-arm 6h/class escalation), short present-tense body;
+  ntfy/email unchanged; origin-state refresh narrows the dupe
+  window. 111 tests. **Barnacle was DARK the
   whole event**: GH Actions queue wedged since ~04:15Z AND launchd
   half-A silently wedged since 09-03 (unpushed-commit rebase loop,
   exit-0 for 10 days). Tick script hardened (clone disposable at
