@@ -1,6 +1,6 @@
-"""All-anchors model-vs-measured comparison: ALL EIGHT measured
-floods — the six frozen v0.10.1 anchors plus the two post-cutover
-events (Aug 7 #7, Sep 1 #8), whose hindcasts (‡) come from the
+"""All-anchors model-vs-measured comparison: ALL NINE measured
+floods — the six frozen v0.10.1 anchors plus the post-cutover
+events (Aug 7 #7, Sep 1 #8, Sep 13 #9), whose hindcasts (‡) come from the
 committed event_hindcast recipe, not the frozen fixture.
 
 2026-09-03 refresh (audit-sweep loop closure): added Aug 7 — the one
@@ -35,6 +35,9 @@ events = [
     ("Dec 19 2025\nsteady 0.44 in/hr\nbay HIGH (4.04)",
      11.15, 1.05, 1.05, "+11.2″\n(band 10.1–12.2″)",
      R["dec19_at_obs"][0], "†"),
+    ("Sep 13 2026 — #9\nburst 3.2 in/hr × 6 min\nbay rising-mid (0.9)",
+     13.7, 0.2, 0.2, "+13.7″\n(level w/ lawn step)",
+     12.2, "‡"),
     ("Aug 3 2026 — #6\nburst 2.84 in/hr × 14 min\nbay LOW (2.3)",
      13.8, 0.1, 0.1, "+13.8″\n(13.7–13.9)",
      R["aug3"][0], ""),
@@ -58,7 +61,7 @@ events = [
      R["oct30"][0], ""),
 ]
 
-fig, ax = plt.subplots(figsize=(13.5, 7.4))
+fig, ax = plt.subplots(figsize=(14.5, 7.4))
 
 # landmark ladder (site chart grammar)
 landmarks = [
@@ -75,9 +78,9 @@ for y, c, ls, lw, lbl in landmarks:
         ax.text(-0.5, y + 0.25, lbl, color=c, fontsize=9,
                 fontweight="bold", ha="left")
     elif y == 13.7:                     # lawn step below its line: porch base above
-        ax.text(7.62, y - 0.85, lbl, color=c, fontsize=9)
+        ax.text(8.62, y - 0.85, lbl, color=c, fontsize=9)
     else:
-        ax.text(7.62, y + 0.25, lbl, color=c, fontsize=9,
+        ax.text(8.62, y + 0.25, lbl, color=c, fontsize=9,
                 fontweight="bold" if y == 0.0 else "normal")
 
 xs = range(len(events))
@@ -100,7 +103,7 @@ for x, (lbl, meas, elo, ehi, annot, model, tag) in zip(xs, events):
 
 ax.set_xticks(list(xs))
 ax.set_xticklabels([e[0] for e in events], fontsize=8.5)
-ax.set_xlim(-0.55, 7.7)
+ax.set_xlim(-0.55, 8.7)
 ax.set_ylim(-0.8, 27)
 ax.set_ylabel("peak street water (inches vs SW grate)", fontsize=11)
 ax.grid(axis="y", color="0.93", zorder=0)
@@ -108,7 +111,7 @@ ax.set_axisbelow(True)
 for sp in ("top", "right"):
     ax.spines[sp].set_visible(False)
 
-ax.set_title("All eight measured floods — every one is rain-driven;\n"
+ax.set_title("All nine measured floods — every one is rain-driven;\n"
              "measured peak vs v0.10.1 tank on measured MRMS rain",
              fontsize=14, fontweight="bold", pad=14)
 
@@ -126,7 +129,7 @@ fig.text(0.5, 0.015,
     "not physics.   † Dec 19: model at the 08:12 observation time; "
     "modeled crest +%.1f″ @07:34 was unobserved.   Oct 30: photo-anchor lower bound "
     "(≥5.25 NAVD88).\n"
-    "‡ Aug 7 / Sep 1: post-cutover events (not among the six frozen v0.10.1 "
+    "‡ Aug 7 / Sep 1 / Sep 13: post-cutover events (not among the six frozen v0.10.1 "
     "anchors); hindcast via the committed event_hindcast recipe, same physics, "
     "one pass." % R["dec19"][0],
     ha="center", fontsize=7.5, color="#666666")
