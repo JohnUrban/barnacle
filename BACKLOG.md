@@ -43,9 +43,18 @@ looks stale, trust this file. Ledger lines are append-only:
       out of scope until the 342-corner methodology earns extension.
 
 - [ ] WATCH: nowcast.yml step reorder (dispatch after push, shipped
-      2026-09-02) is untested in production until the next radar
-      trigger — verify the first triggered run completes all steps
-      and, if an alert-worthy burst, that dispatch fires post-push.
+      2026-09-02) is STILL untested in production — event #9's storm
+      window was preempted by the GH queue wedge (no run executed).
+      Verify at the next radar trigger.
+- [ ] Event #9 completion (photos pending iPhone sync): EXIF
+      timeline + peak-time pin, edge_20260913 map points, model-test
+      plot, all-anchors refresh to 9 (‡ recipe hindcast +12.2),
+      forecast-skill score vs the LAST published overnight forecast
+      (production was dark at event time).
+- [ ] GH Actions zombie runs from the 2026-09-13 wedge: 34737703470
+      (nowcast) + 34737375383 (forecast) stuck 'queued' since
+      ~04:15Z — user cancels via Actions UI, or grants run-cancel
+      permission; harmless but they may hold concurrency slots.
 - [ ] Extra-rain slider on the town map (DEFERRED low-priority,
       user 2026-09-02): if built, option (a) only — drive the
       calibrated 342 models and repaint Highlands low-shelf streets,

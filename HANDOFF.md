@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-03 00:55 EDT.** Rewrite this WHOLESALE each update
+**Snapshot: 2026-09-13 08:05 EDT.** Rewrite this WHOLESALE each update
 (delete stale, never append); keep it under ~100 lines. `BACKLOG.md`
 OPEN LOOPS is authoritative. Full pre-migration history:
 `attic/HANDOFF-through-2026-08-03.md` (archival, not instructions).
@@ -37,6 +37,19 @@ per-tide pages, and nine-town street flood map. Model
 
 ## RIGHT NOW
 
+- **EVENT #9 (2026-09-13 dawn) + OUTAGE:** flash pluvial flood,
+  peak ~lawn-step (~+13.7 [STATED], photos pending EXIF workup);
+  onset-to-violence in 6 min (box-mean 3.16 in/hr @6:54 AM, point
+  3.78); rising mid-tide, pure pluvial; receded driveable by 7:30.
+  Hindcast +12.2 @7:14 — BOTH standing biases confirmed at once
+  (−1.5 near-core low; recession overhold). **Barnacle was DARK the
+  whole event**: GH Actions queue wedged since ~04:15Z AND launchd
+  half-A silently wedged since 09-03 (unpushed-commit rebase loop,
+  exit-0 for 10 days). Tick script hardened (clone disposable at
+  all 3 wedge points), clone reset, manual publication restored,
+  ticks + CI verified flowing again by 7:50 AM. Storm-path dispatch
+  STILL untested (wedge preempted it). Half-B's case: third strong
+  field argument. See assets/observations/2026-09-13/ + BACKLOG.
 - **Audit sweep (2026-09-02 ~midnight)** found and fixed same-night:
   seam-2 extraction had been SILENTLY REVERTED by a stale-copy
   recovery (rule-11 #6; restored + `tests/test_module_split.py`
