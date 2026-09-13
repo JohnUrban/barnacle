@@ -79,6 +79,12 @@ live obligation) → `BACKLOG.md` OPEN LOOPS. On a flood event:
    reflow incidents); site changes regenerate + gate before commit;
    alert texts lead with the WARNING; ALERT_DAILY_CAP + quiet hours
    (20:00–07:00 hold unless about TONIGHT) apply to ALL channels.
+   USER-SET CHANNEL ROLES (2026-09-13, not agent discretion to
+   "fix"): SMS is the imminent-impact channel — fresh-nowcast
+   street impact only, one text per event (re-arm 6h or class
+   escalation), single-segment present-tense body, exempt from
+   quiet-hours/cap SUPPRESSION (still counts); long-lead watch
+   prose is ntfy/email territory (`evaluate_sms_gate`).
 9. **Published-imagery privacy (standing rule, 2026-09-02).** The
    repo is public: before committing any photo, BLUR the face of
    every identifiable person EXCEPT John (he has standing consent to

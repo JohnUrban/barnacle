@@ -4132,6 +4132,18 @@ _PLUVIAL_RANKS = {None: 0, "possible": 1, "elevated": 3}
 # escalation/new-event logic still decides WHICH sends matter; this
 # caps HOW MANY reach phones.
 ALERT_DAILY_CAP = 2
+# SMS IMMINENT-IMPACT POLICY (user directive 2026-09-13, approved
+# "your rules sound fine for now"): SMS is the short-timeframe
+# channel — it fires on actual/imminent street impact from the FRESH
+# nowcast, once per flood event, re-armed after SMS_REARM_HOURS or on
+# class escalation. Long-lead watch prose stays on ntfy/email.
+SMS_REARM_HOURS = 6
+SMS_FRESH_MIN = 30            # nowcast source age ceiling, minutes
+SMS_IMPACT_TIERS = (          # (inches vs SW grate, class, phrase)
+    (22.7, 3, "porch-step level"),
+    (13.68, 2, "at lawn step"),
+    (7.68, 1, "over curb"),
+)
 
 
 RADAR_ALERT_MAX_AGE_MIN = 25
@@ -4369,7 +4381,8 @@ def evaluate_alert(forecast, state=None, now_utc=None):
     }
 
 
-def persist_alert_state(decision, delivered_channels=None, path=None):
+def persist_alert_state(decision, delivered_channels=None, path=None,
+                        sms_gate=None, sms_delivered=False):
     """Persist observed risk, acknowledging only confirmed deliveries."""
     if path is None:
         path = ALERT_STATE_PATH
@@ -4386,14 +4399,22 @@ def persist_alert_state(decision, delivered_channels=None, path=None):
         "last_sent_channels": st.get("last_sent_channels", []),
     }
     new_state["sends_today"] = st.get("sends_today") or {}
+    if st.get("sms_event"):
+        new_state["sms_event"] = st["sms_event"]
+    if sms_delivered and sms_gate:
+        new_state["sms_event"] = {"ts": now_text,
+                                  "class": sms_gate.get("class", 1)}
     channels = sorted(set(delivered_channels or []))
-    if channels:
+    if channels or sms_delivered:
+        # one household interruption cluster = one count, even when
+        # base channels and an imminent SMS go out in the same run
         today_local = decision["now_utc"].astimezone(
             STATION_TZ).date().isoformat()
         sc = new_state["sends_today"]
         count = sc.get("count", 0) if sc.get("date") == today_local else 0
         new_state["sends_today"] = {"date": today_local,
                                     "count": count + 1}
+    if channels:
         new_state.update({
             "last_sent_rank": decision["rank"],
             "last_sent_sig": decision["sig"],
@@ -4413,6 +4434,161 @@ def should_send_alert(forecast, now_utc=None):
     """Compatibility wrapper: evaluate without mutating alert state."""
     decision = evaluate_alert(forecast, now_utc=now_utc)
     return decision["send"], decision["reason"]
+
+
+def _nowcast_snapshot(path=None, now_utc=None):
+    """Fresh radar-nowcast street state for the SMS gate; None when
+    unavailable or stale (fail-quiet — no imminence basis)."""
+    if path is None:
+        path = os.path.join(_REPO_ROOT, "docs", "nowcast.json")
+    try:
+        with open(path) as f:
+            d = json.load(f)
+        src = dt.datetime.strptime(
+            d.get("source_latest_utc", ""), "%Y-%m-%dT%H:%M:%SZ"
+        ).replace(tzinfo=dt.timezone.utc)
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return None
+    now = now_utc or dt.datetime.now(dt.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
+    return {"street_now_in": d.get("street_now_in"),
+            "projected_peak_in": d.get("projected_peak_in"),
+            "bay_navd88": d.get("bay_navd88"),
+            "age_min": (now - src).total_seconds() / 60.0}
+
+
+def evaluate_sms_gate(forecast, state=None, now_utc=None, nowcast=None):
+    """SMS imminent-impact decision (user policy 2026-09-13).
+
+    Fires on ACTUAL or imminently projected street impact from the
+    fresh nowcast — independently of the base alert's signature dedup
+    (which correctly stayed quiet for the 2026-09-13 10:00 compound
+    crossing under an already-alerted Flood Watch, leaving the single
+    most textable fact of the morning unsent). One SMS per flood
+    event: suppressed while the last SMS is younger than
+    SMS_REARM_HOURS at the same-or-lower impact class; a CLASS
+    escalation (curb -> lawn step -> porch) re-fires immediately.
+    Deliberately exempt from quiet hours (imminent street water IS
+    about right now) and from the daily-cap suppression (it still
+    COUNTS toward the cap; it is never blocked by it — this is the
+    one message that must get through). v1 scope: nowcast-driven
+    only; predicted-tide pre-warnings remain ntfy/email territory
+    per the short-timeframe directive."""
+    now_utc = now_utc or dt.datetime.now(dt.timezone.utc)
+    if now_utc.tzinfo is None:
+        now_utc = now_utc.replace(tzinfo=dt.timezone.utc)
+    else:
+        now_utc = now_utc.astimezone(dt.timezone.utc)
+    st = dict(state) if state is not None else _load_alert_state()
+    nc = nowcast if nowcast is not None else _nowcast_snapshot(
+        now_utc=now_utc)
+    out = {"send": False, "class": 0, "phrase": "",
+           "street_in": None, "proj_in": None, "bay_navd88": None,
+           "now_utc": now_utc}
+    if not nc or nc.get("age_min") is None or nc["age_min"] > SMS_FRESH_MIN:
+        out["reason"] = ("no fresh nowcast (quiet radar or stale "
+                         "source) — no imminence basis")
+        return out
+    out["street_in"] = nc.get("street_now_in")
+    out["proj_in"] = nc.get("projected_peak_in")
+    out["bay_navd88"] = nc.get("bay_navd88")
+    vals = [v for v in (out["street_in"], out["proj_in"])
+            if isinstance(v, (int, float))]
+    peak = max(vals) if vals else None
+    for thr, cls, phrase in SMS_IMPACT_TIERS:
+        if peak is not None and peak >= thr:
+            out["class"], out["phrase"] = cls, phrase
+            break
+    if out["class"] == 0:
+        out["reason"] = (f"street below curb (now {out['street_in']}, "
+                         f"proj {out['proj_in']})")
+        return out
+    ev = st.get("sms_event") or {}
+    ev_ts = None
+    try:
+        ev_ts = dt.datetime.strptime(
+            ev.get("ts", ""), "%Y-%m-%dT%H:%M:%SZ"
+        ).replace(tzinfo=dt.timezone.utc)
+    except (ValueError, TypeError):
+        pass
+    if (ev_ts is not None
+            and (now_utc - ev_ts) < dt.timedelta(hours=SMS_REARM_HOURS)
+            and out["class"] <= ev.get("class", 0)):
+        hrs = (now_utc - ev_ts).total_seconds() / 3600
+        out["reason"] = (f"event already texted (class "
+                         f"{ev.get('class')}, {hrs:.1f}h ago); re-arms "
+                         f"after {SMS_REARM_HOURS}h or on escalation")
+        return out
+    out["send"] = True
+    escal = (ev_ts is not None and out["class"] > ev.get("class", 0)
+             and (now_utc - ev_ts) < dt.timedelta(hours=SMS_REARM_HOURS))
+    out["reason"] = ("imminent street impact"
+                     + (" — class escalation" if escal else ""))
+    return out
+
+
+def build_sms_imminent(gate):
+    """Single-segment, present-tense imminent-impact text (<=160)."""
+    street, proj = gate.get("street_in"), gate.get("proj_in")
+    bay = gate.get("bay_navd88")
+    local = gate["now_utc"].astimezone(STATION_TZ)
+    bits = []
+    if isinstance(street, (int, float)):
+        bits.append(f'+{street:.0f}" now')
+    if (isinstance(proj, (int, float)) and isinstance(street, (int, float))
+            and proj > street + 0.5):
+        bits.append(f'rising toward +{proj:.0f}"')
+    if isinstance(bay, (int, float)) and bay >= 3.52:
+        bits.append("bay over grates")
+    body = (f"[342 Bay] STREET FLOODING {gate.get('phrase', '').upper()}"
+            + (": " + ", ".join(bits) if bits else "")
+            + f". {local.strftime('%I:%M%p').lstrip('0')}")
+    return body[:160]
+
+
+def _refresh_alert_state_from_origin(st):
+    """Adopt any NEWER sent-markers from origin's alert state right
+    before evaluating (2026-09-13: a queue-recovered run delivered,
+    failed its push, and the next run re-sent the same alert — this
+    narrows that duplicate window from minutes to seconds).
+    Fail-quiet: offline or no git keeps the local checkout's state."""
+    import subprocess
+    try:
+        subprocess.run(["git", "fetch", "-q", "origin", "main"],
+                       cwd=_REPO_ROOT, timeout=30, check=True,
+                       capture_output=True)
+        raw = subprocess.run(
+            ["git", "show", "origin/main:data/alert_state.json"],
+            cwd=_REPO_ROOT, timeout=15, check=True, capture_output=True,
+            text=True).stdout
+        origin = json.loads(raw)
+    except Exception:
+        return st
+    st = dict(st)
+
+    def _ts(d):
+        try:
+            return dt.datetime.strptime(d, "%Y-%m-%dT%H:%M:%SZ")
+        except (ValueError, TypeError):
+            return None
+    o_ts, l_ts = _ts(origin.get("last_sent_ts")), _ts(st.get("last_sent_ts"))
+    if o_ts is not None and (l_ts is None or o_ts > l_ts):
+        for k in ("last_sent_rank", "last_sent_sig", "last_sent_ts",
+                  "last_sent_channels"):
+            if k in origin:
+                st[k] = origin[k]
+    osc = origin.get("sends_today") or {}
+    ssc = st.get("sends_today") or {}
+    if osc.get("date", "") > ssc.get("date", "") or (
+            osc.get("date") == ssc.get("date")
+            and osc.get("count", 0) > ssc.get("count", 0)):
+        st["sends_today"] = osc
+    oev = origin.get("sms_event") or {}
+    sev = st.get("sms_event") or {}
+    if oev.get("ts", "") > sev.get("ts", ""):
+        st["sms_event"] = oev
+    return st
 
 
 def build_sms_text(forecast):
@@ -6579,20 +6755,26 @@ def send_email(subject, text_body, html_body, inline_png=None):
         s.send_message(msg)
 
 
-def deliver_alert(forecast, subject, text, html, inline_png=None):
+def deliver_alert(forecast, subject, text, html, inline_png=None,
+                  channels=None, sms_text=None):
     """Attempt every configured alert rail and report each outcome.
 
     One broken channel must not prevent another from delivering the warning.
     Callers may acknowledge the alert when ``succeeded`` is non-empty; a
     completely failed attempt deliberately remains retryable next run.
+    ``channels`` (None = all) selects rails per the 2026-09-13 SMS
+    policy; ``sms_text`` overrides the short body for ntfy + sms
+    (imminent-impact texts), leaving the email long form untouched.
     """
     result = {"attempted": [], "succeeded": [], "failed": []}
+    enabled = set(channels) if channels is not None else {
+        "ntfy", "email", "sms"}
 
     ntfy_topic = os.environ.get("NTFY_TOPIC", "").strip()
-    if ntfy_topic:
+    if ntfy_topic and "ntfy" in enabled:
         result["attempted"].append("ntfy")
         try:
-            sms = build_sms_text(forecast)
+            sms = sms_text or build_sms_text(forecast)
             rank, label, _sig = compute_alert_level(forecast)
             req = Request(
                 f"https://ntfy.sh/{ntfy_topic}",
@@ -6614,14 +6796,14 @@ def deliver_alert(forecast, subject, text, html, inline_png=None):
                   "SMTP_TO"]
     email_present = [name for name in email_vars
                      if os.environ.get(name, "").strip()]
-    if len(email_present) == len(email_vars):
+    if len(email_present) == len(email_vars) and "email" in enabled:
         result["attempted"].append("email")
         try:
             send_email(subject, text, html, inline_png=inline_png)
             result["succeeded"].append("email")
         except Exception as e:
             result["failed"].append({"channel": "email", "error": str(e)})
-    elif email_present:
+    elif email_present and "email" in enabled:
         missing = [name for name in email_vars if name not in email_present]
         result["failed"].append({
             "channel": "email",
@@ -6629,7 +6811,7 @@ def deliver_alert(forecast, subject, text, html, inline_png=None):
         })
 
     sms_to = os.environ.get("ALERT_SMS_TO", "").strip()
-    if sms_to:
+    if sms_to and "sms" in enabled:
         sms_vars = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM"]
         missing = [name for name in sms_vars
                    if not os.environ.get(name, "").strip()]
@@ -6644,7 +6826,7 @@ def deliver_alert(forecast, subject, text, html, inline_png=None):
             original_to = os.environ.get("SMTP_TO")
             try:
                 os.environ["SMTP_TO"] = sms_to
-                send_email("", build_sms_text(forecast), None)
+                send_email("", sms_text or build_sms_text(forecast), None)
                 result["succeeded"].append("sms")
             except Exception as e:
                 result["failed"].append({"channel": "sms", "error": str(e)})
@@ -6904,9 +7086,12 @@ def main():
         # they may not consume an alert that the next delivery-capable run
         # still needs to send.
         decision = evaluate_alert(forecast)
+        _gate = evaluate_sms_gate(forecast)
         print(f"Skipping alert delivery (--no-send set). Alert eval: "
               f"{decision['reason']}"
-              + (" — WOULD SEND" if decision["send"] else ""))
+              + (" — WOULD SEND" if decision["send"] else "")
+              + f"; SMS gate: {_gate['reason']}"
+              + (" — WOULD TEXT" if _gate["send"] else ""))
         return
 
     # EVENT-DRIVEN ALERTING (user, 2026-07-17): the daily-morning
@@ -6915,13 +7100,16 @@ def main():
     # (tide regime ≥ street in the 72h window, or pluvial risk
     # active); a short SMS (email-to-SMS gateway, ALERT_SMS_TO
     # secret) rides along. --force-email preserves a manual path.
-    decision = evaluate_alert(forecast)
+    _state = _refresh_alert_state_from_origin(_load_alert_state())
+    decision = evaluate_alert(forecast, state=_state)
+    sms_gate = evaluate_sms_gate(forecast, state=_state)
     if getattr(args, "force_email", False):
         decision["send"] = True
         decision["reason"] = "forced (--force-email)"
-    if not decision["send"]:
+    if not decision["send"] and not sms_gate["send"]:
         persist_alert_state(decision)
-        print(f"No alert delivery: {decision['reason']}")
+        print(f"No alert delivery: {decision['reason']}; "
+              f"SMS gate: {sms_gate['reason']}")
         return
 
     _rank, _label, _sig = compute_alert_level(forecast)
@@ -6939,14 +7127,30 @@ def main():
             _png = build_series_chart_png(forecast)
         except Exception as e:
             print(f"WARNING: chart png failed: {e}")
-    delivery = deliver_alert(forecast, subject, text, html, inline_png=_png)
+    _channels = set()
+    if decision["send"]:
+        _channels |= {"ntfy", "email"}      # base alert: rich channels
+    if sms_gate["send"]:
+        _channels |= {"sms", "ntfy"}        # imminent impact: text + push
+    _imminent = build_sms_imminent(sms_gate) if sms_gate["send"] else None
+    delivery = deliver_alert(forecast, subject, text, html,
+                             inline_png=_png, channels=_channels,
+                             sms_text=_imminent)
     for failure in delivery["failed"]:
         print(f"WARNING: {failure['channel']} alert failed: "
               f"{failure['error']}", flush=True)
     if delivery["succeeded"]:
-        persist_alert_state(decision, delivery["succeeded"])
+        # base sent-markers move only on a base send; an SMS-only run
+        # records sms_event (and counts) without touching sig dedup
+        _base_ok = [c for c in delivery["succeeded"]
+                    if decision["send"] and c in ("ntfy", "email")]
+        persist_alert_state(
+            decision, _base_ok,
+            sms_gate=sms_gate if sms_gate["send"] else None,
+            sms_delivered="sms" in delivery["succeeded"])
         print(f"Delivered alert via {', '.join(delivery['succeeded'])} "
-              f"({decision['reason']}): {subject}")
+              f"({decision['reason']}; SMS gate: {sms_gate['reason']})"
+              f": {_imminent or subject}")
         return
 
     # Record the observed risk/all-clear transition, but deliberately leave
