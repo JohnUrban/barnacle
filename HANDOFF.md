@@ -38,11 +38,16 @@ per-tide pages, and nine-town street flood map. Model
 ## RIGHT NOW
 
 - **EVENT #9 (2026-09-13 dawn) + OUTAGE:** flash pluvial flood,
-  peak ~lawn-step (~+13.7 [STATED], photos pending EXIF workup);
-  onset-to-violence in 6 min (box-mean 3.16 in/hr @6:54 AM, point
-  3.78); rising mid-tide, pure pluvial; receded driveable by 7:30.
-  Hindcast +12.2 @7:14 — BOTH standing biases confirmed at once
-  (−1.5 near-core low; recession overhold). **Barnacle was DARK the
+  peak +13.7 level-with-lawn-step at 7:01:23 [VERIFIED, 18-photo
+  EXIF timeline, GPS intact]; sidewalk edge to peak in FOUR
+  minutes; onset-to-violence in 6 min (box-mean 3.16 in/hr
+  @6:54 AM, point 3.78); rising mid-tide, pure pluvial; receded
+  driveable by 7:30. Hindcast +12.2 @7:14 — ALL THREE standing
+  biases at once: 10–13 min LATE (cleanest 15-min-lag
+  falsification yet; street responded in ~3–7 min), −1.5
+  near-core low, recession overhold. Driveway-entering
+  photographed at ~+13.7 (v0.10.2 observable). All-anchors now
+  NINE. **Barnacle was DARK the
   whole event**: GH Actions queue wedged since ~04:15Z AND launchd
   half-A silently wedged since 09-03 (unpushed-commit rebase loop,
   exit-0 for 10 days). Tick script hardened (clone disposable at
