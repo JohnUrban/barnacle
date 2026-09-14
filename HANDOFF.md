@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-13 08:05 EDT.** Rewrite this WHOLESALE each update
+**Snapshot: 2026-09-14 11:55 EDT.** Rewrite this WHOLESALE each update
 (delete stale, never append); keep it under ~100 lines. `BACKLOG.md`
 OPEN LOOPS is authoritative. Full pre-migration history:
 `attic/HANDOFF-through-2026-08-03.md` (archival, not instructions).
@@ -36,6 +36,18 @@ per-tide pages, and nine-town street flood map. Model
   measured; evidence in `assets/observations/2026-08-03/`.
 
 ## RIGHT NOW
+
+- **AUDIT 2026-09-14-a1 OPEN — Codex comprehensive audit, reviewed,
+  awaiting Codex's remediation.** All findings CONFIRMED (none
+  rejected) in audits/2026-09-14-a1/02-...-claude.md. Highest
+  stakes: H1 the SMS projection field mismatch (peak_proj_in vs
+  projected_peak_in — projection-only imminent texts DO NOT WORK;
+  actual-impact texts do), H2 SMS retry loss + cap-accounting
+  conflation, H3 dispatch watchdog precedes its step (visibility
+  regressed by the 09-02 reorder), H4 no gauge age limit, H5
+  scheduler lock/silence limits, H6 stale-surface risk. Remediation
+  order + amendments in the reply; alert-critical steps need a
+  quiet weather window. NO fixes performed per owner instruction.
 
 - **EVENT #9 (2026-09-13 dawn) + OUTAGE:** flash pluvial flood,
   peak +13.7 level-with-lawn-step at 7:01:23 [VERIFIED, 18-photo
