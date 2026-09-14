@@ -379,6 +379,9 @@ def render_details_page(forecast):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta name="barnacle-generated-utc" content="{forecast.get('generated_utc', '')}">
+<meta name="barnacle-schema-version" content="{forecast.get('forecast_schema_version', '')}">
+<meta name="barnacle-model-version" content="{forecast.get('model_version', '')}">
 <title>Bay Ave Barnacle — details &amp; reference</title>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -2320,7 +2323,7 @@ def _render_flood_peaks_section(forecast):
               backgroundColor: 'rgba(11,61,107,0.35)',
               pointStyle: 'triangle', pointRadius: r(6), showLine: false });
           if (riskSeg.length) core.push(
-            { label: 'burst potential archived that day', data: cpts(riskSeg),
+            { label: 'max burst guidance issued that day', data: cpts(riskSeg),
               borderColor: 'rgba(11,61,107,0.45)',
               borderWidth: 3, borderDash: [2, 3],
               pointRadius: 0, showLine: true, spanGaps: false });
@@ -2500,15 +2503,14 @@ def _render_flood_peaks_section(forecast):
        flood peaks from the spot-check log</b> (orange diamonds — any
        cause, placed when they actually happened), navy triangles =
        rain-burst compound potential on upcoming tides, and faint
-       navy day-dashes = days whose archived forecast carried live
+       navy day-dashes = days whose hourly forecasts carried live
        burst risk (day-wide, because a burst has magnitude but no
-       forecastable clock time; the dash height is the day's MAXIMUM
-       archived assessment from 2026-07-08 onward — dashes before
-       that show only the day's last run, which can postdate the
-       event: the 7/6 dash is the post-storm evening residue, not a
-       hindcast; nothing predicted that flood — the QPF input was
-       broken and the pluvial model didn't exist until that
-       evening). A rain flood with no halo under it =
+       forecastable clock time; from 2026-09-14 onward the dash height
+       is aggregated from an append-only hourly guidance ledger. Older
+       dashes fall back to the immutable 09Z morning archive and are
+       not day maxima. Nothing predicted the 7/6 flood — the QPF input
+       was broken and the pluvial model did not exist until that evening.
+       A rain flood with no halo under it =
        a miss the tide model could never have seen; that is the point
        of this chart.</p>
     </details>
@@ -2637,6 +2639,9 @@ def render_per_tide_page(tide, forecast,
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="barnacle-generated-utc" content="{forecast.get('generated_utc', '')}">
+<meta name="barnacle-schema-version" content="{forecast.get('forecast_schema_version', '')}">
+<meta name="barnacle-model-version" content="{forecast.get('model_version', '')}">
 <title>Tide {time_str} — Bay Ave Barnacle</title>
 <link rel="stylesheet" href="../../style.css">
 <meta name="description" content="Bay Ave Barnacle — high tide at {format_time_full(time_str)}: {regime_display(regime).upper()} regime, peak {tide['forecast_peak_mllw']:.2f} ft MLLW Sandy Hook.">
@@ -3123,6 +3128,9 @@ def render_html_page(forecast):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="barnacle-generated-utc" content="{forecast.get('generated_utc', '')}">
+<meta name="barnacle-schema-version" content="{forecast.get('forecast_schema_version', '')}">
+<meta name="barnacle-model-version" content="{forecast.get('model_version', '')}">
 <title>Bay Ave Barnacle — {today}</title>
 <link rel="stylesheet" href="style.css">
 <!-- PWA / iOS home-screen install (HANDOFF item 27, Stage 1) -->

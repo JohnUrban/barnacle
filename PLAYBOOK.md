@@ -37,7 +37,7 @@ as any lesson that changes it.
 
 **In the session after (Claude, cold start) — follow this RECIPE
 in order; every step has been needed at least once:**
-1. Read `AGENTS.md` + `HANDOFF.md` + `model/v0.10.1.md`; event
+1. Read `AGENTS.md` + `HANDOFF.md` + `model/v0.10.2.md`; event
    physics context lives in the per-event READMEs under
    `assets/observations/`.
 2. **Gauge sanity FIRST** (2026-07-09 lesson: the SH sensor spiked
@@ -52,10 +52,11 @@ in order; every step has been needed at least once:**
 3. Convert notes → NAVD88 profile: water = landmark_elev +
    inches/12 (elevations in `model/elevations.md`). Cross-check
    two landmarks where sweeps overlap (they should agree ±0.05 ft).
-4. Log observations → `data/labeled_observations.csv` — **append
-   PLAIN TEXT lines only; the file has legacy unquoted commas and
-   csv.DictWriter TRUNCATES it** (happened 2026-07-09; recovered
-   from git). Write the event README per prior events.
+4. Log observations with `python3 bin/append_observation.py` (one row
+   per call; `--help` lists fields). It header-checks, CSV-quotes notes,
+   uses append-only I/O, and fsyncs. Never open the canonical ledger in
+   write mode. The 2026-07-09 loss was caused by write-mode truncation,
+   not by `csv.DictWriter`. Write the event README per prior events.
 5. Pull rain forcing. Recent event (<~24 h): NCEP real-time
    `https://mrms.ncep.noaa.gov/2D/PrecipRate/` (2-min frames).
    Older: Iowa mtarchive via `history/scripts/mrms_point_rain.py`

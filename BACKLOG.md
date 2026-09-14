@@ -201,10 +201,15 @@ all findings verified — see audits/2026-08-03-a2/)**
       gated-quiet rows; stdlib public watchdog + tests; half-B renamed
       external trigger. Deployment of the watchdog and trigger requires
       owner-selected external infrastructure/credentials and remains open.
-- [ ] Phase 3: atomic/cross-stamped publish surfaces, stronger artifact and
-      ledger gates, immutable day-summary product.
-- [ ] Phase 4: confidence calibration/hygiene, safe observation append path,
-      DST ambiguity, dependency reproducibility, documentation drift.
+- [x] Phase 3: atomic per-file writes and fail-closed required surfaces;
+      generation/schema/model stamps checked across landing, details, JSON,
+      and current tide pages; adversarial ledger/state/nowcast validators;
+      append-only hourly day-risk product while preserving 09Z snapshots;
+      80th-percentile error radius + NWS parser medium cap; safe observation
+      append CLI; correct UTC commit dates. Full site regenerated and gated.
+- [ ] Phase 4: remaining documentation drift, DST repeated-hour design,
+      labeled-events lifecycle declaration, privacy decision, outbox residual,
+      test/tooling breadth, and model-debt disposition.
 - [ ] Phase 5: model G1-G10 assessment only; any formula change requires a
       separately justified version bump and frozen-golden update.
 
@@ -281,3 +286,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-14 | OPEN | audit-a1-remediation | Codex to execute the 10-step remediation order with the reply's amendments (cap accounting folded into step 1; actionlint guard in step 2's commit; steps 1-3 in a quiet weather window with John reachable; watchdog first in step 4; registry duties + rule-11 discipline transfer with the work) [STATED plan]
 2026-09-14 | DONE | audit-a1-phase1 | H1-H4 core alert/gauge repair: canonical real-payload nowcast contract; falling/active/quality/schema/20-min gates; NOAA bay-head 30-min and surge 60-min age limits; per-rail base/imminent acknowledgments and retries; SMS/base cap separation; consolidated fail-closed post-publish workflow dispatch + structural regression test; 122 tests and frozen replay green [VERIFIED: source + tests]
 2026-09-14 | DONE | audit-a1-phase2-code | H5/M5/M6/L4 remediation code: local launchd tick recovers stale PID locks, fails nonzero, rotates structured outcomes, installs pinned requirements with self-test, and coalesces quiet publication; heartbeat rows identify arm/phase/outcome including hourly gated-quiet; external trigger honestly renamed; GitHub-independent public/workflow freshness watchdog implemented with bounded ntfy and tests. External deployment and local alert-secret provisioning remain owner-gated [VERIFIED: scripts + tests]
+2026-09-14 | DONE | audit-a1-phase3 | H6/M1-M4/M7-M8 core artifact/data repair: required surface errors now fail; outputs write atomically and share gated generation/schema/model stamps; adversarial validators reject impossible events, nonfinite accuracy/radar, malformed alert state, and active-nowcast gaps; append-only hourly day-risk ledger replaces the false day-max archive assumption while 09Z snapshots stay immutable; confidence range uses empirical q80 and unvalidated NWS parser is capped medium; safe fsynced observation CLI replaces write-mode advice; UTC commit date fixed; 139 tests + live regenerated gate green [VERIFIED: source, tests, generated artifacts]

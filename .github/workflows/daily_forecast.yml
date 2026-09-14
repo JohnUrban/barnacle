@@ -54,7 +54,8 @@ jobs:
       - name: Determine run type (daily vs hourly)
         id: when
         run: |
-          today=$(date +%Y-%m-%d)
+          local_date=$(date +%Y-%m-%d)
+          utc_date=$(date -u +%Y-%m-%d)
           hour=$(date -u +%H)
           manual="${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.force_email || 'true') != 'false' }}"
           if [ "$manual" = "true" ] || [ "$hour" = "09" ]; then
@@ -62,7 +63,8 @@ jobs:
           else
             is_daily="false"
           fi
-          echo "today=$today"     >> "$GITHUB_OUTPUT"
+          echo "local_date=$local_date" >> "$GITHUB_OUTPUT"
+          echo "utc_date=$utc_date" >> "$GITHUB_OUTPUT"
           echo "hour=$hour"       >> "$GITHUB_OUTPUT"
           echo "is_daily=$is_daily" >> "$GITHUB_OUTPUT"
           echo "Run type: is_daily=$is_daily (hour=$hour UTC, event=${{ github.event_name }})"
@@ -94,8 +96,8 @@ jobs:
         if: steps.when.outputs.is_daily == 'true'
         run: |
           mkdir -p docs/archive
-          cp docs/index.html  "docs/archive/${{ steps.when.outputs.today }}.html"
-          cp docs/forecast.json "docs/archive/${{ steps.when.outputs.today }}.json"
+          cp docs/index.html  "docs/archive/${{ steps.when.outputs.local_date }}.html"
+          cp docs/forecast.json "docs/archive/${{ steps.when.outputs.local_date }}.json"
           # No heat-map PNG to archive — map renders client-side (9b.10).
 
       - name: Regenerate archive index (daily only)
@@ -157,9 +159,9 @@ jobs:
             exit 0
           fi
           if [ "${{ steps.when.outputs.is_daily }}" = "true" ]; then
-            msg="daily forecast ${{ steps.when.outputs.today }}"
+            msg="daily forecast ${{ steps.when.outputs.local_date }}"
           else
-            msg="hourly update ${{ steps.when.outputs.today }} ${{ steps.when.outputs.hour }}:00 UTC"
+            msg="hourly update ${{ steps.when.outputs.utc_date }} ${{ steps.when.outputs.hour }}:00 UTC"
           fi
           git commit -m "$msg"
           for attempt in 1 2 3; do

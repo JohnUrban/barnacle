@@ -17,6 +17,7 @@ import os
 import sys
 import csv
 import datetime as dt
+import math
 import re
 from zoneinfo import ZoneInfo
 
@@ -51,6 +52,10 @@ CSV_SCHEMAS = {
     ],
     "data/observed_peaks_cache.csv": [
         "target_tide_time", "observed_peak_mllw",
+    ],
+    "data/day_risk_log.csv": [
+        "generated_utc", "local_day", "pluvial_level", "burst_est_in_hr",
+        "potential_navd88", "model_version",
     ],
 }
 
@@ -159,6 +164,9 @@ def validate_csv_semantics(path, relpath, now_utc=None):
 
     elif relpath == "data/forecast_accuracy.csv":
         seen = set()
+        allowed_regimes = {"dry", "street", "light", "moderate", "severe",
+                           "cold_lockout"}
+        allowed_confidence = {"low", "medium", "high"}
         for logical_row, row in enumerate(rows, 2):
             day = row.get("forecast_run_date")
             if day in seen:
@@ -169,10 +177,47 @@ def validate_csv_semantics(path, relpath, now_utc=None):
                 predicted = float(row["forecast_peak_predicted_mllw"])
                 actual = float(row["actual_peak_observed_mllw"])
                 error = float(row["mllw_error_ft"])
+                if not all(map(math.isfinite, (predicted, actual, error))):
+                    raise ValueError("nonfinite number")
                 if abs((predicted - actual) - error) > 1e-9:
                     failures.append(f"row {logical_row}: mllw_error_ft arithmetic mismatch")
+                for field in ("forecast_peak_predicted_time",
+                              "actual_peak_observed_time"):
+                    dt.datetime.strptime(row[field], "%Y-%m-%d %H:%M")
             except (KeyError, TypeError, ValueError) as exc:
                 failures.append(f"row {logical_row}: invalid accuracy row: {exc}")
+            if row.get("forecast_regime") not in allowed_regimes:
+                failures.append(f"row {logical_row}: invalid forecast_regime")
+            # The first pre-confidence row is immutable legacy history.
+            confidence = row.get("confidence_level")
+            if confidence not in allowed_confidence and not (
+                    logical_row == 2 and confidence == ""):
+                failures.append(f"row {logical_row}: invalid confidence_level")
+
+    elif relpath == "data/labeled_events.csv":
+        allowed_labels = {"flood", "noflood", "noflood_at_342", "unlabeled"}
+        for logical_row, row in enumerate(rows, 2):
+            try:
+                start = dt.datetime.strptime(row["start"], "%Y-%m-%d %H:%M:%S")
+                end = dt.datetime.strptime(row["end"], "%Y-%m-%d %H:%M:%S")
+                peak = dt.datetime.strptime(
+                    row["peak_hr_time"], "%Y-%m-%d %H:%M:%S")
+                duration = float(row["duration_h"])
+                total = float(row["total_in"])
+                rate = float(row["peak_hr_in"])
+                if not all(map(math.isfinite, (duration, total, rate))):
+                    raise ValueError("nonfinite number")
+                if end < start or not start <= peak <= end:
+                    raise ValueError("event times are not ordered")
+                if duration < 0 or total < 0 or rate < 0:
+                    raise ValueError("negative duration or rainfall")
+                actual_h = (end - start).total_seconds() / 3600.0
+                if abs(actual_h - duration) > 1.01:
+                    raise ValueError("duration disagrees with timestamps")
+            except (KeyError, TypeError, ValueError) as exc:
+                failures.append(f"row {logical_row}: invalid labeled event: {exc}")
+            if row.get("label") not in allowed_labels:
+                failures.append(f"row {logical_row}: invalid event label")
 
     elif relpath == "data/observed_peaks_cache.csv":
         seen = set()
@@ -186,6 +231,29 @@ def validate_csv_semantics(path, relpath, now_utc=None):
                 float(row.get("observed_peak_mllw", ""))
             except (TypeError, ValueError) as exc:
                 failures.append(f"row {logical_row}: invalid observed peak: {exc}")
+    elif relpath == "data/day_risk_log.csv":
+        seen = set()
+        for logical_row, row in enumerate(rows, 2):
+            try:
+                stamp = _aware_time(row.get("generated_utc"))
+                local_day = dt.date.fromisoformat(row.get("local_day", ""))
+                if stamp.astimezone(STATION_TZ).date() != local_day:
+                    raise ValueError("local_day disagrees with generated_utc")
+                if row.get("pluvial_level") not in {"", "possible", "elevated"}:
+                    raise ValueError("invalid pluvial_level")
+                for field in ("burst_est_in_hr", "potential_navd88"):
+                    if row.get(field):
+                        value = float(row[field])
+                        if not math.isfinite(value) or value < 0:
+                            raise ValueError(f"invalid {field}")
+                if not (row.get("model_version") or "").startswith("v"):
+                    raise ValueError("invalid model_version")
+                key = row.get("generated_utc")
+                if key in seen:
+                    raise ValueError("duplicate generated_utc")
+                seen.add(key)
+            except (TypeError, ValueError) as exc:
+                failures.append(f"row {logical_row}: invalid day-risk row: {exc}")
     return failures
 
 
@@ -272,6 +340,8 @@ def validate_nowcast_metadata(path):
         "source_latest_utc", "source_age_min", "frames_expected",
         "frames_succeeded", "coverage_minutes", "projection_assumption",
     }
+    if nowcast.get("nowcast_schema_version") != "1.0":
+        failures.append("nowcast_schema_version must be '1.0'")
     for key in sorted(required - set(nowcast)):
         failures.append(f"missing nowcast provenance field {key!r}")
     if not isinstance(nowcast.get("active"), bool):
@@ -319,12 +389,30 @@ def validate_nowcast_metadata(path):
             failures.append("ok radar requires at least one expected frame")
     except (TypeError, ValueError):
         failures.append("frame counts must be integers")
+    prior_stamp = None
     for index, frame in enumerate(frames):
         try:
-            _aware_time(frame.get("utc"))
-            float(frame.get("in_hr"))
+            stamp = _aware_time(frame.get("utc"))
+            rate = float(frame.get("in_hr"))
+            if not math.isfinite(rate) or rate < 0:
+                raise ValueError("rain rate must be finite and nonnegative")
+            if prior_stamp is not None and stamp <= prior_stamp:
+                raise ValueError("frames must be strictly time-sorted")
+            prior_stamp = stamp
         except (AttributeError, TypeError, ValueError) as exc:
             failures.append(f"frame {index}: invalid provenance/rate: {exc}")
+    if nowcast.get("active"):
+        for key in ("street_now_in", "peak_proj_in", "trend"):
+            if key not in nowcast:
+                failures.append(f"active nowcast missing {key!r}")
+        if nowcast.get("trend") not in {"rising", "falling"}:
+            failures.append("active nowcast trend must be rising/falling")
+        for key in ("street_now_in", "peak_proj_in"):
+            try:
+                if not math.isfinite(float(nowcast[key])):
+                    raise ValueError
+            except (KeyError, TypeError, ValueError):
+                failures.append(f"active nowcast {key} must be finite")
     return failures
 
 
@@ -350,6 +438,14 @@ def validate_alert_state(path):
                 failures.append(f"{key} must be timezone-aware ISO-8601")
     if not isinstance(state.get("last_sent_channels"), list):
         failures.append("last_sent_channels must be an array")
+    elif not set(state["last_sent_channels"]) <= {"ntfy", "email", "sms"}:
+        failures.append("last_sent_channels contains an unknown rail")
+    for key in ("rank", "last_sent_rank"):
+        if not isinstance(state.get(key), int) or not 0 <= state[key] <= 4:
+            failures.append(f"{key} must be an integer from 0 through 4")
+    for key in ("sig", "last_sent_sig"):
+        if not isinstance(state.get(key), str):
+            failures.append(f"{key} must be a string")
     sends = state.get("sends_today")
     if not isinstance(sends, dict):
         failures.append("sends_today must be an object")
@@ -360,6 +456,69 @@ def validate_alert_state(path):
                 raise ValueError
         except (KeyError, TypeError, ValueError):
             failures.append("sends_today must contain ISO date and nonnegative count")
+    for name, event in (("sms_event", state.get("sms_event")),
+                        *((f"imminent_channels.{channel}", event)
+                          for channel, event in
+                          (state.get("imminent_channels") or {}).items())):
+        if event is None:
+            continue
+        try:
+            _aware_time(event["ts"])
+            if not isinstance(event["class"], int) or not 1 <= event["class"] <= 3:
+                raise ValueError
+        except (KeyError, TypeError, ValueError):
+            failures.append(f"{name} must contain UTC ts and class 1-3")
+    return failures
+
+
+def validate_surface_stamps(root=ROOT):
+    """Require every current display arm to describe one forecast build."""
+    failures = []
+    forecast_path = os.path.join(root, "docs", "forecast.json")
+    try:
+        with open(forecast_path, encoding="utf-8") as source:
+            forecast = json.load(source)
+    except (OSError, ValueError) as exc:
+        return [(forecast_path, f"surface stamp source unreadable: {exc}")]
+    expected = {
+        "barnacle-generated-utc": str(forecast.get("generated_utc", "")),
+        "barnacle-schema-version": str(
+            forecast.get("forecast_schema_version", "")),
+        "barnacle-model-version": str(forecast.get("model_version", "")),
+    }
+
+    def check_html(path):
+        try:
+            with open(path, encoding="utf-8") as source:
+                text = source.read()
+        except OSError as exc:
+            failures.append((path, f"surface unreadable: {exc}"))
+            return
+        for name, value in expected.items():
+            marker = f'<meta name="{name}" content="{value}">'
+            if marker not in text:
+                failures.append((path, f"missing/mismatched {name} stamp"))
+
+    check_html(os.path.join(root, "docs", "index.html"))
+    check_html(os.path.join(root, "docs", "details.html"))
+    for tide in forecast.get("all_tides") or []:
+        stamp = str(tide.get("time", ""))[:16]
+        if " " not in stamp:
+            continue
+        day, clock = stamp.split(" ", 1)
+        slug = f"{day}T{clock.replace(':', '-')}"
+        tide_dir = os.path.join(root, "docs", "tides", slug)
+        check_html(os.path.join(tide_dir, "index.html"))
+        tide_json = os.path.join(tide_dir, "forecast.json")
+        try:
+            with open(tide_json, encoding="utf-8") as source:
+                payload = json.load(source)
+        except (OSError, ValueError) as exc:
+            failures.append((tide_json, f"surface unreadable: {exc}"))
+            continue
+        for key in ("generated_utc", "forecast_schema_version", "model_version"):
+            if payload.get(key) != forecast.get(key):
+                failures.append((tide_json, f"mismatched {key} stamp"))
     return failures
 
 
@@ -405,6 +564,7 @@ def check_artifacts(root=ROOT):
     alert_path = os.path.join(root, "data", "alert_state.json")
     for why in validate_alert_state(alert_path):
         bad.append((alert_path, why))
+    bad.extend(validate_surface_stamps(root))
     for relpath in ("docs/index.html", "docs/details.html",
                     "docs/forecast.json", "docs/nowcast.json",
                     "docs/barnacle-widget.js"):

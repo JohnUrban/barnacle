@@ -5,6 +5,20 @@ from forecast import flood_forecast_daily as ff
 
 
 class AccuracyReportingTests(unittest.TestCase):
+    def test_empirical_uncertainty_uses_quantile_not_mae(self):
+        cal = {"medium": {"n": 5, "mean_abs_err_ft": 0.28,
+                          "abs_error_q80_ft": 0.50}}
+        with mock.patch.object(
+            ff, "_calibrate_confidence_from_accuracy_log", return_value=cal
+        ):
+            self.assertEqual(ff._confidence_uncertainty_ft("medium"), 0.50)
+
+    def test_unvalidated_nws_parser_is_not_high_confidence(self):
+        level, reason = ff.assess_confidence({
+            "surge_source": "nws-coastal-flood-product"})
+        self.assertEqual(level, "medium")
+        self.assertIn("verification", reason)
+
     def test_classifier_reports_decision_metrics_and_dry_baseline(self):
         rows = [
             {"date": "2026-01-01", "observed": 6.50, "regime": "street"},

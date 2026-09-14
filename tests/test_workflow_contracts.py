@@ -57,5 +57,15 @@ class LocalSchedulerContractTests(unittest.TestCase):
         self.assertNotIn("pip install --quiet xarray", self.install)
 
 
+class DailyWorkflowContractTests(unittest.TestCase):
+    def test_commit_uses_utc_date_and_archive_uses_local_date(self):
+        text = (ROOT / ".github" / "workflows" /
+                "daily_forecast.yml").read_text()
+        self.assertIn("utc_date=$(date -u +%Y-%m-%d)", text)
+        self.assertIn("local_date=$(date +%Y-%m-%d)", text)
+        self.assertIn("hourly update ${{ steps.when.outputs.utc_date }}", text)
+        self.assertIn('docs/archive/${{ steps.when.outputs.local_date }}', text)
+
+
 if __name__ == "__main__":
     unittest.main()

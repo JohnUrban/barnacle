@@ -779,6 +779,12 @@ PREDICTIONS_LOG_FIELDS = [
     "model_version",             # as-run model spec version (currently v0.10.1)
 ]
 
+DAY_RISK_LOG_PATH = os.path.join(_REPO_ROOT, "data", "day_risk_log.csv")
+DAY_RISK_LOG_FIELDS = [
+    "generated_utc", "local_day", "pluvial_level", "burst_est_in_hr",
+    "potential_navd88", "model_version",
+]
+
 
 def _csv_needs_header(path, expected_fields):
     """Return True for a missing/empty ledger; reject schema drift.
@@ -1070,6 +1076,38 @@ def append_predictions_log(forecast):
             writer.writerow(r)
     print(f"Appended {len(rows_to_write)} row(s) to "
           f"{os.path.relpath(PREDICTIONS_LOG_PATH, _REPO_ROOT)}")
+
+
+def append_day_risk_log(forecast):
+    """Append the as-issued rain-risk maximum for later day aggregation.
+
+    The 09Z archive remains an immutable morning snapshot. This separate
+    ledger lets history compute the maximum guidance seen at any hour.
+    """
+    generated = forecast.get("generated_utc") or ""
+    local_day = utc_to_station_local(generated).date().isoformat()
+    pr = forecast.get("pluvial_risk") or {}
+    potentials = [v for v in (
+        pr.get("potential_low_tide_navd88"),
+        pr.get("potential_low_tide_navd88_tanh")) if v is not None]
+    row = {
+        "generated_utc": generated,
+        "local_day": local_day,
+        "pluvial_level": pr.get("level") or "",
+        "burst_est_in_hr": ("" if pr.get("burst_est_in_hr") is None
+                             else f'{pr["burst_est_in_hr"]:.3f}'),
+        "potential_navd88": ("" if not potentials
+                              else f"{max(potentials):.3f}"),
+        "model_version": forecast.get("model_version") or
+                         CURRENT_MODEL_VERSION,
+    }
+    write_header = _csv_needs_header(DAY_RISK_LOG_PATH, DAY_RISK_LOG_FIELDS)
+    with open(DAY_RISK_LOG_PATH, "a", newline="") as dest:
+        writer = csv.DictWriter(
+            dest, fieldnames=DAY_RISK_LOG_FIELDS, lineterminator="\n")
+        if write_header:
+            writer.writeheader()
+        writer.writerow(row)
 
 
 def _summarize_accuracy(last_n=30):
@@ -2498,7 +2536,7 @@ CONFIDENCE_CALIBRATION_MIN_N = 3
 def _calibrate_confidence_from_accuracy_log():
     """Compute per-confidence-band mean |error| in SH MLLW ft from
     data/forecast_accuracy.csv (HANDOFF 9b.6 refinement). Returns
-    dict like {"high": {"mean_abs_err_ft": 0.08, "n": 4}, ...}.
+    dict with mean and empirical 80th-percentile absolute error per label.
 
     Skips rows whose confidence_level column is empty (those were
     written before that column existed in the CSV). Returns empty
@@ -2522,16 +2560,20 @@ def _calibrate_confidence_from_accuracy_log():
         return {}
     out = {}
     for level, errs in buckets.items():
+        ordered = sorted(errs)
+        q80 = ordered[max(0, math.ceil(0.80 * len(ordered)) - 1)]
         out[level] = {
             "mean_abs_err_ft": sum(errs) / len(errs),
+            "abs_error_q80_ft": q80,
             "n":               len(errs),
         }
     return out
 
 
 def _confidence_uncertainty_ft(level):
-    """Estimated ±uncertainty in SH peak MLLW (ft) for a confidence
-    level. Uses per-band sample mean |error| from
+    """Empirical 80% absolute-error radius in SH peak MLLW feet.
+
+    Uses the per-label 80th percentile from
     data/forecast_accuracy.csv when ≥ CONFIDENCE_CALIBRATION_MIN_N
     rows exist for that band; falls back to a hardcoded heuristic
     otherwise.
@@ -2544,7 +2586,7 @@ def _confidence_uncertainty_ft(level):
     cal = _calibrate_confidence_from_accuracy_log()
     band = cal.get(level)
     if band and band["n"] >= CONFIDENCE_CALIBRATION_MIN_N:
-        return band["mean_abs_err_ft"]
+        return band["abs_error_q80_ft"]
     return _CONFIDENCE_HEURISTIC_FT.get(level, 0.30)
 
 
@@ -2593,9 +2635,9 @@ def _tide_confidence(forecast, t):
     surge_source = t.get("source") or forecast.get("surge_source", "")
     peak = t["forecast_peak_mllw"]
     if surge_source == "nws-coastal-flood-product":
-        level = "high"
-        reason = ("NWS Coastal Flood product active — forecaster-vetted "
-                  "projection")
+        level = "medium"
+        reason = ("NWS Coastal Flood product active, but this parser path "
+                  "awaits its first independently verified real event")
     elif surge_source == "astronomical-only-degraded":
         level = "low"
         reason = ("live surge observation unavailable — astronomical tide "
@@ -2622,8 +2664,8 @@ def _tide_confidence(forecast, t):
         else "estimated heuristically until enough data accumulates")
     when = format_time_short(t["time"])
     text = (f"{level.upper()} — {reason}. The {when} peak "
-            f"({peak:.2f} ft MLLW) could land within roughly "
-            f"±{unc:.2f} ft of the forecast ({source_phrase}).")
+            f"({peak:.2f} ft MLLW) has an empirical ~80% absolute-error "
+            f"radius of ±{unc:.2f} ft ({source_phrase}).")
     if unc > 0:
         try:
             rain = t.get("peak_rain_in_hr") or 0.0
@@ -2711,8 +2753,8 @@ def _confidence_qualifier_sentences(forecast):
     )
     out = [
         f"This is uncertainty about the peak Sandy Hook level "
-        f"({peak:.2f} ft MLLW), which could land within roughly "
-        f"±{unc:.2f} ft of the forecast ({source_phrase})."
+        f"({peak:.2f} ft MLLW). About 80% of past absolute errors at "
+        f"this label were within ±{unc:.2f} ft ({source_phrase})."
     ]
     band = forecast.get("confidence_regime_band")
     if band:
@@ -3209,8 +3251,9 @@ def assess_confidence(forecast):
     # conditions are surfaced as a separate advisory instead.
     surge_source = forecast.get("surge_source", "")
     if surge_source == "nws-coastal-flood-product":
-        return ("high",
-                "NWS Coastal Flood product active — forecaster-vetted projection")
+        return ("medium",
+                "NWS Coastal Flood product active, but its parser output "
+                "awaits first-event independent verification")
     if surge_source == "astronomical-only-degraded":
         return ("low",
                 "live surge observation unavailable — astronomical tide only; "
@@ -5458,9 +5501,9 @@ def _flood_peaks_chart_data(forecast):
     display unit): tide peaks past+future (reusing the oscillation
     data), MEASURED flood peaks from the spot-check log (any pathway
     — this is where the 7/6 11:34 AM rain flood lives, which a
-    per-tide axis cannot represent), and past days' archived
-    burst-potential assessments (day-wide: the daily archive is the
-    day's LAST run, so there is no honest clock time for them)."""
+    per-tide axis cannot represent), and past days' maximum as-issued
+    burst-potential assessments from the append-only day-risk ledger.
+    The immutable 09Z archive is only a morning snapshot."""
     # Full recorded history (logging began 2026-05-18); the client
     # renders the 7-day default window and offers a date-range picker
     base = _oscillation_chart_data(forecast, days=400)
@@ -5523,12 +5566,30 @@ def _flood_peaks_chart_data(forecast):
     except OSError:
         measured = []
 
-    # Past days where the archived forecast carried live pluvial risk.
-    risk_days = []
+    # Past days where any hourly forecast carried live pluvial risk.
+    risk_by_day = {}
     try:
         today = _station_local_now().date()
     except Exception:
         today = _station_local_today()
+    try:
+        with open(DAY_RISK_LOG_PATH) as source:
+            for row in csv.DictReader(source):
+                day = row.get("local_day") or ""
+                level = row.get("pluvial_level") or ""
+                if not level or dt.date.fromisoformat(day) >= today:
+                    continue
+                value = float(row.get("potential_navd88") or "")
+                previous = risk_by_day.get(day)
+                if previous is None or value > previous["navd88"]:
+                    risk_by_day[day] = {
+                        "day": day, "navd88": round(value, 3),
+                        "level": level}
+    except (OSError, ValueError):
+        pass
+
+    # Legacy fallback for days predating the day-risk ledger. These files
+    # are as-issued 09Z snapshots, not day maxima.
     _arc_dir = os.path.join(_REPO_ROOT, "docs", "archive")
     try:
         _arc_files = sorted(f for f in os.listdir(_arc_dir)
@@ -5541,6 +5602,8 @@ def _flood_peaks_chart_data(forecast):
         except ValueError:
             continue
         if d >= today:
+            continue
+        if d.isoformat() in risk_by_day:
             continue
         path = os.path.join(_arc_dir, _fn)
         try:
@@ -5564,9 +5627,9 @@ def _flood_peaks_chart_data(forecast):
                 if v is not None]
         if not pots:
             continue
-        risk_days.append({"day": d.isoformat(),
-                          "navd88": round(max(pots), 3),
-                          "level": level})
+        risk_by_day[d.isoformat()] = {
+            "day": d.isoformat(), "navd88": round(max(pots), 3),
+            "level": level}
 
     landmarks = [{"key": l["key"], "navd88": l["navd88"]}
                  for l in base["landmarks"]]
@@ -5581,7 +5644,8 @@ def _flood_peaks_chart_data(forecast):
     except Exception:
         pass
     return {"tides": tides, "measured": measured, "lows": lows,
-            "risk_days": risk_days, "landmarks": landmarks}
+            "risk_days": [risk_by_day[k] for k in sorted(risk_by_day)],
+            "landmarks": landmarks}
 
 
 def _load_map_points_for_js():
@@ -6683,6 +6747,22 @@ def _tide_slug(tide_time_str):
         return ""
 
 
+def _atomic_write_text(path, text):
+    """Replace one generated text artifact only after a complete write."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = f"{path}.tmp-{os.getpid()}"
+    try:
+        with open(tmp, "w", encoding="utf-8", newline="") as f:
+            f.write(text)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 def write_per_tide_pages(forecast, docs_root):
     """Write per-tide deep-link pages for each upcoming high tide.
 
@@ -6711,46 +6791,45 @@ def write_per_tide_pages(forecast, docs_root):
         os.makedirs(tide_dir, exist_ok=True)
 
         # forecast.json — this tide's prediction object
-        with open(os.path.join(tide_dir, "forecast.json"), "w") as f:
-            json.dump(tide, f, indent=2, default=str)
+        tide_payload = dict(tide)
+        tide_payload.update({
+            "generated_utc": forecast.get("generated_utc"),
+            "forecast_schema_version": forecast.get("forecast_schema_version"),
+            "model_version": forecast.get("model_version"),
+        })
+        _atomic_write_text(
+            os.path.join(tide_dir, "forecast.json"),
+            json.dumps(tide_payload, indent=2, default=str))
 
         # evolution.csv — filter predictions_log.csv to this tide's
         # target_tide_time. Append-only-of-a-derived-view: we overwrite
         # this file on each run since predictions_log.csv is the source.
         evo_path = os.path.join(tide_dir, "evolution.csv")
         if os.path.exists(PREDICTIONS_LOG_PATH):
-            try:
-                target_time = tide.get("time", "")
-                rows = []
-                with open(PREDICTIONS_LOG_PATH) as src:
-                    reader = csv.DictReader(src)
-                    for row in reader:
-                        if row.get("target_tide_time") == target_time:
-                            rows.append(row)
-                if rows:
-                    with open(evo_path, "w", newline="") as out:
-                        writer = csv.DictWriter(
-                            out,
-                            fieldnames=PREDICTIONS_LOG_FIELDS,
-                            lineterminator="\n",
-                        )
-                        writer.writeheader()
-                        for row in rows:
-                            writer.writerow(row)
-                elif os.path.exists(evo_path):
-                    # No matching rows yet; leave existing file alone
-                    pass
-            except Exception as e:
-                print(f"WARNING: evolution.csv write failed for {slug}: {e}",
-                      flush=True)
+            target_time = tide.get("time", "")
+            rows = []
+            with open(PREDICTIONS_LOG_PATH) as src:
+                reader = csv.DictReader(src)
+                for row in reader:
+                    if row.get("target_tide_time") == target_time:
+                        rows.append(row)
+            if rows:
+                import io
+                buf = io.StringIO(newline="")
+                writer = csv.DictWriter(
+                    buf, fieldnames=PREDICTIONS_LOG_FIELDS,
+                    lineterminator="\n")
+                writer.writeheader()
+                writer.writerows(rows)
+                _atomic_write_text(evo_path, buf.getvalue())
 
         # index.html — static per-tide snapshot
-        with open(os.path.join(tide_dir, "index.html"), "w") as f:
-            f.write(render_per_tide_page(
+        _atomic_write_text(
+            os.path.join(tide_dir, "index.html"),
+            render_per_tide_page(
                 tide, forecast,
                 prev_slug=prev_slug, prev_time=prev_time,
-                next_slug=next_slug, next_time=next_time,
-            ))
+                next_slug=next_slug, next_time=next_time))
         n_written += 1
 
     if n_written:
@@ -7161,8 +7240,16 @@ def main():
     # Wrapped: a logging failure must not break the daily forecast run.
     try:
         append_predictions_log(forecast)
+        append_day_risk_log(forecast)
     except Exception as e:
-        print(f"WARNING: append_predictions_log failed: {e}", flush=True)
+        # Canonical provenance loss makes the generated run degraded and
+        # must be visible. Publication workflows gate the resulting files.
+        forecast.setdefault("input_health", {})["operational_ledgers"] = {
+            "status": "degraded", "detail": str(e)}
+        forecast["degraded_inputs"] = sorted(
+            set(forecast.get("degraded_inputs") or []) |
+            {"operational_ledgers"})
+        print(f"WARNING: forecast ledger append failed: {e}", flush=True)
 
     if args.json:
         print(json.dumps(forecast, indent=2, default=str))
@@ -7227,27 +7314,19 @@ def main():
     if args.write_html:
         page_html = render_html_page(forecast)
         out_path = os.path.abspath(args.write_html)
-        os.makedirs(os.path.dirname(out_path), exist_ok=True)
-        with open(out_path, "w") as f:
-            f.write(page_html)
+        _atomic_write_text(out_path, page_html)
         print(f"Wrote HTML: {args.write_html}")
-        try:
-            details_path = os.path.join(os.path.dirname(out_path),
-                                        "details.html")
-            with open(details_path, "w") as f:
-                f.write(render_details_page(forecast))
-            print(f"Wrote details page: {details_path}")
-        except Exception as e:
-            print(f"WARNING: details page failed: {e}")
+        details_path = os.path.join(os.path.dirname(out_path),
+                                    "details.html")
+        _atomic_write_text(details_path, render_details_page(forecast))
+        print(f"Wrote details page: {details_path}")
 
         # Generate per-tide deep-link pages (HANDOFF 9b.2). Each upcoming
         # tide gets docs/tides/<slug>/{index.html,forecast.json,evolution.csv}.
-        # Wrapped: a per-tide-page failure must not break the daily run.
-        try:
-            docs_root = os.path.dirname(out_path)
-            write_per_tide_pages(forecast, docs_root)
-        except Exception as e:
-            print(f"WARNING: write_per_tide_pages failed: {e}", flush=True)
+        # These are required parallel arms. A failure must stop publication;
+        # the cross-surface gate below rejects any stale generation stamp.
+        docs_root = os.path.dirname(out_path)
+        write_per_tide_pages(forecast, docs_root)
 
     # Write JSON archive if requested
     if args.write_json:
@@ -7283,8 +7362,8 @@ def main():
                     cpr["day_max_" + fld] = max(vals)
         except (OSError, ValueError):
             pass  # first run of the day / unreadable previous archive
-        with open(out_path, "w") as f:
-            json.dump(forecast, f, indent=2, default=str)
+        _atomic_write_text(out_path, json.dumps(
+            forecast, indent=2, default=str))
         print(f"Wrote JSON: {args.write_json}")
 
     if args.dry_run:
