@@ -5,9 +5,9 @@ name: Barnacle Nowcast
 # deps) decides whether radar is worth paying for — active NWS flood
 # alert or near-term convective wording. When triggered: install
 # xarray/cfgrib (cached), pull the last hour of MRMS PrecipRate over
-# the hillside catchment, run the v0.10.1 tank, and commit
-# docs/nowcast.json ONLY (tiny file, no conflict surface with the
-# hourly forecast workflow). GitHub schedules are best-effort; the site
+# the hillside catchment, run the v0.10.2 tank, and commit
+# docs/nowcast.json plus the rolling scheduler-arm heartbeat ledger.
+# GitHub schedules are best-effort; the site
 # and widget enforce a strict safety rule and never render >20-min-old
 # radar output as live.
 on:
@@ -34,6 +34,7 @@ jobs:
     timeout-minutes: 6
     env:
       TZ: America/New_York
+      BARNACLE_SCHEDULER_ARM: github-actions
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -57,6 +58,12 @@ jobs:
             echo "go=true" >> "$GITHUB_OUTPUT"
           elif [ "$code" = "3" ]; then
             echo "go=false" >> "$GITHUB_OUTPUT"
+            if [ "$(date -u +'%M')" = "03" ]; then
+              python forecast/nowcast.py --record-gated-quiet
+              echo "heartbeat=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "heartbeat=false" >> "$GITHUB_OUTPUT"
+            fi
           else
             exit $code
           fi
@@ -80,15 +87,21 @@ jobs:
       # alert_state hasn't covered dispatches the forecast workflow;
       # the transactional pipeline + daily cap decide the actual send.
       - name: Commit nowcast.json
-        if: steps.gate.outputs.go == 'true'
+        if: steps.gate.outputs.go == 'true' || steps.gate.outputs.heartbeat == 'true'
         run: |
           git config user.name "barnacle-nowcast"
           git config user.email "actions@users.noreply.github.com"
-          git add docs/nowcast.json data/nowcast_heartbeats.csv
+          git add data/nowcast_heartbeats.csv
+          if [ "${{ steps.gate.outputs.go }}" = "true" ]; then
+            git add docs/nowcast.json
+            message="nowcast $(date -u +'%Y-%m-%d %H:%M') UTC"
+          else
+            message="nowcast gated-quiet heartbeat $(date -u +'%Y-%m-%d %H:%M') UTC [skip ci]"
+          fi
           if git diff --cached --quiet; then
             echo "no change"; exit 0
           fi
-          git commit -m "nowcast $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git commit -m "$message"
           for i in 1 2 3; do
             git push && exit 0
             git fetch origin main

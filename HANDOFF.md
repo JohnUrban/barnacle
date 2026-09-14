@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-14 13:58 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-14 13:54 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -21,7 +21,7 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   rejected. Reports: `audits/2026-09-14-a1/01-...-codex.md` and
   `02-...-claude.md`. Codex owns remediation; independent close-out is
   still required.
-- **Remediation Phase 1 implemented 2026-09-14, pending commit/push:**
+- **Remediation Phase 1 shipped as `cdaaf2d98` on 2026-09-14:**
   one canonical nowcast schema; actual `_write`→snapshot→SMS contract
   test; active/quality/schema/trend/source-age gates; unified 20-minute
   radar freshness; stale NOAA bay head falls back to astronomy after 30
@@ -29,9 +29,16 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   imminent acknowledgments; exact partial retries; SMS/base cap separation;
   radar redispatch keys on confirmed SMS; one retrying, fail-closed workflow
   dispatch after publication; workflow-order regression test. 122 tests,
-  artifact gate, and frozen v0.10.2 replay pass.
-- Remaining audit work is force-ranked in BACKLOG: scheduler/watchdog and
-  arm health; atomic cross-stamped surfaces and stronger validators;
+  artifact gate, and frozen v0.10.2 replay passed.
+- **Phase 2 code implemented, pending commit/push:** local tick has stale
+  PID-lock takeover, nonzero failures, rotated JSONL outcomes, pinned install
+  and self-test, and quiet-publication coalescing. Heartbeats identify
+  arm/phase/outcome; the workflow records hourly gated-quiet rows. A stdlib
+  watchdog checks public artifacts and successful workflow execution from
+  outside GitHub and can notify ntfy. The old half-B plan is honestly named
+  an external trigger. Actual off-GitHub watchdog/trigger deployment and
+  local alert secrets remain owner-gated.
+- Remaining audit work is force-ranked in BACKLOG: atomic cross-stamped surfaces and stronger validators;
   day summaries; confidence/data/DST/dependency/doc cleanup. Model concerns
   G1-G10 are a separate scientific assessment—no silent v0.10.2 retuning.
 - Weather check at 2026-09-14 13:31 EDT showed no rain in 72 hours, all
@@ -44,9 +51,9 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   response was 10–13 minutes earlier than the fixed-lag hindcast. A second
   compound curb flood near 10:05 exposed alert-state and cap coupling.
 - The 2026-09-13 outage combined a GitHub Actions queue wedge with a local
-  launchd clone wedge. The local tick was hardened and service restored,
-  but its lock/exit semantics and lack of independent watchdog remain live
-  audit obligations. The two supposed queued zombie runs are completed
+  launchd clone wedge. The local tick was hardened and service restored;
+  its deeper lock/exit/observability repair is in Phase 2. The watchdog is
+  implemented but not independently deployed. The supposed queued runs are completed
   failures; BACKLOG now says so.
 - Nine measured floods are represented in the all-anchors analysis. Frozen
   v0.10.1 reproduction remains the behavior guard; v0.10.2 added only the
@@ -76,6 +83,6 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Immediate next step
 
-Commit and push Phase 1 with explicit paths and the required authorship
-trailers, then begin Phase 2 scheduler/watchdog work. Do not close the audit;
+Commit and push Phase 2 with explicit paths and the required authorship
+trailers, then begin Phase 3 artifact/surface work. Do not close the audit;
 close-out belongs to an independent reviewer after all remediation lands.

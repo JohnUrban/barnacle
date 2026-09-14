@@ -1,6 +1,9 @@
 import datetime as dt
+import csv
 import json
+import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from forecast import flood_forecast_daily as ff
@@ -227,6 +230,29 @@ class NowcastRadarFreshnessTests(unittest.TestCase):
         self.assertEqual(payload["frames_succeeded"], 11)
         self.assertEqual(payload["coverage_minutes"], 60.0)
         self.assertTrue(payload["frames"][0]["utc"].endswith("Z"))
+
+
+class NowcastHeartbeatTests(unittest.TestCase):
+    def test_legacy_rows_migrate_to_named_structured_schema(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "heartbeat.csv"
+            path.write_text(
+                "generated_utc,active,source_age_min\n"
+                "2026-09-14T17:00:00Z,1,3.0\n")
+            now = dt.datetime(2026, 9, 14, 18, 0, tzinfo=UTC)
+            with mock.patch.object(nowcast, "HEARTBEAT_PATH", str(path)), \
+                    mock.patch.dict(nowcast.os.environ, {
+                        "BARNACLE_SCHEDULER_ARM": "github-actions"}):
+                ok, error = nowcast._append_heartbeat(
+                    {"generated_utc": "2026-09-14T18:00:00Z",
+                     "active": False, "source_age_min": ""},
+                    now, phase="gate", outcome="gated-quiet")
+            with path.open() as source:
+                rows = list(csv.DictReader(source))
+        self.assertTrue(ok, error)
+        self.assertEqual(rows[0]["arm"], "legacy-unknown")
+        self.assertEqual(rows[1]["arm"], "github-actions")
+        self.assertEqual(rows[1]["outcome"], "gated-quiet")
 
 
 if __name__ == "__main__":

@@ -13,9 +13,11 @@ looks stale, trust this file. Ledger lines are append-only:
       gap covered the entire rise). Half-A (launchd, Mac-awake hours)
       believed installed 2026-08-07 but NEVER fired until revived
       2026-09-02 (see scheduler-half-A-correction ledger line);
-      half-B (external cron, 24/7) ready-to-execute in
-      history/plans/external-cron-scheduler.md — needs the user's
-      ~10 min for a fine-grained PAT.
+      external trigger (24/7) ready for owner credentials in
+      history/plans/external-trigger-scheduler.md. It covers cron failure,
+      not a wedged Actions queue. The independent watchdog script is ready
+      but also needs deployment outside GitHub. Local execution redundancy
+      for alert delivery remains owner/security-gated (production secrets).
 - [ ] Town map, staged features: bands/classic shading toggle;
       per-building doorsill tagging (user point-and-click, feeds
       freeboard); possible georeferenced user snapshot base layer.
@@ -193,7 +195,12 @@ all findings verified — see audits/2026-08-03-a2/)**
       gating; stale-gauge fallbacks; per-rail alert retry; separate SMS/base
       caps; one fail-closed post-publish workflow dispatch; contract and
       workflow regression tests.
-- [ ] Phase 2: scheduler/watchdog independence and structured arm health.
+- [x] Phase 2 code: local scheduler gets PID-aware stale-lock recovery,
+      nonzero failures, rotated JSONL outcomes, pinned install/self-test,
+      quiet-publication coalescing; heartbeats gain arm/phase/outcome and
+      gated-quiet rows; stdlib public watchdog + tests; half-B renamed
+      external trigger. Deployment of the watchdog and trigger requires
+      owner-selected external infrastructure/credentials and remains open.
 - [ ] Phase 3: atomic/cross-stamped publish surfaces, stronger artifact and
       ledger gates, immutable day-summary product.
 - [ ] Phase 4: confidence calibration/hygiene, safe observation append path,
@@ -273,3 +280,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-14 | FACT | audit-a1-2026-09-14 | Codex comprehensive audit (876 lines, 6H/10M/10G/9D/6L) independently reviewed: ALL items CONFIRMED, zero rejected (two attempted disputes lost on primary evidence — M9's literal "unlabeled" cells, D1's README "18 landmarks"). Reviewer-owned defects acknowledged: H1 SMS field mismatch (peak_proj_in vs projected_peak_in — test injected the wrong-named field so 111 stayed green), H3 watchdog-precedes-dispatch regression introduced by the 2026-09-02 reorder, H5 lock/exit-0 limits, D5/D6 registry drift, L3. Expansions added: shorter H2 failure path via observed-sig persist, cap-accounting conflation post SMS-policy, M5 quiet-gating conflation, macOS flock absence, watchdog-first sequencing. Reply at audits/2026-09-14-a1/02-...-claude.md; round stays OPEN; Codex implements [VERIFIED: per-item evidence in the reply]
 2026-09-14 | OPEN | audit-a1-remediation | Codex to execute the 10-step remediation order with the reply's amendments (cap accounting folded into step 1; actionlint guard in step 2's commit; steps 1-3 in a quiet weather window with John reachable; watchdog first in step 4; registry duties + rule-11 discipline transfer with the work) [STATED plan]
 2026-09-14 | DONE | audit-a1-phase1 | H1-H4 core alert/gauge repair: canonical real-payload nowcast contract; falling/active/quality/schema/20-min gates; NOAA bay-head 30-min and surge 60-min age limits; per-rail base/imminent acknowledgments and retries; SMS/base cap separation; consolidated fail-closed post-publish workflow dispatch + structural regression test; 122 tests and frozen replay green [VERIFIED: source + tests]
+2026-09-14 | DONE | audit-a1-phase2-code | H5/M5/M6/L4 remediation code: local launchd tick recovers stale PID locks, fails nonzero, rotates structured outcomes, installs pinned requirements with self-test, and coalesces quiet publication; heartbeat rows identify arm/phase/outcome including hourly gated-quiet; external trigger honestly renamed; GitHub-independent public/workflow freshness watchdog implemented with bounded ntfy and tests. External deployment and local alert-secret provisioning remain owner-gated [VERIFIED: scripts + tests]

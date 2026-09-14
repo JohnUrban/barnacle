@@ -3081,20 +3081,24 @@ def _nowcast_cadence_stats(days=14):
     path = os.path.join(_REPO_ROOT, "data", "nowcast_heartbeats.csv")
     try:
         with open(path) as f:
-            rows = [ln.strip().split(",") for ln in f
-                    if ln.strip()][1:]
+            rows = list(csv.DictReader(f))
     except OSError:
         return None
     cutoff = (dt.datetime.now(dt.timezone.utc)
               - dt.timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
     pts = []
+    arms = {}
     for r in rows:
-        if len(r) >= 2 and r[0] >= cutoff:
+        stamp = r.get("generated_utc", "")
+        if stamp >= cutoff:
             try:
-                t = dt.datetime.strptime(r[0], "%Y-%m-%dT%H:%M:%SZ")
+                t = dt.datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ")
             except ValueError:
                 continue
-            pts.append((t, r[1] == "1"))
+            active = r.get("active") == "1"
+            pts.append((t, active))
+            arm = r.get("arm") or "legacy-unknown"
+            arms[arm] = max(t, arms.get(arm, t))
     pts.sort()   # union merges may interleave writer rows out of order
     gaps = []
     for (t0, a0), (t1, a1) in zip(pts, pts[1:]):
@@ -3106,7 +3110,9 @@ def _nowcast_cadence_stats(days=14):
     return {"n_runs": len(pts), "n_gaps": len(gaps),
             "median_min": gaps[len(gaps) // 2],
             "p90_min": gaps[int(len(gaps) * 0.9)],
-            "max_min": gaps[-1], "days": days}
+            "max_min": gaps[-1], "days": days,
+            "arms": {arm: stamp.strftime("%Y-%m-%dT%H:%M:%SZ")
+                     for arm, stamp in sorted(arms.items())}}
 
 
 def _lookahead_label(row):

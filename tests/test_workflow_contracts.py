@@ -31,6 +31,31 @@ class NowcastWorkflowContractTests(unittest.TestCase):
         self.assertIn("for attempt in 1 2 3", block)
         self.assertIn("exit 1", block)
 
+    def test_quiet_gate_records_named_arm_without_heavy_install(self):
+        gate = self.text.index("- name: Trigger check")
+        install = self.text.index("- name: Install radar deps")
+        between = self.text[gate:install]
+        self.assertIn("--record-gated-quiet", between)
+        self.assertIn("BARNACLE_SCHEDULER_ARM: github-actions", self.text)
+
+
+class LocalSchedulerContractTests(unittest.TestCase):
+    def setUp(self):
+        self.tick = (ROOT / "bin" / "local_nowcast_tick.sh").read_text()
+        self.install = (ROOT / "bin" / "install_local_scheduler.sh").read_text()
+
+    def test_tick_has_stale_lock_recovery_and_nonzero_failures(self):
+        self.assertIn("LOCK_STALE_SECONDS=300", self.tick)
+        self.assertIn("kill -0", self.tick)
+        self.assertIn("tick-status.jsonl", self.tick)
+        self.assertIn("fail publish 75 push-retries-exhausted", self.tick)
+        self.assertNotIn("|| exit 0", self.tick)
+
+    def test_installer_uses_checked_in_dependency_lock(self):
+        self.assertIn("forecast/nowcast-requirements.txt", self.install)
+        self.assertIn("pip check", self.install)
+        self.assertNotIn("pip install --quiet xarray", self.install)
+
 
 if __name__ == "__main__":
     unittest.main()

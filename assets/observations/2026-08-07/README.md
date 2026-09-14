@@ -92,7 +92,7 @@ mean, revised 4.4+) is the **2nd-highest rate on record** (after #4's
 3. **Scheduler** — revisit trigger tripped by the publish gap;
    half-A (launchd true-10-min local tick, dedicated clone)
    INSTALLED 2026-08-07 evening; half-B (24/7 external cron) plan in
-   `history/plans/external-cron-scheduler.md`.
+   `history/plans/external-trigger-scheduler.md`.
 4. **Quiet hours (2026-08-09)** — all channels hold 20:00–07:00
    local unless the alert concerns THAT night (live radar, pre-7AM
    tide, active Warning); held alerts deliver after 07:00. Driven by

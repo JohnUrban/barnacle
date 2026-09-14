@@ -64,9 +64,9 @@ T07:02:13 [VERIFIED] + T07:30 recession.
   pull conflicted, aborted, exited 0). **No radar alert was
   possible; the dispatch-after-push storm path remains untested.**
   Tick script hardened at all three wedge points same morning
-  (clone now disposable-by-design); external-cron half-B (the
+  (clone now disposable-by-design); an external cron trigger (the
   third, GitHub-independent scheduler) got its third strong field
-  argument — and this one was a GITHUB-side wedge, which half-B
+  argument — but this one was a GITHUB-side wedge, which that trigger
   alone would NOT have fixed for radar runs (they execute on
   Actions); it would have kept dispatch attempts flowing and made
   the wedge visible sooner.

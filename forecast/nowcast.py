@@ -21,6 +21,7 @@ Modes:
   nowcast.py           -> full pass, writes docs/nowcast.json
 """
 import datetime as dt
+import csv
 import glob
 import gzip
 import json
@@ -130,30 +131,52 @@ HEARTBEAT_PATH = os.path.join(HERE, "..", "data",
 HEARTBEAT_KEEP_DAYS = 30
 
 
-def _append_heartbeat(payload, now):
-    """Rolling OPS log (cadence SLO, audit a2 residual): one line per
-    nowcast run. NOT an evidence ledger — 30-day window, pruned on
-    write; the details page computes active-period gap stats from it.
-    Fail-quiet: cadence accounting must never break a nowcast run."""
+def _append_heartbeat(payload, now, phase="publish", outcome=None,
+                      detail=""):
+    """Write one structured scheduler-arm heartbeat; return (ok, error).
+
+    This is a rolling 30-day ops log, not an evidence ledger. Legacy
+    three-column rows are migrated on the next write.
+    """
     try:
         rows = []
         try:
             with open(HEARTBEAT_PATH) as f:
-                rows = [ln.strip() for ln in f if ln.strip()][1:]
+                for row in csv.DictReader(f):
+                    rows.append({
+                        "generated_utc": row.get("generated_utc", ""),
+                        "arm": row.get("arm") or "legacy-unknown",
+                        "phase": row.get("phase") or "publish",
+                        "outcome": row.get("outcome") or "ok",
+                        "active": row.get("active", ""),
+                        "source_age_min": row.get("source_age_min", ""),
+                        "detail": row.get("detail", ""),
+                    })
         except OSError:
             pass
         cutoff = (now - dt.timedelta(days=HEARTBEAT_KEEP_DAYS)
                   ).strftime("%Y-%m-%dT%H:%M:%SZ")
-        rows = [r for r in rows if r.split(",")[0] >= cutoff]
-        rows.append("{},{},{}".format(
-            payload.get("generated_utc", ""),
-            "1" if payload.get("active") else "0",
-            payload.get("source_age_min", "")))
-        with open(HEARTBEAT_PATH, "w") as f:
-            f.write("generated_utc,active,source_age_min\n")
-            f.write("\n".join(rows) + "\n")
-    except Exception:
-        pass
+        rows = [r for r in rows if r["generated_utc"] >= cutoff]
+        rows.append({
+            "generated_utc": payload.get("generated_utc") or _utc_iso(now),
+            "arm": os.environ.get("BARNACLE_SCHEDULER_ARM", "unknown"),
+            "phase": phase,
+            "outcome": outcome or (
+                "ok" if payload.get("radar_quality") in {None, "ok"}
+                else "degraded"),
+            "active": "1" if payload.get("active") else "0",
+            "source_age_min": payload.get("source_age_min", ""),
+            "detail": detail or payload.get("error", ""),
+        })
+        fields = ("generated_utc", "arm", "phase", "outcome", "active",
+                  "source_age_min", "detail")
+        with open(HEARTBEAT_PATH, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(rows)
+        return True, ""
+    except Exception as exc:
+        return False, str(exc)
 
 
 def _write(payload, now_utc=None):
@@ -195,8 +218,13 @@ def _write(payload, now_utc=None):
         payload["day_max_street_in"] = round(best, 1)
         payload["day_max_utc"] = best_utc
     payload.setdefault("nowcast_schema_version", ff.NOWCAST_SCHEMA_VERSION)
-    _append_heartbeat(payload,
-                      now_utc or dt.datetime.now(dt.timezone.utc))
+    hb_ok, hb_error = _append_heartbeat(
+        payload, now_utc or dt.datetime.now(dt.timezone.utc))
+    payload["ops_health"] = ({"status": "ok", "detail": "heartbeat recorded"}
+                             if hb_ok else
+                             {"status": "degraded", "detail": hb_error})
+    if not hb_ok:
+        print(f"WARNING: heartbeat write failed: {hb_error}", flush=True)
     tmp = OUT_PATH + ".tmp"
     with open(tmp, "w") as f:
         json.dump(payload, f)
@@ -532,6 +560,16 @@ def radar_alert_check(now_utc=None):
 
 
 if __name__ == "__main__":
+    if "--record-gated-quiet" in sys.argv:
+        stamp = dt.datetime.now(dt.timezone.utc)
+        ok, error = _append_heartbeat(
+            {"generated_utc": _utc_iso(stamp), "active": False,
+             "source_age_min": ""}, stamp, phase="gate",
+            outcome="gated-quiet", detail="heavy radar pass skipped")
+        if not ok:
+            print(f"heartbeat failed: {error}", flush=True)
+            sys.exit(2)
+        sys.exit(0)
     if "--check" in sys.argv:
         sys.exit(trigger_check())
     if "--alert-dispatch-check" in sys.argv:

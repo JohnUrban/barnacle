@@ -108,7 +108,7 @@ The user was in California; evidence assembled 2026-09-02:
   created 42 s before `bin/` existed on origin and never pulled
   (2,077 consecutive "No such file" failures in
   `~/.barnacle/logs/launchd.log`). Laptop location was irrelevant.
-  Still the strongest field evidence for external-cron half-B;
+  Still strong field evidence for an external cron trigger;
   half-A itself was fixed and revived 2026-09-02 (first genuine
   tick: origin commit e6f6c05dd, 03:52Z).
 
