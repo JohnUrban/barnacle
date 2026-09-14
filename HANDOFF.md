@@ -15,11 +15,16 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Current state
 
-- **Audit `2026-09-14-a1` remains OPEN.** Codex reported 6 high, 10
-  medium, 10 model, 9 documentation, and 6 lower-severity findings.
-  Claude Fable 5 independently confirmed every item; no finding was
-  rejected. Reports 01/02 hold the audit/reply; report 03 records Codex's
-  remediation claim. Independent review and close-out are still required.
+- **Audit `2026-09-14-a1` is CLOSED** (04-close-out-claude.md,
+  2026-09-14 afternoon): Codex found 6H/10M/10G/9D/6L, Claude
+  confirmed all, Codex implemented in 4 phases, Claude
+  independently verified (140 tests re-run, gate + surface stamps,
+  frozen replay, CI, all six requested seams in primary code) and
+  closed. WATCH: the rebuilt storm-path dispatch and imminent-SMS
+  pipeline are untested until the next live event. Residuals
+  (deliberate, ledgered): watchdog deploy + external-trigger PAT
+  (~15 min of John), exactly-once delivery, GMT migration, tooling
+  queue, v0.11 model assessment.
 - **Remediation Phase 1 shipped as `cdaaf2d98` on 2026-09-14:**
   one canonical nowcast schema; actual `_write`→snapshot→SMS contract
   test; active/quality/schema/trend/source-age gates; unified 20-minute
@@ -96,4 +101,4 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 ## Immediate next step
 
 Commit and push Phase 4 with explicit paths and required authorship trailers,
-then hand report 03 to an independent reviewer. Codex must not close this audit.
+Report 04 closed the audit after independent verification (2026-09-14).
