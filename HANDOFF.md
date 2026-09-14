@@ -100,5 +100,6 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Immediate next step
 
-Commit and push Phase 4 with explicit paths and required authorship trailers,
-Report 04 closed the audit after independent verification (2026-09-14).
+None urgent — audit a1 closed (report 04, 2026-09-14). Owner-gated:
+watchdog deployment + external-trigger PAT. Then quiet-window
+residuals per BACKLOG OPEN LOOPS.
