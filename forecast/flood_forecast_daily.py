@@ -776,7 +776,7 @@ PREDICTIONS_LOG_FIELDS = [
     "regime_predicted",
     "cold_lockout",              # "true" | "false"
     "confidence_level",          # "high" | "medium" | "low" | ""
-    "model_version",             # as-run model spec version (currently v0.10.1)
+    "model_version",             # as-run model spec version (currently v0.10.2)
 ]
 
 DAY_RISK_LOG_PATH = os.path.join(_REPO_ROOT, "data", "day_risk_log.csv")

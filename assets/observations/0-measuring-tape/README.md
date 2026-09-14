@@ -30,12 +30,12 @@ So if you see the digit "7" in a photo, the actual 7-inch line is the
 long tick mark just past the "7" — closer to the "8" than to the "6".
 This is the user's stated convention and matches the photos:
 
-- In [`barnacle_measuring_tape - 2.jpeg`](barnacle_measuring_tape - 2.jpeg)
+- In [`barnacle_measuring_tape - 2.jpeg`](<barnacle_measuring_tape - 2.jpeg>)
   (close-up of 0–4 in), the long inch-line tick sits to the **right
   edge** of each printed digit. The "2" sits in a small box, and the
   inch line is the long tick immediately after it (before the "FT &
   IN" label that occupies the 2-to-3 inch span).
-- In [`barnacle_measuring_tape - 1.jpeg`](barnacle_measuring_tape - 1.jpeg)
+- In [`barnacle_measuring_tape - 1.jpeg`](<barnacle_measuring_tape - 1.jpeg>)
   (full 0–13 in view), the same pattern holds for every digit 1
   through 11. The red "1F" foot marker after "11" sits at the 12-in
   position, with the line for 12 inches just after it.

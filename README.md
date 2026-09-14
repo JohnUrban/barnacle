@@ -3,7 +3,7 @@
 A hyperlocal flood forecast for 342 Bay Avenue, Highlands NJ. An
 hourly-updated public page plus event-driven flood alerts at
 [johnurban.github.io/barnacle](https://johnurban.github.io/barnacle/)
-predict water depth at 18 named landmarks at the property — from the
+predict water depth at 19 named landmarks at the property — from the
 SW storm grate across Bay (first water) up through the porch deck —
 using NOAA Sandy Hook tide + surge data, NWS rainfall + wind +
 temperature forecasts, and the v0.10.2 model calibrated against
@@ -48,7 +48,13 @@ a pointer.
 - Paste into the empty Scriptable script → Done
 - The widget on your home screen will pick up the new code on its next refresh (or long-press → Edit Widget → Done to force one)
 
-The widget evolves continuously (v7.25a as of 2026-08-07 — the
+The widget evolves continuously (v7.26a as of 2026-09-03 — the
 version footer bumps on every edit and requires re-copying into
 Scriptable); see the header comments in `docs/barnacle-widget.js`
 for the current field list.
+
+Privacy posture: this public, single-residence project intentionally
+identifies 342 Bay Ave and publishes timestamped field evidence, including
+GPS-bearing imagery. John has explicitly accepted that exposure. Every
+identifiable person other than John must be blurred before publication;
+see `AGENTS.md` rule 9.

@@ -52,14 +52,17 @@ def parse_station_local_time(value):
     ``-04:00`` works only during daylight time, while relabeling a UTC clock
     with a local offset shifts lead times by four or five hours.  Keep this
     conversion in one place so every consumer gets EDT/EST handling from the
-    IANA timezone database.
+    IANA timezone database. Known edge: NOAA LST/LDT omits an offset, so the
+    repeated 01:xx hour at fall-back cannot be uniquely recovered from one
+    value. Production should migrate NOAA transport/storage queries to GMT;
+    until then fold=0 is explicit legacy behavior, not proven chronology.
     """
     if isinstance(value, dt.datetime):
         parsed = value
     else:
         parsed = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=STATION_TZ)
+        return parsed.replace(tzinfo=STATION_TZ, fold=0)
     return parsed.astimezone(STATION_TZ)
 
 

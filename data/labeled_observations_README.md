@@ -3,7 +3,7 @@
 Append-only log of empirical water-depth observations at named landmarks
 near 342 Bay Ave. Each row is "what John (or another observer) actually saw
 at a given time at a given landmark." Used to validate, calibrate, or
-refine the flood model (current spec: `model/v0.10.1.md`).
+refine the flood model (current spec: `model/v0.10.2.md`).
 
 ## Why this exists (updated 2026-07-06; original rationale below is history)
 
@@ -106,7 +106,7 @@ When making a model change driven by observations:
 
 ## Relation to `data/labeled_events.csv`
 
-That file tracks **rain events** (storm-time windows with rain rate,
+That file is a **frozen legacy rain-event classifier** (storm-time windows with rain rate,
 duration, and flood label). This file tracks **landmark observations**
 (specific water-depth readings at specific landmarks at specific
 times). They're complementary:
@@ -116,10 +116,12 @@ times). They're complementary:
 - `labeled_observations.csv` answers "exactly how high was the water at
   this specific spot at this specific moment?"
 
-The Oct 30 / Apr 17 / Apr 18 / Dec 19 events in `labeled_events.csv`
-could be re-decomposed into multiple landmark observations and added
-here — useful if the precision becomes load-bearing for some future
-refinement, not blocking otherwise.
+Do not add new rows to `labeled_events.csv`; its mostly-`unlabeled`
+pre-event-README grain is retained for reproducibility. New event truth lives
+in this observation ledger plus `assets/observations/YYYY-MM-DD/README.md`.
+
+Legacy events can still be re-decomposed into new, provenance-backed
+landmark observations here without editing the frozen classifier.
 
 ## Non-model landmark keys (documented 2026-09-03; audit-sweep loop)
 

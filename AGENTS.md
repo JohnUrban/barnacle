@@ -49,7 +49,8 @@ live obligation) → `BACKLOG.md` OPEN LOOPS. On a flood event:
 5. **Model versioning.** Real changes (constants/formula/landmarks)
    = new `model/v0.X.md`, old spec to `model/archive/`, code stamp
    (`CURRENT_MODEL_VERSION`) + log README updated in the SAME
-   commit. Document mis-stamps honestly; never rewrite history.
+   commit. When archiving a spec, repair its relative links from the new
+   directory and test them. Document mis-stamps honestly; never rewrite history.
 6. **Rain DNA.** Rain modeling is the project's value-add — never
    defer it; ship crude-but-directionally-right and label
    uncertainty. Never reason "tide is low, so no flood risk."

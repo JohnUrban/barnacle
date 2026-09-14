@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-14 14:07 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-14 14:13 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -18,9 +18,8 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 - **Audit `2026-09-14-a1` remains OPEN.** Codex reported 6 high, 10
   medium, 10 model, 9 documentation, and 6 lower-severity findings.
   Claude Fable 5 independently confirmed every item; no finding was
-  rejected. Reports: `audits/2026-09-14-a1/01-...-codex.md` and
-  `02-...-claude.md`. Codex owns remediation; independent close-out is
-  still required.
+  rejected. Reports 01/02 hold the audit/reply; report 03 records Codex's
+  remediation claim. Independent review and close-out are still required.
 - **Remediation Phase 1 shipped as `cdaaf2d98` on 2026-09-14:**
   one canonical nowcast schema; actual `_write`→snapshot→SMS contract
   test; active/quality/schema/trend/source-age gates; unified 20-minute
@@ -39,7 +38,7 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   an external trigger. Actual off-GitHub watchdog/trigger deployment and
   local alert secrets remain owner-gated. The hardened launchd job was
   reinstalled and observed running on 2026-09-14.
-- **Phase 3 implemented, pending commit/push:** required-surface failures
+- **Phase 3 shipped as `88ae53e38`:** required-surface failures
   are fatal; atomic writes and generation/schema/model stamps cover landing,
   details, JSON, and current tide pages; the gate enforces equality. An
   append-only hourly day-risk ledger replaces the false day-max archive
@@ -47,9 +46,14 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   events, nonfinite accuracy/radar, malformed alert state, and active-nowcast
   fields. Confidence prose uses empirical q80; the unverified NWS parser is
   capped medium. A safe observation append CLI and UTC commit-date fix land
-  here. Live surfaces regenerated; 139 tests and gate pass.
-- Remaining audit work is force-ranked in BACKLOG: documentation/DST/data-lifecycle/tooling cleanup. Model concerns
-  G1-G10 are a separate scientific assessment—no silent v0.10.2 retuning.
+  here. Live surfaces regenerated; 139 tests and gate passed.
+- **Phase 4 implemented, pending commit/push:** all D1-D9 documentation
+  drift is repaired; archived links are test-covered; labeled_events is
+  frozen legacy; public privacy exposure is explicit; confidence statistics
+  and the one legacy blank are recorded. G1-G10 now have a v0.11 assessment
+  plan and acceptance criteria, with no v0.10.2 physics change. Residuals
+  kept OPEN honestly: off-GitHub deployment/credentials, exactly-once crash
+  semantics, NOAA fall-back-hour GMT migration, and broader tooling.
 - Weather check at 2026-09-14 13:31 EDT showed no rain in 72 hours, all
   forecast tides dry, and healthy forecast/nowcast inputs; John is present.
 
@@ -60,9 +64,8 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   response was 10–13 minutes earlier than the fixed-lag hindcast. A second
   compound curb flood near 10:05 exposed alert-state and cap coupling.
 - The 2026-09-13 outage combined a GitHub Actions queue wedge with a local
-  launchd clone wedge. The local tick was hardened and service restored;
-  its deeper lock/exit/observability repair is in Phase 2. The watchdog is
-  implemented but not independently deployed. The supposed queued runs are completed
+  launchd clone wedge. The local tick is hardened; the watchdog is implemented
+  but not independently deployed. The supposed queued runs were completed
   failures; BACKLOG now says so.
 - Nine measured floods are represented in the all-anchors analysis. Frozen
   v0.10.1 reproduction remains the behavior guard; v0.10.2 added only the
@@ -92,6 +95,5 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Immediate next step
 
-Commit and push Phase 3 with explicit paths and the required authorship
-trailers, then complete Phase 4 disposition/cleanup. Do not close the audit;
-close-out belongs to an independent reviewer after all remediation lands.
+Commit and push Phase 4 with explicit paths and required authorship trailers,
+then hand report 03 to an independent reviewer. Codex must not close this audit.

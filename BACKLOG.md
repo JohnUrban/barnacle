@@ -18,6 +18,11 @@ looks stale, trust this file. Ledger lines are append-only:
       not a wedged Actions queue. The independent watchdog script is ready
       but also needs deployment outside GitHub. Local execution redundancy
       for alert delivery remains owner/security-gated (production secrets).
+- [ ] Durable alert outbox/idempotency: per-rail acknowledgments now retry
+      ordinary partial failures, but a process death after provider acceptance
+      and before the state commit remains duplicate-over-miss by explicit
+      safety choice. True exactly-once needs provider idempotency or a durable
+      external delivery service; do not fake it with pre-send suppression.
 - [ ] Town map, staged features: bands/classic shading toggle;
       per-building doorsill tagging (user point-and-click, feeds
       freeboard); possible georeferenced user snapshot base layer.
@@ -60,6 +65,13 @@ looks stale, trust this file. Ledger lines are append-only:
       depths.
 
 **Parked (user-gated or seasonal)**
+- [ ] NOAA fall-back-hour ambiguity: LST/LDT timestamps omit an offset and
+      currently use explicit fold=0. Migrate transport/storage queries and
+      prediction identifiers to GMT/offset-aware timestamps before the 2026
+      fall transition; NOAA documents GMT as a supported API time zone.
+- [ ] Engineering breadth: add actionlint/shellcheck, browser DOM/accessibility
+      smoke tests, and incremental static typing as remaining module seams
+      make that tractable. Contract tests now cover the two audit regressions.
 - [ ] Falling-tide stall experiment (user field task; drain coupling
       "breathing" first written up 7/13 tide event).
 - [ ] Drainage-map email to Stephen Winters (user task).
@@ -207,11 +219,14 @@ all findings verified — see audits/2026-08-03-a2/)**
       append-only hourly day-risk product while preserving 09Z snapshots;
       80th-percentile error radius + NWS parser medium cap; safe observation
       append CLI; correct UTC commit dates. Full site regenerated and gated.
-- [ ] Phase 4: remaining documentation drift, DST repeated-hour design,
-      labeled-events lifecycle declaration, privacy decision, outbox residual,
-      test/tooling breadth, and model-debt disposition.
-- [ ] Phase 5: model G1-G10 assessment only; any formula change requires a
-      separately justified version bump and frozen-golden update.
+- [x] Phase 4 disposition/docs: D1-D9 repaired; labeled_events declared frozen;
+      privacy posture explicit; confidence analysis recorded; archive links
+      now tested; DST, exactly-once delivery, external activation, and broader
+      tooling are accurately retained as open work rather than false fixes.
+- [x] Phase 5 triage: G1-G10 consolidated into
+      history/plans/model-v0.11-assessment.md with acceptance criteria. No
+      formula or constant changed; any accepted candidate needs its own model
+      version and frozen-golden update.
 
 ## LEDGER (append-only; newest last)
 
@@ -287,3 +302,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-14 | DONE | audit-a1-phase1 | H1-H4 core alert/gauge repair: canonical real-payload nowcast contract; falling/active/quality/schema/20-min gates; NOAA bay-head 30-min and surge 60-min age limits; per-rail base/imminent acknowledgments and retries; SMS/base cap separation; consolidated fail-closed post-publish workflow dispatch + structural regression test; 122 tests and frozen replay green [VERIFIED: source + tests]
 2026-09-14 | DONE | audit-a1-phase2-code | H5/M5/M6/L4 remediation code: local launchd tick recovers stale PID locks, fails nonzero, rotates structured outcomes, installs pinned requirements with self-test, and coalesces quiet publication; heartbeat rows identify arm/phase/outcome including hourly gated-quiet; external trigger honestly renamed; GitHub-independent public/workflow freshness watchdog implemented with bounded ntfy and tests. External deployment and local alert-secret provisioning remain owner-gated [VERIFIED: scripts + tests]
 2026-09-14 | DONE | audit-a1-phase3 | H6/M1-M4/M7-M8 core artifact/data repair: required surface errors now fail; outputs write atomically and share gated generation/schema/model stamps; adversarial validators reject impossible events, nonfinite accuracy/radar, malformed alert state, and active-nowcast gaps; append-only hourly day-risk ledger replaces the false day-max archive assumption while 09Z snapshots stay immutable; confidence range uses empirical q80 and unvalidated NWS parser is capped medium; safe fsynced observation CLI replaces write-mode advice; UTC commit date fixed; 139 tests + live regenerated gate green [VERIFIED: source, tests, generated artifacts]
+2026-09-14 | DONE | audit-a1-phase4-disposition | D1-D9 repaired (19 landmarks, widget v7.26a, current spec/cadence/accuracy docs, HANDOFF <100, stale loops/workflow header, archived links + link test, tape links); labeled_events frozen in favor of provenance-backed event READMEs; privacy acceptance explicit; confidence calibration report and v0.11 assessment queue committed. DST fold, exact-once crash window, external service activation, and broader tooling remain explicit open risks, not falsely closed [VERIFIED: docs + tests]

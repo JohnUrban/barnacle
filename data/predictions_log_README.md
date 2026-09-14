@@ -32,8 +32,8 @@ heat-maps *client-side* from these numbers (HANDOFF 9b.10).
 
 | Phase | Rows per day | Trigger |
 |---|---|---|
-| Pre-9b.1 (current) | 2-4 | daily GitHub Actions workflow |
-| Post-9b.1 (planned) | ~48-96 | hourly GitHub Actions workflow |
+| Before hourly rollout (historical) | 2-4 | daily GitHub Actions workflow |
+| Current production | ~48-96 | hourly GitHub Actions workflow |
 
 Each workflow run appends one row per upcoming high tide in
 `forecast["all_tides"]`. With 2 tides per day visible at any time, that's
@@ -54,7 +54,7 @@ Each workflow run appends one row per upcoming high tide in
 | `water_navd88_predicted` | Predicted water level at 342 Bay in NAVD88 ft (= `sh_peak_mllw + local_enhancement + (MLLW→NAVD88 offset)`). **Empty when cold lockout suppresses flooding.** This is the canonical number for map reconstruction. |
 | `regime_predicted` | `dry` / `street` / `light` / `moderate` / `severe` / `cold_lockout` |
 | `cold_lockout` | `true` / `false` — whether the cold-weather drain-backflow suppression applies |
-| `confidence_level` | `high` / `medium` / `low` — forecast-stability indicator (HANDOFF 9b.6 will refine the wording around this) |
+| `confidence_level` | `high` / `medium` / `low` — forecast-stability label; displayed numeric ranges use the empirical 80th-percentile absolute error for the label when enough rows exist |
 | `model_version` | Model spec used for that as-run prediction. Current production stamp is `v0.10.2` (since 2026-09-03; additive landmark registration, no physics change). Historical rows intentionally retain their original version (`v0.10.1` and earlier). |
 
 ## Append-only convention
@@ -76,7 +76,7 @@ Each workflow run appends one row per upcoming high tide in
 
 ## How accuracy gets computed against this
 
-HANDOFF 9b.8 will add a website section that *joins* this log against
+The website accuracy section joins this log against
 NOAA observed water levels at each `target_tide_time` and computes
 three modes of accuracy (peak-magnitude, outcome-depth, binary
 classifier). With `hours_until_peak` as a grouping axis, we can also
@@ -95,5 +95,6 @@ once the new log is in production.
 - `data/forecast_accuracy.csv` — legacy one-row-per-day version
 - `docs/archive/YYYY-MM-DD.json` — daily snapshot of the full forecast
   dict (also legacy v1 storage; superseded by this log + the per-tide
-  pages planned in HANDOFF 9b.2)
-- `HANDOFF.md` sections 9b.3, 9b.4, 9b.8, 9b.10 — design context
+  pages)
+- `data/day_risk_log.csv` — append-only hourly rain-risk guidance used
+  for day-maximum markers; the daily archive remains an as-issued 09Z snapshot
