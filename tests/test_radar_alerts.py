@@ -13,6 +13,7 @@ UTC = dt.timezone.utc
 
 def _fresh_nc(**over):
     nc = {
+        "nowcast_schema_version": ff.NOWCAST_SCHEMA_VERSION,
         "active": True, "radar_quality": "ok",
         "source_latest_utc": "2026-08-07T22:32:00Z",
         "source_age_min": 3.6, "day_local": "2026-08-07",
@@ -97,12 +98,12 @@ class RadarAlertRankTests(unittest.TestCase):
 
 
 class RadarDispatchCheckTests(unittest.TestCase):
-    def _run(self, nc, sig):
+    def _run(self, nc, state):
         tmp = Path(tempfile.mkdtemp())
         (tmp / "docs").mkdir(); (tmp / "data").mkdir()
         (tmp / "docs" / "nowcast.json").write_text(json.dumps(nc))
         (tmp / "data" / "alert_state.json").write_text(
-            json.dumps({"sig": sig}))
+            json.dumps(state))
         nc_path = str(tmp / "docs" / "nowcast.json")
         st_path = str(tmp / "data" / "alert_state.json")
         real_join = nowcast.os.path.join
@@ -115,35 +116,43 @@ class RadarDispatchCheckTests(unittest.TestCase):
             return real_join(*parts)
 
         with mock.patch.object(nowcast.os.path, "join", fake_join):
-            return nowcast.radar_alert_check()
+            return nowcast.radar_alert_check(
+                dt.datetime(2026, 8, 7, 22, 40, tzinfo=UTC))
 
     def test_event7_dispatches(self):
-        self.assertEqual(self._run(_fresh_nc(), ""), 0)
+        self.assertEqual(self._run(_fresh_nc(), {}), 0)
 
-    def test_already_signed_class_does_not_redispatch(self):
+    def test_confirmed_sms_event_does_not_redispatch(self):
+        self.assertEqual(
+            self._run(_fresh_nc(), {"sms_event": {
+                "ts": "2026-08-07T22:35:00Z", "class": 3}}), 3)
+
+    def test_observed_signature_does_not_suppress_before_delivery(self):
         self.assertEqual(
             self._run(_fresh_nc(),
-                      "radar:2026-08-07:severe|pluv"), 3)
+                      {"sig": "radar:2026-08-07:severe|pluv"}), 0)
 
     def test_new_higher_class_redispatches(self):
         # signed at light earlier; now projecting severe -> dispatch
         self.assertEqual(
             self._run(_fresh_nc(),
-                      "radar:2026-08-07:light"), 0)
+                      {"sms_event": {
+                          "ts": "2026-08-07T22:35:00Z", "class": 1}}), 0)
 
     def test_stale_never_dispatches(self):
         self.assertEqual(
-            self._run(_fresh_nc(source_age_min=40.0), ""), 3)
+            self._run(_fresh_nc(
+                source_latest_utc="2026-08-07T21:50:00Z"), {}), 3)
 
     def test_falling_projection_does_not_dispatch(self):
         self.assertEqual(
             self._run(_fresh_nc(street_now_in=5.0, peak_proj_in=17.1,
-                                trend="falling"), ""), 3)
+                                trend="falling"), {}), 3)
 
     def test_below_thresholds_no_dispatch(self):
         self.assertEqual(
             self._run(_fresh_nc(street_now_in=3.0, peak_proj_in=9.0),
-                      ""), 3)
+                      {}), 3)
 
 
 if __name__ == "__main__":

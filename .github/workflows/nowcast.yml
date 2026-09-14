@@ -98,14 +98,6 @@ jobs:
           done
           exit 1
 
-      # Let radar publication finish, then make dispatch loss impossible to
-      # mistake for a healthy green run.
-      - name: Surface alert-ingest dispatch failure
-        if: always() && steps.dispatch.outcome == 'failure'
-        run: |
-          echo "::error::radar completed, but immediate NWS alert ingestion failed"
-          exit 1
-
       # DISPATCHES RUN AFTER THE PUSH (event #8, 2026-09-01: the
       # 23:15Z run projected +14.3 and dispatched, but the forecast
       # run checked out main seconds BEFORE the nowcast commit
@@ -130,25 +122,6 @@ jobs:
             echo "dispatch=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Dispatch forecast workflow for immediate ingestion
-        id: dispatch
-        if: steps.adc.outputs.dispatch == 'true'
-        continue-on-error: true
-        run: |
-          for attempt in 1 2 3; do
-            if curl -sf -X POST \
-              -H "Authorization: Bearer ${{ github.token }}" \
-              -H "Accept: application/vnd.github+json" \
-              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/daily_forecast.yml/dispatches" \
-              -d '{"ref":"main","inputs":{"force_email":"false"}}'; then
-              echo "dispatched on attempt $attempt"
-              exit 0
-            fi
-            echo "::warning::alert-ingest dispatch attempt $attempt failed"
-            sleep $((attempt * 2))
-          done
-          echo "::error::alert-ingest dispatch failed after 3 attempts"
-          exit 1
       - name: Radar alert dispatch check
         if: steps.gate.outputs.go == 'true'
         id: rac
@@ -163,12 +136,23 @@ jobs:
             echo "dispatch=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Dispatch forecast for radar alert
-        if: steps.rac.outputs.dispatch == 'true'
+      # Exactly one dispatch for either official-alert ingestion or a
+      # newly eligible radar impact. Any API failure makes the run red.
+      - name: Dispatch forecast workflow for immediate alert evaluation
+        id: dispatch
+        if: steps.adc.outputs.dispatch == 'true' || steps.rac.outputs.dispatch == 'true'
         run: |
-          curl -sf -X POST \
-            -H "Authorization: Bearer ${{ github.token }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/daily_forecast.yml/dispatches" \
-            -d '{"ref":"main","inputs":{"force_email":"false"}}' \
-            && echo "dispatched" || echo "dispatch failed (non-fatal)"
+          for attempt in 1 2 3; do
+            if curl -sf -X POST \
+              -H "Authorization: Bearer ${{ github.token }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/workflows/daily_forecast.yml/dispatches" \
+              -d '{"ref":"main","inputs":{"force_email":"false"}}'; then
+              echo "dispatched on attempt $attempt"
+              exit 0
+            fi
+            echo "::warning::forecast dispatch attempt $attempt failed"
+            sleep $((attempt * 2))
+          done
+          echo "::error::forecast dispatch failed after 3 attempts"
+          exit 1

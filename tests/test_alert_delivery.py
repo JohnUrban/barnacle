@@ -88,6 +88,37 @@ class AlertDecisionTests(unittest.TestCase):
         self.assertEqual(saved["last_sent_channels"], ["ntfy"])
         self.assertEqual(saved["last_sent_rank"], 3)
 
+    def test_partial_base_delivery_retries_only_failed_rail(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "alert_state.json"
+            first = ff.evaluate_alert(_rain_forecast(), _state(), self.t0)
+            saved = ff.persist_alert_state(
+                first, ["ntfy"], str(path),
+                requested_base_channels={"ntfy", "email"})
+            repeat = ff.evaluate_alert(
+                _rain_forecast(), saved, self.t0 + dt.timedelta(hours=1))
+
+        self.assertFalse(repeat["send"])
+        self.assertEqual(ff._base_channels_to_attempt(repeat), {"email"})
+        self.assertEqual(saved["pending_base"]["channels"], ["email"])
+
+    def test_partial_retry_clears_pending_and_preserves_both_acks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "alert_state.json"
+            first = ff.evaluate_alert(_rain_forecast(), _state(), self.t0)
+            saved = ff.persist_alert_state(
+                first, ["ntfy"], str(path),
+                requested_base_channels={"ntfy", "email"})
+            repeat = ff.evaluate_alert(
+                _rain_forecast(), saved, self.t0 + dt.timedelta(hours=1))
+            complete = ff.persist_alert_state(
+                repeat, ["email"], str(path),
+                requested_base_channels={"email"})
+
+        self.assertNotIn("pending_base", complete)
+        self.assertEqual(complete["last_sent_channels"], ["email", "ntfy"])
+        self.assertEqual(complete["base_sends_today"]["count"], 1)
+
     def test_same_event_after_all_clear_obeys_24_hour_cooldown(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "alert_state.json"
@@ -265,6 +296,17 @@ class DailyCapTests(unittest.TestCase):
         got = _json.loads(out.read_text())
         self.assertEqual(got["sends_today"],
                          {"date": "2026-08-03", "count": 2})
+        self.assertEqual(got["base_sends_today"],
+                         {"date": "2026-08-03", "count": 2})
+
+    def test_sms_count_does_not_exhaust_base_cap(self):
+        st = {"rank": 0, "sig": "", "last_sent_rank": 0,
+              "last_sent_sig": "", "last_sent_ts": "",
+              "sends_today": {"date": "2026-08-03", "count": 2},
+              "base_sends_today": {"date": "2026-08-03", "count": 0},
+              "sms_sends_today": {"date": "2026-08-03", "count": 2}}
+        d = self._decide(st)
+        self.assertTrue(d["send"])
 
     def test_failed_delivery_does_not_increment(self):
         import json as _json
@@ -374,4 +416,3 @@ class QuietHoursTests(unittest.TestCase):
                               now_utc=dt.datetime(2026, 8, 9, 12, 5,
                                                   tzinfo=UTC))  # 8:05 AM
         self.assertTrue(d["send"])
-

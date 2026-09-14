@@ -194,7 +194,7 @@ def _write(payload, now_utc=None):
     if best and best_utc:
         payload["day_max_street_in"] = round(best, 1)
         payload["day_max_utc"] = best_utc
-    payload.setdefault("nowcast_schema_version", "1.0")
+    payload.setdefault("nowcast_schema_version", ff.NOWCAST_SCHEMA_VERSION)
     _append_heartbeat(payload,
                       now_utc or dt.datetime.now(dt.timezone.utc))
     tmp = OUT_PATH + ".tmp"
@@ -318,7 +318,12 @@ def current_bay(now_local=None):
         pairs = [(r["t"], float(r["v"])) for r in d["data"]]
         pairs = ff._despike_gauge(pairs)
         if pairs:
-            return pairs[-1][1] - 2.82, "observed"
+            latest_time, latest_value = pairs[-1]
+            age_min = ff.station_observation_age_min(latest_time, now)
+            if -2 <= age_min <= ff.GAUGE_HEAD_MAX_AGE_MIN:
+                return latest_value - 2.82, "observed"
+            predicted, _target = _predicted_bay(now)
+            return predicted, "astronomical-fallback-stale-gauge"
     except Exception:
         pass
     predicted, _target = _predicted_bay(now)
@@ -331,7 +336,7 @@ def run(now_utc=None):
         now = now.replace(tzinfo=dt.timezone.utc)
     ff._load_stage_curve()
     try:
-        bay, bay_source = current_bay()
+        bay, bay_source = current_bay(ff._station_local_now(now))
     except Exception as e:
         _write({"active": False, "error": f"bay level unavailable: {e}",
                 "bay_source": "unavailable", **_unavailable_radar_meta()},
@@ -441,8 +446,8 @@ def run(now_utc=None):
                    else regime_headline.upper()
                    + (" (rising)" if rising else ""))
         payload.update({
-            "street_now_in": round(now_stage, 1),
-            "peak_proj_in": round(pk, 1),
+            ff.NOWCAST_STREET_NOW_KEY: round(now_stage, 1),
+            ff.NOWCAST_PEAK_PROJ_KEY: round(pk, 1),
             "peak_proj_utc": pk_t.strftime("%H:%M"),
             "regime_now": regime_now,
             "regime_proj": regime_proj,
@@ -491,10 +496,7 @@ def alert_dispatch_check():
     return 3
 
 
-RADAR_ALERT_MAX_AGE_MIN = 25
-
-
-def radar_alert_check():
+def radar_alert_check(now_utc=None):
     """Exit 0 when the just-written nowcast shows alertable street
     water that alert_state has not yet alerted on (event #7: Barnacle
     projected +16.9 in live and no alert pathway existed). Alertable:
@@ -508,37 +510,23 @@ def radar_alert_check():
     except (OSError, ValueError):
         print("radar-alert: no readable nowcast.json")
         return 3
-    if not nc.get("active") or nc.get("radar_quality") != "ok":
-        print("radar-alert: inactive or degraded radar")
-        return 3
-    if (nc.get("source_age_min") or 999) > RADAR_ALERT_MAX_AGE_MIN:
-        print("radar-alert: source too old "
-              f"({nc.get('source_age_min')} min)")
-        return 3
-    street = nc.get("street_now_in") or 0
-    proj = nc.get("peak_proj_in") or 0
-    curb_in = (4.16 - 3.52) * 12      # light class floor
-    lawn_in = (4.66 - 3.52) * 12      # moderate class floor
-    # falling pool: the projection is a stateless-window overshoot
-    # artifact (event #7) — only current street water counts
-    proj_ok = proj >= lawn_in and nc.get("trend") != "falling"
-    if street < curb_in and not proj_ok:
-        print(f"radar-alert: below thresholds (now {street}, proj {proj},"
-              f" trend {nc.get('trend')})")
-        return 3
-    live_class = ff.classify_regime_from_water(
-        3.52 + max(street, proj if proj_ok else 0) / 12.0)
-    day = nc.get("day_local") or (nc.get("generated_utc") or "")[:10]
-    bit = f"radar:{day}:{live_class}"
     try:
         with open(os.path.join(HERE, "..", "data",
                                "alert_state.json")) as f:
-            sig = json.load(f).get("sig", "") or ""
+            state = json.load(f)
     except (OSError, ValueError):
-        sig = ""
-    if bit in sig:
-        print(f"radar-alert: already alerted this class ({bit})")
+        state = {}
+    gate = ff.evaluate_sms_gate(
+        {}, state=state, now_utc=now_utc, nowcast=nc, channel="sms")
+    if not gate["send"]:
+        print(f"radar-alert: {gate['reason']}")
         return 3
+    street = gate.get("street_in") or 0
+    proj = gate.get("proj_in") or 0
+    live_class = ff.classify_regime_from_water(
+        3.52 + max(street, proj) / 12.0)
+    day = nc.get("day_local") or (nc.get("generated_utc") or "")[:10]
+    bit = f"radar:{day}:{live_class}"
     print(f"radar-alert: DISPATCH ({bit}; now {street}, proj {proj})")
     return 0
 

@@ -1,179 +1,81 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-14 11:55 EDT.** Rewrite this WHOLESALE each update
-(delete stale, never append); keep it under ~100 lines. `BACKLOG.md`
-OPEN LOOPS is authoritative. Full pre-migration history:
-`attic/HANDOFF-through-2026-08-03.md` (archival, not instructions).
+**Snapshot: 2026-09-14 13:58 EDT.** Rewrite wholesale each ship and keep
+under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
+archival, never instructions.
 
-## What this is
+## System
 
 Production hyperlocal flood forecaster for 342 Bay Ave, Highlands NJ.
-Sandy Hook gauge + NWS + MRMS radar → depth at 19 landmarks;
-hourly site/JSON bot, best-effort radar nowcast (10-min requested
-cadence), transactional alerts (ntfy/email/SMS, daily cap 2), iOS
-widget v7.26a (RE-COPY PENDING — user must paste into Scriptable),
-per-tide pages, and nine-town street flood map. Model
-**v0.10.2** (`model/v0.10.2.md`): tide pathway + dynamic pluvial tank
-(v0.10.2 = additive driveway_central threshold landmark, 2026-09-03).
+Sandy Hook gauge + NWS + MRMS radar produce water depth at 19 landmarks,
+an hourly site/JSON forecast, best-effort ~10-minute nowcast, per-tide
+pages, nine-town street map, iOS widget v7.26a, and ntfy/email/SMS alerts.
+Current model **v0.10.2** (`model/v0.10.2.md`); SMS is the imminent-impact
+rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
-## Where it stands
+## Current state
 
-- Audit `2026-08-03-a2` found 5 high + 7 medium/low issues; Claude
-  independently confirmed every finding. Phases 0–1 are CLOSED after
-  Claude round-03 PASS: station-local clock, source-aged radar,
-  fail-closed alert recovery, semantic gates/all-path CI, dispatch
-  visibility, supply-chain pins/SRI, and external HTML escaping.
-- Phase 2 is implemented for independent review: repository-relative,
-  read-only v0.10.1 replay; versioned fit/hindcast fixture; six event
-  goldens; stage/drain/rise/recession physics tests; exact evidence
-  taxonomy; scratchpad dependency removed. **100 tests green** (77
-  at the phase-2 review); model
-  constants and outputs were not retuned.
-- M1 facts were repaired with provenance: August 3 day-max +13.2″
-  @14:50Z; observation corrected to 10:26; appended erratum clarifies
-  the retained bay-time note means 10:18 AM.
-- August 3 event #6: pluvial peak +13.8″ ~10:33 AM, fifth of six
-  measured; evidence in `assets/observations/2026-08-03/`.
+- **Audit `2026-09-14-a1` remains OPEN.** Codex reported 6 high, 10
+  medium, 10 model, 9 documentation, and 6 lower-severity findings.
+  Claude Fable 5 independently confirmed every item; no finding was
+  rejected. Reports: `audits/2026-09-14-a1/01-...-codex.md` and
+  `02-...-claude.md`. Codex owns remediation; independent close-out is
+  still required.
+- **Remediation Phase 1 implemented 2026-09-14, pending commit/push:**
+  one canonical nowcast schema; actual `_write`→snapshot→SMS contract
+  test; active/quality/schema/trend/source-age gates; unified 20-minute
+  radar freshness; stale NOAA bay head falls back to astronomy after 30
+  minutes and surge persistence degrades after 60; per-rail base and
+  imminent acknowledgments; exact partial retries; SMS/base cap separation;
+  radar redispatch keys on confirmed SMS; one retrying, fail-closed workflow
+  dispatch after publication; workflow-order regression test. 122 tests,
+  artifact gate, and frozen v0.10.2 replay pass.
+- Remaining audit work is force-ranked in BACKLOG: scheduler/watchdog and
+  arm health; atomic cross-stamped surfaces and stronger validators;
+  day summaries; confidence/data/DST/dependency/doc cleanup. Model concerns
+  G1-G10 are a separate scientific assessment—no silent v0.10.2 retuning.
+- Weather check at 2026-09-14 13:31 EDT showed no rain in 72 hours, all
+  forecast tides dry, and healthy forecast/nowcast inputs; John is present.
 
-## RIGHT NOW
+## Evidence and operating context
 
-- **AUDIT 2026-09-14-a1 OPEN — Codex comprehensive audit, reviewed,
-  awaiting Codex's remediation.** All findings CONFIRMED (none
-  rejected) in audits/2026-09-14-a1/02-...-claude.md. Highest
-  stakes: H1 the SMS projection field mismatch (peak_proj_in vs
-  projected_peak_in — projection-only imminent texts DO NOT WORK;
-  actual-impact texts do), H2 SMS retry loss + cap-accounting
-  conflation, H3 dispatch watchdog precedes its step (visibility
-  regressed by the 09-02 reorder), H4 no gauge age limit, H5
-  scheduler lock/silence limits, H6 stale-surface risk. Remediation
-  order + amendments in the reply; alert-critical steps need a
-  quiet weather window. NO fixes performed per owner instruction.
+- Event #9, 2026-09-13: flash pluvial flood peaked level with lawn step,
+  ~+13.7 inches at 07:01:23 EDT [VERIFIED: 18-photo EXIF timeline]; street
+  response was 10–13 minutes earlier than the fixed-lag hindcast. A second
+  compound curb flood near 10:05 exposed alert-state and cap coupling.
+- The 2026-09-13 outage combined a GitHub Actions queue wedge with a local
+  launchd clone wedge. The local tick was hardened and service restored,
+  but its lock/exit semantics and lack of independent watchdog remain live
+  audit obligations. The two supposed queued zombie runs are completed
+  failures; BACKLOG now says so.
+- Nine measured floods are represented in the all-anchors analysis. Frozen
+  v0.10.1 reproduction remains the behavior guard; v0.10.2 added only the
+  driveway-entering threshold observable at 4.67 NAVD88.
+- Accepted model debt: fixed rainfall lag, near-core peak/recession bias,
+  stateless nowcast tank, no antecedent wetness, fixed bay head over the
+  projection, simplified drainage/delivery, forecast-input vs tank-skill
+  conflation, `_pluvial_fill` sub-bin discontinuity, cross-fit driveway
+  threshold, and unsegmented historical tide bias.
 
-- **EVENT #9 (2026-09-13 dawn) + OUTAGE:** flash pluvial flood,
-  peak +13.7 level-with-lawn-step at 7:01:23 [VERIFIED, 18-photo
-  EXIF timeline, GPS intact]; sidewalk edge to peak in FOUR
-  minutes; onset-to-violence in 6 min (box-mean 3.16 in/hr
-  @6:54 AM, point 3.78); rising mid-tide, pure pluvial; receded
-  driveable by 7:30. Hindcast +12.2 @7:14 — ALL THREE standing
-  biases at once: 10–13 min LATE (cleanest 15-min-lag
-  falsification yet; street responded in ~3–7 min), −1.5
-  near-core low, recession overhold. Driveway-entering
-  photographed at ~+13.7 (v0.10.2 observable). All-anchors now
-  NINE. ROUND 2 same morning: first live-observed + photographed
-  COMPOUND flood (astro high 09:58 + ~1 ft surge, bay 3.95 over
-  grates, tidal base +5.2 + ~2 rain; crest ~curb-top; recession
-  call verified by 10:59 photos); nowcast compound overread ~+4
-  logged. Triple-text forensics -> user-approved SMS POLICY
-  SHIPPED same day: evaluate_sms_gate — SMS = imminent street
-  impact only (fresh nowcast, fires past base sig-dedup), one per
-  event (re-arm 6h/class escalation), short present-tense body;
-  ntfy/email unchanged; origin-state refresh narrows the dupe
-  window. 111 tests. **Barnacle was DARK the
-  whole event**: GH Actions queue wedged since ~04:15Z AND launchd
-  half-A silently wedged since 09-03 (unpushed-commit rebase loop,
-  exit-0 for 10 days). Tick script hardened (clone disposable at
-  all 3 wedge points), clone reset, manual publication restored,
-  ticks + CI verified flowing again by 7:50 AM. Storm-path dispatch
-  STILL untested (wedge preempted it). Half-B's case: third strong
-  field argument. See assets/observations/2026-09-13/ + BACKLOG.
-- **Audit sweep (2026-09-02 ~midnight)** found and fixed same-night:
-  seam-2 extraction had been SILENTLY REVERTED by a stale-copy
-  recovery (rule-11 #6; restored + `tests/test_module_split.py`
-  guard); heartbeat SLO ledger was staged by neither publish path
-  (fixed + union-merge); launchd half-A had never fired once in 26
-  days (clone predated bin/; revived, first tick 03:52Z); public
-  "FOUR events" claim survived a closed audit (fixed + test);
-  Aug 27 post-mortem cause corrected by ledger erratum. The queued
-  loops were then CLOSED overnight (user green-light): all-anchors
-  figure rebuilt with all EIGHT measured floods (Aug 7 added for
-  the first time; a stale xlim had been clipping Oct 30 from the
-  PNG); driveway_central cross-fit 13.8–13.9″ ≈ 4.67 NAVD88 and
-  REGISTERED via model bump v0.10.2 (user-ordered) as a THRESHOLD
-  OBSERVABLE — the driveway is a ramp, not a point (user field
-  correction; the "shares a grade" overreach retracted in the
-  ledger README); tier-3 doc-drift + machine-local paths batch
-  closed. Half-A verified by three timer-fired 10-min ticks
-  (04:03–04:23Z, status 0).
-- Phase-3 wave 1 COMPLETE (2026-09-02 evening): seams 1 and 2
-  (station_time, rendering) extracted (facade 10,339→7,007, all names
-  re-exported); additive residuals closed (nowcast_schema_version,
-  cadence SLO heartbeats + details ops line, erratum convention +
-  test). Remaining seams (model_core, data_sources, ledgers, alerts)
-  need a verified quiet weather window each.
+## Production rules
 
-- Ponding-dips layer shipped + v2 same evening: road-profile sags
-  with cross-street-drain discount (71 pruned), two tiers (teal
-  rain-only / purple tide-reachable low shelf), tap readouts, top-20
-  GPS field list (history/data/ponding_top20.md). Validated: Rt 36
-  valley detected; 342 corner correctly does NOT register (curb-
-  scale, drain-driven — the calibrated model's territory), boundary
-  documented in the explainer.
+- Before flood work read `PLAYBOOK.md`; before all work read `AGENTS.md`,
+  this file, audits, then BACKLOG.
+- Bots commit continuously. Add explicit paths. Commit → artifact gate →
+  push; if rejected, fetch/rebase or abort → gate again → retry. Union
+  append-only ledgers. Never `pull --rebase || true`.
+- Use station-time helpers for local dates. Run `date` before relative-time
+  prose. NOAA timestamps are 24-hour station-local.
+- `alert_state.json` acknowledges confirmed delivery only. Restore it from
+  origin after local generation and before any commit.
+- Provenance tags and primary records are mandatory for measured claims.
+  Model behavior changes require version/spec/code/log stamps in lockstep.
+- Every semantic change must cover all relevant alert and display arms.
+  Required generated surfaces must eventually become atomic and cross-stamped.
+- Widget v7.26a still requires John to re-copy it into Scriptable.
 
-- **Event #8 (2026-09-01 ~19:25 ET):** pluvial peak ~+13.9″ (lawn-step
-  bottom) on a DEAD-LOW bay; 19-photo EXIF timeline; nowcast's best
-  showing (+14.3 projected 8 min early) but the radar alert LOST A
-  RACE to the push and no text went out — dispatch now runs after the
-  commit step (fixed 2026-09-02). Analysis DONE: hindcast +12.0
-  (−1.9, +11 min — 3rd near-core-lag + tail-overhold confirmations);
-  all-anchors figure now ALL EIGHT measured floods (2026-09-03: the
-  sweep's anchor-count loop closed — Aug 7 had never been added and
-  a stale xlim had been clipping Oct 30 from the committed PNG).
-- **2026-08-27:** evidenced-unmeasured flood while user traveled —
-  radar 1.9–3.8 in/hr ×45 min, full-window hindcast +16.4 [INFERRED],
-  mud up the driveway [VERIFIED residue], Kevin's witness timeline
-  (cat-bowl EXIF), 2 alerts delivered incl. mid-burst FFW; nowcast
-  dark 7 h (GH cron collapse; the launchd half-A turned out to have
-  NEVER fired — its clone predated bin/ on origin; fixed + revived
-  2026-09-02, first genuine tick 03:52Z) — strongest case yet
-  for external-cron half-B. Witness bounds overlaid on the tank curve
-  (companion plot): model −2.1″ short / ~19 min late vs the 2:43
-  driveway bound — 4th near-core-lag quantification, first from
-  testimony. Hindcast recipe now committed
-  (`history/scripts/event_hindcast.py`); nine-storm onset-aligned
-  comparison figure added for the witnesses (event_comparison.png).
-- Aug 10–13 perigean-spring sequence: four consecutive photo-verified
-  street-regime evenings logged (EXIF-timed, landmark-bounded,
-  gauge-cross-checked; as-run errors ≤0.18 ft at 25–85-min leads) —
-  tidal pathway visually verified 4/4.
-- All-pathways peaks chart: full-history payload (2026-05-18→) with
-  From/To picker (default view = 7 days + forecast; axis bounds now
-  derive per-render — first-paint full-span bug fixed same day) and
-  a low-tides toggle (astronomical lows, cached, default off).
-  Per-tide twin exempt (ordinal axis — objective parallel-arms
-  exemption).
+## Immediate next step
 
-- Audit a2 is CLOSED (round 05): Phase 2 reviewed PASS — cold
-  reproduction verified, no retuning, M2/L2 closed; residuals below.
-- Town map covers the FULL map view: nine towns (Highlands, AH,
-  Leonardo, Sea Bright, Rumson, Fair Haven, Red Bank,
-  Navesink/Locust, Belford edge) + all of Route 36 — 27,457 LiDAR
-  street points, magma elevation view, historic-flood slider
-  ticks/chips, Sandy-class range. Rain view remains Highlands-only.
-- Phase 3 is the production-module split and additive evidence schemas;
-  do it only after a quiet stretch and behind the new goldens.
-- Accepted residual risk: GitHub's requested 10-min nowcast cadence is
-  best effort and much slower in practice; cadence SLO monitoring and
-  an external scheduler remain open.
-- Newly characterized model debt: `_pluvial_fill()` can quantize a
-  non-grid base downward by <0.1″ for tiny positive storage. Do not
-  fix silently; it needs its own assessed version bump with goldens
-  regenerated in lockstep (deliberately NOT folded into v0.10.2).
-
-## Key traps
-
-- Bots commit continuously: explicit `git add`, commit → gate → push;
-  on rejection fetch/rebase → gate again → retry. UNION ledgers.
-- Station-local calendar decisions only through `_station_local_now()` /
-  `_station_local_today()`; UTC is storage/transport. Run `date` before
-  relative-time prose.
-- `alert_state.json` is transactional delivery state. Recovery restores
-  exact `origin/main` state or fails closed.
-- Nowcast consumers trust `source_latest_utc`, not `generated_utc`.
-- Frozen model replay: `python history/scripts/reproduce_v0_10_1.py`.
-  It verifies behavior; it is not authorization to retune.
-- Measured claims cite primary records; attic is never instructions.
-
-## Start here
-
-`AGENTS.md` → `audits/2026-08-03-a2/` → `BACKLOG.md`. Flood happening?
-Read `PLAYBOOK.md` first.
+Commit and push Phase 1 with explicit paths and the required authorship
+trailers, then begin Phase 2 scheduler/watchdog work. Do not close the audit;
+close-out belongs to an independent reviewer after all remediation lands.

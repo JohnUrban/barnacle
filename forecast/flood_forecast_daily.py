@@ -183,6 +183,40 @@ HIGHLANDS_LON = -73.995195  # (2026-09-02 fix)
 NOAA_STATION = "8531680"  # Sandy Hook
 UA = os.environ.get("USER_AGENT", "highlands-flood-forecast (contact@example.com)")
 
+# Cross-process nowcast contract. The producer, forecast alert adapter,
+# dispatch check, and tests all use these names; changing one is a schema
+# change rather than a local refactor.
+NOWCAST_SCHEMA_VERSION = "1.0"
+NOWCAST_STREET_NOW_KEY = "street_now_in"
+NOWCAST_PEAK_PROJ_KEY = "peak_proj_in"
+NOWCAST_FRESH_MAX_AGE_MIN = 20
+
+# NOAA observations are useful history after these limits, but they are not
+# current state. Stale bay head falls back to astronomy; stale surge never
+# masquerades as a live persistence input.
+GAUGE_HEAD_MAX_AGE_MIN = 30
+SURGE_OBS_MAX_AGE_MIN = 60
+LIVE_GAUGE_MAX_AGE_MIN = 30
+_LAST_SURGE_OBSERVATION_META = {
+    "status": "unavailable",
+    "detail": "not fetched",
+    "age_min": None,
+}
+
+
+def station_observation_age_min(value, now_local=None):
+    """Age in minutes of a NOAA lst_ldt timestamp at station local now."""
+    observed = parse_station_local_time(value)
+    now = now_local if now_local is not None else _station_local_now()
+    if not isinstance(now, dt.datetime):
+        raise TypeError("now_local must be a datetime")
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=STATION_TZ)
+    else:
+        now = now.astimezone(STATION_TZ)
+    return (now.astimezone(dt.timezone.utc)
+            - observed.astimezone(dt.timezone.utc)).total_seconds() / 60.0
+
 
 # ============================================================
 # Data fetchers
@@ -566,10 +600,30 @@ def fetch_current_surge():
     have at least one bracketing hourly prediction, then linearly
     interpolate to the observed minute mark.
     """
+    _LAST_SURGE_OBSERVATION_META.update({
+        "status": "unavailable",
+        "detail": "no usable observations",
+        "age_min": None,
+    })
     obs = fetch_observed_recent()
     if not obs:
         return None
     last_obs_time, last_obs_val = obs[-1]
+    try:
+        age_min = station_observation_age_min(last_obs_time)
+    except (TypeError, ValueError):
+        _LAST_SURGE_OBSERVATION_META["detail"] = (
+            f"invalid latest observation time {last_obs_time!r}")
+        return None
+    _LAST_SURGE_OBSERVATION_META["age_min"] = round(age_min, 1)
+    if age_min < -2 or age_min > SURGE_OBS_MAX_AGE_MIN:
+        _LAST_SURGE_OBSERVATION_META.update({
+            "status": "degraded",
+            "detail": (f"latest observation {age_min:.1f} min old; "
+                       f"surge persistence limit is "
+                       f"{SURGE_OBS_MAX_AGE_MIN} min"),
+        })
+        return None
     try:
         obs_dt = dt.datetime.strptime(last_obs_time, "%Y-%m-%d %H:%M")
     except (ValueError, TypeError):
@@ -618,7 +672,13 @@ def fetch_current_surge():
         pred_at_obs = after_v
     else:
         return None
-    return last_obs_val - pred_at_obs
+    surge = last_obs_val - pred_at_obs
+    _LAST_SURGE_OBSERVATION_META.update({
+        "status": "ok",
+        "detail": (f"observed minus astronomical: {surge:+.3f} ft; "
+                   f"observation age {age_min:.1f} min"),
+    })
+    return surge
 
 
 def fetch_surge_swing_6h():
@@ -633,6 +693,12 @@ def fetch_surge_swing_6h():
     start = end - dt.timedelta(hours=6)
     obs_rows = fetch_observed_recent()
     if not obs_rows:
+        return None
+    try:
+        if station_observation_age_min(
+                obs_rows[-1][0], now_local=end) > SURGE_OBS_MAX_AGE_MIN:
+            return None
+    except (TypeError, ValueError):
         return None
     try:
         data = _get(
@@ -1911,18 +1977,24 @@ def build_forecast():
     # active NWS projection. Missing observations remain None and produce an
     # explicitly degraded astronomical-only tide, never a mislabeled +0.0
     # persistence estimate.
+    _LAST_SURGE_OBSERVATION_META.update({
+        "status": "unavailable",
+        "detail": "no usable observed/predicted pair",
+        "age_min": None,
+    })
     try:
         persisted_surge = fetch_current_surge()
     except Exception as e:
         persisted_surge = None
         surge_error = str(e)
     else:
-        surge_error = ("no usable observed/predicted pair"
-                       if persisted_surge is None else "")
+        surge_error = ""
+    surge_meta = dict(_LAST_SURGE_OBSERVATION_META)
     input_health["surge_observation"] = {
-        "status": "ok" if persisted_surge is not None else "unavailable",
-        "detail": (f"observed minus astronomical: {persisted_surge:+.3f} ft"
-                   if persisted_surge is not None else surge_error),
+        "status": ("ok" if persisted_surge is not None
+                   else surge_meta.get("status", "unavailable")),
+        "detail": (surge_meta.get("detail") if not surge_error
+                   else surge_error),
     }
 
     # Evaluate each high tide independently
@@ -2217,10 +2289,24 @@ def build_forecast():
         gauge_error = str(e)
     else:
         gauge_error = "no usable observations" if not live_gauge_24h else ""
+    gauge_status = "unavailable"
+    gauge_detail = gauge_error
+    if live_gauge_24h:
+        try:
+            gauge_age = station_observation_age_min(live_gauge_24h[-1][0])
+        except (TypeError, ValueError):
+            gauge_status = "degraded"
+            gauge_detail = (f"{len(live_gauge_24h)} observations; latest "
+                            "timestamp is invalid")
+        else:
+            gauge_status = ("ok" if -2 <= gauge_age <= LIVE_GAUGE_MAX_AGE_MIN
+                            else "degraded")
+            gauge_detail = (f"{len(live_gauge_24h)} despiked observations; "
+                            f"latest {live_gauge_24h[-1][0]} "
+                            f"({gauge_age:.1f} min old)")
     input_health["live_gauge"] = {
-        "status": "ok" if live_gauge_24h else "unavailable",
-        "detail": (f"{len(live_gauge_24h)} despiked observations; latest "
-                   f"{live_gauge_24h[-1][0]}" if live_gauge_24h else gauge_error),
+        "status": gauge_status,
+        "detail": gauge_detail,
     }
 
     # Model-predicted water level series for the widget tide-curve
@@ -4138,7 +4224,7 @@ ALERT_DAILY_CAP = 2
 # nowcast, once per flood event, re-armed after SMS_REARM_HOURS or on
 # class escalation. Long-lead watch prose stays on ntfy/email.
 SMS_REARM_HOURS = 6
-SMS_FRESH_MIN = 30            # nowcast source age ceiling, minutes
+SMS_FRESH_MIN = NOWCAST_FRESH_MAX_AGE_MIN
 SMS_IMPACT_TIERS = (          # (inches vs SW grate, class, phrase)
     (22.7, 3, "porch-step level"),
     (13.68, 2, "at lawn step"),
@@ -4146,7 +4232,56 @@ SMS_IMPACT_TIERS = (          # (inches vs SW grate, class, phrase)
 )
 
 
-RADAR_ALERT_MAX_AGE_MIN = 25
+def nowcast_projected_peak(nc):
+    """Projection usable by every alert consumer, or None.
+
+    A falling pool's held-rate projection is a known stateless-window
+    overshoot. Missing/unknown trend is therefore not permission to use it.
+    """
+    value = nc.get(NOWCAST_PEAK_PROJ_KEY)
+    if nc.get("trend") != "rising":
+        return None
+    if not isinstance(value, (int, float)) or not math.isfinite(value):
+        return None
+    return value
+
+
+def _nowcast_source_age(nc, now_utc=None):
+    """Recompute source age from the producer timestamp."""
+    latest = dt.datetime.strptime(
+        nc.get("source_latest_utc") or "", "%Y-%m-%dT%H:%M:%SZ"
+    ).replace(tzinfo=dt.timezone.utc)
+    now = now_utc or dt.datetime.now(dt.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
+    else:
+        now = now.astimezone(dt.timezone.utc)
+    return (now - latest).total_seconds() / 60.0
+
+
+def _nowcast_contract_reason(nc, now_utc=None):
+    """Return why a payload cannot drive alerts, else empty string."""
+    if not isinstance(nc, dict):
+        return "no readable nowcast"
+    if nc.get("nowcast_schema_version") != NOWCAST_SCHEMA_VERSION:
+        return "unsupported or missing nowcast schema"
+    if not nc.get("active"):
+        return "nowcast inactive"
+    if nc.get("radar_quality") != "ok":
+        return "radar input degraded"
+    try:
+        age = _nowcast_source_age(nc, now_utc)
+    except (TypeError, ValueError):
+        return "invalid nowcast source time"
+    if age < -2 or age > NOWCAST_FRESH_MAX_AGE_MIN:
+        return (f"nowcast source age {age:.1f} min outside "
+                f"0-{NOWCAST_FRESH_MAX_AGE_MIN} min")
+    street = nc.get(NOWCAST_STREET_NOW_KEY)
+    if not isinstance(street, (int, float)) or not math.isfinite(street):
+        return "nowcast current street stage missing or nonfinite"
+    if nc.get("trend") not in {"rising", "falling"}:
+        return "nowcast trend missing or invalid"
+    return ""
 
 
 def _radar_live_state(now_utc=None):
@@ -4159,16 +4294,7 @@ def _radar_live_state(now_utc=None):
             nc = json.load(f)
     except (OSError, ValueError):
         return None
-    if not nc.get("active") or nc.get("radar_quality") != "ok":
-        return None
-    try:
-        latest = dt.datetime.strptime(
-            nc.get("source_latest_utc") or "", "%Y-%m-%dT%H:%M:%SZ"
-        ).replace(tzinfo=dt.timezone.utc)
-    except (ValueError, TypeError):
-        return None
-    now = now_utc or dt.datetime.now(dt.timezone.utc)
-    if (now - latest).total_seconds() / 60 > RADAR_ALERT_MAX_AGE_MIN:
+    if _nowcast_contract_reason(nc, now_utc):
         return None
     return nc
 
@@ -4202,16 +4328,17 @@ def compute_alert_level(forecast):
     radar_class = None
     nc = _radar_live_state()
     if nc:
-        _street = nc.get("street_now_in") or 0
-        _proj = nc.get("peak_proj_in") or 0
+        _street = nc.get(NOWCAST_STREET_NOW_KEY) or 0
+        _proj = nc.get(NOWCAST_PEAK_PROJ_KEY) or 0
         _lawn_in = (4.66 - 3.52) * 12
         # trend-consistency (same rule as the headline): a FALLING
         # pool ignores the projection — the stateless window
         # overshoots the falling limb (event #7: proj +17.1 while
         # the street drained below the sidewalk). Missing trend
         # (older files) counts as rising = conservative.
-        _proj_ok = (_proj >= _lawn_in
-                    and nc.get("trend") != "falling")
+        _alertable_proj = nowcast_projected_peak(nc)
+        _proj_ok = (_alertable_proj is not None
+                    and _alertable_proj >= _lawn_in)
         _eff = max(_street, _proj if _proj_ok else 0)
         if _eff > 0:
             radar_class = classify_regime_from_water(3.52 + _eff / 12.0)
@@ -4367,7 +4494,12 @@ def evaluate_alert(forecast, state=None, now_utc=None):
                       f"tonight; re-evaluates after 0{QUIET_HOURS_END}:00")
     if send:
         today_local = now_utc.astimezone(STATION_TZ).date().isoformat()
-        sc = st.get("sends_today") or {}
+        # Imminent SMS is exempt from base-alert suppression and must not
+        # consume the household's two ntfy/email opportunities. Legacy
+        # state has only sends_today, so treat it conservatively until the
+        # next station-local day rolls over.
+        sc = (st.get("base_sends_today") if "base_sends_today" in st
+              else st.get("sends_today")) or {}
         sent_count = sc.get("count", 0) if sc.get("date") == today_local \
             else 0
         if sent_count >= ALERT_DAILY_CAP:
@@ -4382,8 +4514,15 @@ def evaluate_alert(forecast, state=None, now_utc=None):
 
 
 def persist_alert_state(decision, delivered_channels=None, path=None,
-                        sms_gate=None, sms_delivered=False):
-    """Persist observed risk, acknowledging only confirmed deliveries."""
+                        sms_gate=None, sms_delivered=False,
+                        requested_base_channels=None,
+                        imminent_delivered_channels=None):
+    """Persist observed risk, acknowledging only confirmed deliveries.
+
+    Base rails are transactional: after a partial ntfy/email success, only
+    the failed rail remains pending. Imminent SMS and ntfy keep independent
+    event markers, so failure on one rail cannot repeat the successful one.
+    """
     if path is None:
         path = ALERT_STATE_PATH
     st = decision["previous"]
@@ -4399,13 +4538,26 @@ def persist_alert_state(decision, delivered_channels=None, path=None,
         "last_sent_channels": st.get("last_sent_channels", []),
     }
     new_state["sends_today"] = st.get("sends_today") or {}
+    new_state["base_sends_today"] = (
+        st.get("base_sends_today")
+        if "base_sends_today" in st else st.get("sends_today") or {})
+    new_state["sms_sends_today"] = st.get("sms_sends_today") or {}
+    new_state["imminent_channels"] = dict(
+        st.get("imminent_channels") or {})
     if st.get("sms_event"):
         new_state["sms_event"] = st["sms_event"]
-    if sms_delivered and sms_gate:
-        new_state["sms_event"] = {"ts": now_text,
-                                  "class": sms_gate.get("class", 1)}
+    imminent_ok = set(imminent_delivered_channels or [])
+    if sms_delivered:
+        imminent_ok.add("sms")
+    if sms_gate:
+        marker = {"ts": now_text, "class": sms_gate.get("class", 1)}
+        for channel in imminent_ok:
+            new_state["imminent_channels"][channel] = marker
+        if "sms" in imminent_ok:
+            # Backward-compatible alias for already-deployed readers.
+            new_state["sms_event"] = marker
     channels = sorted(set(delivered_channels or []))
-    if channels or sms_delivered:
+    if channels or imminent_ok:
         # one household interruption cluster = one count, even when
         # base channels and an imminent SMS go out in the same run
         today_local = decision["now_utc"].astimezone(
@@ -4414,13 +4566,39 @@ def persist_alert_state(decision, delivered_channels=None, path=None,
         count = sc.get("count", 0) if sc.get("date") == today_local else 0
         new_state["sends_today"] = {"date": today_local,
                                     "count": count + 1}
+    if channels and decision.get("send"):
+        sc = new_state["base_sends_today"]
+        count = sc.get("count", 0) if sc.get("date") == today_local else 0
+        new_state["base_sends_today"] = {"date": today_local,
+                                         "count": count + 1}
+    if "sms" in imminent_ok:
+        sc = new_state["sms_sends_today"]
+        count = sc.get("count", 0) if sc.get("date") == today_local else 0
+        new_state["sms_sends_today"] = {"date": today_local,
+                                        "count": count + 1}
     if channels:
+        same_event = st.get("last_sent_sig") == decision["sig"]
+        prior_channels = st.get("last_sent_channels", []) if same_event else []
         new_state.update({
-            "last_sent_rank": decision["rank"],
+            "last_sent_rank": max(st.get("last_sent_rank", 0),
+                                  decision["rank"]),
             "last_sent_sig": decision["sig"],
-            "last_sent_ts": now_text,
-            "last_sent_channels": channels,
+            "last_sent_ts": (st.get("last_sent_ts") if same_event
+                             and st.get("last_sent_ts") else now_text),
+            "last_sent_channels": sorted(set(prior_channels) | set(channels)),
         })
+    requested = set(requested_base_channels or [])
+    pending = st.get("pending_base") or {}
+    if requested:
+        unresolved = sorted(requested - set(channels))
+        if unresolved and decision["rank"] > 0:
+            new_state["pending_base"] = {
+                "sig": decision["sig"], "rank": decision["rank"],
+                "channels": unresolved,
+                "started_ts": pending.get("started_ts") or now_text,
+            }
+    elif pending.get("sig") == decision["sig"] and decision["rank"] > 0:
+        new_state["pending_base"] = pending
     try:
         with open(path + ".tmp", "w") as f:
             json.dump(new_state, f)
@@ -4444,22 +4622,23 @@ def _nowcast_snapshot(path=None, now_utc=None):
     try:
         with open(path) as f:
             d = json.load(f)
-        src = dt.datetime.strptime(
-            d.get("source_latest_utc", ""), "%Y-%m-%dT%H:%M:%SZ"
-        ).replace(tzinfo=dt.timezone.utc)
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
         return None
     now = now_utc or dt.datetime.now(dt.timezone.utc)
     if now.tzinfo is None:
         now = now.replace(tzinfo=dt.timezone.utc)
-    return {"street_now_in": d.get("street_now_in"),
-            "projected_peak_in": d.get("projected_peak_in"),
-            "bay_navd88": d.get("bay_navd88"),
-            "age_min": (now - src).total_seconds() / 60.0}
+    try:
+        age = _nowcast_source_age(d, now)
+    except (TypeError, ValueError):
+        return None
+    snapshot = dict(d)
+    snapshot["age_min"] = age
+    return snapshot
 
 
-def evaluate_sms_gate(forecast, state=None, now_utc=None, nowcast=None):
-    """SMS imminent-impact decision (user policy 2026-09-13).
+def evaluate_sms_gate(forecast, state=None, now_utc=None, nowcast=None,
+                      channel="sms"):
+    """Imminent-impact decision for the SMS or ntfy rail.
 
     Fires on ACTUAL or imminently projected street impact from the
     fresh nowcast — independently of the base alert's signature dedup
@@ -4486,16 +4665,22 @@ def evaluate_sms_gate(forecast, state=None, now_utc=None, nowcast=None):
     out = {"send": False, "class": 0, "phrase": "",
            "street_in": None, "proj_in": None, "bay_navd88": None,
            "now_utc": now_utc}
-    if not nc or nc.get("age_min") is None or nc["age_min"] > SMS_FRESH_MIN:
-        out["reason"] = ("no fresh nowcast (quiet radar or stale "
-                         "source) — no imminence basis")
+    contract_reason = _nowcast_contract_reason(nc, now_utc)
+    if contract_reason:
+        out["reason"] = f"no alertable nowcast: {contract_reason}"
         return out
-    out["street_in"] = nc.get("street_now_in")
-    out["proj_in"] = nc.get("projected_peak_in")
+    out["street_in"] = nc.get(NOWCAST_STREET_NOW_KEY)
+    out["proj_in"] = nowcast_projected_peak(nc)
     out["bay_navd88"] = nc.get("bay_navd88")
-    vals = [v for v in (out["street_in"], out["proj_in"])
-            if isinstance(v, (int, float))]
-    peak = max(vals) if vals else None
+    # Current water alerts at curb; a held-rate projection is less certain
+    # and may originate an alert only once it reaches the lawn-step tier.
+    candidates = []
+    if isinstance(out["street_in"], (int, float)):
+        candidates.append(out["street_in"])
+    lawn_in = (4.66 - 3.52) * 12
+    if isinstance(out["proj_in"], (int, float)) and out["proj_in"] >= lawn_in:
+        candidates.append(out["proj_in"])
+    peak = max(candidates) if candidates else None
     for thr, cls, phrase in SMS_IMPACT_TIERS:
         if peak is not None and peak >= thr:
             out["class"], out["phrase"] = cls, phrase
@@ -4504,7 +4689,9 @@ def evaluate_sms_gate(forecast, state=None, now_utc=None, nowcast=None):
         out["reason"] = (f"street below curb (now {out['street_in']}, "
                          f"proj {out['proj_in']})")
         return out
-    ev = st.get("sms_event") or {}
+    ev = (st.get("imminent_channels") or {}).get(channel) or {}
+    if channel == "sms" and not ev:
+        ev = st.get("sms_event") or {}
     ev_ts = None
     try:
         ev_ts = dt.datetime.strptime(
@@ -4516,7 +4703,7 @@ def evaluate_sms_gate(forecast, state=None, now_utc=None, nowcast=None):
             and (now_utc - ev_ts) < dt.timedelta(hours=SMS_REARM_HOURS)
             and out["class"] <= ev.get("class", 0)):
         hrs = (now_utc - ev_ts).total_seconds() / 3600
-        out["reason"] = (f"event already texted (class "
+        out["reason"] = (f"event already sent on {channel} (class "
                          f"{ev.get('class')}, {hrs:.1f}h ago); re-arms "
                          f"after {SMS_REARM_HOURS}h or on escalation")
         return out
@@ -4545,6 +4732,17 @@ def build_sms_imminent(gate):
             + (": " + ", ".join(bits) if bits else "")
             + f". {local.strftime('%I:%M%p').lstrip('0')}")
     return body[:160]
+
+
+def _base_channels_to_attempt(decision):
+    """Base alert rails due now, including an exact partial retry."""
+    if decision.get("send"):
+        return {"ntfy", "email"}
+    pending = (decision.get("previous") or {}).get("pending_base") or {}
+    if (decision.get("rank", 0) > 0
+            and pending.get("sig") == decision.get("sig")):
+        return set(pending.get("channels") or []) & {"ntfy", "email"}
+    return set()
 
 
 def _refresh_alert_state_from_origin(st):
@@ -4578,16 +4776,27 @@ def _refresh_alert_state_from_origin(st):
                   "last_sent_channels"):
             if k in origin:
                 st[k] = origin[k]
-    osc = origin.get("sends_today") or {}
-    ssc = st.get("sends_today") or {}
-    if osc.get("date", "") > ssc.get("date", "") or (
-            osc.get("date") == ssc.get("date")
-            and osc.get("count", 0) > ssc.get("count", 0)):
-        st["sends_today"] = osc
+    for counter in ("sends_today", "base_sends_today", "sms_sends_today"):
+        osc = origin.get(counter) or {}
+        ssc = st.get(counter) or {}
+        if osc.get("date", "") > ssc.get("date", "") or (
+                osc.get("date") == ssc.get("date")
+                and osc.get("count", 0) > ssc.get("count", 0)):
+            st[counter] = osc
     oev = origin.get("sms_event") or {}
     sev = st.get("sms_event") or {}
     if oev.get("ts", "") > sev.get("ts", ""):
         st["sms_event"] = oev
+    merged_imminent = dict(st.get("imminent_channels") or {})
+    for channel, event in (origin.get("imminent_channels") or {}).items():
+        if event.get("ts", "") > merged_imminent.get(channel, {}).get("ts", ""):
+            merged_imminent[channel] = event
+    if merged_imminent:
+        st["imminent_channels"] = merged_imminent
+    op = origin.get("pending_base") or {}
+    lp = st.get("pending_base") or {}
+    if op.get("started_ts", "") > lp.get("started_ts", ""):
+        st["pending_base"] = op
     return st
 
 
@@ -7102,11 +7311,15 @@ def main():
     # secret) rides along. --force-email preserves a manual path.
     _state = _refresh_alert_state_from_origin(_load_alert_state())
     decision = evaluate_alert(forecast, state=_state)
-    sms_gate = evaluate_sms_gate(forecast, state=_state)
+    sms_gate = evaluate_sms_gate(forecast, state=_state, channel="sms")
+    ntfy_imminent_gate = evaluate_sms_gate(
+        forecast, state=_state, channel="ntfy")
     if getattr(args, "force_email", False):
         decision["send"] = True
         decision["reason"] = "forced (--force-email)"
-    if not decision["send"] and not sms_gate["send"]:
+    _base_requested = _base_channels_to_attempt(decision)
+    if (not _base_requested and not sms_gate["send"]
+            and not ntfy_imminent_gate["send"]):
         persist_alert_state(decision)
         print(f"No alert delivery: {decision['reason']}; "
               f"SMS gate: {sms_gate['reason']}")
@@ -7128,11 +7341,15 @@ def main():
         except Exception as e:
             print(f"WARNING: chart png failed: {e}")
     _channels = set()
-    if decision["send"]:
-        _channels |= {"ntfy", "email"}      # base alert: rich channels
+    _channels |= _base_requested
     if sms_gate["send"]:
-        _channels |= {"sms", "ntfy"}        # imminent impact: text + push
-    _imminent = build_sms_imminent(sms_gate) if sms_gate["send"] else None
+        _channels.add("sms")
+    if ntfy_imminent_gate["send"]:
+        _channels.add("ntfy")
+    _imminent_gate = (sms_gate if sms_gate["send"]
+                       else ntfy_imminent_gate)
+    _imminent = (build_sms_imminent(_imminent_gate)
+                 if _imminent_gate["send"] else None)
     delivery = deliver_alert(forecast, subject, text, html,
                              inline_png=_png, channels=_channels,
                              sms_text=_imminent)
@@ -7143,11 +7360,16 @@ def main():
         # base sent-markers move only on a base send; an SMS-only run
         # records sms_event (and counts) without touching sig dedup
         _base_ok = [c for c in delivery["succeeded"]
-                    if decision["send"] and c in ("ntfy", "email")]
+                    if c in _base_requested]
+        _imminent_ok = [
+            c for c, gate in (("sms", sms_gate),
+                              ("ntfy", ntfy_imminent_gate))
+            if gate["send"] and c in delivery["succeeded"]]
         persist_alert_state(
             decision, _base_ok,
-            sms_gate=sms_gate if sms_gate["send"] else None,
-            sms_delivered="sms" in delivery["succeeded"])
+            sms_gate=_imminent_gate if _imminent_gate["send"] else None,
+            requested_base_channels=_base_requested,
+            imminent_delivered_channels=_imminent_ok)
         print(f"Delivered alert via {', '.join(delivery['succeeded'])} "
               f"({decision['reason']}; SMS gate: {sms_gate['reason']})"
               f": {_imminent or subject}")
@@ -7155,7 +7377,8 @@ def main():
 
     # Record the observed risk/all-clear transition, but deliberately leave
     # last_sent_* untouched so the next delivery-capable run retries.
-    persist_alert_state(decision)
+    persist_alert_state(
+        decision, requested_base_channels=_base_requested)
     print("ERROR: alert was not delivered by any channel; it remains "
           "eligible for retry.", flush=True)
     raise SystemExit(2)

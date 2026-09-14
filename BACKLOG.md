@@ -42,19 +42,15 @@ looks stale, trust this file. Ledger lines are append-only:
       grate-backup probability by drainage position — deliberately
       out of scope until the 342-corner methodology earns extension.
 
-- [ ] WATCH: nowcast.yml step reorder (dispatch after push, shipped
-      2026-09-02) is STILL untested in production — event #9's storm
-      window was preempted by the GH queue wedge (no run executed).
-      Verify at the next radar trigger.
-- [ ] Event #9 completion (photos pending iPhone sync): EXIF
-      timeline + peak-time pin, edge_20260913 map points, model-test
-      plot, all-anchors refresh to 9 (‡ recipe hindcast +12.2),
-      forecast-skill score vs the LAST published overnight forecast
-      (production was dark at event time).
-- [ ] GH Actions zombie runs from the 2026-09-13 wedge: 34737703470
-      (nowcast) + 34737375383 (forecast) stuck 'queued' since
-      ~04:15Z — user cancels via Actions UI, or grants run-cancel
-      permission; harmless but they may hold concurrency slots.
+- [ ] WATCH: nowcast.yml dispatch-after-publish path is regression-tested
+      and its two intents consolidate into one fail-closed retry (2026-09-14),
+      but still needs observation at the next production radar trigger.
+- [ ] Event #9 residuals: edge_20260913 map points need user pick_coords;
+      forecast-skill score against the last published overnight forecast
+      remains. EXIF timeline, peak pin, model plot, and nine-anchor refresh
+      are complete.
+- [x] GH Actions outage runs 34737703470 and 34737375383 are completed
+      failures, not queued zombies (registry correction 2026-09-14).
 - [ ] Extra-rain slider on the town map (DEFERRED low-priority,
       user 2026-09-02): if built, option (a) only — drive the
       calibrated 342 models and repaint Highlands low-shelf streets,
@@ -192,6 +188,19 @@ all findings verified — see audits/2026-08-03-a2/)**
 - List `audits/` at session start; reply to open reports.
 - Keep the living-documents registry (AGENTS.md) satisfied.
 
+**Audit 2026-09-14-a1 remediation (independently verified; OPEN)**
+- [x] Phase 1: canonical nowcast contract; projection/trend/health/freshness
+      gating; stale-gauge fallbacks; per-rail alert retry; separate SMS/base
+      caps; one fail-closed post-publish workflow dispatch; contract and
+      workflow regression tests.
+- [ ] Phase 2: scheduler/watchdog independence and structured arm health.
+- [ ] Phase 3: atomic/cross-stamped publish surfaces, stronger artifact and
+      ledger gates, immutable day-summary product.
+- [ ] Phase 4: confidence calibration/hygiene, safe observation append path,
+      DST ambiguity, dependency reproducibility, documentation drift.
+- [ ] Phase 5: model G1-G10 assessment only; any formula change requires a
+      separately justified version bump and frozen-golden update.
+
 ## LEDGER (append-only; newest last)
 
 2026-07-21 | DONE | codex-audit-arc | 4 criticals verified→fixed same day; transactional alerts, time helpers, input health, v0.10.1 stamp, offline CI [VERIFIED: tests/ + audits practice]
@@ -263,3 +272,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-13 | DONE | sms-policy-shipped | evaluate_sms_gate (fresh-nowcast street impact, fires independently of base sig-dedup — the 10:00 gap; exempt from quiet-hours/cap SUPPRESSION, still counts), build_sms_imminent (<=160 present-tense), deliver_alert channel selection + sms_text override, persist sms_event (sms-only run counts without touching base sig dedup), _refresh_alert_state_from_origin pre-eval (narrows the 7:46/7:56 dupe window to seconds), AGENTS rule-8 channel-roles note; 111 tests green (11 new in tests/test_sms_policy.py), gate clean, --no-send live sanity pass [VERIFIED]
 2026-09-14 | FACT | audit-a1-2026-09-14 | Codex comprehensive audit (876 lines, 6H/10M/10G/9D/6L) independently reviewed: ALL items CONFIRMED, zero rejected (two attempted disputes lost on primary evidence — M9's literal "unlabeled" cells, D1's README "18 landmarks"). Reviewer-owned defects acknowledged: H1 SMS field mismatch (peak_proj_in vs projected_peak_in — test injected the wrong-named field so 111 stayed green), H3 watchdog-precedes-dispatch regression introduced by the 2026-09-02 reorder, H5 lock/exit-0 limits, D5/D6 registry drift, L3. Expansions added: shorter H2 failure path via observed-sig persist, cap-accounting conflation post SMS-policy, M5 quiet-gating conflation, macOS flock absence, watchdog-first sequencing. Reply at audits/2026-09-14-a1/02-...-claude.md; round stays OPEN; Codex implements [VERIFIED: per-item evidence in the reply]
 2026-09-14 | OPEN | audit-a1-remediation | Codex to execute the 10-step remediation order with the reply's amendments (cap accounting folded into step 1; actionlint guard in step 2's commit; steps 1-3 in a quiet weather window with John reachable; watchdog first in step 4; registry duties + rule-11 discipline transfer with the work) [STATED plan]
+2026-09-14 | DONE | audit-a1-phase1 | H1-H4 core alert/gauge repair: canonical real-payload nowcast contract; falling/active/quality/schema/20-min gates; NOAA bay-head 30-min and surge 60-min age limits; per-rail base/imminent acknowledgments and retries; SMS/base cap separation; consolidated fail-closed post-publish workflow dispatch + structural regression test; 122 tests and frozen replay green [VERIFIED: source + tests]

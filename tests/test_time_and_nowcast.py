@@ -127,6 +127,22 @@ class NowcastBayTests(unittest.TestCase):
         self.assertEqual(level, 3.24)
         self.assertEqual(source, "astronomical-fallback")
 
+    def test_current_bay_rejects_nonempty_but_stale_observations(self):
+        payload = {"data": [
+            {"t": "2026-07-21 08:54", "v": "5.90"},
+        ]}
+        now = dt.datetime(2026, 7, 21, 9, 30)
+        with mock.patch.object(
+            nowcast.urllib.request, "urlopen",
+            return_value=self._Response(payload),
+        ), mock.patch.object(
+            nowcast, "_predicted_bay", return_value=(3.24, "x")
+        ):
+            level, source = nowcast.current_bay(now)
+
+        self.assertEqual(level, 3.24)
+        self.assertEqual(source, "astronomical-fallback-stale-gauge")
+
 
 class NowcastRadarFreshnessTests(unittest.TestCase):
     class _ListingResponse:

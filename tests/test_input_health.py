@@ -11,6 +11,22 @@ from forecast import nowcast
 
 
 class InputHealthTests(unittest.TestCase):
+    def test_stale_surge_observation_is_degraded_not_persisted(self):
+        now = dt.datetime(2026, 9, 14, 12, 0)
+        with mock.patch.object(
+            ff, "fetch_observed_recent",
+            return_value=[("2026-09-14 10:54", 5.2)],
+        ), mock.patch.object(ff, "_station_local_now", return_value=now), \
+                mock.patch.object(ff, "_get") as get:
+            surge = ff.fetch_current_surge()
+
+        self.assertIsNone(surge)
+        get.assert_not_called()
+        self.assertEqual(ff._LAST_SURGE_OBSERVATION_META["status"],
+                         "degraded")
+        self.assertIn("66.0 min old",
+                      ff._LAST_SURGE_OBSERVATION_META["detail"])
+
     def test_qpf_failure_is_unavailable_not_empty_forecast(self):
         with mock.patch.object(ff, "_get", side_effect=OSError("offline")):
             self.assertIsNone(ff.fetch_nws_qpf())
