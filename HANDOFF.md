@@ -96,7 +96,7 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   Model behavior changes require version/spec/code/log stamps in lockstep.
 - Every semantic change must cover all relevant alert and display arms.
   Required generated surfaces must eventually become atomic and cross-stamped.
-- Widget v7.26a still requires John to re-copy it into Scriptable.
+- Widget v7.26a CONFIRMED installed on the user's phone (2026-09-14).
 
 ## Immediate next step
 
