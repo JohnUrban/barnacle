@@ -48,5 +48,79 @@ class PublicWatchdogTests(unittest.TestCase):
         self.assertIn("scheduler arm external-trigger has no heartbeat", issues)
 
 
+class QuietModeTests(unittest.TestCase):
+    def test_quiet_coalesced_nowcast_is_healthy(self):
+        # 2026-09-15 regression: quiet weather coalesces publication, so
+        # a 3-hour-old inactive nowcast + 60-minute workflow drift must
+        # NOT page (they paged all night).
+        forecast = {"generated_utc": "2026-09-14T17:10:00Z"}
+        nowcast = {"generated_utc": "2026-09-14T15:00:00Z",
+                   "active": False}
+        runs = {"workflow_runs": [{
+            "status": "completed", "conclusion": "success",
+            "updated_at": "2026-09-14T17:00:00Z"}]}
+        self.assertEqual(
+            watchdog.assess(forecast, nowcast, runs, now=NOW), [])
+
+    def test_quiet_multiday_corpse_still_detected(self):
+        forecast = {"generated_utc": "2026-09-14T17:10:00Z"}
+        nowcast = {"generated_utc": "2026-09-12T10:00:00Z",
+                   "active": False}
+        runs = {"workflow_runs": [{
+            "status": "completed", "conclusion": "success",
+            "updated_at": "2026-09-14T17:00:00Z"}]}
+        issues = watchdog.assess(forecast, nowcast, runs, now=NOW)
+        self.assertTrue(any("nowcast artifact" in x for x in issues))
+
+
+class NotifyDebounceTests(unittest.TestCase):
+    def _notify(self, issues, tmp, now, sent):
+        import os
+        from unittest import mock
+
+        def fake_urlopen(req, timeout=0):
+            sent.append(req.data.decode())
+            class R:
+                def read(self):
+                    return b""
+            return R()
+
+        with mock.patch.dict(os.environ,
+                             {"WATCHDOG_NTFY_TOPIC": "t"}, clear=False),                 mock.patch.object(watchdog.urllib.request, "urlopen",
+                                  fake_urlopen):
+            watchdog._notify(issues, tmp, now)
+
+    def test_first_sighting_never_pages_and_counts_do_not_repage(self):
+        import os
+        import tempfile
+        sent = []
+        tmp = os.path.join(tempfile.mkdtemp(), "state.json")
+        self._notify(["nowcast artifact is 104 minutes old"], tmp, NOW, sent)
+        self.assertEqual(sent, [])          # debounce: first sighting
+        later = NOW + dt.timedelta(minutes=15)
+        self._notify(["nowcast artifact is 106 minutes old"], tmp, later,
+                     sent)
+        self.assertEqual(len(sent), 1)      # persisted -> one page
+        later2 = NOW + dt.timedelta(minutes=30)
+        self._notify(["nowcast artifact is 121 minutes old"], tmp, later2,
+                     sent)
+        self.assertEqual(len(sent), 1)      # same class in cooldown: silent
+
+    def test_new_issue_class_pages_after_its_own_debounce(self):
+        import os
+        import tempfile
+        sent = []
+        tmp = os.path.join(tempfile.mkdtemp(), "state.json")
+        self._notify(["nowcast artifact is 104 minutes old"], tmp, NOW, sent)
+        self._notify(["nowcast artifact is 106 minutes old"], tmp,
+                     NOW + dt.timedelta(minutes=15), sent)
+        self._notify(["forecast artifact is 200 minutes old"], tmp,
+                     NOW + dt.timedelta(minutes=30), sent)
+        self.assertEqual(len(sent), 1)      # new class: first sighting
+        self._notify(["forecast artifact is 215 minutes old"], tmp,
+                     NOW + dt.timedelta(minutes=45), sent)
+        self.assertEqual(len(sent), 2)      # persisted -> pages
+
+
 if __name__ == "__main__":
     unittest.main()

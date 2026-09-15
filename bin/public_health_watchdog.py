@@ -14,6 +14,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import tempfile
 import urllib.request
 
@@ -44,14 +45,19 @@ def assess(forecast, nowcast, runs, heartbeat_text="", now=None,
     issues = []
     try:
         age = _age_minutes(forecast["generated_utc"], now)
-        if age < -2 or age > 100:
+        if age < -2 or age > 130:   # hourly product; tolerate one missed run
             issues.append(f"forecast artifact is {age:.0f} minutes old")
     except (KeyError, TypeError, ValueError):
         issues.append("forecast artifact has no valid generated_utc")
 
     try:
         generated_age = _age_minutes(nowcast["generated_utc"], now)
-        limit = 25 if nowcast.get("active") else 90
+        # Quiet weather coalesces publication (2026-09-14): an inactive
+        # nowcast artifact legitimately ages for HOURS. Liveness in quiet
+        # mode is carried by the workflow/heartbeat checks below; the
+        # artifact check only catches a multi-day corpse. (The 90-minute
+        # quiet limit here paged the owner all night on 2026-09-15.)
+        limit = 25 if nowcast.get("active") else 26 * 60
         if generated_age < -2 or generated_age > limit:
             issues.append(
                 f"nowcast artifact is {generated_age:.0f} minutes old")
@@ -76,7 +82,11 @@ def assess(forecast, nowcast, runs, heartbeat_text="", now=None,
         issues.append("nowcast workflow has no recent successful run")
     else:
         run_age = (now - max(completed)).total_seconds() / 60.0
-        if run_age > 35:
+        # Active weather: every 10-min run matters. Quiet weather: GitHub
+        # cron drifts freely in the evening; the hourly gated-quiet run is
+        # the real liveness floor, so alert only past ~90 minutes.
+        run_limit = 35 if nowcast.get("active") else 90
+        if run_age > run_limit:
             issues.append(
                 f"last successful nowcast workflow is {run_age:.0f} minutes old")
 
@@ -110,19 +120,31 @@ def _notify(issues, state_path, now):
     topic = os.environ.get("WATCHDOG_NTFY_TOPIC", "").strip()
     if not topic:
         return
-    signature = hashlib.sha256("\n".join(sorted(issues)).encode()).hexdigest()
+    # Signature hashes issue CLASSES (digits stripped): "104 minutes old"
+    # and "106 minutes old" are the same problem. Hashing the raw strings
+    # re-paged the owner every 15 minutes through the night of 2026-09-15.
+    classes = sorted({re.sub(r"\d+", "#", issue) for issue in issues})
+    signature = hashlib.sha256("\n".join(classes).encode()).hexdigest()
     state = {}
     try:
         with open(state_path) as source:
             state = json.load(source)
     except (OSError, ValueError):
         pass
+    # Two-tick debounce: a signature's FIRST sighting is recorded, never
+    # sent — one flapping check (wake-from-sleep, transient staleness)
+    # cannot page. It must persist to the next tick to notify.
+    if state.get("pending_sig") != signature:
+        state["pending_sig"] = signature
+        _write_state(state_path, state)
+        return
     last = None
     try:
         last = _utc(state.get("sent_at", ""))
     except (TypeError, ValueError):
         pass
-    if state.get("signature") == signature and last and now - last < dt.timedelta(hours=6):
+    sent_sig = state.get("sent_sig") or state.get("signature")
+    if sent_sig == signature and last and now - last < dt.timedelta(hours=6):
         return
     body = "Barnacle watchdog: " + "; ".join(issues)
     req = urllib.request.Request(
@@ -130,13 +152,19 @@ def _notify(issues, state_path, now):
         headers={"User-Agent": UA, "Title": "Barnacle health failure",
                  "Priority": "urgent", "Tags": "warning"})
     urllib.request.urlopen(req, timeout=20).read()
+    state.update({"sent_sig": signature, "pending_sig": signature,
+                  "sent_at": now.strftime("%Y-%m-%dT%H:%M:%SZ")})
+    state.pop("signature", None)   # legacy single-key form
+    _write_state(state_path, state)
+
+
+def _write_state(state_path, state):
     os.makedirs(os.path.dirname(os.path.abspath(state_path)), exist_ok=True)
     fd, tmp = tempfile.mkstemp(prefix="watchdog-", dir=os.path.dirname(
         os.path.abspath(state_path)))
     try:
         with os.fdopen(fd, "w") as dest:
-            json.dump({"signature": signature,
-                       "sent_at": now.strftime("%Y-%m-%dT%H:%M:%SZ")}, dest)
+            json.dump(state, dest)
         os.replace(tmp, state_path)
     except Exception:
         try:
@@ -149,6 +177,9 @@ def _notify(issues, state_path, now):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--notify", action="store_true")
+    parser.add_argument("--notify-indeterminate", action="store_true",
+                        help="page on fetch failures too (always-on hosts;"
+                             " a roaming laptop should not)")
     parser.add_argument("--require-arm", action="append", default=[])
     parser.add_argument("--state", default=os.environ.get(
         "WATCHDOG_STATE_PATH", "/tmp/barnacle-watchdog-state.json"))
@@ -162,7 +193,9 @@ def main():
     except Exception as exc:
         issues = [f"watchdog fetch failed: {exc}"]
         print(f"INDETERMINATE: {issues[0]}")
-        if args.notify:
+        # Fetch failure on a laptop usually means the LAPTOP's network
+        # (sleep/wake, roaming) — log-only unless explicitly opted in.
+        if args.notify and args.notify_indeterminate:
             try:
                 _notify(issues, args.state, now)
             except Exception as notify_exc:
