@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-14 14:13 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-18 11:21 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -15,52 +15,29 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Current state
 
-- **Audit `2026-09-14-a1` is CLOSED** (04-close-out-claude.md,
-  2026-09-14 afternoon): Codex found 6H/10M/10G/9D/6L, Claude
-  confirmed all, Codex implemented in 4 phases, Claude
-  independently verified (140 tests re-run, gate + surface stamps,
-  frozen replay, CI, all six requested seams in primary code) and
-  closed. WATCH: the rebuilt storm-path dispatch and imminent-SMS
-  pipeline are untested until the next live event. Residuals
-  (deliberate, ledgered): watchdog deploy + external-trigger PAT
-  (~15 min of John), exactly-once delivery, GMT migration, tooling
-  queue, v0.11 model assessment.
-- **Remediation Phase 1 shipped as `cdaaf2d98` on 2026-09-14:**
-  one canonical nowcast schema; actual `_write`→snapshot→SMS contract
-  test; active/quality/schema/trend/source-age gates; unified 20-minute
-  radar freshness; stale NOAA bay head falls back to astronomy after 30
-  minutes and surge persistence degrades after 60; per-rail base and
-  imminent acknowledgments; exact partial retries; SMS/base cap separation;
-  radar redispatch keys on confirmed SMS; one retrying, fail-closed workflow
-  dispatch after publication; workflow-order regression test. 122 tests,
-  artifact gate, and frozen v0.10.2 replay passed.
-- **Phase 2 shipped as `6717d6b37`:** local tick has stale
-  PID-lock takeover, nonzero failures, rotated JSONL outcomes, pinned install
-  and self-test, and quiet-publication coalescing. Heartbeats identify
-  arm/phase/outcome; the workflow records hourly gated-quiet rows. A stdlib
-  watchdog checks public artifacts and successful workflow execution from
-  outside GitHub and can notify ntfy. The old half-B plan is honestly named
-  an external trigger. Actual off-GitHub watchdog/trigger deployment and
-  local alert secrets remain owner-gated. The hardened launchd job was
-  reinstalled and observed running on 2026-09-14.
-- **Phase 3 shipped as `88ae53e38`:** required-surface failures
-  are fatal; atomic writes and generation/schema/model stamps cover landing,
-  details, JSON, and current tide pages; the gate enforces equality. An
-  append-only hourly day-risk ledger replaces the false day-max archive
-  assumption without rewriting 09Z snapshots. Validators cover impossible
-  events, nonfinite accuracy/radar, malformed alert state, and active-nowcast
-  fields. Confidence prose uses empirical q80; the unverified NWS parser is
-  capped medium. A safe observation append CLI and UTC commit-date fix land
-  here. Live surfaces regenerated; 139 tests and gate passed.
-- **Phase 4 implemented, pending commit/push:** all D1-D9 documentation
-  drift is repaired; archived links are test-covered; labeled_events is
-  frozen legacy; public privacy exposure is explicit; confidence statistics
-  and the one legacy blank are recorded. G1-G10 now have a v0.11 assessment
-  plan and acceptance criteria, with no v0.10.2 physics change. Residuals
-  kept OPEN honestly: off-GitHub deployment/credentials, exactly-once crash
-  semantics, NOAA fall-back-hour GMT migration, and broader tooling.
-- Weather check at 2026-09-14 13:31 EDT showed no rain in 72 hours, all
-  forecast tides dry, and healthy forecast/nowcast inputs; John is present.
+- **Audit `2026-09-14-a1` is CLOSED.** Codex reported 6 high, 10 medium,
+  10 model, 9 documentation, and 6 lower-severity findings. Claude Fable 5
+  confirmed every item, Codex implemented four phases, and Claude
+  independently verified 140 tests, the artifact gate, surface stamps,
+  frozen replay, CI, and six critical seams before closing round 04.
+- Phase 1 (`cdaaf2d98`) repaired the real-payload nowcast/SMS contract,
+  projection health/trend/freshness gates, stale NOAA fallbacks, per-rail
+  retry and cap state, and consolidated fail-closed workflow dispatch.
+- Phase 2 (`6717d6b37`) hardened the local scheduler with stale-lock
+  takeover, nonzero failures, structured outcomes, pinned install/self-test,
+  quiet coalescing, explicit arm heartbeats, and an independent watchdog.
+- Phase 3 (`88ae53e38`) made required surfaces and ledgers fail closed,
+  added atomic writes and cross-surface stamps, introduced the append-only
+  day-risk log, strengthened semantic validation, corrected uncertainty
+  prose, capped the unverified NWS parser, and added safe observation append.
+- Phase 4 (`5aea881d9`) repaired D1–D9, froze the legacy event classifier,
+  documented public privacy and confidence calibration, and queued G1–G10
+  for a separate v0.11 assessment without changing v0.10.2 physics.
+- The Mac watchdog was deployed and notification-armed on 2026-09-14. Its
+  2026-09-15 noise repair added quiet-mode-aware limits, stable issue-class
+  deduplication, cooldown, and two-tick debounce. A sleeping Mac remains a
+  sleeping watchdog; an always-on host is still an open option.
+- Widget v7.26a was confirmed installed on John's phone on 2026-09-14.
 
 ## Evidence and operating context
 
@@ -68,38 +45,40 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   ~+13.7 inches at 07:01:23 EDT [VERIFIED: 18-photo EXIF timeline]; street
   response was 10–13 minutes earlier than the fixed-lag hindcast. A second
   compound curb flood near 10:05 exposed alert-state and cap coupling.
-- The 2026-09-13 outage combined a GitHub Actions queue wedge with a local
-  launchd clone wedge. The local tick is hardened; the watchdog is implemented
-  but not independently deployed. The supposed queued runs were completed
-  failures; BACKLOG now says so.
+- The rebuilt storm-path dispatch and imminent-SMS pipeline remain WATCH
+  items until the next production radar trigger exercises them.
 - Nine measured floods are represented in the all-anchors analysis. Frozen
   v0.10.1 reproduction remains the behavior guard; v0.10.2 added only the
   driveway-entering threshold observable at 4.67 NAVD88.
-- Accepted model debt: fixed rainfall lag, near-core peak/recession bias,
-  stateless nowcast tank, no antecedent wetness, fixed bay head over the
-  projection, simplified drainage/delivery, forecast-input vs tank-skill
-  conflation, `_pluvial_fill` sub-bin discontinuity, cross-fit driveway
-  threshold, and unsegmented historical tide bias.
+- Accepted model debt includes fixed rainfall lag, near-core
+  peak/recession bias, stateless nowcast storage, no antecedent wetness,
+  fixed projection bay head, simplified drainage/delivery, forecast-input
+  versus tank-skill conflation, a sub-bin discontinuity, the cross-fit
+  driveway threshold, and unsegmented historical tide bias.
+
+## Open residuals
+
+- External 24/7 trigger needs owner credentials; it protects against cron
+  failure, not a wedged GitHub execution domain.
+- Local alert execution redundancy remains owner/security-gated.
+- Exactly-once delivery needs provider idempotency or an external outbox.
+- NOAA transport/storage should migrate to GMT before the 2026 fall-back.
+- Tooling breadth and the separately versioned v0.11 model assessment remain
+  queued in `BACKLOG.md`.
 
 ## Production rules
 
-- Before flood work read `PLAYBOOK.md`; before all work read `AGENTS.md`,
-  this file, audits, then BACKLOG.
-- Bots commit continuously. Add explicit paths. Commit → artifact gate →
-  push; if rejected, fetch/rebase or abort → gate again → retry. Union
-  append-only ledgers. Never `pull --rebase || true`.
-- Use station-time helpers for local dates. Run `date` before relative-time
-  prose. NOAA timestamps are 24-hour station-local.
-- `alert_state.json` acknowledges confirmed delivery only. Restore it from
-  origin after local generation and before any commit.
-- Provenance tags and primary records are mandatory for measured claims.
-  Model behavior changes require version/spec/code/log stamps in lockstep.
-- Every semantic change must cover all relevant alert and display arms.
-  Required generated surfaces must eventually become atomic and cross-stamped.
-- Widget v7.26a CONFIRMED installed on the user's phone (2026-09-14).
+- On flood work read `PLAYBOOK.md`; otherwise read `AGENTS.md`, this file,
+  audits, then BACKLOG.
+- Add explicit paths. Commit → gate → push; on rejection fetch/rebase or
+  abort → gate again → retry. Union append-only ledgers.
+- Use station-time helpers and run `date` before relative-time prose.
+- Restore `data/alert_state.json` from origin after local generation and
+  before commit. Provenance and primary records are mandatory.
+- Model behavior changes require version/spec/code/log stamps in lockstep.
+  Semantic changes must cover every relevant alert and display arm.
 
 ## Immediate next step
 
-None urgent — audit a1 closed (report 04, 2026-09-14). Owner-gated:
-watchdog deployment + external-trigger PAT. Then quiet-window
-residuals per BACKLOG OPEN LOOPS.
+No audit close-out work remains. Continue the force-ranked BACKLOG loops;
+observe the rebuilt alert path at the next production radar trigger.

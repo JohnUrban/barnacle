@@ -15,9 +15,10 @@ looks stale, trust this file. Ledger lines are append-only:
       2026-09-02 (see scheduler-half-A-correction ledger line);
       external trigger (24/7) ready for owner credentials in
       history/plans/external-trigger-scheduler.md. It covers cron failure,
-      not a wedged Actions queue. The independent watchdog script is ready
-      but also needs deployment outside GitHub. Local execution redundancy
-      for alert delivery remains owner/security-gated (production secrets).
+      not a wedged Actions queue. The independent Mac watchdog was deployed
+      and notification-armed 2026-09-14; it covers awake hours, while an
+      always-on host remains optional. Local execution redundancy for alert
+      delivery remains owner/security-gated (production secrets).
 - [ ] Durable alert outbox/idempotency: per-rail acknowledgments now retry
       ordinary partial failures, but a process death after provider acceptance
       and before the state commit remains duplicate-over-miss by explicit
@@ -202,7 +203,7 @@ all findings verified — see audits/2026-08-03-a2/)**
 - List `audits/` at session start; reply to open reports.
 - Keep the living-documents registry (AGENTS.md) satisfied.
 
-**Audit 2026-09-14-a1 remediation (independently verified; OPEN)**
+**Audit 2026-09-14-a1 remediation (independently verified; CLOSED)**
 - [x] Phase 1: canonical nowcast contract; projection/trend/health/freshness
       gating; stale-gauge fallbacks; per-rail alert retry; separate SMS/base
       caps; one fail-closed post-publish workflow dispatch; contract and
@@ -211,8 +212,8 @@ all findings verified — see audits/2026-08-03-a2/)**
       nonzero failures, rotated JSONL outcomes, pinned install/self-test,
       quiet-publication coalescing; heartbeats gain arm/phase/outcome and
       gated-quiet rows; stdlib public watchdog + tests; half-B renamed
-      external trigger. Deployment of the watchdog and trigger requires
-      owner-selected external infrastructure/credentials and remains open.
+      external trigger. The Mac watchdog was deployed and armed 2026-09-14;
+      the external trigger still requires owner credentials.
 - [x] Phase 3: atomic per-file writes and fail-closed required surfaces;
       generation/schema/model stamps checked across landing, details, JSON,
       and current tide pages; adversarial ledger/state/nowcast validators;
@@ -308,3 +309,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-14 | DONE | watchdog-mac-deploy | public_health_watchdog installed as launchd job com.barnacle.watchdog (900s, RunAtLoad) via bin/watchdog_tick.sh from the dedicated clone; first tick VERIFIED (HEALTHY, exit 0, status 0). Coverage caveat documented: sleeping Mac = sleeping watchdog — daytime/awake coverage; forever home remains an always-on box (loop stays open for that). PENDING user: ntfy topic into ~/.barnacle/watchdog_topic to enable notification [VERIFIED: ~/.barnacle/logs/watchdog.log]
 2026-09-14 | DONE | watchdog-armed | user added ~/.barnacle/watchdog_topic; tick verified topic=set HEALTHY; end-to-end notification pipe PROVEN with a test ntfy push (HTTP 200, delivered to phone). Mac watchdog fully operational — awake-hours + GitHub-failure coverage; always-on-box loop stays open [VERIFIED: watchdog.log + ntfy 200]
 2026-09-15 | DONE | watchdog-noise-fix | overnight paging post-mortem: three defects — (1) quiet-mode 90-min artifact limit contradicted the same-day publication-coalescing design (quiet nowcast legitimately ages hours; limit now 26h corpse-catch, liveness carried by workflow/heartbeat), (2) dedup hashed raw messages INCLUDING live minute counts so every tick was a "new" issue (now digit-stripped class hashing + 6h cooldown), (3) no debounce (now two-tick: first sighting never pages) + workflow drift limit 35->90 quiet / 35 active, forecast 100->130, fetch-failure INDETERMINATE demoted to log-only (--notify-indeterminate for always-on hosts). 144 tests; job reinstalled [VERIFIED: watchdog.log + tests]
+2026-09-18 | DONE | audit-a1-registry-cleanup | reconciled stale registry text with the 2026-09-14 independent close-out: audit section marked CLOSED, Phase 4 marked shipped, HANDOFF rewritten under 100 lines, and watchdog deployment/arming reflected in active state [VERIFIED: audit round 04 + git history + watchdog ledger]
