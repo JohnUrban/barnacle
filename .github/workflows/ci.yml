@@ -28,6 +28,40 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install checksum-pinned workflow and shell linters
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+          SHELLCHECK_VERSION: 0.11.0
+          SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
+        run: |
+          set -euo pipefail
+          tools="$RUNNER_TEMP/barnacle-static-tools"
+          mkdir -p "$tools"
+          curl --fail --location --silent --show-error \
+            --output "$tools/actionlint.tar.gz" \
+            "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          echo "$ACTIONLINT_SHA256  $tools/actionlint.tar.gz" | sha256sum --check -
+          tar -xzf "$tools/actionlint.tar.gz" -C "$tools" actionlint
+          curl --fail --location --silent --show-error \
+            --output "$tools/shellcheck.tar.xz" \
+            "https://github.com/koalaman/shellcheck/releases/download/v${SHELLCHECK_VERSION}/shellcheck-v${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          echo "$SHELLCHECK_SHA256  $tools/shellcheck.tar.xz" | sha256sum --check -
+          tar -xJf "$tools/shellcheck.tar.xz" -C "$tools"
+          install -m 0755 \
+            "$tools/shellcheck-v${SHELLCHECK_VERSION}/shellcheck" \
+            "$tools/shellcheck"
+          echo "$tools" >> "$GITHUB_PATH"
+
+      - name: Lint workflows and shell entry points
+        run: |
+          actionlint -shellcheck=shellcheck
+          shellcheck \
+            bin/install_local_scheduler.sh \
+            bin/local_nowcast_tick.sh \
+            bin/watchdog_tick.sh \
+            forecast/smoke_test.sh
+
       - name: Compile forecast code
         run: python -m compileall -q forecast tests
 

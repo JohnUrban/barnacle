@@ -31,6 +31,7 @@ cat > ~/Library/LaunchAgents/com.barnacle.nowcast.plist <<PLIST
   <key>StandardErrorPath</key><string>$HOME/.barnacle/logs/launchd.log</string>
 </dict></plist>
 PLIST
-launchctl bootout gui/$(id -u)/com.barnacle.nowcast 2>/dev/null || true
-launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.barnacle.nowcast.plist
+launchctl bootout "gui/$(id -u)/com.barnacle.nowcast" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" \
+  "$HOME/Library/LaunchAgents/com.barnacle.nowcast.plist"
 echo "installed; next tick within 10 min"

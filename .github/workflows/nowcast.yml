@@ -102,8 +102,11 @@ jobs:
             echo "no change"; exit 0
           fi
           git commit -m "$message"
-          for i in 1 2 3; do
-            git push && exit 0
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
             git fetch origin main
             git rebase origin/main || { git rebase --abort; echo "rebase conflict - abort publish"; exit 1; }
             python forecast/check_artifacts.py

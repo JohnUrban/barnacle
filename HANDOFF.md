@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 11:51 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-18 11:56 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -45,6 +45,8 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   current identifiers so the cutover cannot duplicate chart points.
 - Widget v7.26a was confirmed installed on John's phone on 2026-09-14.
   Source v7.27a understands offset-bearing timestamps and awaits re-copy.
+- CI checksum-pins actionlint 1.7.12 and ShellCheck 0.11.0; all workflows
+  and shell entry points pass both checks.
 
 ## Evidence and operating context
 
@@ -69,8 +71,8 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   failure, not a wedged GitHub execution domain.
 - Local alert execution redundancy remains owner/security-gated.
 - Exactly-once delivery needs provider idempotency or an external outbox.
-- Tooling breadth and the separately versioned v0.11 model assessment remain
-  queued in `BACKLOG.md`.
+- Browser DOM/accessibility checks, incremental typing, and the separately
+  versioned v0.11 model assessment remain queued in `BACKLOG.md`.
 
 ## Production rules
 
@@ -86,5 +88,5 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Immediate next step
 
-No audit close-out work remains. Next autonomous work: pinned workflow/shell
-checks, then Event 9 scoring and offline v0.11 assessments.
+No audit close-out work remains. Next autonomous work: Event 9 forecast-skill
+scoring, then `_pluvial_fill` and offline v0.11 assessments.

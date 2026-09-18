@@ -73,9 +73,10 @@ looks stale, trust this file. Ledger lines are append-only:
       uses GMT; current tide, gauge, cache, forecast, and prediction-log
       identifiers are offset-bearing station-local ISO. Both repeated 01:xx
       hours remain distinct; legacy naive rows retain explicit fold=0.
-- [ ] Engineering breadth: add actionlint/shellcheck, browser DOM/accessibility
-      smoke tests, and incremental static typing as remaining module seams
-      make that tractable. Contract tests now cover the two audit regressions.
+- [ ] Engineering breadth: checksum-pinned actionlint 1.7.12 and ShellCheck
+      0.11.0 are now CI gates. Browser DOM/accessibility smoke tests and
+      incremental static typing remain as module seams make them tractable.
+      Contract tests cover the two audit regressions.
 - [ ] Falling-tide stall experiment (user field task; drain coupling
       "breathing" first written up 7/13 tide event).
 - [ ] Drainage-map email to Stephen Winters (user task).
@@ -317,3 +318,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-18 | DONE | noaa-gmt-migration | all NOAA CO-OPS queries now transport GMT boundaries and convert responses to offset-bearing station-local ISO; fall-back's two 01:xx hours retain distinct identifiers through tide/gauge caches, forecast JSON, per-tide joins, and new prediction-log rows; legacy naive rows remain readable as fold=0; cache canonicalization prevents old/new duplicate tides, chronological UTC sorting preserves fold order, human surfaces hide transport offsets, and widget v7.27a honors exact instants; 151 tests, live no-send generation, artifact gate, and frozen replay pass [VERIFIED: source + live NOAA/NWS run]
 2026-09-18 | DONE | frozen-event-lifecycle-wording | corrected the remaining 2025-08-21 backlog instruction: any recovered primary evidence belongs in labeled_observations + event README, never the frozen labeled_events classifier [VERIFIED: data/labeled_observations_README.md lifecycle]
 2026-09-18 | OPEN | widget-v7.27a-recopy | GMT migration changed stored tide stamps to include their UTC offset; widget source v7.27a now honors that offset for exact hours-to-peak while preserving local display labels; John must re-copy the published script into Scriptable (installed v7.26a otherwise remains functional) [VERIFIED: source diff; installation state last STATED 2026-09-14]
+2026-09-18 | DONE | pinned-workflow-shell-lint | CI now checksum-verifies actionlint 1.7.12 and ShellCheck 0.11.0, lints all workflows plus four shell entry points, and repaired every initial finding (grouped GITHUB_OUTPUT writes, glob-safe reverse archive loop, visible retry counters, quoted launchd targets, trap annotation, smoke-test shebang); both linters, 151 tests, and publish gate pass [VERIFIED: official release checksums + local pinned-tool run]

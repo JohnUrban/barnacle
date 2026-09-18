@@ -47,6 +47,8 @@ if ! mkdir "$LOCK" 2>/dev/null; then
   fi
 fi
 printf '%s\n' "$$" > "$LOCK/pid"
+# Invoked indirectly by the EXIT trap below.
+# shellcheck disable=SC2329
 cleanup_lock() {
   rm -f "$LOCK/pid"
   rmdir "$LOCK" 2>/dev/null || true
@@ -90,7 +92,7 @@ git -c user.name="barnacle-local" \
 
 for attempt in 1 2 3; do
   if git push -q 2>/dev/null; then
-    log_event publish ok pushed
+    log_event publish ok "pushed-attempt-$attempt"
     exit 0
   fi
   git fetch -q origin main || fail sync 69 retry-fetch-failed

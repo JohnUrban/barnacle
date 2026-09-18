@@ -63,10 +63,12 @@ jobs:
           else
             is_daily="false"
           fi
-          echo "local_date=$local_date" >> "$GITHUB_OUTPUT"
-          echo "utc_date=$utc_date" >> "$GITHUB_OUTPUT"
-          echo "hour=$hour"       >> "$GITHUB_OUTPUT"
-          echo "is_daily=$is_daily" >> "$GITHUB_OUTPUT"
+          {
+            echo "local_date=$local_date"
+            echo "utc_date=$utc_date"
+            echo "hour=$hour"
+            echo "is_daily=$is_daily"
+          } >> "$GITHUB_OUTPUT"
           echo "Run type: is_daily=$is_daily (hour=$hour UTC, event=${{ github.event_name }})"
 
       # EVENT-DRIVEN ALERTING (2026-07-17; transactional 2026-07-21):
@@ -124,7 +126,10 @@ jobs:
               <h2>Past forecasts</h2>
               <ul class="archive-list">
           HEAD
-            for f in $(ls -r 20*.html 2>/dev/null); do
+            shopt -s nullglob
+            files=(20*.html)
+            for ((i=${#files[@]} - 1; i >= 0; i--)); do
+              f=${files[i]}
               date_str="${f%.html}"
               echo "      <li><a href=\"$f\">$date_str</a></li>"
             done
