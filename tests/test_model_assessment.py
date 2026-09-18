@@ -45,6 +45,40 @@ class ModelV011AssessmentTests(unittest.TestCase):
         ]["change_ft"]
         self.assertGreater(abs(change), 0.52)
 
+    def test_moving_head_candidate_is_not_universally_better(self):
+        candidate = self.result["time_varying_head_candidate"]
+        self.assertEqual(candidate["fixture"]["rows"], 102)
+        self.assertEqual(candidate["fixture"]["astronomical_sample_rows"], 204)
+        replay = candidate["historical_head_replay"]
+        oct30 = replay["2025-10-30"]
+        self.assertLess(
+            oct30["moving_astronomy_constant_surge"]["rmse"],
+            oct30["fixed_head"]["rmse"],
+        )
+        dec19 = replay["2025-12-19"]
+        self.assertGreaterEqual(
+            dec19["moving_astronomy_constant_surge"]["rmse"],
+            dec19["fixed_head"]["rmse"],
+        )
+
+    def test_moving_head_changes_standardized_rising_and_falling_tanks(self):
+        response = self.result["time_varying_head_candidate"][
+            "standardized_tank_response"
+        ]
+        self.assertGreater(response["largest_rise"]["endpoint_delta_in"], 0.5)
+        self.assertLess(response["largest_fall"]["endpoint_delta_in"], -0.3)
+
+    def test_surge_age_boundary_does_not_cover_every_accepted_head(self):
+        boundary = self.result["time_varying_head_candidate"]["age_boundary"]
+        self.assertEqual(
+            boundary["max_initial_age_for_full_horizon_surge_validity_min"],
+            15,
+        )
+        self.assertGreater(
+            boundary["head_observation_max_age_min"],
+            boundary["max_initial_age_for_full_horizon_surge_validity_min"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

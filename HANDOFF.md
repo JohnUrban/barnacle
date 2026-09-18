@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 12:18 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-18 12:35 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -17,8 +17,8 @@ receive alerts.
 ## Current state
 
 - Audit `2026-09-14-a1` is CLOSED. Claude Fable 5 independently confirmed
-  all findings, the test/gate/frozen-replay remediation, and six critical
-  seams. No unanswered audit report remains.
+  all findings, remediation, tests/gate/frozen replay, and six critical seams.
+  No unanswered audit report remains.
 - Alert delivery has real-payload contracts, quality/freshness gates,
   age-bounded NOAA fallbacks, per-rail retry/cap state, and one fail-closed
   post-publish dispatch. SMS is fresh-nowcast imminent impact only.
@@ -30,12 +30,11 @@ receive alerts.
 - Widget v7.26a was confirmed installed 2026-09-14. Source v7.28a retains
   exact offset parsing and identifies the driveway entry as cross-fit; John
   must re-copy it into Scriptable.
-- The 4.67-ft `driveway_central` model/API/ledger key is explicitly a
-  cross-fit corner-stage threshold. The separate 4.11-ft road-topography
-  point is `driveway_road_central`; no model physics or stamp changed.
+- `driveway_central` is explicitly a 4.67-ft cross-fit corner-stage threshold;
+  the separate 4.11-ft map point is `driveway_road_central`. All current
+  landmark-bearing surfaces agree; no model physics or stamp changed.
 - CI checksum-pins actionlint 1.7.12 and ShellCheck 0.11.0. Required
-  artifacts fail closed, writes are atomic, and ledgers are semantically
-  validated.
+  artifacts fail closed, writes are atomic, and ledgers are validated.
 
 ## Evidence and model state
 
@@ -46,13 +45,15 @@ receive alerts.
   pluvial risk 7h47 ahead and a near-magnitude burst proxy, but hourly QPF
   put the first flood ~3.5h late. Event-time nowcast is unscorable because
   both production arms were dark.
-- The v0.11 offline assessment rejects one replacement lag, universal
-  point/max forcing, standalone persistence, and tide-bias retuning. It
-  advances time-varying nowcast bay head and `_pluvial_fill` continuity as
-  offline candidates. Production remains v0.10.2.
-- Nine measured floods are in the all-anchors analysis. Frozen v0.10.1
-  reproduction remains the behavior guard; v0.10.2 added only the driveway
-  threshold observable.
+- Initial v0.11 assessment rejects one replacement lag, universal point/max
+  forcing, standalone persistence, and tide-bias retuning.
+- Follow-on moving-head replay uses 102 official NOAA six-minute rows. Moving
+  astronomy + constant surge cuts Oct 30 RMSE 0.340→0.157 ft, but Dec 19 is
+  0.249→0.251 ft because surge evolves. Standardized tank endpoints move
+  +0.82 inches rising / −0.49 inches falling. Candidate is HELD; production
+  remains fixed-head v0.10.2 pending surge-tendency/expiry semantics.
+- `_pluvial_fill` continuity remains an accepted correctness candidate:
+  sampled maximum +0.090 inch; frozen peaks +0.000–0.063 inch, no clock moves.
 - Report: `history/reports/model-v0.11-assessment-2026-09-18.md`.
 
 ## Open residuals
@@ -63,8 +64,10 @@ receive alerts.
   owner credentials/security decisions.
 - Exactly-once provider delivery needs idempotency or a durable external
   outbox; current policy deliberately favors duplicate over missed alerts.
+- Surge-tendency validation needs a predeclared bounded rule and a future
+  independent compound event; Event 9 round-2 radar was not archived.
 - Browser DOM/accessibility tests, incremental typing, edge-map clicks, and
-  separately versioned model-candidate development remain queued.
+  separately versioned model-candidate work remain queued.
 
 ## Production rules
 
@@ -80,6 +83,6 @@ receive alerts.
 
 ## Immediate next step
 
-Prototype the time-varying nowcast bay-head candidate offline, compare it
-with the frozen scalar-head behavior, and do not change production physics
-without a separately accepted model version.
+Build the `_pluvial_fill` continuity correction as an offline versioned
+candidate with regenerated golden diffs; do not promote it into production
+v0.10.2 or combine it with an unaccepted head rule.

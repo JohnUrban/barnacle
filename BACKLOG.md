@@ -45,10 +45,14 @@ looks stale, trust this file. Ledger lines are append-only:
       Current decay leaves only 2.4% after 60 dry minutes; standalone
       persistence is deferred until paired with a tested long-tail or
       antecedent structure. (day-max memory partially compensates.)
-- [ ] Time-varying nowcast bay-head candidate: prototype evolving the
-      astronomical tide plus an age-bounded observed surge through the
-      45-minute projection. Compare it offline against the current frozen
-      scalar head before any versioned production proposal.
+- [x] Time-varying nowcast bay-head prototype completed 2026-09-18 against
+      102 official NOAA six-minute rows: moving astronomy + constant surge
+      improves Oct 30 strongly but is neutral/slightly worse on Dec 19 when
+      surge evolves. Production remains fixed-head pending the next item.
+- [ ] Surge-tendency / head-expiry candidate: predeclare a bounded observable
+      recent-surge rule and explicit degraded-tail behavior. Do not select
+      fixed/constant/trend per event after seeing the outcome; reserve the
+      next compound event for independent validation.
 
 - [ ] edge_20260901 map points from event-#8 photos 14-16 (Central
       arm extent at peak) — needs user pick_coords clicks.
@@ -334,3 +338,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-18 | DECISION | widget-v7.27a-recopy | superseded before installation by v7.28a, which retains the GMT timestamp repair and adds explicit cross-fit driveway-threshold wording [VERIFIED: source history; installation state last STATED 2026-09-14]
 2026-09-18 | OPEN | widget-v7.28a-recopy | John must re-copy the published v7.28a source into Scriptable; installed v7.26a remains functional but lacks exact fall-back-hour parsing and the clarified driveway-threshold label [VERIFIED: source diff; installation state last STATED 2026-09-14]
 2026-09-18 | DONE | driveway-threshold-semantics | all landmark-bearing display arms now identify `driveway_central` as a cross-fit driveway-entry threshold; its stable model/API/ledger key stays distinct from the renamed 4.11-ft `driveway_road_central` map-topography point; SMS/ntfy are regime/depth based and objectively carry no landmark label [VERIFIED: source, generated surfaces, regression test, artifact gate]
+2026-09-18 | DONE | time-varying-head-prototype | committed 102 official NOAA six-minute astronomical/observed rows for Oct 30 and Dec 19; moving astronomy + constant issue-time surge cuts Oct 30 head RMSE 0.340->0.157 ft but Dec 19 is 0.249->0.251 ft as surge evolves; standardized 1.0 in/hr tank endpoints move +0.82 in rising / -0.49 in falling; constant-surge production candidate HELD and v0.10.2 unchanged [VERIFIED: offline harness + NOAA fixture + regression tests]

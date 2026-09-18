@@ -36,7 +36,9 @@ MRMS_PATH = REPO_ROOT / "history" / "data" / "mrms" / "mrms_extracted.csv"
 PREDICTIONS_PATH = REPO_ROOT / "data" / "predictions_log.csv"
 OBSERVED_PEAKS_PATH = REPO_ROOT / "data" / "observed_peaks_cache.csv"
 LEGACY_ACCURACY_PATH = REPO_ROOT / "data" / "forecast_accuracy.csv"
-TIDE_CACHE_PATH = REPO_ROOT / "data" / "tide_predictions_cache.json"
+HEAD_REPLAY_PATH = (
+    REPO_ROOT / "history" / "data" / "noaa_head_replay_fixture.json"
+)
 
 MRMS_EVENTS = {
     "event7": {
@@ -282,11 +284,14 @@ def assess_state_and_tide_head():
     step_fraction = 1.0 - ff.TANK_KOUT * (2.0 / 60.0)
     remaining_60_min = step_fraction ** 30
 
-    with TIDE_CACHE_PATH.open(encoding="utf-8") as handle:
-        raw_series = json.load(handle)["series"]
+    with HEAD_REPLAY_PATH.open(encoding="utf-8") as handle:
+        head_fixture = json.load(handle)
     series = sorted(
-        (ff.parse_station_local_time(stamp), float(level))
-        for stamp, level in raw_series
+        (
+            dt.datetime.fromisoformat(row["utc"].replace("Z", "+00:00")),
+            float(row["astronomical_mllw_ft"]),
+        )
+        for row in head_fixture["astronomical_sample"]["rows"]
     )
 
     def interpolate(target):
@@ -322,6 +327,216 @@ def assess_state_and_tide_head():
             "first": series[0][0].isoformat(),
             "last": series[-1][0].isoformat(),
             "largest_45_minute_change": largest,
+        },
+    }
+
+
+def _interpolate_points(points, target):
+    """Linearly interpolate sorted ``(datetime, value)`` points."""
+    for (left_time, left), (right_time, right) in zip(points, points[1:]):
+        if left_time <= target <= right_time:
+            fraction = (
+                (target - left_time).total_seconds()
+                / (right_time - left_time).total_seconds()
+            )
+            return left + fraction * (right - left)
+    raise ValueError("target outside series")
+
+
+def _head_forecast_errors(rows):
+    astronomical = [
+        (dt.datetime.fromisoformat(row["utc"].replace("Z", "+00:00")),
+         float(row["astronomical_mllw_ft"]))
+        for row in rows
+    ]
+    observed = [
+        (dt.datetime.fromisoformat(row["utc"].replace("Z", "+00:00")),
+         float(row["observed_mllw_ft"]))
+        for row in rows
+    ]
+    fixed_errors = []
+    moving_errors = []
+    fixed_endpoint_errors = []
+    moving_endpoint_errors = []
+    surge_changes = []
+    issue_rows = []
+    final_time = observed[-1][0]
+    for issue_time, issue_observed in observed:
+        endpoint = issue_time + dt.timedelta(minutes=45)
+        if endpoint > final_time:
+            continue
+        issue_astronomical = _interpolate_points(astronomical, issue_time)
+        issue_surge = issue_observed - issue_astronomical
+        local_fixed = []
+        local_moving = []
+        for minute in (6, 12, 18, 24, 30, 36, 42, 45):
+            target = issue_time + dt.timedelta(minutes=minute)
+            truth = _interpolate_points(observed, target)
+            future_astronomical = _interpolate_points(astronomical, target)
+            local_fixed.append(issue_observed - truth)
+            local_moving.append(future_astronomical + issue_surge - truth)
+        fixed_errors.extend(local_fixed)
+        moving_errors.extend(local_moving)
+        fixed_endpoint_errors.append(local_fixed[-1])
+        moving_endpoint_errors.append(local_moving[-1])
+        endpoint_surge = (
+            _interpolate_points(observed, endpoint)
+            - _interpolate_points(astronomical, endpoint)
+        )
+        surge_changes.append(endpoint_surge - issue_surge)
+        issue_rows.append({
+            "issue_utc": issue_time.isoformat(),
+            "astronomical_change_ft": (
+                _interpolate_points(astronomical, endpoint)
+                - issue_astronomical
+            ),
+            "observed_change_ft": (
+                _interpolate_points(observed, endpoint) - issue_observed
+            ),
+            "surge_change_ft": endpoint_surge - issue_surge,
+            "fixed_endpoint_error_ft": local_fixed[-1],
+            "moving_endpoint_error_ft": local_moving[-1],
+        })
+    most_helpful = max(
+        issue_rows,
+        key=lambda row: (
+            abs(row["fixed_endpoint_error_ft"])
+            - abs(row["moving_endpoint_error_ft"])
+        ),
+    )
+    most_harmful = min(
+        issue_rows,
+        key=lambda row: (
+            abs(row["fixed_endpoint_error_ft"])
+            - abs(row["moving_endpoint_error_ft"])
+        ),
+    )
+    return {
+        "issue_windows": len(issue_rows),
+        "forecast_points": len(fixed_errors),
+        "fixed_head": _summary(fixed_errors),
+        "moving_astronomy_constant_surge": _summary(moving_errors),
+        "fixed_head_endpoint": _summary(fixed_endpoint_errors),
+        "moving_astronomy_constant_surge_endpoint": _summary(
+            moving_endpoint_errors
+        ),
+        "surge_change_over_45_minutes": _summary(surge_changes),
+        "most_helpful_endpoint": most_helpful,
+        "most_harmful_endpoint": most_harmful,
+    }
+
+
+def _standardized_head_response(series, start, start_level, rain_rate):
+    start_astronomical = _interpolate_points(series, start)
+    curve = ff._load_stage_curve()
+    results = {}
+    for label, moving in (("fixed", False), ("moving", True)):
+        volume = 0.0
+        trajectory = []
+        drains = []
+        for minute in range(0, 45, 2):
+            stamp = start + dt.timedelta(minutes=minute)
+            bay = start_level
+            if moving:
+                bay += _interpolate_points(series, stamp) - start_astronomical
+            drain_span = ff.PLUVIAL_STREET_BASE - ff.PLUVIAL_DRAIN_FULL_BELOW
+            drain_fraction = min(
+                1.0,
+                max(0.0, (ff.PLUVIAL_STREET_BASE - bay) / drain_span),
+            )
+            drain = ff.PLUVIAL_DRAIN_RATE * drain_fraction
+            net = max(0.0, rain_rate - drain)
+            volume = max(
+                0.0,
+                volume + (
+                    ff.TANK_K * net ** ff.TANK_GAMMA
+                    - ff.TANK_KOUT * volume
+                ) * (2.0 / 60.0),
+            )
+            base_stage = max(0.0, (bay - ff.PLUVIAL_STREET_BASE) * 12.0)
+            stage = (
+                ff._pluvial_fill(curve, base_stage, volume)
+                if volume > 0 else base_stage
+            )
+            trajectory.append(stage)
+            drains.append(drain)
+        results[label] = {
+            "peak_stage_in": max(trajectory),
+            "endpoint_stage_in": trajectory[-1],
+            "mean_drain_in_hr": sum(drains) / len(drains),
+        }
+    results["peak_delta_in"] = (
+        results["moving"]["peak_stage_in"]
+        - results["fixed"]["peak_stage_in"]
+    )
+    results["endpoint_delta_in"] = (
+        results["moving"]["endpoint_stage_in"]
+        - results["fixed"]["endpoint_stage_in"]
+    )
+    return results
+
+
+def assess_time_varying_head_candidate():
+    """Evaluate moving astronomy + issue-time surge without fitting."""
+    with HEAD_REPLAY_PATH.open(encoding="utf-8") as handle:
+        fixture = json.load(handle)
+    replays = {
+        event_date: _head_forecast_errors(event["rows"])
+        for event_date, event in fixture["events"].items()
+    }
+
+    sample = fixture["astronomical_sample"]["rows"]
+    series = sorted(
+        (
+            dt.datetime.fromisoformat(row["utc"].replace("Z", "+00:00")),
+            float(row["astronomical_mllw_ft"]) + ff.MLLW_TO_NAVD88_OFFSET,
+        )
+        for row in sample
+    )
+    windows = []
+    for start, level in series:
+        endpoint = start + dt.timedelta(minutes=45)
+        if endpoint > series[-1][0]:
+            continue
+        windows.append((
+            _interpolate_points(series, endpoint) - level,
+            start,
+        ))
+    standardized = {}
+    for label, (_change, start) in (
+        ("largest_rise", max(windows)),
+        ("largest_fall", min(windows)),
+    ):
+        response = _standardized_head_response(
+            series, start, start_level=3.26, rain_rate=1.0
+        )
+        response.update({
+            "start": start.isoformat(),
+            "astronomical_change_ft": _change,
+            "start_bay_navd88_ft": 3.26,
+            "rain_rate_in_hr": 1.0,
+        })
+        standardized[label] = response
+
+    return {
+        "fixture": {
+            "path": str(HEAD_REPLAY_PATH.relative_to(REPO_ROOT)),
+            "station": fixture["station"],
+            "retrieved_utc_date": fixture["retrieved_utc_date"],
+            "rows": sum(
+                len(event["rows"]) for event in fixture["events"].values()
+            ),
+            "astronomical_sample_rows": len(sample),
+        },
+        "historical_head_replay": replays,
+        "standardized_tank_response": standardized,
+        "age_boundary": {
+            "head_observation_max_age_min": ff.GAUGE_HEAD_MAX_AGE_MIN,
+            "surge_observation_max_age_min": ff.SURGE_OBS_MAX_AGE_MIN,
+            "projection_horizon_min": 45,
+            "max_initial_age_for_full_horizon_surge_validity_min": (
+                ff.SURGE_OBS_MAX_AGE_MIN - 45
+            ),
         },
     }
 
@@ -396,6 +611,7 @@ def assess():
         "pluvial_fill": assess_fill(),
         **lag_forcing,
         **assess_state_and_tide_head(),
+        "time_varying_head_candidate": assess_time_varying_head_candidate(),
         "tide_accuracy": assess_tide_accuracy(),
     }
 
@@ -438,8 +654,17 @@ def _print_compact(result):
     tide = result["tide_head_sample"]["largest_45_minute_change"]
     print(
         "tide head\n"
-        f"  largest cached 45-minute astronomical change: {tide['change_ft']:+.3f} ft"
+        f"  largest frozen-sample 45-minute astronomical change: "
+        f"{tide['change_ft']:+.3f} ft"
     )
+    candidate = result["time_varying_head_candidate"]
+    for event_date, row in candidate["historical_head_replay"].items():
+        fixed = row["fixed_head"]["rmse"]
+        moving = row["moving_astronomy_constant_surge"]["rmse"]
+        print(
+            f"  {event_date}: head RMSE fixed {fixed:.3f} ft; "
+            f"moving astronomy + constant surge {moving:.3f} ft"
+        )
     accuracy = result["tide_accuracy"]
     print(
         "tide accuracy\n"

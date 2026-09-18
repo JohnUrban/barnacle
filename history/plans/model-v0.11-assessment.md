@@ -5,9 +5,12 @@ v0.10.2. The initial read-only assessment is recorded in
 [`history/reports/model-v0.11-assessment-2026-09-18.md`](../reports/model-v0.11-assessment-2026-09-18.md)
 and reruns through `history/scripts/assess_model_v0_11.py`. It rejected a
 single replacement lag, a universal house-pixel forcing switch, standalone
-state persistence, and a tide-bias retune. It accepted time-varying bay head
-and `_pluvial_fill` continuity as the next offline candidates. This document
-remains a queue, not a model spec, and does not authorize a version bump.
+state persistence, and a tide-bias retune. The follow-on head prototype uses
+the committed NOAA compound-event fixture: moving astronomy helps Oct 30
+strongly but is neutral/slightly worse on Dec 19 when surge evolves against
+the tide. `_pluvial_fill` continuity remains accepted as a correctness
+candidate. This document remains a queue, not a model spec, and does not
+authorize a version bump.
 
 1. **ASSESSED:** the nine minute-resolution observations reject 15 minutes,
    but favor different replacements (Event 8: 10; Event 9: 3). Define an
@@ -19,8 +22,11 @@ remains a queue, not a model spec, and does not authorize a version bump.
    failure/outage restarts before considering production state.
 4. Compare a two-layer antecedent reservoir with the current memoryless tank;
    reject any design that delays Event 9's bone-dry response excessively.
-5. **NEXT CANDIDATE:** evolve bay head through the 45-minute projection using
-   astronomical tide plus age-bounded surge rather than holding one value.
+5. **PROTOTYPED / HOLD:** moving astronomy + constant issue-time surge changes
+   standardized 1.0 in/hr tank endpoints +0.82 inches rising / −0.49 inches
+   falling and cuts Oct 30 head RMSE 0.340→0.157 ft, but Dec 19 is
+   0.249→0.251 ft because surge evolves. Define a bounded observable surge
+   tendency and explicit age-expiry/degraded-tail contract before production.
 6. Test explicit duration, delivery, and drainage structure without treating
    forecast-QPF error as tank-physics error.
 7. **QUANTIFIED / ACCEPTED FOR CANDIDATE:** correction is at most 0.090 inch
