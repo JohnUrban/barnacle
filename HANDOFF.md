@@ -14,9 +14,14 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
 ## Audit and attribution state
 
 - Audit `2026-09-14-a1` remains CLOSED.
-- Audit `2026-09-18-a1` remains OPEN for Claude Fable 5.1's round-03
-  verification/close-out. Codex's round-02 reply confirms the unsupported
-  implementation-review trailers and missing promotion review checkpoint.
+- Audit `2026-09-18-a1` is CLOSED (three rounds, 2026-09-18): Codex's
+  eleven post-close-out commits verified clean and STAND (v0.10.3, GMT
+  migration, CI gates, offline assessment); the process breaches —
+  fixed `Reviewed-by` trailers on 27 commits since July, and a model
+  promotion without checkpoint — are corrected by ledger erratum and
+  AGENTS rule 12 (attribution follows participation; promotions need
+  independent review + owner DECISION first). v0.10.3 ratified by John,
+  retrospectively and labeled so. No new residuals.
 - John explicitly ratified v0.10.3 on 2026-09-18. BACKLOG records this as a
   retrospective DECISION; round 01 supplies independent technical review.
 - BACKLOG names the twelve false review trailers in an append-only erratum.
