@@ -1,103 +1,84 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 13:35 EDT.** Rewrite wholesale each ship and keep
-under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
-archival, never instructions.
+**Snapshot: 2026-09-18 13:37 EDT.** Rewrite wholesale each ship; <100 lines.
+`BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
 
-Production hyperlocal flood forecaster for 342 Bay Ave, Highlands NJ.
-Sandy Hook gauge + NWS + MRMS radar produce water depth at 19 landmarks,
-an hourly site/JSON forecast, best-effort ~10-minute nowcast, per-tide pages,
-nine-town street map, iOS widget source v7.28a, and ntfy/email/SMS alerts.
-Current model **v0.10.3** (`model/v0.10.3.md`); SMS is the imminent-impact
-rail, while ntfy/email carry long-lead watches. Real people receive alerts.
+Production flood forecaster for 342 Bay Ave, Highlands NJ. Sandy Hook +
+NWS + MRMS produce depth at 19 landmarks, hourly site/JSON, best-effort
+~10-minute nowcast, per-tide pages, nine-town map, widget, ntfy/email/SMS.
+Model **v0.10.3** (`model/v0.10.3.md`). SMS carries imminent street impact;
+ntfy/email carry longer-lead watches. Real people receive these alerts.
 
-## Current state
+## Audit and attribution state
 
-- Audit `2026-09-14-a1` is CLOSED. **Audit `2026-09-18-a1` is OPEN**
-  (round 01 by Claude Fable 5.1, auditing Codex's 11 post-close-out
-  commits): technical work verifies clean (v0.10.3 numerically exact,
-  GMT migration complete at all NOAA sites, nine green production runs);
-  findings are provenance/process — `Reviewed-by: Claude` trailers on
-  all 11 (+ the 09-14 phase-4 commit) with no review behind them, a
-  habit traced to Codex's 2026-07-21 template, and v0.10.3 promoted
-  without an independent reply or owner decision. Awaiting Codex's
-  round-02 reply and John's DECISION line on v0.10.3.
-- Alert delivery has real-payload contracts, quality/freshness gates,
-  age-bounded NOAA fallbacks, per-rail retry/cap state, and one fail-closed
-  post-publish dispatch. SMS is fresh-nowcast imminent impact only.
-- Local scheduling has stale-lock takeover, structured outcomes, quiet
-  coalescing, explicit arm heartbeats, and an independent Mac watchdog.
-  Sleeping-Mac coverage and external trigger credentials remain open.
-- NOAA transport uses GMT; stored tide/gauge stamps carry station offsets.
-  Repeated fall-back hours are distinct and legacy naive rows remain readable.
-- Widget v7.26a was confirmed installed 2026-09-14. Source v7.28a retains
-  exact offset parsing and identifies the driveway entry as cross-fit; John
-  must re-copy it into Scriptable.
-- `driveway_central` is explicitly a 4.67-ft cross-fit corner-stage threshold;
-  the separate 4.11-ft map point is `driveway_road_central`.
-- CI checksum-pins actionlint 1.7.12 and ShellCheck 0.11.0. Required
-  artifacts fail closed, writes are atomic, and ledgers are validated.
-- A dependency-free DOM/accessibility contract now gates every current
-  landing/reference/map/tide-index/per-tide page. Interactive controls and
-  canvas charts have programmatic names; immutable daily archives are exempt.
-- Strict mypy is pinned in CI for the fully annotated `station_time` and
-  `html_contract` pure seams. The facade/renderers remain intentionally
-  outside that claim until later seam-by-seam work.
+- Audit `2026-09-14-a1` remains CLOSED.
+- Audit `2026-09-18-a1` remains OPEN for Claude Fable 5.1's round-03
+  verification/close-out. Codex's round-02 reply confirms the unsupported
+  implementation-review trailers and missing promotion review checkpoint.
+- John explicitly ratified v0.10.3 on 2026-09-18. BACKLOG records this as a
+  retrospective DECISION; round 01 supplies independent technical review.
+- BACKLOG names the twelve false review trailers in an append-only erratum.
+  Earlier chat requested credit for Claude's audit/planning help; Codex
+  incorrectly generalized that into implementation review on later commits.
+- Rule 12 now requires cited evidence and scope for reviewer attribution.
+  No fixed reviewer/model identity is carried across sessions. Planning
+  advice is credited as planning. Model promotion requires independent
+  candidate review and an owner decision recorded before the commit.
+- Round 02 adds a legacy spring-forward gap regression and documents its
+  pre-transition-offset interpretation; rounds the correction golden to
+  0.09. Production formulas and time conversion are unchanged.
+- Round 01's minor driveway-overlay visual check remains pending; it has
+  not been represented as browser-verified.
 
-## Evidence and model state
+## Production and evidence
 
-- Event #9, 2026-09-13, peaked level with the lawn step at ~+13.7 inches at
-  07:01:23 EDT [VERIFIED: 18-photo EXIF timeline]. Response was 10–13 minutes
-  earlier than the fixed-lag hindcast; a second compound curb flood followed.
-- Its last overnight forecast is a qualified split-pathway hit: elevated
-  pluvial risk 7h47 ahead and a near-magnitude burst proxy, but hourly QPF
-  put the first flood ~3.5h late. Event-time nowcast is unscorable because
-  both production arms were dark.
-- Production v0.10.3 changes only `_pluvial_fill` continuity. It matches an
-  independent volume-at-base inverse to 1.07e-14 inch; sampled correction is
-  at most +0.090 inch, compound peaks move +0.014/+0.063 inch, and no peak
-  clock changes. Constants, landmarks, forcing, lag, and alert policy remain
-  unchanged. v0.10.2 is archived with repaired links.
-- Initial v0.11 assessment rejects one replacement lag, universal point/max
-  forcing, standalone persistence, and tide-bias retuning.
-- Moving astronomy + constant surge cuts Oct 30 head RMSE 0.340→0.157 ft,
-  but Dec 19 is 0.249→0.251 ft because surge evolves. Standardized tank
-  endpoints move +0.82 inches rising / −0.49 inches falling. The rule remains
-  HELD pending surge-tendency, age-expiry, and independent-event evidence.
-- Reproductions: `history/scripts/reproduce_v0_10_1.py` preserves the prior
-  frozen record; `history/scripts/reproduce_v0_10_3.py` verifies production.
+- Alerts have real-payload/freshness contracts, age-bounded NOAA fallbacks,
+  per-rail retry/cap accounting, and one fail-closed post-publish dispatch.
+- Local scheduler has stale-lock recovery, explicit outcomes/heartbeats,
+  quiet publication coalescing, and an armed Mac watchdog (awake hours).
+- NOAA transport uses GMT; storage preserves station offsets, including
+  both fall-back hours. Legacy naive timestamps use fold=0.
+- Widget source v7.28a needs John to re-copy into Scriptable; installed
+  v7.26a was last confirmed 2026-09-14.
+- `driveway_central` is the 4.67-ft cross-fit corner-stage threshold;
+  `driveway_road_central` is the separate 4.11-ft map-topography point.
+- CI has checksum-pinned actionlint/ShellCheck; strict mypy covers
+  `station_time` and `html_contract`. Static DOM/accessibility checks gate
+  current HTML surfaces; full browser runtime accessibility remains open.
+- v0.10.3 corrects only sub-bin stage-storage inversion: sampled correction
+  <=0.090 inch, compound peaks +0.014/+0.063 inch, no peak clock changes.
+  Constants, landmarks, forcing, lag, and alert policy are unchanged.
+- Event #9's 07:01:23 EDT lawn-step crest on 2026-09-13 was 10–13 minutes
+  earlier than the fixed-lag hindcast. Its overnight forecast warned ahead,
+  but QPF put the first flood ~3.5h late; the later compound window hit.
+  Event-time nowcast is unscorable because both production arms were dark.
+- Offline assessment rejects a single replacement lag, universal point/max
+  forcing, standalone persistence, and tide-bias retuning. Moving astronomy
+  plus constant surge helps Oct 30 but not Dec 19: candidate HELD.
+- Legacy reproduction: `history/scripts/reproduce_v0_10_1.py`.
+  Production reproduction: `history/scripts/reproduce_v0_10_3.py`.
 
-## Open residuals
+## Residuals and operating rules
 
-- Observe the rebuilt storm-path dispatch at the next production radar
-  trigger; local watchdog coverage is awake-hours only.
-- External 24/7 triggering and local secret-bearing alert redundancy require
-  owner credentials/security decisions.
-- Exactly-once provider delivery needs idempotency or a durable external
-  outbox; current policy deliberately favors duplicate over missed alerts.
-- Surge-tendency validation needs a predeclared bounded rule and a future
-  independent compound event; Event 9 round-2 radar was not archived.
-- Real browser-runtime tests, typing beyond the two pure seams, edge-map
-  clicks, and separately versioned model-candidate work remain queued.
-
-## Production rules
-
-- On flood work read `PLAYBOOK.md`; otherwise read `AGENTS.md`, this file,
-  audits, then BACKLOG.
-- Add explicit paths. Commit → gate → push; on rejection fetch/rebase or
-  abort → gate again → retry. Union append-only ledgers.
-- Use station-time helpers and run `date` before relative-time prose.
-- Restore `data/alert_state.json` from origin after local generation and
-  before commit. Provenance and primary records are mandatory.
-- Model behavior changes require version/spec/code/log stamps in lockstep.
-  Semantic changes must cover every relevant alert and display arm.
+- Next real radar trigger must verify storm-path dispatch in production.
+- External 24/7 triggering and secret-bearing local alert redundancy need
+  owner credentials/security choices; sleeping-Mac coverage remains open.
+- Exactly-once delivery requires provider idempotency or a durable service;
+  current crash policy favors duplicate over missed alerts.
+- Model research needs a predeclared surge-tendency/expiry contract and an
+  independent compound event. Event 9 round-2 radar was not archived.
+- Field map clicks, browser-runtime tests, and typing beyond the two seams
+  remain queued; see BACKLOG for the full list.
+- Read PLAYBOOK for flood work. Use station-time helpers; run `date` before
+  relative-time prose. Preserve provenance and append-only ledgers.
+- Explicit staging only. Commit → gate → push; rejection → fetch/rebase
+  or abort → gate again → retry. Ledger conflicts resolve by union.
+- Protect transactional alert state during local generation. Keep model
+  spec/code/log stamps and every affected display/alert arm in lockstep.
 
 ## Immediate next step
 
-Retain the moving-head candidate offline until its surge-tendency and expiry
-contract can be tested without consuming the reserved independent event.
-The next autonomous engineering slice is real browser-runtime smoke coverage
-or another isolated typed seam; event/credential/field-observation loops stay
-gated.
+Claude Fable 5.1 verifies round 02 and records round-03 disposition.
+Owner ratification is supplied; do not ask John to approve v0.10.3 again.

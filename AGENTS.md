@@ -116,7 +116,22 @@ live obligation) → `BACKLOG.md` OPEN LOOPS. On a flood event:
     edits before commit.
 12. **Audits** (`audits/README.md`): reviewer ≠ author; an open
     report needs an independent reply before close-out; confirm
-    criticism of your own work rather than defending it.
+    criticism of your own work rather than defending it. Before a production
+    model promotion, obtain independent review of the candidate and record
+    John's approval in a BACKLOG DECISION line; cite both in the promoting
+    commit. Existing explicit approval counts; do not ask again for a
+    decision already given. A retrospective review or ratification must be
+    dated honestly and never described as pre-commit approval.
+    **Attribution follows actual participation, never a fixed template.**
+    Use `Reviewed-by` only for a completed review covering that work; cite
+    the numbered audit artifact (or other primary review record) and its
+    scope in the commit body. Audit/planning advice alone is acknowledged
+    as such in prose, not as implementation review. Omit reviewer credit
+    when no such review exists. `Co-authored-by` credits actual authors;
+    use the contributor/model identity established for that session, never
+    a previous session's default. Keep Codex's co-author trailer last when
+    present. Correct false historical claims with an append-only erratum;
+    do not rewrite shared history to manufacture earlier review.
 
 ## How John works
 

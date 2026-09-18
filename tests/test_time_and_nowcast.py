@@ -63,6 +63,20 @@ class StationTimeTests(unittest.TestCase):
             2.0,
         )
 
+    def test_legacy_naive_spring_gap_preserves_pre_transition_offset(self):
+        legacy = ff.parse_station_local_time("2027-03-14 02:30")
+        self.assertEqual(legacy.fold, 0)
+        self.assertEqual(legacy.utcoffset(), dt.timedelta(hours=-5))
+        self.assertEqual(
+            legacy.astimezone(UTC),
+            dt.datetime(2027, 3, 14, 7, 30, tzinfo=UTC),
+        )
+        # GMT transport returns the real local wall time for that instant.
+        self.assertEqual(
+            ff.noaa_gmt_to_station_string("2027-03-14 07:30"),
+            "2027-03-14 03:30-04:00",
+        )
+
     def test_noaa_gmt_repeated_hour_has_distinct_storage_keys(self):
         first = ff.noaa_gmt_to_station_string("2026-11-01 05:30")
         second = ff.noaa_gmt_to_station_string("2026-11-01 06:30")

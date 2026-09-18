@@ -105,7 +105,10 @@ def parse_station_local_time(value: TimeValue) -> dt.datetime:
     IANA timezone database. New NOAA values carry an offset after the GMT
     transport migration. Legacy LST/LDT values remain readable; their
     repeated fall-back hour cannot be recovered, so fold=0 is the explicit
-    historical interpretation.
+    historical interpretation. A legacy naive time in the spring-forward
+    gap also uses fold=0 (the pre-transition offset): 2027-03-14 02:30
+    maps to 07:30Z, whose real station time is 03:30 EDT; GMT transport
+    never generates that nonexistent local wall time.
     """
     if isinstance(value, dt.datetime):
         parsed = value
