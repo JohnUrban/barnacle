@@ -149,10 +149,11 @@ all findings verified — see audits/2026-08-03-a2/)**
       one recession constraint); all_anchors recipe moved off the
       scratchpad import — implemented (77 tests then, 100 now);
       Phase 2 reviewed PASS in round 05.
-- [ ] Versioned model candidate: `_pluvial_fill()` continuity repair is
-      assessed (sampled maximum correction 0.090″; frozen peak changes
-      0–0.063″; no clock changes). Include it only in a model-version bump
-      with goldens updated in lockstep; do not patch v0.10.2 silently.
+- [x] Offline v0.10.3 `_pluvial_fill()` continuity candidate frozen
+      2026-09-18: reference-equivalent to 1.07e-14″; sampled maximum
+      correction 0.090″; frozen peak changes 0–0.063″; no clock changes.
+      Production promotion still requires the atomic rule-5 bump; do not
+      patch v0.10.2 silently or bundle the held head rule.
 - [x] Erratum convention codified + test-enforced (2026-09-02;
       pre-convention rows grandfathered) — see
       data/labeled_observations_README.md.
@@ -339,3 +340,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-18 | OPEN | widget-v7.28a-recopy | John must re-copy the published v7.28a source into Scriptable; installed v7.26a remains functional but lacks exact fall-back-hour parsing and the clarified driveway-threshold label [VERIFIED: source diff; installation state last STATED 2026-09-14]
 2026-09-18 | DONE | driveway-threshold-semantics | all landmark-bearing display arms now identify `driveway_central` as a cross-fit driveway-entry threshold; its stable model/API/ledger key stays distinct from the renamed 4.11-ft `driveway_road_central` map-topography point; SMS/ntfy are regime/depth based and objectively carry no landmark label [VERIFIED: source, generated surfaces, regression test, artifact gate]
 2026-09-18 | DONE | time-varying-head-prototype | committed 102 official NOAA six-minute astronomical/observed rows for Oct 30 and Dec 19; moving astronomy + constant issue-time surge cuts Oct 30 head RMSE 0.340->0.157 ft but Dec 19 is 0.249->0.251 ft as surge evolves; standardized 1.0 in/hr tank endpoints move +0.82 in rising / -0.49 in falling; constant-surge production candidate HELD and v0.10.2 unchanged [VERIFIED: offline harness + NOAA fixture + regression tests]
+2026-09-18 | DONE | v0.10.3-fill-candidate | fill-continuity repair frozen offline with candidate goldens and independent volume-at-base reference: worst numerical disagreement 1.07e-14 in, production correction <=0.090 in, Oct 30 +0.0629 in, Dec 19 +0.0142 in peak / +0.0202 in at observation, all clocks and four pure-pluvial peaks unchanged; production remains v0.10.2 [VERIFIED: reproduce_v0_10_3_fill_candidate.py + tests]

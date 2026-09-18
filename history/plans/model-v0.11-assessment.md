@@ -8,9 +8,10 @@ single replacement lag, a universal house-pixel forcing switch, standalone
 state persistence, and a tide-bias retune. The follow-on head prototype uses
 the committed NOAA compound-event fixture: moving astronomy helps Oct 30
 strongly but is neutral/slightly worse on Dec 19 when surge evolves against
-the tide. `_pluvial_fill` continuity remains accepted as a correctness
-candidate. This document remains a queue, not a model spec, and does not
-authorize a version bump.
+the tide. `_pluvial_fill` continuity is now frozen as an offline v0.10.3
+candidate with exact goldens and an independent reference inversion. This
+document remains a queue, not a model spec, and does not authorize a version
+bump by itself.
 
 1. **ASSESSED:** the nine minute-resolution observations reject 15 minutes,
    but favor different replacements (Event 8: 10; Event 9: 3). Define an
@@ -29,8 +30,10 @@ authorize a version bump.
    tendency and explicit age-expiry/degraded-tail contract before production.
 6. Test explicit duration, delivery, and drainage structure without treating
    forecast-QPF error as tank-physics error.
-7. **QUANTIFIED / ACCEPTED FOR CANDIDATE:** correction is at most 0.090 inch
+7. **FROZEN OFFLINE v0.10.3 CANDIDATE:** correction is at most 0.090 inch
    on the sampled grid; frozen peaks move 0–0.063 inch and clocks do not move.
+   The candidate matches volume-at-base reference arithmetic to 1.07e-14 inch
+   (`history/scripts/reproduce_v0_10_3_fill_candidate.py`).
 8. Keep `driveway_central` a cross-fit threshold observable, never relabel it
    as surveyed elevation.
 9. Segment historical tide residuals by model version, lead time, surge source,

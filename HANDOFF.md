@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 12:35 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-18 12:40 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -51,10 +51,13 @@ receive alerts.
   astronomy + constant surge cuts Oct 30 RMSE 0.340→0.157 ft, but Dec 19 is
   0.249→0.251 ft because surge evolves. Standardized tank endpoints move
   +0.82 inches rising / −0.49 inches falling. Candidate is HELD; production
-  remains fixed-head v0.10.2 pending surge-tendency/expiry semantics.
-- `_pluvial_fill` continuity remains an accepted correctness candidate:
-  sampled maximum +0.090 inch; frozen peaks +0.000–0.063 inch, no clock moves.
-- Report: `history/reports/model-v0.11-assessment-2026-09-18.md`.
+  remains fixed-head pending surge-tendency/expiry semantics.
+- `_pluvial_fill` continuity is frozen as an offline **v0.10.3 candidate**.
+  It matches independent volume-at-base arithmetic to 1.07e-14 inch; maximum
+  correction is +0.090 inch, compound peaks move +0.014/+0.063 inch, and no
+  peak clock moves. Production remains v0.10.2 until an atomic rule-5 cutover.
+- Reports/plans live under `history/reports/` and `history/plans/`; candidate
+  verifier: `history/scripts/reproduce_v0_10_3_fill_candidate.py`.
 
 ## Open residuals
 
@@ -83,6 +86,6 @@ receive alerts.
 
 ## Immediate next step
 
-Build the `_pluvial_fill` continuity correction as an offline versioned
-candidate with regenerated golden diffs; do not promote it into production
-v0.10.2 or combine it with an unaccepted head rule.
+Promote the proven fill-only v0.10.3 candidate atomically if continuing this
+arc: archive/repair the v0.10.2 spec, update code/log/version/goldens and all
+generated surfaces together, and do not bundle the held moving-head rule.
