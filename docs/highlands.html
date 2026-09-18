@@ -59,14 +59,16 @@
       <button type="button" id="town-snap">Snap to current forecast</button>
       <button type="button" id="town-reset">Reset view</button>
       <div id="flood-ticks"></div>
-      <input type="range" id="town-level" min="4.0" max="15.0"
+      <input type="range" id="town-level" aria-label="Water surface level"
+             min="4.0" max="15.0"
              step="0.05" value="6.3">
       <div id="flood-chips"></div>
     </div>
     <div class="town-slider">
       <span class="note">Slide through the forecast:</span>
       <span id="town-time-label" class="note"></span>
-      <input type="range" id="town-time" min="0" max="0" step="1" value="0">
+      <input type="range" id="town-time" aria-label="Forecast time"
+             min="0" max="0" step="1" value="0">
     </div>
     <div class="town-slider">
       <label><input type="checkbox" id="town-units">
@@ -90,14 +92,16 @@
       </span>
     </div>
     <div id="town-wrap">
-      <canvas id="town-canvas" width="980" height="840"></canvas>
+      <canvas id="town-canvas" width="980" height="840" role="img"
+              aria-label="Regional street flood map"></canvas>
       <button type="button" id="town-thumb-btn"
               title="show/hide the tide chart"
               style="position:absolute;top:8px;left:8px;font-size:15px;
                      padding:2px 7px;border:1px solid #999;
                      border-radius:5px;background:rgba(255,255,255,0.9);
                      cursor:pointer">&#128200;</button>
-      <canvas id="town-thumb" width="190" height="82"></canvas>
+      <canvas id="town-thumb" width="190" height="82" role="img"
+              aria-label="Water-level chart position preview"></canvas>
     </div>
     <p id="town-readout" class="note">Tap or hover a street for its
        elevation and flood-onset level. Drag to pan; scroll, pinch, or

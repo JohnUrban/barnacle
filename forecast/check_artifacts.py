@@ -21,6 +21,11 @@ import math
 import re
 from zoneinfo import ZoneInfo
 
+try:
+    from .html_contract import validate_current_surfaces
+except ImportError:  # direct `python forecast/check_artifacts.py` execution
+    from html_contract import validate_current_surfaces
+
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 STATION_TZ = ZoneInfo("America/New_York")
 FUTURE_TOLERANCE = dt.timedelta(minutes=5)
@@ -571,6 +576,7 @@ def check_artifacts(root=ROOT):
     for why in validate_alert_state(alert_path):
         bad.append((alert_path, why))
     bad.extend(validate_surface_stamps(root))
+    bad.extend(validate_current_surfaces(root))
     for relpath in ("docs/index.html", "docs/details.html",
                     "docs/forecast.json", "docs/nowcast.json",
                     "docs/barnacle-widget.js"):

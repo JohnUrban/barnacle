@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 12:48 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-18 12:58 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -33,6 +33,9 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   the separate 4.11-ft map point is `driveway_road_central`.
 - CI checksum-pins actionlint 1.7.12 and ShellCheck 0.11.0. Required
   artifacts fail closed, writes are atomic, and ledgers are validated.
+- A dependency-free DOM/accessibility contract now gates every current
+  landing/reference/map/tide-index/per-tide page. Interactive controls and
+  canvas charts have programmatic names; immutable daily archives are exempt.
 
 ## Evidence and model state
 
@@ -67,7 +70,7 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   outbox; current policy deliberately favors duplicate over missed alerts.
 - Surge-tendency validation needs a predeclared bounded rule and a future
   independent compound event; Event 9 round-2 radar was not archived.
-- Browser DOM/accessibility tests, incremental typing, edge-map clicks, and
+- Real browser-runtime tests, incremental typing, edge-map clicks, and
   separately versioned model-candidate work remain queued.
 
 ## Production rules
@@ -84,6 +87,7 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Immediate next step
 
-Complete the atomic v0.10.3 generation/gate/push. Afterward, retain the
-moving-head candidate offline until its surge-tendency and expiry contract
-can be tested without consuming the reserved independent event.
+Retain the moving-head candidate offline until its surge-tendency and expiry
+contract can be tested without consuming the reserved independent event.
+The next autonomous engineering slice is browser-runtime smoke coverage or
+incremental typing; all event/credential/field-observation loops stay gated.

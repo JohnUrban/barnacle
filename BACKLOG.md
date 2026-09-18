@@ -84,10 +84,15 @@ looks stale, trust this file. Ledger lines are append-only:
       uses GMT; current tide, gauge, cache, forecast, and prediction-log
       identifiers are offset-bearing station-local ISO. Both repeated 01:xx
       hours remain distinct; legacy naive rows retain explicit fold=0.
+- [x] Static DOM/accessibility contract: dependency-free parser checks every
+      current landing/reference/map/tide-index/per-tide surface for document
+      landmarks, unique IDs, valid fragments, accessible controls/links/
+      buttons/images/canvases; source labels repaired and the production
+      publish gate now enforces the contract.
 - [ ] Engineering breadth: checksum-pinned actionlint 1.7.12 and ShellCheck
-      0.11.0 are now CI gates. Browser DOM/accessibility smoke tests and
-      incremental static typing remain as module seams make them tractable.
-      Contract tests cover the two audit regressions.
+      0.11.0 are CI gates. Real browser runtime smoke tests and incremental
+      static typing remain as module seams make them tractable; static DOM/
+      accessibility and the two audit-regression contracts are covered.
 - [ ] Falling-tide stall experiment (user field task; drain coupling
       "breathing" first written up 7/13 tide event).
 - [ ] Drainage-map email to Stephen Winters (user task).
@@ -342,3 +347,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-18 | DONE | time-varying-head-prototype | committed 102 official NOAA six-minute astronomical/observed rows for Oct 30 and Dec 19; moving astronomy + constant issue-time surge cuts Oct 30 head RMSE 0.340->0.157 ft but Dec 19 is 0.249->0.251 ft as surge evolves; standardized 1.0 in/hr tank endpoints move +0.82 in rising / -0.49 in falling; constant-surge production candidate HELD and v0.10.2 unchanged [VERIFIED: offline harness + NOAA fixture + regression tests]
 2026-09-18 | DONE | v0.10.3-fill-candidate | fill-continuity repair frozen offline with candidate goldens and independent volume-at-base reference: worst numerical disagreement 1.07e-14 in, production correction <=0.090 in, Oct 30 +0.0629 in, Dec 19 +0.0142 in peak / +0.0202 in at observation, all clocks and four pure-pluvial peaks unchanged; production remains v0.10.2 [VERIFIED: reproduce_v0_10_3_fill_candidate.py + tests]
 2026-09-18 | DONE | v0.10.3-shipped | promoted only the proved stage-storage fill-continuity correction: archived/relinked v0.10.2 spec, added v0.10.3 spec and reproduction goldens, restamped code/log docs/generated surfaces, preserved historical ledgers, and excluded the held moving-head rule and all retuning; correction <=0.090 in with unchanged clocks [VERIFIED: production + legacy frozen replays, full tests, live no-send generation, artifact gate]
+2026-09-18 | DONE | html-accessibility-gate | repaired programmatic names for current chart canvases and interactive date/range/model controls across landing, details, town-map, and per-tide arms; added a dependency-free DOM/accessibility validator to both tests and the production publish gate, covering current pages derived from forecast.json while leaving immutable daily archives untouched [VERIFIED: negative fixture + current-surface test + live no-send generation + artifact gate]

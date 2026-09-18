@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="barnacle-generated-utc" content="2026-09-18T16:50:36Z">
+<meta name="barnacle-generated-utc" content="2026-09-18T16:57:03Z">
 <meta name="barnacle-schema-version" content="1.0">
 <meta name="barnacle-model-version" content="v0.10.3">
 <title>Tide Sep 19, 2026: Sat 2:21 AM — Bay Ave Barnacle</title>
@@ -38,7 +38,7 @@
     <dl>
       <dt>High tide time</dt><dd>Sep 19, 2026: Sat 2:21 AM</dd>
       <dt>Predicted tide (astronomical)</dt><dd>3.88 ft MLLW</dd>
-      <dt>Surge</dt><dd>+0.41 ft</dd>
+      <dt>Surge</dt><dd>+0.40 ft</dd>
       <dt>Forecast peak (tide + surge)</dt><dd>4.28 ft MLLW</dd>
       <dt>Surge source</dt><dd>surge-persistence</dd>
       <dt>Peak rainfall in ±90 min window</dt><dd>0.00 in/hr</dd>
@@ -46,7 +46,7 @@
     </dl>
   </section>
 
-<section class="log-status"><p class="note"><b>64</b> predictions logged over 57.6 h (55 min cadence avg) for this tide so far. Updates as the hourly workflow ticks.</p></section>
+<section class="log-status"><p class="note"><b>65</b> predictions logged over 57.7 h (54 min cadence avg) for this tide so far. Updates as the hourly workflow ticks.</p></section>
 
   <section class="heatmap">
     <h2>Flood Map Forecast</h2>
@@ -59,12 +59,14 @@
         classic blue (saturates at 2&nbsp;ft)</label>
     </div>
     <div class="map-wrap" style="position:relative">
-      <canvas id="heatmap-canvas" style="max-width:100%;height:auto;display:block;margin:8px auto;background:#fff;"></canvas>
+      <canvas id="heatmap-canvas" role="img"
+              aria-label="Forecast flood depth map" style="max-width:100%;height:auto;display:block;margin:8px auto;background:#fff;"></canvas>
       <button type="button" id="thumb-toggle" title="show position on the water-level chart"
               style="position:absolute;top:8px;left:8px;font-size:15px;
                      padding:2px 7px;border:1px solid #999;border-radius:5px;
                      background:rgba(255,255,255,0.9);cursor:pointer">&#128200;</button>
-      <canvas id="map-thumb" width="190" height="95"
+      <canvas id="map-thumb" width="190" height="95" role="img"
+              aria-label="Water-level chart position preview"
               style="position:absolute;top:40px;left:8px;display:none;
                      background:rgba(255,255,255,0.88);border:1px solid #999;
                      border-radius:5px"></canvas>
@@ -93,7 +95,7 @@
         });
       })();
       window.barnacleRenderAll = function() {
-      BarnacleMap.render({ canvas: document.getElementById('heatmap-canvas'), points: window.barnaclePoints, waterNavd88: 1.4639, baseMapUrl: '../../icons/map_raw.png', title: "Predicted water level \u2014 1.46 ft NAVD88 (SH 4.28 ft MLLW @ Sat 2:21 AM)", style: window.barnacleMapStyle });
+      BarnacleMap.render({ canvas: document.getElementById('heatmap-canvas'), points: window.barnaclePoints, waterNavd88: 1.4616, baseMapUrl: '../../icons/map_raw.png', title: "Predicted water level \u2014 1.46 ft NAVD88 (SH 4.28 ft MLLW @ Sat 2:21 AM)", style: window.barnacleMapStyle });
       };
       window.barnacleRenderAll();
       
@@ -107,7 +109,9 @@
        <a href="evolution.csv">evolution.csv</a> — HANDOFF 9b.4(c).</p>
     <div class="scrubber-controls">
       <button type="button" id="scrubber-play" aria-label="Play / pause">▶︎ Play</button>
-      <input type="range" id="scrubber-range" min="0" max="0" value="0" step="1" disabled>
+      <input type="range" id="scrubber-range"
+             aria-label="Replay forecast evolution" min="0" max="0"
+             value="0" step="1" disabled>
       <span id="scrubber-label" class="scrubber-label">Loading…</span>
     </div>
     <script>
@@ -261,7 +265,8 @@
        <a href="https://github.com/JohnUrban/barnacle/blob/main/data/predictions_log.csv">master
        predictions log</a>). x = hours from peak (negative = before),
        y = predicted Sandy Hook peak in ft MLLW. HANDOFF 9b.4(a).</p>
-    <canvas id="convergence-chart" width="800" height="380"
+    <canvas id="convergence-chart" width="800" height="380" role="img"
+            aria-label="Forecast convergence as the tide approaches"
             style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
     <p id="convergence-note" class="note" style="text-align:center"></p>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>

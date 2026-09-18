@@ -840,7 +840,8 @@ def _render_accuracy_html(forecast):
   {leadtime_html}
   {magnitude_html}
   {outcome_html}
-  <canvas id="accuracy-chart" width="800" height="380"
+  <canvas id="accuracy-chart" width="800" height="380" role="img"
+          aria-label="Predicted versus observed flood depth chart"
           style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
@@ -1756,7 +1757,8 @@ def _render_live_gauge_section(forecast):
     <p class="note">Sandy Hook gauge (station 8531680). Latest:
        <b>{latest_val:.2f} ft MLLW</b> at {format_time_full(latest_time)}.
        Refreshed each workflow run (hourly).</p>
-    <canvas id="live-gauge-chart" width="800" height="240"
+    <canvas id="live-gauge-chart" width="800" height="240" role="img"
+            aria-label="Sandy Hook observed water level over the past 24 hours"
             style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
@@ -1895,7 +1897,8 @@ def _render_oscillation_section(forecast):
          width-locked aspect ratio squashed the plot to ~50px once the
          legend took its rows (user screenshot 2026-07-07 PM). -->
     <div style="position:relative;height:360px;margin:8px auto">
-      <canvas id="oscillation-chart"></canvas>
+      <canvas id="oscillation-chart" role="img"
+              aria-label="Historical and forecast flood peaks over time"></canvas>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
@@ -2536,21 +2539,25 @@ def _render_flood_peaks_section(forecast):
       <label><input type="radio" name="fpk-unit" value="mllw">
         ft MLLW</label>
       <span class="note" style="margin-left:12px">Window:</span>
-      <input type="date" id="fpk-from" style="font-size:12px">
+      <input type="date" id="fpk-from" aria-label="Window start date"
+             style="font-size:12px">
       <span class="note">to</span>
-      <input type="date" id="fpk-to" style="font-size:12px">
+      <input type="date" id="fpk-to" aria-label="Window end date"
+             style="font-size:12px">
       <button type="button" id="fpk-apply" style="font-size:12px">Apply</button>
       <button type="button" id="fpk-reset" style="font-size:12px">Default view</button>
       <label style="margin-left:10px"><input type="checkbox" id="fpk-lows">
         <span class="note">low tides</span></label>
       <span class="note" style="margin-left:10px">marker size:</span>
-      <input type="range" id="fpk-size" min="0.1" max="2.0" step="0.05"
+      <input type="range" id="fpk-size" aria-label="Chart marker size"
+             min="0.1" max="2.0" step="0.05"
              value="1.0" style="width:90px;vertical-align:middle">
       <label><input type="checkbox" id="fpk-size-auto" checked>
         <span class="note">auto</span></label>
     </div>
     <div style="position:relative;height:380px;margin:8px auto">
-      <canvas id="flood-peaks-chart"></canvas>
+      <canvas id="flood-peaks-chart" role="img"
+              aria-label="Past and forecast flood peaks chart"></canvas>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
@@ -2706,7 +2713,9 @@ def render_per_tide_page(tide, forecast,
        <a href="evolution.csv">evolution.csv</a> — HANDOFF 9b.4(c).</p>
     <div class="scrubber-controls">
       <button type="button" id="scrubber-play" aria-label="Play / pause">▶︎ Play</button>
-      <input type="range" id="scrubber-range" min="0" max="0" value="0" step="1" disabled>
+      <input type="range" id="scrubber-range"
+             aria-label="Replay forecast evolution" min="0" max="0"
+             value="0" step="1" disabled>
       <span id="scrubber-label" class="scrubber-label">Loading…</span>
     </div>
     <script>
@@ -2860,7 +2869,8 @@ def render_per_tide_page(tide, forecast,
        <a href="https://github.com/JohnUrban/barnacle/blob/main/data/predictions_log.csv">master
        predictions log</a>). x = hours from peak (negative = before),
        y = predicted Sandy Hook peak in ft MLLW. HANDOFF 9b.4(a).</p>
-    <canvas id="convergence-chart" width="800" height="380"
+    <canvas id="convergence-chart" width="800" height="380" role="img"
+            aria-label="Forecast convergence as the tide approaches"
             style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
     <p id="convergence-note" class="note" style="text-align:center"></p>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>

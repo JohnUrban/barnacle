@@ -5368,7 +5368,8 @@ def _render_water_series_section(forecast):
   <section class="water-series">
     <h2>Predicted near-term water levels</h2>
     <div style="position:relative;height:340px;margin:8px auto">
-      <canvas id="water-series-chart"></canvas>
+      <canvas id="water-series-chart" role="img"
+              aria-label="Predicted near-term water levels"></canvas>
     </div>
     <p class="note" style="margin-top:2px">
       <label><input type="checkbox" id="datum-toggle">
@@ -5833,7 +5834,8 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             '    </div>'
         )
         second_canvas_html = (
-            f'\n    <canvas id="heatmap-canvas-no-rain" style="{canvas_styles}'
+            f'\n    <canvas id="heatmap-canvas-no-rain" role="img" '
+            f'aria-label="Flood map without forecast rain" style="{canvas_styles}'
             f'display:none"></canvas>'
         )
         # Render both canvases on load; the toggle just flips display.
@@ -6342,12 +6344,14 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
     <{hh}>Flood Map Forecast</{hh}>
     {intro_note}{toggle_html}{shading_html}
     <div class="map-wrap" style="position:relative">
-      <canvas id="heatmap-canvas" style="{canvas_styles}"></canvas>
+      <canvas id="heatmap-canvas" role="img"
+              aria-label="Forecast flood depth map" style="{canvas_styles}"></canvas>
       <button type="button" id="thumb-toggle" title="show position on the water-level chart"
               style="position:absolute;top:8px;left:8px;font-size:15px;
                      padding:2px 7px;border:1px solid #999;border-radius:5px;
                      background:rgba(255,255,255,0.9);cursor:pointer">&#128200;</button>
-      <canvas id="map-thumb" width="190" height="95"
+      <canvas id="map-thumb" width="190" height="95" role="img"
+              aria-label="Water-level chart position preview"
               style="position:absolute;top:40px;left:8px;display:none;
                      background:rgba(255,255,255,0.88);border:1px solid #999;
                      border-radius:5px"></canvas>
@@ -6417,13 +6421,15 @@ def _render_equation_widget_html(forecast, wrapper="section"):
         pluv_calc_html = f"""
     <div class="eqn-line">
       <span class="eqn-lhs">Rain burst</span>
-      <input type="number" id="pv-rate" step="0.05" min="0" max="6"
+      <input type="number" id="pv-rate" aria-label="Rain burst rate"
+             step="0.05" min="0" max="6"
              value="{_rate_default:.2f}" data-default="{_rate_default:.4f}">
       <span class="eqn-termname">in/hr &mdash; effective sustained rate</span>
     </div>
     <div class="eqn-line">
       <span class="eqn-lhs">Bay level</span>
-      <input type="number" id="pv-bay" step="0.05" min="2.0" max="5.5"
+      <input type="number" id="pv-bay" aria-label="Bay level"
+             step="0.05" min="2.0" max="5.5"
              value="{_bay_default:.2f}" data-default="{_bay_default:.4f}">
       <span class="eqn-termname">ft NAVD88 &mdash; sets the base AND the
         drain capacity (grate tops = 3.52)</span>
@@ -6563,20 +6569,23 @@ def _render_equation_widget_html(forecast, wrapper="section"):
 
     <div class="eqn-line">
       <span class="eqn-lhs">Water level (NAVD88) =</span>
-      <input type="number" id="eq-shpeak" step="0.01"
+      <input type="number" id="eq-shpeak" aria-label="Sandy Hook peak"
+             step="0.01"
              value="{sh_peak:.2f}" data-default="{sh_peak:.4f}">
       <span class="eqn-termname">ft &mdash; Sandy Hook peak (MLLW)</span>
     </div>
     <div class="eqn-line">
       <span class="eqn-op">+</span>
-      <input type="number" id="eq-enh" step="0.01"
+      <input type="number" id="eq-enh" aria-label="Local enhancement"
+             step="0.01"
              value="{LOCAL_ENHANCEMENT_FT:.2f}"
              data-default="{LOCAL_ENHANCEMENT_FT:.4f}">
       <span class="eqn-termname">ft &mdash; local enhancement</span>
     </div>
     <div class="eqn-line">
       <span class="eqn-op">+</span>
-      <input type="number" id="eq-datum" step="0.01"
+      <input type="number" id="eq-datum" aria-label="Datum offset"
+             step="0.01"
              value="{MLLW_TO_NAVD88_OFFSET:.2f}"
              data-default="{MLLW_TO_NAVD88_OFFSET:.4f}">
       <span class="eqn-termname">ft &mdash; MLLW&rarr;NAVD88 datum offset</span>
@@ -6587,13 +6596,14 @@ def _render_equation_widget_html(forecast, wrapper="section"):
 
     <div class="eqn-line">
       <span class="eqn-lhs">Depth at</span>
-      <select id="eq-landmark"></select>
+      <select id="eq-landmark" aria-label="Landmark"></select>
       <span class="eqn-termname">= max(0, water &minus; elevation) &times; 12
         + rain</span>
     </div>
     <div class="eqn-line">
       <span class="eqn-lhs">Peak rain</span>
-      <input type="number" id="eq-rain" step="0.05" min="0"
+      <input type="number" id="eq-rain" aria-label="Peak rain rate"
+             step="0.05" min="0"
              value="{rain_rate:.2f}" data-default="{rain_rate:.4f}">
       <span class="eqn-termname">in/hr &mdash; adds
         <b id="eq-rainadd">&mdash;</b>&Prime; of depth

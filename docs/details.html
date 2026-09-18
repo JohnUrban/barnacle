@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="barnacle-generated-utc" content="2026-09-18T16:50:36Z">
+<meta name="barnacle-generated-utc" content="2026-09-18T16:57:03Z">
 <meta name="barnacle-schema-version" content="1.0">
 <meta name="barnacle-model-version" content="v0.10.3">
 <title>Bay Ave Barnacle — details &amp; reference</title>
@@ -14,7 +14,7 @@
 <main>
   <header>
     <h1><a href="index.html" style="text-decoration:none;color:inherit">Bay Ave Barnacle</a> — details</h1>
-    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated Fri Sep 18, 12:50 PM ET</p>
+    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated Fri Sep 18, 12:57 PM ET</p>
   </header>
 
   <div id="how"></div>
@@ -162,20 +162,23 @@
 
     <div class="eqn-line">
       <span class="eqn-lhs">Water level (NAVD88) =</span>
-      <input type="number" id="eq-shpeak" step="0.01"
-             value="5.10" data-default="5.0989">
+      <input type="number" id="eq-shpeak" aria-label="Sandy Hook peak"
+             step="0.01"
+             value="5.10" data-default="5.0966">
       <span class="eqn-termname">ft &mdash; Sandy Hook peak (MLLW)</span>
     </div>
     <div class="eqn-line">
       <span class="eqn-op">+</span>
-      <input type="number" id="eq-enh" step="0.01"
+      <input type="number" id="eq-enh" aria-label="Local enhancement"
+             step="0.01"
              value="0.00"
              data-default="0.0000">
       <span class="eqn-termname">ft &mdash; local enhancement</span>
     </div>
     <div class="eqn-line">
       <span class="eqn-op">+</span>
-      <input type="number" id="eq-datum" step="0.01"
+      <input type="number" id="eq-datum" aria-label="Datum offset"
+             step="0.01"
              value="-2.82"
              data-default="-2.8200">
       <span class="eqn-termname">ft &mdash; MLLW&rarr;NAVD88 datum offset</span>
@@ -186,13 +189,14 @@
 
     <div class="eqn-line">
       <span class="eqn-lhs">Depth at</span>
-      <select id="eq-landmark"></select>
+      <select id="eq-landmark" aria-label="Landmark"></select>
       <span class="eqn-termname">= max(0, water &minus; elevation) &times; 12
         + rain</span>
     </div>
     <div class="eqn-line">
       <span class="eqn-lhs">Peak rain</span>
-      <input type="number" id="eq-rain" step="0.05" min="0"
+      <input type="number" id="eq-rain" aria-label="Peak rain rate"
+             step="0.05" min="0"
              value="0.00" data-default="0.0000">
       <span class="eqn-termname">in/hr &mdash; adds
         <b id="eq-rainadd">&mdash;</b>&Prime; of depth
@@ -271,13 +275,15 @@
 
     <div class="eqn-line">
       <span class="eqn-lhs">Rain burst</span>
-      <input type="number" id="pv-rate" step="0.05" min="0" max="6"
+      <input type="number" id="pv-rate" aria-label="Rain burst rate"
+             step="0.05" min="0" max="6"
              value="1.70" data-default="1.7000">
       <span class="eqn-termname">in/hr &mdash; effective sustained rate</span>
     </div>
     <div class="eqn-line">
       <span class="eqn-lhs">Bay level</span>
-      <input type="number" id="pv-bay" step="0.05" min="2.0" max="5.5"
+      <input type="number" id="pv-bay" aria-label="Bay level"
+             step="0.05" min="2.0" max="5.5"
              value="2.50" data-default="2.5000">
       <span class="eqn-termname">ft NAVD88 &mdash; sets the base AND the
         drain capacity (grate tops = 3.52)</span>
@@ -486,7 +492,8 @@
   <div class="leadtime-block"><h3 style="margin:12px 0 4px 0;font-size:15px">Accuracy by lead time (predictions log)</h3><p style="font-size:13px;margin:4px 0">2017 predictions across 27 past tides. Each row groups predictions by how many hours BEFORE the tide they were made — closer to peak should mean smaller error.</p><table class="outcome-table"><thead><tr><th>Lead time</th><th>N predictions</th><th>Mean error (signed)</th><th>Mean |error|</th></tr></thead><tbody><tr><td>0-3 h before peak</td><td>85</td><td class="err-over">+0.03 ft</td><td>0.11 ft</td></tr><tr><td>3-6 h</td><td>79</td><td class="err-under">-0.02 ft</td><td>0.14 ft</td></tr><tr><td>6-12 h</td><td>172</td><td class="err-under">-0.03 ft</td><td>0.19 ft</td></tr><tr><td>12-24 h</td><td>331</td><td class="err-under">-0.00 ft</td><td>0.25 ft</td></tr><tr><td>24-48 h</td><td>671</td><td class="err-over">+0.03 ft</td><td>0.26 ft</td></tr><tr><td>48-120 h</td><td>679</td><td class="err-over">+0.07 ft</td><td>0.25 ft</td></tr></tbody></table><p class="note">From <code>data/predictions_log.csv</code> joined to NOAA observed peaks (cached at <code>data/observed_peaks_cache.csv</code>). Populated over time as hourly predictions accumulate. <b>Near-peak rows begin 2026-07-21:</b> a lead-time bug made every earlier run stop logging ~4&nbsp;h before each peak, so 0&ndash;4&nbsp;h buckets and the final approach on per-tide convergence charts only exist from that date onward. Earlier rows are honest as-run history at their stated leads; nothing was backfilled.</p></div>
   <div class="magnitude-block"><h3 style="margin:12px 0 4px 0;font-size:15px">Peak-height error</h3><p>Last 30 as-run forecasts: mean error <b>+0.21 ft</b>, mean |error| <b>0.30 ft</b>, worst |error| 1.19 ft. Total scored: 116.</p></div>
   <div class="outcome-block"><h3 style="margin:12px 0 4px 0;font-size:15px">Outcome-depth accuracy (per-observation)</h3><p style="font-size:13px;margin:4px 0">N = 21 labeled observations. Mean error <b>+5.3&Prime;</b> (positive = model over-predicts), mean |error| <b>5.3&Prime;</b>, worst |error| 7.2&Prime;.</p><table class="outcome-table"><thead><tr><th>Time</th><th>Landmark</th><th>Observed</th><th>Predicted</th><th>Error</th></tr></thead><tbody><tr><td>2026-05-18T21:45</td><td>grate_SE</td><td>-0.6&Prime;</td><td>+5.9&Prime;</td><td class="err-over">+6.5&Prime;</td></tr><tr><td>2026-05-18T21:56:26</td><td>grate_SE</td><td>+0.5&Prime;</td><td>+6.7&Prime;</td><td class="err-over">+6.2&Prime;</td></tr><tr><td>2026-05-18T22:04:51</td><td>gutter_walkway</td><td>+0.0&Prime;</td><td>+4.5&Prime;</td><td class="err-over">+4.5&Prime;</td></tr><tr><td>2026-05-18T22:06</td><td>grate_NE</td><td>-2.2&Prime;</td><td>+2.9&Prime;</td><td class="err-over">+5.2&Prime;</td></tr><tr><td>2026-05-18T22:06</td><td>grate_SE</td><td>+1.0&Prime;</td><td>+6.5&Prime;</td><td class="err-over">+5.5&Prime;</td></tr><tr><td>2026-05-18T22:15</td><td>grate_NE</td><td>-1.2&Prime;</td><td>+3.0&Prime;</td><td class="err-over">+4.2&Prime;</td></tr><tr><td>2026-05-18T22:17:02</td><td>grate_NE</td><td>-1.2&Prime;</td><td>+2.7&Prime;</td><td class="err-over">+3.9&Prime;</td></tr><tr><td>2026-05-18T22:18:36</td><td>grate_NW</td><td>-1.6&Prime;</td><td>+2.7&Prime;</td><td class="err-over">+4.3&Prime;</td></tr><tr><td>2026-05-18T22:28:37</td><td>pocket_SE_retention</td><td>+1.0&Prime;</td><td>+5.9&Prime;</td><td class="err-over">+4.9&Prime;</td></tr><tr><td>2026-05-31T20:53</td><td>grate_NE</td><td>-7.2&Prime;</td><td>+0.0&Prime;</td><td class="err-over">+7.2&Prime;</td></tr><tr><td>2026-05-31T20:54</td><td>grate_SE</td><td>-5.0&Prime;</td><td>+1.6&Prime;</td><td class="err-over">+6.6&Prime;</td></tr><tr><td>2026-06-14T19:43</td><td>grate_NE</td><td>+4.0&Prime;</td><td>+9.4&Prime;</td><td class="err-over">+5.4&Prime;</td></tr><tr><td>2026-06-14T19:45</td><td>grate_SE</td><td>+6.8&Prime;</td><td>+13.2&Prime;</td><td class="err-over">+6.4&Prime;</td></tr><tr><td>2026-06-14T19:55</td><td>grate_NE</td><td>+4.5&Prime;</td><td>+9.9&Prime;</td><td class="err-over">+5.4&Prime;</td></tr><tr><td>2026-06-14T19:58</td><td>grate_SE</td><td>+7.0&Prime;</td><td>+13.5&Prime;</td><td class="err-over">+6.5&Prime;</td></tr><tr><td>2026-06-14T20:07</td><td>grate_NE</td><td>+5.0&Prime;</td><td>+9.9&Prime;</td><td class="err-over">+4.9&Prime;</td></tr><tr><td>2026-06-14T20:08</td><td>grate_SE</td><td>+7.8&Prime;</td><td>+13.7&Prime;</td><td class="err-over">+5.9&Prime;</td></tr><tr><td>2026-06-14T20:14</td><td>grate_NE</td><td>+5.0&Prime;</td><td>+9.9&Prime;</td><td class="err-over">+4.9&Prime;</td></tr><tr><td>2026-06-14T20:20</td><td>grate_SE</td><td>+7.5&Prime;</td><td>+13.3&Prime;</td><td class="err-over">+5.8&Prime;</td></tr><tr><td>2026-06-14T20:25</td><td>grate_NE</td><td>+4.8&Prime;</td><td>+9.2&Prime;</td><td class="err-over">+4.4&Prime;</td></tr><tr><td>2026-07-09T14:28</td><td>grate_SW</td><td>-9.2&Prime;</td><td>-7.6&Prime;</td><td class="err-over">+1.7&Prime;</td></tr></tbody></table><p class="note">Compares each user-logged observation in <code>data/labeled_observations.csv</code> to the model's predicted depth at the same landmark at the same time, <b>as logged at observation time</b> — an append-only record of the model version that was live that day, kept unrevised on purpose. The large early over-predictions (2026-05-18, offshore-wind event) are v0.7-era rows that motivated the v0.8 wind adjustment; they are history, not current-model skill. Sparse but each row is a real observation with real depth.</p></div>
-  <canvas id="accuracy-chart" width="800" height="380"
+  <canvas id="accuracy-chart" width="800" height="380" role="img"
+          aria-label="Predicted versus observed flood depth chart"
           style="max-width:100%;height:auto;display:block;margin:8px auto"></canvas>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
