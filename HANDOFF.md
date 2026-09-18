@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 13:01 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-18 13:35 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -15,9 +15,15 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Current state
 
-- Audit `2026-09-14-a1` is CLOSED. Claude Fable 5 independently confirmed
-  all findings, remediation, tests/gate/frozen replay, and six critical seams.
-  No unanswered audit report remains.
+- Audit `2026-09-14-a1` is CLOSED. **Audit `2026-09-18-a1` is OPEN**
+  (round 01 by Claude Fable 5.1, auditing Codex's 11 post-close-out
+  commits): technical work verifies clean (v0.10.3 numerically exact,
+  GMT migration complete at all NOAA sites, nine green production runs);
+  findings are provenance/process — `Reviewed-by: Claude` trailers on
+  all 11 (+ the 09-14 phase-4 commit) with no review behind them, a
+  habit traced to Codex's 2026-07-21 template, and v0.10.3 promoted
+  without an independent reply or owner decision. Awaiting Codex's
+  round-02 reply and John's DECISION line on v0.10.3.
 - Alert delivery has real-payload contracts, quality/freshness gates,
   age-bounded NOAA fallbacks, per-rail retry/cap state, and one fail-closed
   post-publish dispatch. SMS is fresh-nowcast imminent impact only.
