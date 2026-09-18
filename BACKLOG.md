@@ -9,6 +9,9 @@ looks stale, trust this file. Ledger lines are append-only:
 ## OPEN LOOPS (force-ranked)
 
 **Active / near-term**
+- [ ] Re-copy widget source v7.27a into Scriptable. It preserves exact
+      hours-to-peak across the fall-back repeated hour; v7.26a remains
+      installed as of 2026-09-14 and otherwise renders current timestamps.
 - [ ] Nowcast scheduler: trigger TRIPPED by event #7 (18-min publish
       gap covered the entire rise). Half-A (launchd, Mac-awake hours)
       believed installed 2026-08-07 but NEVER fired until revived
@@ -66,10 +69,10 @@ looks stale, trust this file. Ledger lines are append-only:
       depths.
 
 **Parked (user-gated or seasonal)**
-- [ ] NOAA fall-back-hour ambiguity: LST/LDT timestamps omit an offset and
-      currently use explicit fold=0. Migrate transport/storage queries and
-      prediction identifiers to GMT/offset-aware timestamps before the 2026
-      fall transition; NOAA documents GMT as a supported API time zone.
+- [x] NOAA fall-back-hour ambiguity CLOSED 2026-09-18: all NOAA transport
+      uses GMT; current tide, gauge, cache, forecast, and prediction-log
+      identifiers are offset-bearing station-local ISO. Both repeated 01:xx
+      hours remain distinct; legacy naive rows retain explicit fold=0.
 - [ ] Engineering breadth: add actionlint/shellcheck, browser DOM/accessibility
       smoke tests, and incremental static typing as remaining module seams
       make that tractable. Contract tests now cover the two audit regressions.
@@ -88,9 +91,10 @@ looks stale, trust this file. Ledger lines are append-only:
       validation — nws_surge_parser.py is live but has never seen a
       real coastal-flood product (all six measured events were rain).
 - [ ] Confirm/deny 2025-08-21 flood (user saw swirly mud stains at
-      August rental inspection — proto-mud-tracer): would add a row
-      to data/labeled_events.csv. Low value; tide calibration no
-      longer gates anything.
+      August rental inspection — proto-mud-tracer): if primary evidence
+      emerges, add it to labeled_observations.csv plus an event README;
+      labeled_events.csv is frozen legacy. Low value; tide calibration
+      no longer gates anything.
 - [ ] Someday/speculative queue: attic archive §9 items 17–27 +
       §9e.4-adjacent (ETSS retry, NYHOPS, multi-town spin-offs,
       subscribe flow, iOS app stages, reanalysis, mesonet rain).
@@ -222,8 +226,8 @@ all findings verified — see audits/2026-08-03-a2/)**
       append CLI; correct UTC commit dates. Full site regenerated and gated.
 - [x] Phase 4 disposition/docs: D1-D9 repaired; labeled_events declared frozen;
       privacy posture explicit; confidence analysis recorded; archive links
-      now tested; DST, exactly-once delivery, external activation, and broader
-      tooling are accurately retained as open work rather than false fixes.
+      now tested; exactly-once delivery, external activation, and broader
+      tooling remain open. DST ambiguity subsequently closed 2026-09-18.
 - [x] Phase 5 triage: G1-G10 consolidated into
       history/plans/model-v0.11-assessment.md with acceptance criteria. No
       formula or constant changed; any accepted candidate needs its own model
@@ -310,3 +314,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-14 | DONE | watchdog-armed | user added ~/.barnacle/watchdog_topic; tick verified topic=set HEALTHY; end-to-end notification pipe PROVEN with a test ntfy push (HTTP 200, delivered to phone). Mac watchdog fully operational — awake-hours + GitHub-failure coverage; always-on-box loop stays open [VERIFIED: watchdog.log + ntfy 200]
 2026-09-15 | DONE | watchdog-noise-fix | overnight paging post-mortem: three defects — (1) quiet-mode 90-min artifact limit contradicted the same-day publication-coalescing design (quiet nowcast legitimately ages hours; limit now 26h corpse-catch, liveness carried by workflow/heartbeat), (2) dedup hashed raw messages INCLUDING live minute counts so every tick was a "new" issue (now digit-stripped class hashing + 6h cooldown), (3) no debounce (now two-tick: first sighting never pages) + workflow drift limit 35->90 quiet / 35 active, forecast 100->130, fetch-failure INDETERMINATE demoted to log-only (--notify-indeterminate for always-on hosts). 144 tests; job reinstalled [VERIFIED: watchdog.log + tests]
 2026-09-18 | DONE | audit-a1-registry-cleanup | reconciled stale registry text with the 2026-09-14 independent close-out: audit section marked CLOSED, Phase 4 marked shipped, HANDOFF rewritten under 100 lines, and watchdog deployment/arming reflected in active state [VERIFIED: audit round 04 + git history + watchdog ledger]
+2026-09-18 | DONE | noaa-gmt-migration | all NOAA CO-OPS queries now transport GMT boundaries and convert responses to offset-bearing station-local ISO; fall-back's two 01:xx hours retain distinct identifiers through tide/gauge caches, forecast JSON, per-tide joins, and new prediction-log rows; legacy naive rows remain readable as fold=0; cache canonicalization prevents old/new duplicate tides, chronological UTC sorting preserves fold order, human surfaces hide transport offsets, and widget v7.27a honors exact instants; 151 tests, live no-send generation, artifact gate, and frozen replay pass [VERIFIED: source + live NOAA/NWS run]
+2026-09-18 | DONE | frozen-event-lifecycle-wording | corrected the remaining 2025-08-21 backlog instruction: any recovered primary evidence belongs in labeled_observations + event README, never the frozen labeled_events classifier [VERIFIED: data/labeled_observations_README.md lifecycle]
+2026-09-18 | OPEN | widget-v7.27a-recopy | GMT migration changed stored tide stamps to include their UTC offset; widget source v7.27a now honors that offset for exact hours-to-peak while preserving local display labels; John must re-copy the published script into Scriptable (installed v7.26a otherwise remains functional) [VERIFIED: source diff; installation state last STATED 2026-09-14]

@@ -99,6 +99,19 @@ def _render_summary_text(forecast):
     return out
 
 
+def _clock_hhmm(time_str):
+    """Return the station-local HH:MM portion of a stored timestamp.
+
+    Current tide identifiers carry a UTC offset (for example,
+    ``2026-11-01 01:30-05:00``); legacy identifiers are naive.  The local
+    clock occupies the same ISO positions in both representations, whereas
+    taking the last five characters of the string returns the UTC offset for
+    current values.
+    """
+    value = str(time_str or "").replace("T", " ")
+    return value[11:16] if len(value) >= 16 else value
+
+
 def _render_day_cards_html(forecast):
     """DAY CARDS (user redesign 2026-07-20): the 72-h window organized
     by calendar day - TODAY / TOMORROW / day-3 - each card holding its
@@ -1310,7 +1323,7 @@ Worst case detail:
 
 {rain_block}{_landmarks_section_text(forecast)}
 Regime: {regime_display(regime)} — {REGIME_GLOSSARY.get(regime, '')}
-Today ({_station_local_now().strftime("%A")}): {regime_display(forecast.get('today_regime') or regime)}; peak water {forecast.get('today_rel_grate_sw_in', 0) or 0:+.1f}" vs SW grate{f" at {forecast['today_peak_time'][-5:]}" if forecast.get('today_peak_time') else ""}
+Today ({_station_local_now().strftime("%A")}): {regime_display(forecast.get('today_regime') or regime)}; peak water {forecast.get('today_rel_grate_sw_in', 0) or 0:+.1f}" vs SW grate{f" at {_clock_hhmm(forecast['today_peak_time'])}" if forecast.get('today_peak_time') else ""}
 
 {recap_block}{accuracy_block}{low_block}{lookahead_block}Reference scale (Sandy Hook obs MLLW; {CURRENT_MODEL_VERSION} thresholds = landmark + 2.82):
   < 6.34  : no flooding (nothing visible)
@@ -1392,7 +1405,7 @@ Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = ta
             f'{_lb["time_local"]}, {_lb["source"]}.</div>')
     _today_sub = (f'Tide peak today {forecast.get("today_rel_grate_sw_in", 0) or 0:+.1f}&Prime; '
                   f'vs SW grate'
-                  + (f' at {forecast["today_peak_time"][-5:]}'
+                  + (f' at {_clock_hhmm(forecast["today_peak_time"])}'
                      if forecast.get("today_peak_time") else ""))
     today_block_html = (
         f'<div style="background:{_tbg};padding:14px 18px;border-radius:8px;'
@@ -1477,15 +1490,17 @@ def _render_flood_windows_html(forecast):
         for ep in fw.get(key, []):
             label = label_by_key.get(key, key)
             if ep.get("grazing"):
-                when = f"~{ep['peak_time'][-5:]} — may briefly touch"
+                when = f"~{_clock_hhmm(ep['peak_time'])} — may briefly touch"
                 dur = "—"
                 peak = f"&lt;1.2&Prime;"
             else:
-                end = ep["end"][-5:] if ep.get("end") else "beyond window"
-                when = f"~{ep['start'][-5:]} &rarr; {end}"
+                end = (_clock_hhmm(ep["end"])
+                       if ep.get("end") else "beyond window")
+                when = f"~{_clock_hhmm(ep['start'])} &rarr; {end}"
                 dur = (f"{ep['duration_h']:.1f} h"
                        if ep.get("duration_h") is not None else "ongoing")
-                peak = f"+{ep['peak_depth_in']:.1f}&Prime; at {ep['peak_time'][-5:]}"
+                peak = (f"+{ep['peak_depth_in']:.1f}&Prime; at "
+                        f"{_clock_hhmm(ep['peak_time'])}")
             rows += (f"<tr><td>{label}</td><td>{elev_by_key.get(key, '')}</td>"
                      f"<td>{when}</td><td>{dur}</td><td>{peak}</td></tr>")
     if not rows:
@@ -1595,7 +1610,7 @@ def _render_pluvial_advisory_html(forecast):
                          if cp_hi >= 5.0 else "")
             scenario_html += (
                 f'&bull; Burst at the worst HIGH tide '
-                f'({forecast.get("peak_time_local", "")}): water ≈ '
+                f'({format_time_short(forecast.get("peak_time_local", ""))}): water ≈ '
                 f'{cp_txt} — compound rain+tide{oct30_tag}.</p>'
             )
         else:
@@ -2642,7 +2657,7 @@ def render_per_tide_page(tide, forecast,
 <meta name="barnacle-generated-utc" content="{forecast.get('generated_utc', '')}">
 <meta name="barnacle-schema-version" content="{forecast.get('forecast_schema_version', '')}">
 <meta name="barnacle-model-version" content="{forecast.get('model_version', '')}">
-<title>Tide {time_str} — Bay Ave Barnacle</title>
+<title>Tide {format_time_full(time_str)} — Bay Ave Barnacle</title>
 <link rel="stylesheet" href="../../style.css">
 <meta name="description" content="Bay Ave Barnacle — high tide at {format_time_full(time_str)}: {regime_display(regime).upper()} regime, peak {tide['forecast_peak_mllw']:.2f} ft MLLW Sandy Hook.">
 <!-- Open Graph — W -->
@@ -2994,7 +3009,7 @@ def render_html_page(forecast):
     today_summary = ""
     if _t_rel is not None:
         today_summary = (f"Tide peak today {_t_rel:+.1f}&Prime; vs SW grate"
-                         + (f" at {_t_time[-5:]}" if _t_time else "") + ".")
+                         + (f" at {_clock_hhmm(_t_time)}" if _t_time else "") + ".")
     _lb = forecast.get("today_lookback")
     lookback_html = ""
     if _lb and (_lb.get("rel_grate_in") or 0) > 0:
@@ -3382,7 +3397,7 @@ def render_html_page(forecast):
       <a class="detail-link" href="tides/{_tide_slug(peak_t)}/">View this tide's full detail page →</a>
     </h2>
     <dl>
-      <dt>High tide time</dt><dd>{peak_t}</dd>
+      <dt>High tide time</dt><dd>{format_time_full(peak_t)}</dd>
       <dt>Predicted tide</dt><dd>{forecast['peak_predicted_mllw']:.2f} ft MLLW (Sandy Hook)</dd>
       <dt>Surge</dt><dd>{forecast['current_surge_ft']:+.2f} ft</dd>
       <dt>Forecast peak</dt><dd>{peak_ft:.2f} ft MLLW</dd>

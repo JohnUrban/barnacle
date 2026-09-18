@@ -3,12 +3,11 @@ module split, extracted 2026-09-02 per forecast/README.md — no network
 or file I/O; `flood_forecast_daily` re-exports every name so all
 existing imports keep working).
 
-NOAA CO-OPS queries with time_zone=lst_ldt interpret begin_date /
-end_date as STATION-LOCAL time (US/Eastern for Sandy Hook). Passing
-UTC-now strings shifts the window +4/5 h — caught 2026-07-06 when
-the widget chart's hour labels came out 4 h late. Use this module for
-any begin/end sent to an lst_ldt query, and for every local-calendar
-decision (AGENTS.md rule 3).
+NOAA CO-OPS transport uses ``time_zone=gmt``. Query boundaries are
+converted from station time to UTC here, and returned timestamps are
+converted to offset-bearing station-local ISO strings for storage. Human
+formatters preserve ordinary local clock labels. This avoids the repeated
+01:xx ambiguity at the fall-back transition (AGENTS.md rule 3).
 """
 import datetime as dt
 from zoneinfo import ZoneInfo
@@ -45,17 +44,66 @@ def utc_to_station_local(value):
     return parsed.astimezone(STATION_TZ)
 
 
+def station_local_to_noaa_gmt(value):
+    """Format a station-local instant as a NOAA GMT query boundary."""
+    return parse_station_local_time(value).astimezone(
+        dt.timezone.utc).strftime("%Y%m%d %H:%M")
+
+
+def noaa_gmt_to_station_time(value):
+    """Parse a naive NOAA GMT timestamp into aware station-local time."""
+    if isinstance(value, dt.datetime):
+        parsed = value
+    else:
+        parsed = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=dt.timezone.utc)
+    else:
+        parsed = parsed.astimezone(dt.timezone.utc)
+    return parsed.astimezone(STATION_TZ)
+
+
+def noaa_gmt_to_station_string(value):
+    """Return an unambiguous offset-bearing station-local ISO minute."""
+    return noaa_gmt_to_station_time(value).isoformat(" ", timespec="minutes")
+
+
+def station_time_storage_key(value):
+    """Canonical offset-bearing key; accepts legacy naive local values."""
+    return parse_station_local_time(value).isoformat(" ", timespec="minutes")
+
+
+def station_time_sort_key(value):
+    """Chronological UTC key for current or legacy station timestamps.
+
+    Offset-bearing local ISO strings cannot be sorted lexically across the
+    repeated fall-back hour: 01:00 EST sorts before 01:30 EDT even though it
+    occurs later.
+    """
+    return parse_station_local_time(value).astimezone(dt.timezone.utc)
+
+
+def station_times_match(left, right):
+    """Whether two legacy/new station stamps identify the same instant."""
+    try:
+        a = parse_station_local_time(left).astimezone(dt.timezone.utc)
+        b = parse_station_local_time(right).astimezone(dt.timezone.utc)
+    except (TypeError, ValueError):
+        return False
+    return a == b
+
+
 def parse_station_local_time(value):
-    """Parse a NOAA ``lst_ldt`` timestamp as America/New_York.
+    """Parse an offset-bearing or legacy naive station-local timestamp.
 
     NOAA's local products omit an explicit UTC offset.  Attaching a fixed
     ``-04:00`` works only during daylight time, while relabeling a UTC clock
     with a local offset shifts lead times by four or five hours.  Keep this
     conversion in one place so every consumer gets EDT/EST handling from the
-    IANA timezone database. Known edge: NOAA LST/LDT omits an offset, so the
-    repeated 01:xx hour at fall-back cannot be uniquely recovered from one
-    value. Production should migrate NOAA transport/storage queries to GMT;
-    until then fold=0 is explicit legacy behavior, not proven chronology.
+    IANA timezone database. New NOAA values carry an offset after the GMT
+    transport migration. Legacy LST/LDT values remain readable; their
+    repeated fall-back hour cannot be recovered, so fold=0 is the explicit
+    historical interpretation.
     """
     if isinstance(value, dt.datetime):
         parsed = value

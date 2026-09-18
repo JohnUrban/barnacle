@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 11:21 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-18 11:51 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -9,7 +9,8 @@ archival, never instructions.
 Production hyperlocal flood forecaster for 342 Bay Ave, Highlands NJ.
 Sandy Hook gauge + NWS + MRMS radar produce water depth at 19 landmarks,
 an hourly site/JSON forecast, best-effort ~10-minute nowcast, per-tide
-pages, nine-town street map, iOS widget v7.26a, and ntfy/email/SMS alerts.
+pages, nine-town street map, iOS widget source v7.27a, and ntfy/email/SMS
+alerts.
 Current model **v0.10.2** (`model/v0.10.2.md`); SMS is the imminent-impact
 rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
@@ -37,7 +38,13 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   2026-09-15 noise repair added quiet-mode-aware limits, stable issue-class
   deduplication, cooldown, and two-tick debounce. A sleeping Mac remains a
   sleeping watchdog; an always-on host is still an open option.
+- NOAA GMT migration shipped in this work unit: every CO-OPS request uses
+  GMT, while stored tide and gauge stamps carry the station offset and human
+  displays retain ordinary local clock labels. The repeated fall-back hour is
+  distinct; legacy naive rows use fold=0. Tide caches canonicalize legacy and
+  current identifiers so the cutover cannot duplicate chart points.
 - Widget v7.26a was confirmed installed on John's phone on 2026-09-14.
+  Source v7.27a understands offset-bearing timestamps and awaits re-copy.
 
 ## Evidence and operating context
 
@@ -62,7 +69,6 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   failure, not a wedged GitHub execution domain.
 - Local alert execution redundancy remains owner/security-gated.
 - Exactly-once delivery needs provider idempotency or an external outbox.
-- NOAA transport/storage should migrate to GMT before the 2026 fall-back.
 - Tooling breadth and the separately versioned v0.11 model assessment remain
   queued in `BACKLOG.md`.
 
@@ -80,5 +86,5 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Immediate next step
 
-No audit close-out work remains. Continue the force-ranked BACKLOG loops;
-observe the rebuilt alert path at the next production radar trigger.
+No audit close-out work remains. Next autonomous work: pinned workflow/shell
+checks, then Event 9 scoring and offline v0.11 assessments.

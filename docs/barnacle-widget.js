@@ -39,7 +39,7 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.26a";
+const WIDGET_VERSION = "v7.27a";
 const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -106,6 +106,13 @@ function formatTimeShort(s) {
 }
 
 function parseLocal(s) {
+  // Offset-bearing values are unambiguous even during the repeated hour at
+  // fall-back.  Legacy values have no offset and retain the old device-local
+  // interpretation.
+  if (s && /[+-]\d{2}:\d{2}$/.test(s)) {
+    const exact = new Date(s.replace(" ", "T"));
+    return isNaN(exact.getTime()) ? null : exact;
+  }
   const m = s && s.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})/);
   if (!m) return null;
   const [, y, mo, d, h, mi] = m.map(Number);

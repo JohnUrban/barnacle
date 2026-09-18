@@ -93,6 +93,14 @@ def _aware_time(value):
     return parsed
 
 
+def _station_time(value):
+    """Parse offset-bearing current or legacy naive station timestamps."""
+    parsed = dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=STATION_TZ, fold=0)
+    return parsed.astimezone(STATION_TZ)
+
+
 def validate_csv_semantics(path, relpath, now_utc=None):
     """Validate domain invariants that a shape-only CSV gate cannot catch."""
     failures = []
@@ -138,9 +146,7 @@ def validate_csv_semantics(path, relpath, now_utc=None):
             seen.add(key)
             try:
                 made = _aware_time(row.get("prediction_made_at"))
-                target = dt.datetime.strptime(
-                    row.get("target_tide_time", ""), "%Y-%m-%d %H:%M"
-                ).replace(tzinfo=STATION_TZ)
+                target = _station_time(row.get("target_tide_time", ""))
                 recorded = float(row.get("hours_until_peak", ""))
                 actual = (target.astimezone(dt.timezone.utc)
                           - made.astimezone(dt.timezone.utc)).total_seconds() / 3600
@@ -227,7 +233,7 @@ def validate_csv_semantics(path, relpath, now_utc=None):
                 failures.append(f"row {logical_row}: duplicate target_tide_time {target}")
             seen.add(target)
             try:
-                dt.datetime.strptime(target, "%Y-%m-%d %H:%M")
+                _station_time(target)
                 float(row.get("observed_peak_mllw", ""))
             except (TypeError, ValueError) as exc:
                 failures.append(f"row {logical_row}: invalid observed peak: {exc}")

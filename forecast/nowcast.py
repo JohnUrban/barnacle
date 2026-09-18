@@ -317,7 +317,7 @@ def _predicted_bay(now_local):
         raise RuntimeError("no observed or predicted bay level available")
     target = now_local.strftime("%Y-%m-%d %H:%M")
     point = min(series, key=lambda row: abs(
-        (dt.datetime.strptime(row["time"], "%Y-%m-%d %H:%M")
+        (ff.parse_station_local_time(row["time"]).replace(tzinfo=None)
          - now_local).total_seconds()
     ))
     # With surge_ft=0 this is the astronomical prediction in NAVD88.
@@ -327,9 +327,9 @@ def _predicted_bay(now_local):
 def current_bay(now_local=None):
     """Return ``(NAVD88 level, source)`` for the bay at the current time.
 
-    GitHub runners keep a UTC system clock, while NOAA ``lst_ldt`` query
-    parameters are station-local.  Build the window from the shared Sandy
-    Hook timezone helper.  If observations are unavailable, retain useful
+    NOAA transport is GMT; build its boundaries from the shared station-time
+    conversion and retain offset-bearing local stamps. If observations are
+    unavailable, retain useful
     drainage physics with the astronomical tide instead of silently granting
     the tank maximum drainage through the old hard-coded 2.8-ft fallback.
     """
@@ -337,13 +337,14 @@ def current_bay(now_local=None):
     try:
         d = json.load(urllib.request.urlopen(urllib.request.Request(
             "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?"
-            "station=8531680&product=water_level&datum=MLLW&time_zone=lst_ldt"
+            "station=8531680&product=water_level&datum=MLLW&time_zone=gmt"
             "&units=english&begin_date={b}&end_date={e}&format=json".format(
-                b=(now - dt.timedelta(hours=3)
-                   ).strftime("%Y%m%d%%20%H:%M"),
-                e=now.strftime("%Y%m%d%%20%H:%M")),
+                b=ff.station_local_to_noaa_gmt(
+                    now - dt.timedelta(hours=3)).replace(" ", "%20"),
+                e=ff.station_local_to_noaa_gmt(now).replace(" ", "%20")),
             headers=UA), timeout=15))
-        pairs = [(r["t"], float(r["v"])) for r in d["data"]]
+        pairs = [(ff.noaa_gmt_to_station_string(r["t"]), float(r["v"]))
+                 for r in d["data"]]
         pairs = ff._despike_gauge(pairs)
         if pairs:
             latest_time, latest_value = pairs[-1]

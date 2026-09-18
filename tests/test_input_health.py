@@ -36,7 +36,7 @@ class InputHealthTests(unittest.TestCase):
             self.assertIsNone(ff.fetch_nws_flood_alerts())
 
     def test_water_series_omits_pluvial_line_when_qpf_unavailable(self):
-        stamp = ff._station_local_now().strftime("%Y-%m-%d %H:%M")
+        stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M")
         response = {"predictions": [{"t": stamp, "v": "5.0"}]}
         with mock.patch.object(ff, "_get", return_value=response), \
                 mock.patch.object(ff, "_tide_cache_save"), \

@@ -48,7 +48,7 @@ a pointer.
 - Paste into the empty Scriptable script → Done
 - The widget on your home screen will pick up the new code on its next refresh (or long-press → Edit Widget → Done to force one)
 
-The widget evolves continuously (v7.26a as of 2026-09-03 — the
+The widget evolves continuously (v7.27a as of 2026-09-18 — the
 version footer bumps on every edit and requires re-copying into
 Scriptable); see the header comments in `docs/barnacle-widget.js`
 for the current field list.

@@ -44,7 +44,7 @@ Each workflow run appends one row per upcoming high tide in
 | Column | Meaning |
 |---|---|
 | `prediction_made_at` | ISO UTC timestamp when this row was written (`YYYY-MM-DDTHH:MM:SSZ`) |
-| `target_tide_time` | High tide time in NOAA `lst_ldt` (local) format: `YYYY-MM-DD HH:MM`. The tide this row predicts. |
+| `target_tide_time` | High-tide identifier. Rows written from the 2026-09-18 GMT cutover use offset-bearing station-local ISO (`YYYY-MM-DD HH:MM-04:00` or `-05:00`), derived from NOAA GMT transport. Older rows retain naive NOAA `lst_ldt` (`YYYY-MM-DD HH:MM`) and are interpreted with legacy `fold=0`. |
 | `hours_until_peak` | Signed hours from `prediction_made_at` to `target_tide_time`. Positive = future tide; negative = predicting a tide that already happened (legitimate in the hour or two after peak when we still have NOAA data). |
 | `predicted_mllw_astronomical` | NOAA hilo astronomical-only prediction at the tide time (no surge component) |
 | `surge_ft_predicted` | Signed surge in ft. Positive = water above astronomical. |

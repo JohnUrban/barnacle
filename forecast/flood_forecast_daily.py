@@ -40,12 +40,16 @@ try:
     from .station_time import (          # noqa: F401
         STATION_TZ, _station_local_now, _station_local_today,
         utc_to_station_local, parse_station_local_time,
-        hours_until_station_time)
+        hours_until_station_time, station_local_to_noaa_gmt,
+        noaa_gmt_to_station_time, noaa_gmt_to_station_string,
+        station_time_storage_key, station_time_sort_key, station_times_match)
 except ImportError:                      # run as a script from forecast/
     from station_time import (           # noqa: F401
         STATION_TZ, _station_local_now, _station_local_today,
         utc_to_station_local, parse_station_local_time,
-        hours_until_station_time)
+        hours_until_station_time, station_local_to_noaa_gmt,
+        noaa_gmt_to_station_time, noaa_gmt_to_station_string,
+        station_time_storage_key, station_time_sort_key, station_times_match)
 
 from email.message import EmailMessage
 from html import escape as _html_escape
@@ -205,7 +209,7 @@ _LAST_SURGE_OBSERVATION_META = {
 
 
 def station_observation_age_min(value, now_local=None):
-    """Age in minutes of a NOAA lst_ldt timestamp at station local now."""
+    """Age in minutes of an offset-aware (or legacy local) NOAA stamp."""
     observed = parse_station_local_time(value)
     now = now_local if now_local is not None else _station_local_now()
     if not isinstance(now, dt.datetime):
@@ -227,6 +231,19 @@ def _get(url, params=None, headers=None):
     req = Request(url, headers={"User-Agent": UA, **(headers or {})})
     with urlopen(req, timeout=30) as r:
         return json.loads(r.read())
+
+
+def _localize_noaa_gmt_rows(rows):
+    """Copy NOAA GMT rows and make each ``t`` unambiguous station time."""
+    out = []
+    for row in rows or []:
+        try:
+            localized = dict(row)
+            localized["t"] = noaa_gmt_to_station_string(row["t"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        out.append(localized)
+    return out
 
 
 # Rollup window: how far into the future to include high tides in the
@@ -275,15 +292,30 @@ def _tide_cache_save(kind, rows):
     rows = [t, v, type]; "series" rows = [t, v]."""
     try:
         cache = _tide_cache_load()
-        merged = {r[0]: r for r in cache.get(kind, [])}
+        merged = {}
+        for r in cache.get(kind, []):
+            try:
+                merged[station_time_storage_key(r[0])] = r
+            except (TypeError, ValueError):
+                continue
         for r in rows:
-            merged[r[0]] = r
+            merged[station_time_storage_key(r[0])] = r
         try:
-            cutoff = (_station_local_now()
-                      - dt.timedelta(hours=72)).strftime("%Y-%m-%d %H:%M")
+            cutoff = parse_station_local_time(
+                _station_local_now() - dt.timedelta(hours=72)
+            ).astimezone(dt.timezone.utc)
         except Exception:
-            cutoff = ""
-        cache[kind] = sorted(v for k, v in merged.items() if k >= cutoff)
+            cutoff = None
+        kept = []
+        for key, row in merged.items():
+            try:
+                when_utc = parse_station_local_time(key).astimezone(
+                    dt.timezone.utc)
+                if cutoff is None or when_utc >= cutoff:
+                    kept.append(row)
+            except (TypeError, ValueError):
+                continue
+        cache[kind] = sorted(kept, key=lambda r: station_time_sort_key(r[0]))
         with open(_tide_cache_path() + ".tmp", "w") as f:
             # One item per line keeps the committed outage fallback
             # reviewable: sliding the 30-minute window should not replace
@@ -304,10 +336,8 @@ def fetch_tides_24h():
     post-peak) alongside upcoming ones (HANDOFF 9b.2 part 2). Uses
     NOAA's hilo product for exact tide times.
 
-    Timezone fix 2026-07-06: begin/end must be STATION-LOCAL for
-    lst_ldt queries. The old UTC-now version shifted the window +4 h,
-    which among other things silently negated the past-tide
-    visibility feature (the window never actually reached the past)."""
+    NOAA transport is GMT; returned values are stored as offset-bearing
+    station-local strings so the fall-back repeated hour stays distinct."""
     now = _station_local_now()
     start = now - dt.timedelta(hours=PAST_TIDE_VISIBILITY_HOURS)
     end = now + dt.timedelta(hours=ROLLUP_WINDOW_HOURS)
@@ -317,15 +347,15 @@ def fetch_tides_24h():
             "station": NOAA_STATION,
             "product": "predictions",
             "datum": "MLLW",
-            "time_zone": "lst_ldt",
+            "time_zone": "gmt",
             "units": "english",
             "interval": "hilo",
-            "begin_date": start.strftime("%Y%m%d %H:%M"),
-            "end_date": end.strftime("%Y%m%d %H:%M"),
+            "begin_date": station_local_to_noaa_gmt(start),
+            "end_date": station_local_to_noaa_gmt(end),
             "format": "json",
         },
     )
-    preds = data.get("predictions", []) or []
+    preds = _localize_noaa_gmt_rows(data.get("predictions", []))
     if preds:
         _tide_cache_save("hilo", [[p["t"], float(p["v"]), p.get("type")]
                                   for p in preds])
@@ -335,9 +365,17 @@ def fetch_tides_24h():
         }
     # NOAA outage fallback (2026-07-17): serve cached astronomy.
     cache = _tide_cache_load()
-    lo = start.strftime("%Y-%m-%d %H:%M")
-    hi = end.strftime("%Y-%m-%d %H:%M")
-    rows = [r for r in cache.get("hilo", []) if lo <= r[0] <= hi]
+    start_aware = parse_station_local_time(start).astimezone(dt.timezone.utc)
+    end_aware = parse_station_local_time(end).astimezone(dt.timezone.utc)
+    rows = []
+    for row in cache.get("hilo", []):
+        try:
+            when = parse_station_local_time(row[0]).astimezone(
+                dt.timezone.utc)
+        except (TypeError, ValueError):
+            continue
+        if start_aware <= when <= end_aware:
+            rows.append(row)
     if not rows:
         raise RuntimeError(
             "No high tides from NOAA and tide cache is empty/out of range")
@@ -381,8 +419,8 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
     "tide_navd88": float (tide+surge only)} or [] on fetch failure.
     `rain_navd88_lift` is included when nonzero.
 
-    Timezone fix 2026-07-06: begin/end must be STATION-LOCAL (the
-    widget chart's hour labels came out +4 h before this).
+    NOAA transport is GMT; public series times remain station-local with an
+    explicit UTC offset.
     """
     now = _station_local_now()
     start = now - dt.timedelta(hours=hours_back)
@@ -394,11 +432,11 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
                 "station": NOAA_STATION,
                 "product": "predictions",
                 "datum": "MLLW",
-                "time_zone": "lst_ldt",
+                "time_zone": "gmt",
                 "units": "english",
                 "interval": str(interval_min),
-                "begin_date": start.strftime("%Y%m%d %H:%M"),
-                "end_date": end.strftime("%Y%m%d %H:%M"),
+                "begin_date": station_local_to_noaa_gmt(start),
+                "end_date": station_local_to_noaa_gmt(end),
                 "format": "json",
             },
         )
@@ -414,22 +452,31 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
     # Astronomy is deterministic; the hilo cache reaches days out,
     # so the +24 h horizon survives any outage the cache survives.
     astro_map = {}
-    for pp in data.get("predictions", []) or []:
+    for pp in _localize_noaa_gmt_rows(data.get("predictions", [])):
         try:
-            astro_map[pp["t"]] = float(pp["v"])
+            astro_map[station_time_storage_key(pp["t"])] = float(pp["v"])
         except (KeyError, TypeError, ValueError):
             continue
     if astro_map:
         _tide_cache_save("series", [[t, v] for t, v in
-                                    sorted(astro_map.items())])
+                                    sorted(astro_map.items(), key=lambda item:
+                                           station_time_sort_key(item[0]))])
     else:
         _TIDE_FALLBACK_USED["flag"] = True
         cache = _tide_cache_load()
-        lo = start.strftime("%Y-%m-%d %H:%M")
-        hi = end.strftime("%Y-%m-%d %H:%M")
+        start_aware = parse_station_local_time(start).astimezone(
+            dt.timezone.utc)
+        end_aware = parse_station_local_time(end).astimezone(
+            dt.timezone.utc)
         for r in cache.get("series", []):
-            if lo <= r[0] <= hi:
-                astro_map[r[0]] = float(r[1])
+            try:
+                key = station_time_storage_key(r[0])
+                when = parse_station_local_time(key).astimezone(
+                    dt.timezone.utc)
+            except (TypeError, ValueError):
+                continue
+            if start_aware <= when <= end_aware:
+                astro_map[key] = float(r[1])
     # synthesize whatever 30-min slots remain missing
     expected = []
     _tt = start.replace(minute=(0 if start.minute < 30 else 30),
@@ -438,25 +485,27 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
         expected.append(_tt)
         _tt += dt.timedelta(minutes=interval_min)
     missing = [t for t in expected
-               if t.strftime("%Y-%m-%d %H:%M") not in astro_map]
+               if station_time_storage_key(t) not in astro_map]
     if missing:
         ext = []
         for r in _tide_cache_load().get("hilo", []):
             try:
-                ext.append((dt.datetime.strptime(r[0], "%Y-%m-%d %H:%M"),
-                            float(r[1])))
+                ext.append((parse_station_local_time(r[0]).astimezone(
+                    dt.timezone.utc), float(r[1])))
             except (ValueError, TypeError):
                 continue
         ext.sort()
         synth = 0
-        for t in missing:
+        for t_naive in missing:
+            t = parse_station_local_time(t_naive).astimezone(
+                dt.timezone.utc)
             for i in range(1, len(ext)):
                 t1, v1 = ext[i - 1]
                 t2, v2 = ext[i]
                 if t1 <= t <= t2 and (t2 - t1) <= dt.timedelta(hours=9):
                     frac = ((t - t1).total_seconds()
                             / (t2 - t1).total_seconds())
-                    astro_map[t.strftime("%Y-%m-%d %H:%M")] = round(
+                    astro_map[station_time_storage_key(t)] = round(
                         (v1 + v2) / 2
                         + (v1 - v2) / 2 * math.cos(math.pi * frac), 3)
                     synth += 1
@@ -467,8 +516,11 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
                   "cached extremes (cosine; NOAA outage)", flush=True)
     if not astro_map:
         return []
-    data = {"predictions": [{"t": t, "v": v}
-                            for t, v in sorted(astro_map.items())]}
+    data = {"predictions": [
+        {"t": t, "v": v}
+        for t, v in sorted(astro_map.items(), key=lambda item:
+                           station_time_sort_key(item[0]))
+    ]}
     # ``None`` means QPF was unavailable; [] means a caller explicitly has
     # a valid no-rain series (the nowcast astronomical fallback does this).
     # Keep those states separate so missing rain data does not draw a false
@@ -479,10 +531,11 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
     qpf_by_local_hour = {}
     for tt, rate in (qpf_hourly or []):
         try:
-            local = tt.astimezone(STATION_TZ).replace(tzinfo=None)
+            local = tt.astimezone(STATION_TZ).replace(
+                minute=0, second=0, microsecond=0)
         except Exception:
             continue
-        qpf_by_local_hour[local.replace(minute=0, second=0, microsecond=0)] = rate
+        qpf_by_local_hour[station_time_storage_key(local)] = rate
     # OBSERVED-OVERLAY tier 1 (2026-07-17, user session queue): the
     # despiked gauge is a TRUE observation of the bay — and via
     # proven grate coupling + level-driven tidal flooding, of tide-
@@ -494,26 +547,30 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
     observed_by_t = {}
     try:
         for t, v in fetch_observed_recent(hours=hours_back + 1):
-            observed_by_t[t[:16]] = round(v + MLLW_TO_NAVD88_OFFSET, 3)
+            observed_by_t[station_time_storage_key(t)] = round(
+                v + MLLW_TO_NAVD88_OFFSET, 3)
     except Exception:
         pass
     out = []
     for p in data.get("predictions", []) or []:
         try:
             astro = float(p["v"])
-            t_local = dt.datetime.strptime(p["t"], "%Y-%m-%d %H:%M")
+            t_local = parse_station_local_time(p["t"])
         except (TypeError, ValueError):
             continue
         tide_water = astro + (surge_ft or 0.0) + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
         # v0.10: feed the tank RAW hourly QPF rates — the tank model
         # supplies its own lag + integration (the old ad-hoc two-hour
         # smoothing is retired with the per-point static estimate).
-        h0 = t_local.replace(minute=0, second=0, microsecond=0)
+        h0 = station_time_storage_key(t_local.replace(
+            minute=0, second=0, microsecond=0))
         rate_raw = qpf_by_local_hour.get(h0, 0.0)
         row = {"time": p["t"], "tide_navd88": round(tide_water, 3),
-               "_t": t_local, "_tide": tide_water, "_rate": rate_raw}
-        if p["t"][:16] in observed_by_t:
-            row["observed_navd88"] = observed_by_t[p["t"][:16]]
+               "_t": t_local.astimezone(dt.timezone.utc),
+               "_tide": tide_water, "_rate": rate_raw}
+        if station_time_storage_key(p["t"]) in observed_by_t:
+            row["observed_navd88"] = observed_by_t[
+                station_time_storage_key(p["t"])]
         out.append(row)
 
     # v0.10 DYNAMIC TANK (2026-07-09): the pluvial line is now a true
@@ -551,11 +608,9 @@ def fetch_observed_recent(hours=6):
     (time, value_mllw_ft). Default 6h preserves backwards-compat with the
     surge-swing calculation; pass hours=24 for the live-gauge widget
     (HANDOFF 16f / Y in the 2026-05-19 solo-work backlog)."""
-    # TZ fix 2026-07-20: begin/end MUST be station-local for lst_ldt
-    # queries (the documented 2026-07-06 bug class, still lurking
-    # here) — the UTC window skewed +4 h into the empty future, so
-    # "past 7 h" returned only ~3 h and the chart's observed overlay
-    # cropped to the tail (user report).
+    # Build the intended station-local interval, then transport it as GMT.
+    # Returned stamps carry their station offset, including both fall-back
+    # 01:xx hours.
     end = _station_local_now()
     start = end - dt.timedelta(hours=hours)
     data = _get(
@@ -564,15 +619,15 @@ def fetch_observed_recent(hours=6):
             "station": NOAA_STATION,
             "product": "water_level",
             "datum": "MLLW",
-            "time_zone": "lst_ldt",
+            "time_zone": "gmt",
             "units": "english",
-            "begin_date": start.strftime("%Y%m%d %H:%M"),
-            "end_date": end.strftime("%Y%m%d %H:%M"),
+            "begin_date": station_local_to_noaa_gmt(start),
+            "end_date": station_local_to_noaa_gmt(end),
             "format": "json",
         },
     )
     out = []
-    for d in data.get("data", []):
+    for d in _localize_noaa_gmt_rows(data.get("data", [])):
         try:
             out.append((d["t"], float(d["v"])))
         except (ValueError, TypeError):
@@ -625,11 +680,11 @@ def fetch_current_surge():
         })
         return None
     try:
-        obs_dt = dt.datetime.strptime(last_obs_time, "%Y-%m-%d %H:%M")
+        obs_dt = parse_station_local_time(last_obs_time)
     except (ValueError, TypeError):
         return None
-    start = (obs_dt - dt.timedelta(hours=1)).strftime("%Y%m%d %H:%M")
-    end   = (obs_dt + dt.timedelta(hours=1)).strftime("%Y%m%d %H:%M")
+    start = station_local_to_noaa_gmt(obs_dt - dt.timedelta(hours=1))
+    end = station_local_to_noaa_gmt(obs_dt + dt.timedelta(hours=1))
     try:
         data = _get(
             "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
@@ -637,7 +692,7 @@ def fetch_current_surge():
                 "station":    NOAA_STATION,
                 "product":    "predictions",
                 "datum":      "MLLW",
-                "time_zone":  "lst_ldt",
+                "time_zone":  "gmt",
                 "units":      "english",
                 "interval":   "h",
                 "begin_date": start,
@@ -647,14 +702,14 @@ def fetch_current_surge():
         )
     except Exception:
         return None
-    preds = data.get("predictions", []) or []
+    preds = _localize_noaa_gmt_rows(data.get("predictions", []))
     if not preds:
         return None
     # Linear-interpolate between the bracketing hourly predictions
     before_t = before_v = after_t = after_v = None
     for p in preds:
         try:
-            p_dt = dt.datetime.strptime(p["t"], "%Y-%m-%d %H:%M")
+            p_dt = parse_station_local_time(p["t"])
             p_v  = float(p["v"])
         except (ValueError, TypeError, KeyError):
             continue
@@ -685,10 +740,7 @@ def fetch_surge_swing_6h():
     """Return (max - min) of hourly surge over the past 6h in feet. None on
     failure. Used by the confidence indicator — large swing means surge
     persistence is unreliable as a forecast for the next high tide."""
-    # TZ fix 2026-07-20 (family sweep): lst_ldt needs station-local —
-    # the UTC window skewed +4h into the empty future, so the 6-h
-    # surge swing was computed over ~2h of data, systematically
-    # UNDERSTATING swing and inflating confidence.
+    # NOAA transport is GMT; grouping uses each offset-bearing local hour.
     end = _station_local_now()
     start = end - dt.timedelta(hours=6)
     obs_rows = fetch_observed_recent()
@@ -707,28 +759,28 @@ def fetch_surge_swing_6h():
                 "station": NOAA_STATION,
                 "product": "predictions",
                 "datum": "MLLW",
-                "time_zone": "lst_ldt",
+                "time_zone": "gmt",
                 "units": "english",
                 "interval": "h",
-                "begin_date": start.strftime("%Y%m%d %H:%M"),
-                "end_date":   end.strftime("%Y%m%d %H:%M"),
+                "begin_date": station_local_to_noaa_gmt(start),
+                "end_date": station_local_to_noaa_gmt(end),
                 "format": "json",
             },
         )
     except Exception:
         return None
-    preds = data.get("predictions", []) or []
+    preds = _localize_noaa_gmt_rows(data.get("predictions", []))
     if not preds:
         return None
     pred_by_hour = {}
     for p in preds:
         try:
-            pred_by_hour[p["t"][:13]] = float(p["v"])
+            pred_by_hour[p["t"][:13] + p["t"][-6:]] = float(p["v"])
         except (KeyError, ValueError, TypeError):
             continue
     obs_by_hour = {}
     for t, v in obs_rows:
-        obs_by_hour.setdefault(t[:13], []).append(v)
+        obs_by_hour.setdefault(t[:13] + t[-6:], []).append(v)
     surges = []
     for hour_key, vals in obs_by_hour.items():
         if hour_key in pred_by_hour:
@@ -765,7 +817,7 @@ ACCURACY_CSV_FIELDS = [
 PREDICTIONS_LOG_PATH = os.path.join(_REPO_ROOT, "data", "predictions_log.csv")
 PREDICTIONS_LOG_FIELDS = [
     "prediction_made_at",        # ISO UTC, when this prediction was generated
-    "target_tide_time",          # ISO local (NOAA's lst_ldt), the high tide this predicts
+    "target_tide_time",          # offset-bearing station-local ISO tide identifier
     "hours_until_peak",          # signed; negative once peak has passed
     "predicted_mllw_astronomical",  # NOAA hilo astronomical-only prediction
     "surge_ft_predicted",        # signed; ft above/below astronomical
@@ -850,7 +902,7 @@ def _fetch_actual_peak_around(time_str, window_hours=2):
     """Pull NOAA water_level for ±window_hours around a target high-tide
     time, return (peak_mllw, peak_time_str). (None, None) on failure."""
     try:
-        center = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+        center = parse_station_local_time(time_str)
     except (ValueError, TypeError):
         return (None, None)
     start = center - dt.timedelta(hours=window_hours)
@@ -862,17 +914,17 @@ def _fetch_actual_peak_around(time_str, window_hours=2):
                 "station": NOAA_STATION,
                 "product": "water_level",
                 "datum": "MLLW",
-                "time_zone": "lst_ldt",
+                "time_zone": "gmt",
                 "units": "english",
-                "begin_date": start.strftime("%Y%m%d %H:%M"),
-                "end_date":   end.strftime("%Y%m%d %H:%M"),
+                "begin_date": station_local_to_noaa_gmt(start),
+                "end_date": station_local_to_noaa_gmt(end),
                 "format": "json",
             },
         )
     except Exception:
         return (None, None)
     vals = []
-    for d in (data.get("data") or []):
+    for d in _localize_noaa_gmt_rows(data.get("data") or []):
         try:
             vals.append((d.get("t"), float(d["v"])))
         except (KeyError, ValueError, TypeError):
@@ -1017,8 +1069,8 @@ def append_predictions_log(forecast):
             continue
         target_time = t.get("time") or ""
         sh_peak = t.get("forecast_peak_mllw")
-        # Hours until peak (signed). Tide times are NOAA station-local
-        # ``lst_ldt`` values; ZoneInfo supplies the correct EDT/EST offset.
+        # Hours until peak (signed). New tide IDs carry their station offset;
+        # legacy naive IDs remain readable through the shared helper.
         hours_until_peak = ""
         if target_time:
             try:
@@ -1209,17 +1261,17 @@ def fetch_high_tides_lookahead(days=LOOKAHEAD_DAYS):
                 "station": NOAA_STATION,
                 "product": "predictions",
                 "datum": "MLLW",
-                "time_zone": "lst_ldt",
+                "time_zone": "gmt",
                 "units": "english",
                 "interval": "hilo",
-                "begin_date": now.strftime("%Y%m%d %H:%M"),
-                "end_date":   end.strftime("%Y%m%d %H:%M"),
+                "begin_date": station_local_to_noaa_gmt(now),
+                "end_date": station_local_to_noaa_gmt(end),
                 "format": "json",
             },
         )
     except Exception:
         return []
-    preds = data.get("predictions") or []
+    preds = _localize_noaa_gmt_rows(data.get("predictions") or [])
     out = []
     for p in preds:
         if p.get("type") != "H":
@@ -1255,13 +1307,8 @@ def build_lookahead_watch_dates(high_tides, skip_first_hours=24):
         if mllw < lowest_threshold:
             continue
         try:
-            tide_dt = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
-            # TZ fix 2026-07-20: proper station-tz conversion (the old
-            # hardcoded +4 was wrong every winter, EST = UTC-5)
-            # conversion is good enough for the "skip the next 24h"
-            # boundary, which doesn't need second-precision.
-            tide_utc = tide_dt.replace(tzinfo=STATION_TZ).astimezone(
-                dt.timezone.utc)
+            tide_dt = parse_station_local_time(time_str)
+            tide_utc = tide_dt.astimezone(dt.timezone.utc)
         except (ValueError, TypeError):
             continue
         if tide_utc < cutoff:
@@ -1295,9 +1342,7 @@ def fetch_recent_history(days=7):
     """Past N days of observed daily peak water level, with the highest
     landmark reached at that peak. Returns list of dicts (one per calendar
     day), sorted chronologically. Empty list on failure."""
-    # TZ fix 2026-07-20 (family sweep): station-local for lst_ldt —
-    # the +4h skew shifted the 7-day window and could mis-bucket
-    # peaks near midnight into the wrong day.
+    # Query in GMT, then bucket by offset-bearing station-local day.
     end = _station_local_now()
     start = end - dt.timedelta(days=days)
     try:
@@ -1307,16 +1352,16 @@ def fetch_recent_history(days=7):
                 "station": NOAA_STATION,
                 "product": "water_level",
                 "datum": "MLLW",
-                "time_zone": "lst_ldt",
+                "time_zone": "gmt",
                 "units": "english",
-                "begin_date": start.strftime("%Y%m%d %H:%M"),
-                "end_date":   end.strftime("%Y%m%d %H:%M"),
+                "begin_date": station_local_to_noaa_gmt(start),
+                "end_date": station_local_to_noaa_gmt(end),
                 "format": "json",
             },
         )
     except Exception:
         return []
-    rows = data.get("data") or []
+    rows = _localize_noaa_gmt_rows(data.get("data") or [])
     if not rows:
         return []
     # Track max per day with timestamp
@@ -1768,7 +1813,7 @@ def fetch_mtd_flood_events():
     Note: water_level is preliminary; values may shift by a few cm when later
     verified. Adequate for a count display."""
     thresholds = [t for _k, _l, _e, t in LANDMARKS]
-    now = _station_local_now()  # lst_ldt query; month boundary in ET
+    now = _station_local_now()
     start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     try:
         data = _get(
@@ -1777,16 +1822,16 @@ def fetch_mtd_flood_events():
                 "station": NOAA_STATION,
                 "product": "water_level",
                 "datum": "MLLW",
-                "time_zone": "lst_ldt",
+                "time_zone": "gmt",
                 "units": "english",
-                "begin_date": start.strftime("%Y%m%d %H:%M"),
-                "end_date":   now.strftime("%Y%m%d %H:%M"),
+                "begin_date": station_local_to_noaa_gmt(start),
+                "end_date": station_local_to_noaa_gmt(now),
                 "format": "json",
             },
         )
     except Exception:
         return None
-    rows = data.get("data") or []
+    rows = _localize_noaa_gmt_rows(data.get("data") or [])
     if not rows:
         return None
     # Aggregate 6-min samples to hourly mean (matches historical hourly_height
@@ -1794,17 +1839,16 @@ def fetch_mtd_flood_events():
     by_hour = {}
     for d in rows:
         try:
-            ts = d["t"]                  # "YYYY-MM-DD HH:MM"
+            ts = d["t"]                  # offset-bearing station-local ISO
             v = float(d["v"])
         except (KeyError, ValueError, TypeError):
             continue
-        hour_key = ts[:13]               # "YYYY-MM-DD HH"
+        hour_key = ts[:13] + ":00" + ts[-6:]  # local hour plus offset/fold
         by_hour.setdefault(hour_key, []).append(v)
     if not by_hour:
         return None
-    sorted_hours = sorted(by_hour.keys())
     hourly_vals = [(h, sum(vs) / len(vs)) for h, vs in by_hour.items()]
-    hourly_vals.sort(key=lambda x: x[0])
+    hourly_vals.sort(key=lambda x: station_time_sort_key(x[0]))
 
     # Also track the highest single 6-min reading + its time. The hourly
     # mean used above can mask brief curb-grazing events (e.g., a 15-20 min
@@ -2886,7 +2930,9 @@ def _load_observed_peaks_cache():
         with open(OBSERVED_PEAKS_CACHE_PATH) as f:
             for r in csv.DictReader(f):
                 try:
-                    out[r["target_tide_time"]] = float(r["observed_peak_mllw"])
+                    out[station_time_storage_key(
+                        r["target_tide_time"])] = float(
+                            r["observed_peak_mllw"])
                 except (TypeError, ValueError, KeyError):
                     continue
     except OSError:
@@ -2950,13 +2996,8 @@ def _compute_leadtime_accuracy(max_age_days=14):
             for r in csv.DictReader(f):
                 target_str = r.get("target_tide_time", "") or ""
                 try:
-                    target_dt = dt.datetime.strptime(
-                        target_str, "%Y-%m-%d %H:%M"
-                    )
-                    # TZ fix 2026-07-20: proper station-tz conversion
-                    # (hardcoded +4 was wrong in EST).
-                    target_utc = target_dt.replace(
-                        tzinfo=STATION_TZ).astimezone(dt.timezone.utc)
+                    target_utc = parse_station_local_time(
+                        target_str).astimezone(dt.timezone.utc)
                 except (ValueError, TypeError):
                     continue
                 if target_utc > cutoff_max:
@@ -2968,7 +3009,8 @@ def _compute_leadtime_accuracy(max_age_days=14):
                     hu = float(r["hours_until_peak"])
                 except (TypeError, ValueError, KeyError):
                     continue
-                by_target.setdefault(target_str, []).append({
+                target_key = station_time_storage_key(target_str)
+                by_target.setdefault(target_key, []).append({
                     "pred":              pred_mllw,
                     "hours_until_peak":  hu,
                 })
@@ -3284,7 +3326,7 @@ def plain_language_summary(forecast):
     def time_phrase(t):
         time_str = t["time"]
         try:
-            tide_dt = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+            tide_dt = parse_station_local_time(time_str)
         except (ValueError, TypeError):
             return time_str
         tide_date = tide_dt.date()
@@ -3343,7 +3385,7 @@ def format_time_full(time_str):
     """Convert NOAA-style '2026-05-18 22:14' to 'May 18, 2026: Mon 10:14 PM'.
     Pass-through on parse failure."""
     try:
-        d = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+        d = parse_station_local_time(time_str)
     except (ValueError, TypeError):
         return time_str
     # %-d / %-I work on Linux + macOS (the only environments this runs on).
@@ -3356,7 +3398,7 @@ def format_time_short(time_str):
     """Convert '2026-05-18 22:14' to 'Mon 10:14 PM' for tight contexts
     (subject line, tide table rows, spot-check times)."""
     try:
-        d = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+        d = parse_station_local_time(time_str)
     except (ValueError, TypeError):
         return time_str
     return d.strftime("%a %-I:%M %p")
@@ -3674,14 +3716,15 @@ def _past_tides_with_predictions(days=7):
             for r in csv.DictReader(f):
                 t = r.get("target_tide_time") or ""
                 try:
-                    target = dt.datetime.strptime(t, "%Y-%m-%d %H:%M")
+                    target = parse_station_local_time(t).replace(tzinfo=None)
                     pred = float(r["sh_peak_mllw_predicted"])
                     lead = float(r["hours_until_peak"])
                 except (ValueError, TypeError, KeyError):
                     continue
                 if not (cutoff_min <= target <= cutoff_max):
                     continue
-                by_target.setdefault(t, []).append((lead, pred))
+                by_target.setdefault(station_time_storage_key(t), []).append(
+                    (lead, pred))
     except OSError:
         return []
     cache = _load_observed_peaks_cache()
@@ -3787,7 +3830,7 @@ def _oscillation_chart_data(forecast, days=7):
         }
         if burst > 0.1:
             try:
-                tide_dt = dt.datetime.strptime(time_str, "%Y-%m-%d %H:%M")
+                tide_dt = parse_station_local_time(time_str).replace(tzinfo=None)
             except (ValueError, TypeError):
                 tide_dt = None
             if tide_dt is not None and tide_dt <= qpf_horizon:
@@ -4089,7 +4132,7 @@ TANK_LAG_MIN = 15       # hillside concentration lag (refit; obs 14-20)
 def simulate_pluvial_series(times, tide_waters, rates, dt_min=5.0):
     """Integrate the v0.10 tank over a series window.
 
-    times: list of naive local datetimes (ascending, ~30-min steps);
+    times: list of aware UTC datetimes (ascending, ~30-min steps);
     tide_waters: NAVD88 bay water per point; rates: QPF in/hr per
     point (raw hourly bucket rates — the tank supplies its own lag
     and smoothing; do NOT pre-smooth). Returns pluvial water NAVD88
@@ -4191,7 +4234,8 @@ def compute_flood_windows(series):
     pts = []
     for p in series or []:
         try:
-            t = dt.datetime.strptime(p["time"], "%Y-%m-%d %H:%M")
+            t = parse_station_local_time(p["time"]).astimezone(
+                dt.timezone.utc)
             pts.append((t, float(p["water_navd88"])))
         except (KeyError, ValueError, TypeError):
             continue
@@ -4239,10 +4283,12 @@ def compute_flood_windows(series):
             dur = ((end - cur["start"]).total_seconds() / 3600.0
                    if end else None)
             rows.append({
-                "start": cur["start"].strftime(fmt),
-                "end": end.strftime(fmt) if end else None,
+                "start": cur["start"].astimezone(STATION_TZ).strftime(fmt),
+                "end": (end.astimezone(STATION_TZ).strftime(fmt)
+                        if end else None),
                 "duration_h": round(dur, 2) if dur is not None else None,
-                "peak_time": cur["peak"][0].strftime(fmt),
+                "peak_time": cur["peak"][0].astimezone(
+                    STATION_TZ).strftime(fmt),
                 "peak_depth_in": round(cur["peak"][1] * 12, 1),
                 "grazing": cur["peak"][1] < 0.1,
             })
@@ -5085,7 +5131,8 @@ def _render_water_series_section(forecast):
         return ""
     def to_in(v):
         return None if v is None else round((v - GRATE_SW) * 12, 1)
-    labels = [p["time"][-5:] for p in series]
+    labels = [parse_station_local_time(p["time"]).strftime("%H:%M")
+              for p in series]
     tide = [to_in(p.get("tide_navd88")) for p in series]
     pluv = [to_in(p.get("pluvial_navd88")) for p in series]
     observed = [to_in(p.get("observed_navd88")) for p in series]
@@ -5111,8 +5158,8 @@ def _render_water_series_section(forecast):
                 # snap to nearest series label index
                 idx = min(range(len(series)),
                           key=lambda i: abs(
-                              dt.datetime.strptime(series[i]["time"][:16],
-                                                   "%Y-%m-%d %H:%M")
+                              parse_station_local_time(
+                                  series[i]["time"]).replace(tzinfo=None)
                               - dt.datetime.strptime(ts, "%Y-%m-%d %H:%M")))
                 tape_pts.append((idx, to_in(w)))
     except Exception:
@@ -5415,11 +5462,16 @@ def _observed_peaks_backfill():
             d = _get(
                 "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
                 {"product": "high_low", "station": NOAA_STATION,
-                 "datum": "MLLW", "time_zone": "lst_ldt",
-                 "units": "english", "begin_date": "20251001",
-                 "end_date": "20260518", "format": "json"})
+                 "datum": "MLLW", "time_zone": "gmt",
+                 "units": "english",
+                 "begin_date": station_local_to_noaa_gmt(
+                     dt.datetime(2025, 10, 1)),
+                 "end_date": station_local_to_noaa_gmt(
+                     dt.datetime(2026, 5, 18, 23, 59)),
+                 "format": "json"})
             rows = [[r["t"], round(float(r["v"]), 3)]
-                    for r in (d or {}).get("data", [])
+                    for r in _localize_noaa_gmt_rows(
+                        (d or {}).get("data", []))
                     if (r.get("ty") or "").strip() in ("H", "HH")]
             with open(PEAKS_BACKFILL_CACHE_PATH, "w") as f:
                 json.dump({"rows": rows,
@@ -5448,37 +5500,60 @@ def _low_tides_span(start="2025-10-01", now_utc=None):
             cache = json.load(f)
     except (OSError, ValueError):
         pass
-    rows = {r[0]: r[1] for r in cache.get("rows", [])}
-    hrows = {r[0]: r[1] for r in cache.get("hrows", [])}
+    # Canonical instant keys collapse legacy naive rows and their new
+    # offset-bearing equivalents.  Without this migration the GMT cutover
+    # leaves each already-cached future tide plotted twice.
+    rows = {}
+    for row in cache.get("rows", []):
+        try:
+            rows[station_time_storage_key(row[0])] = row[1]
+        except (IndexError, TypeError, ValueError):
+            continue
+    hrows = {}
+    for row in cache.get("hrows", []):
+        try:
+            hrows[station_time_storage_key(row[0])] = row[1]
+        except (IndexError, TypeError, ValueError):
+            continue
     now_l = _station_local_now()
     # +60 days of astronomy (2026-08-20: the chart's future was capped
     # at the 72-h forecast horizon; beyond it only tide-only astronomy
     # is honest, and it is downloadable arbitrarily far forward)
-    end = (now_l + dt.timedelta(days=60)).strftime("%Y%m%d")
-    last = min(max(rows), max(hrows)) if rows and hrows else ""
-    fetch_from = (dt.datetime.strptime(last[:10], "%Y-%m-%d")
-                  - dt.timedelta(days=1)).strftime("%Y%m%d") if last \
-        else start.replace("-", "")
+    end_local = now_l + dt.timedelta(days=60)
+    last = min(max(rows, key=station_time_sort_key),
+               max(hrows, key=station_time_sort_key),
+               key=station_time_sort_key) if rows and hrows else ""
+    fetch_from_local = (dt.datetime.strptime(last[:10], "%Y-%m-%d")
+                        - dt.timedelta(days=1)) if last else \
+        dt.datetime.fromisoformat(start)
     try:
         d = _get(
             "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter",
             {"product": "predictions", "interval": "hilo",
              "station": NOAA_STATION, "datum": "MLLW",
-             "time_zone": "lst_ldt", "units": "english",
-             "begin_date": fetch_from, "end_date": end,
+             "time_zone": "gmt", "units": "english",
+             "begin_date": station_local_to_noaa_gmt(fetch_from_local),
+             "end_date": station_local_to_noaa_gmt(end_local),
              "format": "json"})
-        for prow in (d or {}).get("predictions", []):
+        for prow in _localize_noaa_gmt_rows(
+                (d or {}).get("predictions", [])):
             if prow.get("type") == "L":
-                rows[prow["t"]] = round(float(prow["v"]), 3)
+                rows[station_time_storage_key(prow["t"])] = round(
+                    float(prow["v"]), 3)
             elif prow.get("type") == "H":
-                hrows[prow["t"]] = round(float(prow["v"]), 3)
-        out = sorted(rows.items())
+                hrows[station_time_storage_key(prow["t"])] = round(
+                    float(prow["v"]), 3)
+        out = sorted(rows.items(), key=lambda item:
+                     station_time_sort_key(item[0]))
         with open(LOW_TIDES_CACHE_PATH, "w") as f:
-            json.dump({"rows": out, "hrows": sorted(hrows.items())},
+            json.dump({"rows": out, "hrows": sorted(
+                hrows.items(), key=lambda item: station_time_sort_key(item[0])
+            )},
                       f, indent=1)
             f.write("\n")
     except Exception:
-        out = sorted(rows.items())
+        out = sorted(rows.items(), key=lambda item:
+                     station_time_sort_key(item[0]))
     return [{"time": t, "navd88": round(v + MLLW_TO_NAVD88_OFFSET, 3)}
             for t, v in out]
 
@@ -5711,7 +5786,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         f"Predicted water level — {water_with_rain:.2f} ft NAVD88 "
         + (f"(SH {peak_mllw:.2f} + rain {rain_bonus_in:.1f}\")"
            if rain_meaningful
-           else f"(SH {peak_mllw:.2f} ft MLLW @ {peak_t})")
+           else f"(SH {peak_mllw:.2f} ft MLLW @ {format_time_short(peak_t)})")
     )
     title_no_rain = (
         f"Predicted water level — {water_no_rain:.2f} ft NAVD88 "
@@ -6691,7 +6766,8 @@ def _per_tide_log_stats(target_tide_time):
     try:
         with open(PREDICTIONS_LOG_PATH) as f:
             for r in csv.DictReader(f):
-                if r.get("target_tide_time") == target_tide_time:
+                if station_times_match(
+                        r.get("target_tide_time"), target_tide_time):
                     pred_at = r.get("prediction_made_at", "")
                     if pred_at:
                         times.append(pred_at)
@@ -6811,7 +6887,8 @@ def write_per_tide_pages(forecast, docs_root):
             with open(PREDICTIONS_LOG_PATH) as src:
                 reader = csv.DictReader(src)
                 for row in reader:
-                    if row.get("target_tide_time") == target_time:
+                    if station_times_match(
+                            row.get("target_tide_time"), target_time):
                         rows.append(row)
             if rows:
                 import io
@@ -6984,11 +7061,12 @@ def build_series_chart_png(forecast):
         now_i = max(i for i, v in enumerate(obs) if v is not None)
         ax.axvline(now_i, color="#888888", lw=0.8, ls=":")
     ticks = [i for i, p in enumerate(series)
-             if p["time"][-5:] in ("00:00", "06:00", "12:00", "18:00")]
+             if parse_station_local_time(p["time"]).strftime("%H:%M")
+             in ("00:00", "06:00", "12:00", "18:00")]
     ax.set_xticks(ticks)
     labs = []
     for i in ticks:
-        hh = series[i]["time"][-5:]
+        hh = parse_station_local_time(series[i]["time"]).strftime("%H:%M")
         if hh == "00:00":
             try:
                 labs.append(dt.datetime.strptime(
@@ -7273,12 +7351,14 @@ def main():
             if rain_meaningful:
                 title = (
                     f"Predicted water level — {water_navd88:.2f} ft NAVD88 "
-                    f"(SH {peak_mllw:.2f} + rain {rain_bonus_in:.1f}\" @ {peak_t})"
+                    f"(SH {peak_mllw:.2f} + rain {rain_bonus_in:.1f}\" @ "
+                    f"{format_time_short(peak_t)})"
                 )
             else:
                 title = (
                     f"Predicted water level — {water_navd88:.2f} ft NAVD88 "
-                    f"(SH {peak_mllw:.2f} ft MLLW @ {peak_t})"
+                    f"(SH {peak_mllw:.2f} ft MLLW @ "
+                    f"{format_time_short(peak_t)})"
                 )
             out_path = os.path.abspath(args.write_map)
             try:

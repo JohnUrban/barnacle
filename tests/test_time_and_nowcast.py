@@ -8,6 +8,7 @@ from unittest import mock
 
 from forecast import flood_forecast_daily as ff
 from forecast import nowcast
+from forecast import rendering
 
 
 UTC = dt.timezone.utc
@@ -62,6 +63,108 @@ class StationTimeTests(unittest.TestCase):
             2.0,
         )
 
+    def test_noaa_gmt_repeated_hour_has_distinct_storage_keys(self):
+        first = ff.noaa_gmt_to_station_string("2026-11-01 05:30")
+        second = ff.noaa_gmt_to_station_string("2026-11-01 06:30")
+        self.assertEqual(first, "2026-11-01 01:30-04:00")
+        self.assertEqual(second, "2026-11-01 01:30-05:00")
+        self.assertNotEqual(first, second)
+        self.assertEqual(ff.station_local_to_noaa_gmt(first),
+                         "20261101 05:30")
+        self.assertEqual(ff.station_local_to_noaa_gmt(second),
+                         "20261101 06:30")
+        self.assertFalse(ff.station_times_match(first, second))
+
+    def test_offset_tide_lead_time_uses_exact_fall_back_fold(self):
+        now = dt.datetime(2026, 11, 1, 5, 15, tzinfo=UTC)
+        self.assertAlmostEqual(
+            ff.hours_until_station_time("2026-11-01 01:30-04:00", now),
+            0.25,
+        )
+        self.assertAlmostEqual(
+            ff.hours_until_station_time("2026-11-01 01:30-05:00", now),
+            1.25,
+        )
+
+    def test_offset_tides_sort_by_instant_across_fall_back(self):
+        scrambled = [
+            "2026-11-01 01:30-05:00",
+            "2026-11-01 01:00-05:00",
+            "2026-11-01 01:30-04:00",
+            "2026-11-01 01:00-04:00",
+        ]
+        self.assertEqual(sorted(scrambled, key=ff.station_time_sort_key), [
+            "2026-11-01 01:00-04:00",
+            "2026-11-01 01:30-04:00",
+            "2026-11-01 01:00-05:00",
+            "2026-11-01 01:30-05:00",
+        ])
+
+    def test_tide_fetch_transports_gmt_and_stores_offset_local(self):
+        response = {"predictions": [
+            {"t": "2026-11-01 05:30", "v": "5.1", "type": "H"},
+            {"t": "2026-11-01 06:30", "v": "5.0", "type": "H"},
+        ]}
+        captured = {}
+
+        def fake_get(_url, params):
+            captured.update(params)
+            return response
+
+        with mock.patch.object(
+            ff, "_station_local_now", return_value=dt.datetime(2026, 11, 1, 1, 15)
+        ), mock.patch.object(ff, "_get", side_effect=fake_get), \
+                mock.patch.object(ff, "_tide_cache_save"):
+            tides = ff.fetch_tides_24h()
+
+        self.assertEqual(captured["time_zone"], "gmt")
+        self.assertEqual(captured["begin_date"], "20261101 03:15")
+        self.assertEqual(tides["high"][0][0], "2026-11-01 01:30-04:00")
+        self.assertEqual(tides["high"][1][0], "2026-11-01 01:30-05:00")
+        self.assertNotEqual(tides["high"][0][0], tides["high"][1][0])
+
+    def test_time_formatters_hide_storage_offset(self):
+        stamp = "2026-11-01 01:30-05:00"
+        self.assertEqual(ff.format_time_short(stamp), "Sun 1:30 AM")
+        self.assertIn("Sun 1:30 AM", ff.format_time_full(stamp))
+
+    def test_clock_only_formatter_does_not_render_utc_offset(self):
+        self.assertEqual(
+            rendering._clock_hhmm("2026-11-01 01:30-05:00"), "01:30"
+        )
+        self.assertEqual(
+            rendering._clock_hhmm("2026-11-01 01:30"), "01:30"
+        )
+
+    def test_low_tide_cache_collapses_legacy_and_offset_duplicate(self):
+        cached = {
+            "rows": [
+                ["2026-11-16 18:48", 0.977],
+                ["2026-11-16 18:48-05:00", 0.977],
+            ],
+            "hrows": [
+                ["2026-11-16 12:18", 4.373],
+                ["2026-11-16 12:18-05:00", 4.373],
+            ],
+        }
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "low_tides.json"
+            path.write_text(json.dumps(cached))
+            with mock.patch.object(ff, "LOW_TIDES_CACHE_PATH", str(path)), \
+                    mock.patch.object(ff, "_get", return_value={
+                        "predictions": []
+                    }), mock.patch.object(
+                        ff, "_station_local_now",
+                        return_value=dt.datetime(2026, 9, 18, 12, 0)
+                    ):
+                lows = ff._low_tides_span()
+            persisted = json.loads(path.read_text())
+
+        self.assertEqual(len(lows), 1)
+        self.assertEqual(lows[0]["time"], "2026-11-16 18:48-05:00")
+        self.assertEqual(len(persisted["rows"]), 1)
+        self.assertEqual(len(persisted["hrows"]), 1)
+
     def test_today_peak_does_not_borrow_tomorrow(self):
         series = [
             {"time": "2026-07-21 10:00", "water_navd88": 3.6},
@@ -97,13 +200,13 @@ class NowcastBayTests(unittest.TestCase):
         def read(self):
             return json.dumps(self.payload).encode()
 
-    def test_current_bay_queries_station_local_window(self):
+    def test_current_bay_queries_gmt_window(self):
         payload = {"data": [
-            {"t": "2026-07-21 09:06", "v": "5.90"},
-            {"t": "2026-07-21 09:12", "v": "5.92"},
-            {"t": "2026-07-21 09:18", "v": "5.94"},
-            {"t": "2026-07-21 09:24", "v": "5.96"},
-            {"t": "2026-07-21 09:30", "v": "5.98"},
+            {"t": "2026-07-21 13:06", "v": "5.90"},
+            {"t": "2026-07-21 13:12", "v": "5.92"},
+            {"t": "2026-07-21 13:18", "v": "5.94"},
+            {"t": "2026-07-21 13:24", "v": "5.96"},
+            {"t": "2026-07-21 13:30", "v": "5.98"},
         ]}
         captured = {}
 
@@ -117,8 +220,9 @@ class NowcastBayTests(unittest.TestCase):
 
         self.assertEqual(source, "observed")
         self.assertAlmostEqual(level, 5.98 - 2.82)
-        self.assertIn("begin_date=20260721%2006:30", captured["url"])
-        self.assertIn("end_date=20260721%2009:30", captured["url"])
+        self.assertIn("time_zone=gmt", captured["url"])
+        self.assertIn("begin_date=20260721%2010:30", captured["url"])
+        self.assertIn("end_date=20260721%2013:30", captured["url"])
 
     def test_current_bay_uses_flagged_astronomical_fallback(self):
         now = dt.datetime(2026, 7, 21, 9, 30)
@@ -132,7 +236,7 @@ class NowcastBayTests(unittest.TestCase):
 
     def test_current_bay_rejects_nonempty_but_stale_observations(self):
         payload = {"data": [
-            {"t": "2026-07-21 08:54", "v": "5.90"},
+            {"t": "2026-07-21 12:54", "v": "5.90"},
         ]}
         now = dt.datetime(2026, 7, 21, 9, 30)
         with mock.patch.object(
