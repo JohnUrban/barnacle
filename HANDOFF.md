@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 11:56 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-18 11:59 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -54,6 +54,10 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   ~+13.7 inches at 07:01:23 EDT [VERIFIED: 18-photo EXIF timeline]; street
   response was 10–13 minutes earlier than the fixed-lag hindcast. A second
   compound curb flood near 10:05 exposed alert-state and cap coupling.
+- Event #9's last overnight forecast is scored: qualified split-pathway hit.
+  It warned of elevated pluvial risk 7h47 ahead and its burst proxy nearly
+  bracketed round 1; hourly QPF put the flood ~3.5h late, but that window
+  captured round 2 within 1.6–1.9 inches (`assets/observations/2026-09-13/`).
 - The rebuilt storm-path dispatch and imminent-SMS pipeline remain WATCH
   items until the next production radar trigger exercises them.
 - Nine measured floods are represented in the all-anchors analysis. Frozen
@@ -88,5 +92,5 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Immediate next step
 
-No audit close-out work remains. Next autonomous work: Event 9 forecast-skill
-scoring, then `_pluvial_fill` and offline v0.11 assessments.
+No audit close-out work remains. Next autonomous work: `_pluvial_fill`
+disposition, then the offline v0.11 model assessment.

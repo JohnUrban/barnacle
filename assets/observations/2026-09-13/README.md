@@ -55,6 +55,30 @@ T07:02:13 [VERIFIED] + T07:30 recession.
   Watch (surfaced by Barnacle ~2 AM Sept 12 per user); on waking,
   "little evidence that it had already flooded" — this was the
   window's first flood, not a repeat.
+- **Forecast skill — QUALIFIED, SPLIT-PATHWAY HIT [VERIFIED]:** the
+  last published overnight forecast was generated **03:14:36Z
+  (11:14:36 PM EDT), 7 h 47 min before the photographed first peak**
+  ([as-run JSON at `3a6c96f`](https://github.com/JohnUrban/barnacle/blob/3a6c96faf7ebbf98c3e69322948aa5c1ddbbcedc/docs/forecast.json);
+  the later 03:56Z nowcast did not replace `forecast.json`). There is no
+  honest Brier-style single score: `pluvial_risk` was categorical and
+  the burst scenario had no probability or exact clock. Component
+  scoring preserves what the product actually claimed:
+
+  | Component | As-run forecast | Verified outcome | Score |
+  |---|---|---|---|
+  | Hazard + pathway | `ELEVATED` pluvial risk, active Flood Watch, thunderstorms; tidal regime dry | Two rain-driven floods; first was pure pluvial with bay below the grates | **HIT** |
+  | First-round magnitude | Untimed 3.0 in/hr burst scenario: **+16.4 to +17.9″ vs SW grate** (4.89–5.01 NAVD88) | **+13.7″** at 07:01:23 ([ledger rows 180–184](../../../data/labeled_observations.csv)) | **NEAR HIT, 2.7–4.2″ high; one severity class high** |
+  | First-round timing | Burst-capable window covered 07:01, but hourly-QPF hydrograph showed no rain water then and first crossed the grate at **09:50**, peaking **+5.6″ at 10:30** | First rise 06:57; peak 07:01; driveable by 07:30 | **TIMING MISS, ~3.5 h late** |
+  | Second-round timing | Predicted street-water window **09:50–11:31** | Compound crest photographed 10:03–10:12; driveable by 10:59 | **HIT** (peak clock 18–27 min late) |
+  | Second-round magnitude | **+5.6″ vs grate**, street regime | **~+7.2–7.5″**, at/near curb | **NEAR MISS, 1.6–1.9″ low; one class low** |
+  | Rain forcing | Hourly QPF peak **0.183 in/hr**; convective burst proxy **3.0 in/hr** | MRMS box mean **3.16**, house **3.78**, box max **4.05 in/hr** | QPF **MISS** (17–22× low); burst proxy **HIT** for box mean (5% low) |
+
+  Bottom line: the warning layer did its job and the crude convective
+  proxy was directionally strong. The deterministic hourly-QPF path
+  missed the fast dawn cell entirely, while its predicted window aligned
+  with the later compound episode. Event-time nowcast/alert skill is **not
+  scorable** because the production arms were dark; do not count missing
+  output as either a meteorological hit or miss.
 - **OPS FAILURE [VERIFIED — see BACKLOG post-mortem]:** Barnacle was
   **dark for the entire event** (no nowcast or forecast publication
   03:56Z–11:5xZ): GitHub Actions queue wedged since ~04:15Z (runs
@@ -73,7 +97,6 @@ T07:02:13 [VERIFIED] + T07:30 recession.
 
 Photos: 18 committed (EXIF + GPS intact, no identifiable people;
 descriptions in `barnacle-2026091-descriptions.txt`). All-anchors
-refreshed to NINE. Remaining: edge_20260913 map points (the photos
-carry GPS — derivable without pick_coords clicks, ±few m);
-forecast-skill score vs the LAST published overnight forecast
-(production was dark at event time — see the outage post-mortem).
+refreshed to NINE. Remaining: edge_20260913 map points require the
+user's pick_coords selection; photo GPS alone is only ±few m and does
+not identify the intended visible water edge.

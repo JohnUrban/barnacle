@@ -56,10 +56,9 @@ looks stale, trust this file. Ledger lines are append-only:
 - [ ] WATCH: nowcast.yml dispatch-after-publish path is regression-tested
       and its two intents consolidate into one fail-closed retry (2026-09-14),
       but still needs observation at the next production radar trigger.
-- [ ] Event #9 residuals: edge_20260913 map points need user pick_coords;
-      forecast-skill score against the last published overnight forecast
-      remains. EXIF timeline, peak pin, model plot, and nine-anchor refresh
-      are complete.
+- [ ] Event #9 residual: edge_20260913 map points need user pick_coords.
+      EXIF timeline, peak pin, model plot, nine-anchor refresh, and the
+      last-published overnight forecast-skill score are complete.
 - [x] GH Actions outage runs 34737703470 and 34737375383 are completed
       failures, not queued zombies (registry correction 2026-09-14).
 - [ ] Extra-rain slider on the town map (DEFERRED low-priority,
@@ -319,3 +318,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-18 | DONE | frozen-event-lifecycle-wording | corrected the remaining 2025-08-21 backlog instruction: any recovered primary evidence belongs in labeled_observations + event README, never the frozen labeled_events classifier [VERIFIED: data/labeled_observations_README.md lifecycle]
 2026-09-18 | OPEN | widget-v7.27a-recopy | GMT migration changed stored tide stamps to include their UTC offset; widget source v7.27a now honors that offset for exact hours-to-peak while preserving local display labels; John must re-copy the published script into Scriptable (installed v7.26a otherwise remains functional) [VERIFIED: source diff; installation state last STATED 2026-09-14]
 2026-09-18 | DONE | pinned-workflow-shell-lint | CI now checksum-verifies actionlint 1.7.12 and ShellCheck 0.11.0, lints all workflows plus four shell entry points, and repaired every initial finding (grouped GITHUB_OUTPUT writes, glob-safe reverse archive loop, visible retry counters, quoted launchd targets, trap annotation, smoke-test shebang); both linters, 151 tests, and publish gate pass [VERIFIED: official release checksums + local pinned-tool run]
+2026-09-18 | DONE | event-9-forecast-skill | scored the last overnight forecast (3a6c96f, generated 03:14:36Z): qualified split-pathway hit — elevated pluvial warning at 7h47 lead and 3.0 in/hr burst proxy near the first peak magnitude, but hourly-QPF timing missed dawn by ~3.5h; its 09:50-11:31 street-water window then captured the photographed 10:03-10:12 compound crest with +5.6 vs observed +7.2-7.5 in; event-time nowcast is unscorable because both production arms were dark [VERIFIED: git-history forecast JSON + event README primary records]
