@@ -83,6 +83,26 @@ def _stage_at_volume(curve: list[tuple[float, float]], volume: float) -> float:
     return curve[-1][0] + (volume - accumulated) / curve[-1][1]
 
 
+def _legacy_pluvial_fill(curve, base_stage, budget):
+    """Frozen v0.10.1/v0.10.2 sub-bin behavior."""
+    stage = base_stage
+    for index in range(1, len(curve)):
+        upper_stage, area = curve[index]
+        if upper_stage <= base_stage:
+            continue
+        step_volume = area * (upper_stage - curve[index - 1][0])
+        if budget < step_volume:
+            return (
+                curve[index - 1][0] + budget / area
+                if area > 0 else upper_stage
+            )
+        budget -= step_volume
+        stage = upper_stage
+    if budget > 0 and curve[-1][1] > 0:
+        stage += budget / curve[-1][1]
+    return stage
+
+
 def production_parameters(fixture: dict) -> tuple[float, float, float, int]:
     params = fixture["parameters"]
     return (
@@ -169,7 +189,11 @@ def fit_metrics(fixture: dict) -> dict:
     }
 
 
-def simulate_hindcast_event(event: dict, fixture: dict) -> list[tuple[dt.datetime, float]]:
+def simulate_hindcast_event(
+    event: dict,
+    fixture: dict,
+    fill_function=_legacy_pluvial_fill,
+) -> list[tuple[dt.datetime, float]]:
     """Replay the retained step-held MRMS all-anchor recipe."""
     curve = ff._load_stage_curve()
     if not curve:
@@ -208,7 +232,7 @@ def simulate_hindcast_event(event: dict, fixture: dict) -> list[tuple[dt.datetim
             * (step_minutes / 60.0),
         )
         stage = (
-            ff._pluvial_fill(curve, base_stage, storage)
+            fill_function(curve, base_stage, storage)
             if storage > 0
             else base_stage
         )
@@ -217,10 +241,15 @@ def simulate_hindcast_event(event: dict, fixture: dict) -> list[tuple[dt.datetim
     return output
 
 
-def hindcast_metrics(fixture: dict) -> dict[str, dict]:
+def hindcast_metrics(
+    fixture: dict,
+    fill_function=_legacy_pluvial_fill,
+) -> dict[str, dict]:
     metrics = {}
     for event in fixture["hindcast"]["events"]:
-        simulation = simulate_hindcast_event(event, fixture)
+        simulation = simulate_hindcast_event(
+            event, fixture, fill_function=fill_function
+        )
         peak_time, peak_stage = max(simulation, key=lambda point: point[1])
         result = {
             "peak_stage_in": peak_stage,
@@ -314,6 +343,7 @@ def verify_reproduction(fixture: dict | None = None) -> dict:
 
     return {
         "model_version": ff.CURRENT_MODEL_VERSION,
+        "frozen_model_version": fixture["model_version"],
         "parameters": {
             "tank_k": ff.TANK_K,
             "tank_gamma": ff.TANK_GAMMA,
@@ -330,7 +360,8 @@ def verify_reproduction(fixture: dict | None = None) -> dict:
 def _print_report(result: dict) -> None:
     params = result["parameters"]
     print(
-        f"{result['model_version']} frozen production vector: "
+        f"{result['frozen_model_version']} frozen production vector "
+        f"(current production stamp {result['model_version']}): "
         f"K={params['tank_k']:.0f}, gamma={params['tank_gamma']:.2f}, "
         f"k_out={params['tank_kout_per_hour']:.2f}/h, "
         f"lag={params['tank_lag_minutes']} min"

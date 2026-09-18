@@ -2,7 +2,7 @@ import unittest
 
 from forecast import flood_forecast_daily as ff
 from history.scripts import assess_model_v0_11 as assessment
-from history.scripts import reproduce_v0_10_3_fill_candidate as fill_candidate
+from history.scripts import reproduce_v0_10_3 as fill_reproduction
 
 
 class ModelV011AssessmentTests(unittest.TestCase):
@@ -13,10 +13,12 @@ class ModelV011AssessmentTests(unittest.TestCase):
     def test_corrected_fill_never_starts_below_non_grid_base(self):
         curve = ff._load_stage_curve()
         base = 0.08
+        legacy = assessment.v0_10_2_pluvial_fill(curve, base, 0.001)
         current = ff._pluvial_fill(curve, base, 0.001)
         corrected = assessment.corrected_pluvial_fill(curve, base, 0.001)
-        self.assertLess(current, base)
-        self.assertGreaterEqual(corrected, base)
+        self.assertLess(legacy, base)
+        self.assertGreaterEqual(current, base)
+        self.assertAlmostEqual(current, corrected)
 
     def test_lag_evidence_rejects_one_replacement_constant(self):
         lag = self.result["lag_sensitivity"]
@@ -80,10 +82,9 @@ class ModelV011AssessmentTests(unittest.TestCase):
             boundary["max_initial_age_for_full_horizon_surge_validity_min"],
         )
 
-    def test_fill_candidate_is_frozen_without_changing_production(self):
-        result = fill_candidate.verify_candidate()
-        self.assertEqual(result["candidate_model_version"], "v0.10.3")
-        self.assertEqual(result["production_model_version"], "v0.10.2")
+    def test_fill_correction_is_frozen_in_production(self):
+        result = fill_reproduction.verify_reproduction()
+        self.assertEqual(result["model_version"], "v0.10.3")
         self.assertLess(result["worst_reference_error_in"], 1e-10)
         self.assertAlmostEqual(
             result["worst_production_correction_in"], 0.09, places=12

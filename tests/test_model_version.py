@@ -9,8 +9,8 @@ ROOT = Path(check_artifacts.ROOT)
 
 
 class ModelVersionTests(unittest.TestCase):
-    def test_production_constants_are_stamped_v0_10_2(self):
-        self.assertEqual(ff.CURRENT_MODEL_VERSION, "v0.10.2")
+    def test_production_constants_are_stamped_v0_10_3(self):
+        self.assertEqual(ff.CURRENT_MODEL_VERSION, "v0.10.3")
         self.assertEqual(ff.TANK_K, 1.296e6)
         self.assertEqual(ff.TANK_GAMMA, 0.78)
         self.assertEqual(ff.TANK_KOUT, 3.50)
@@ -27,6 +27,8 @@ class ModelVersionTests(unittest.TestCase):
         self.assertFalse((ROOT / "model" / "v0.10.md").exists())
         self.assertTrue((ROOT / "model" / "archive" / "v0.10.1.md").exists())
         self.assertFalse((ROOT / "model" / "v0.10.1.md").exists())
+        self.assertTrue((ROOT / "model" / "archive" / "v0.10.2.md").exists())
+        self.assertFalse((ROOT / "model" / "v0.10.2.md").exists())
         self.assertIn(
             f"model/{version}.md", (ROOT / "README.md").read_text(encoding="utf-8")
         )

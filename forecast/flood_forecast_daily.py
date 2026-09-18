@@ -98,7 +98,7 @@ INTERSECTION_HIGHPOINT = 4.54  # Bay+Central intersection (local high)       (SH
 # was fabricated in v0.5.1 as lawn_step(4.58)+6"; both inputs were wrong.
 LAWN_STEP             = 4.66   # lawn-step top (was 4.58 inferred)           (SH 7.48)
 DRIVEWAY_CENTRAL      = 4.67   # driveway-entering THRESHOLD (cross-fit      (SH 7.49)
-                               #  #6/#8 bracket; ramp — see model/v0.10.2.md)
+                               #  #6/#8 bracket; ramp — see model/v0.10.3.md)
 PORCH_STEP_BASE       = 4.68   # walkway at the bottom porch step            (SH 7.50)
 PORCH_STEP1_TOP       = 5.41   # top of first porch step (8.75" riser)       (SH 8.23)
 PORCH_DECK            = 8.08   # porch platform (5 risers, 40.75" total)     (SH 10.90)
@@ -828,7 +828,7 @@ PREDICTIONS_LOG_FIELDS = [
     "regime_predicted",
     "cold_lockout",              # "true" | "false"
     "confidence_level",          # "high" | "medium" | "low" | ""
-    "model_version",             # as-run model spec version (currently v0.10.2)
+    "model_version",             # as-run model spec version (currently v0.10.3)
 ]
 
 DAY_RISK_LOG_PATH = os.path.join(_REPO_ROOT, "data", "day_risk_log.csv")
@@ -1023,7 +1023,7 @@ def update_forecast_accuracy():
     return _summarize_accuracy(last_n=30)
 
 
-CURRENT_MODEL_VERSION = "v0.10.2"
+CURRENT_MODEL_VERSION = "v0.10.3"
 FORECAST_SCHEMA_VERSION = "1.0"
 
 # v0.8 wind-direction sectors for the storm-bump adjustment. Sandy Hook
@@ -4039,16 +4039,21 @@ def _pluvial_fill(curve, base_stage, budget):
     budget; returns final stage (inches vs SW grate)."""
     stage = base_stage
     for i in range(1, len(curve)):
-        s, a = curve[i]
-        if s <= base_stage:
+        prior_stage = curve[i - 1][0]
+        upper_stage, area = curve[i]
+        if upper_stage <= base_stage:
             continue
-        step_v = a * (s - curve[i-1][0])
+        lower_stage = max(base_stage, prior_stage)
+        step_v = area * (upper_stage - lower_stage)
         if budget < step_v:
-            stage = curve[i-1][0] + (budget / a) if a > 0 else s
+            stage = (
+                lower_stage + budget / area
+                if area > 0 else upper_stage
+            )
             budget = 0
             break
         budget -= step_v
-        stage = s
+        stage = upper_stage
     if budget > 0:
         # Past the curve top: extrapolate with the last marginal area
         last_area = curve[-1][1]

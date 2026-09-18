@@ -1,8 +1,9 @@
 # Model v0.11 offline assessment — 2026-09-18
 
-**Disposition: HOLD production v0.10.2.** The assessment and follow-on
-time-varying-head prototype found physically real corrections, but no
-evidence-supported v0.11 package ready to ship. Moving astronomy materially
+**Disposition: production v0.10.3 contains only the accepted fill-continuity
+correction; HOLD every other v0.11 candidate.** The assessment and follow-on
+time-varying-head prototype found physically real corrections, but no broader
+evidence-supported package ready to ship. Moving astronomy materially
 improves one compound-event head replay and is neutral-to-slightly-worse in
 the other because the surge itself evolves; treating issue-time surge as a
 constant is therefore not yet a safe universal replacement. A single shorter
@@ -40,7 +41,7 @@ refreshed by
 | G5 fixed bay head | In the 204-point cached astronomical sample, the largest 45-minute change is **−0.837 ft**, larger than the entire 0.52-ft drainage transition. Moving astronomy + constant issue-time surge cuts Oct 30 head RMSE **0.340→0.157 ft**, but Dec 19 is **0.249→0.251 ft** because surge evolves against the falling tide. A standardized 1.0 in/hr tank moves **+0.82″ rising / −0.49″ falling**. | **Prototype complete; HOLD production.** Astronomy must evolve, but constant-surge projection is not universally better. Define surge tendency/expiry and degraded-tail semantics before a production proposal. |
 | G6 simplified drainage/delivery | Events 7–9 again show fast rise, over-held recession, tilted pooling, and spatially different grate behavior, but available observations cannot separately identify delivery tail, head-dependent `k_out`, recirculation, and micro-basins. | **Do not fit all structures together.** Test one mechanism at a time; start with evolving head, then asymmetric recession. |
 | G7 forecast input vs tank skill | Event 9's hourly QPF peak was 17–22× below MRMS while its untimed burst proxy was within 5% of catchment mean. | **Keep scorecards separate.** No tank constant should absorb NWS forcing error. |
-| G8 `_pluvial_fill` | Correct inversion removes a sampled worst onset defect of **0.090″**. Frozen peaks move 0 for four events, **+0.014″** for Dec 19, and **+0.063″** for Oct 30; no peak clock changes. | **Frozen as an offline v0.10.3 candidate.** It matches independent volume-at-base inversion to 1.07e-14″; candidate goldens are committed. Production remains v0.10.2 pending an atomic rule-5 promotion. |
+| G8 `_pluvial_fill` | Correct inversion removes a sampled worst onset defect of **0.090″**. Frozen peaks move 0 for four events, **+0.014″** for Dec 19, and **+0.063″** for Oct 30; no peak clock changes. | **Promoted alone as v0.10.3.** It matches independent volume-at-base inversion to 1.07e-14″; production goldens and the atomic rule-5 cutover are committed. |
 | G9 driveway threshold | The model spec correctly calls 4.67 NAVD88 a cross-fit threshold observable; production surfaces now say so, and the separate 4.11-ft road point is `driveway_road_central`. | **Resolved 2026-09-18 (`ea9e282bb`).** The stable model/API/ledger key remains `driveway_central`; no physics changed. |
 | G10 tide bias | The legacy one-row/day log has **+0.320 ft** mean bias over 116 rows. The joined hourly log instead has **−0.037 ft** over 14,695 predictions / 235 tides; v0.10.2 alone is **+0.027 ft** over 1,981 predictions / 29 tides. | **Reject a tide-bias retune.** The legacy aggregate is cadence/version confounding, not a current constant estimate. |
 
@@ -179,7 +180,8 @@ no current-version severe sample from which to retune.
 - Recession observations are spatially tilted and sometimes landmark bounds,
   not a single level pool. A scalar `k_out` fit cannot be treated as direct
   proof of grate hydraulics.
-- There is no representative v0.10.2 severe-tide sample and the NWS coastal
+- There is no representative current-family severe-tide sample (the assessed
+  v0.10.2 evidence also applies to fill-only v0.10.3), and the NWS coastal
   surge parser still has no real product validation.
 - Two compound head replays are enough to reject fixed astronomy and constant
   surge as universal rules, but not enough to select a surge-tendency model.
@@ -197,10 +199,9 @@ no current-version severe sample from which to retune.
    issue-time surge is not sufficient. Specify a bounded observable surge
    tendency and explicit expiry/degraded-tail contract, then reserve the next
    compound event for validation.
-3. **DONE OFFLINE:** the v0.10.3 `_pluvial_fill` candidate, exact goldens,
-   reference proof, and reproduction command are committed. If promoted,
-   perform the complete rule-5 version/spec/stamp/log/golden/site cutover in
-   one work unit; do not patch v0.10.2 silently.
+3. **PROMOTED:** v0.10.3 contains only the `_pluvial_fill` correction; its
+   exact goldens, reference proof, version/spec/stamp/log/site cutover, and
+   reproduction command moved in one work unit.
 4. Define a dynamic/distributed lag from an observable predictor and reserve
    at least one event for validation. Do not choose a constant from Events 8
    and 9 after seeing both scores.
@@ -210,5 +211,7 @@ no current-version severe sample from which to retune.
    false-alert behavior, and end-to-end forecast/alert skill before accepting
    a new model version.
 
-No production formula, constant, landmark value, model stamp, or historical
-ledger row was changed by this assessment or follow-on prototype.
+The assessment itself changed no production formula, constant, landmark,
+stamp, or historical ledger row. Its independent fill proof subsequently
+supported the fill-only v0.10.3 promotion; no retuning, moving-head rule, or
+other v0.11 candidate was included.

@@ -3,7 +3,7 @@
 Append-only log of empirical water-depth observations at named landmarks
 near 342 Bay Ave. Each row is "what John (or another observer) actually saw
 at a given time at a given landmark." Used to validate, calibrate, or
-refine the flood model (current spec: `model/v0.10.2.md`).
+refine the flood model (current spec: `model/v0.10.3.md`).
 
 ## Why this exists (updated 2026-07-06; original rationale below is history)
 
@@ -132,7 +132,7 @@ see below), with the elevation context this section carries:
 
 - **`driveway_central`** — PROMOTED to `ff.LANDMARKS` in model
   **v0.10.2** (2026-09-03) at 4.67 NAVD88 as a **threshold
-  observable, not a surveyed point** — see `model/v0.10.2.md`.
+  observable, not a surveyed point** — see `model/archive/v0.10.2.md`.
   RAMP CORRECTION (user field description, 2026-09-03): the
   driveway is not one elevation — the sidewalk drops to the street
   at the curb cut, the road rises from the intersection toward the

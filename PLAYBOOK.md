@@ -37,7 +37,7 @@ as any lesson that changes it.
 
 **In the session after (Claude, cold start) — follow this RECIPE
 in order; every step has been needed at least once:**
-1. Read `AGENTS.md` + `HANDOFF.md` + `model/v0.10.2.md`; event
+1. Read `AGENTS.md` + `HANDOFF.md` + `model/v0.10.3.md`; event
    physics context lives in the per-event READMEs under
    `assets/observations/`.
 2. **Gauge sanity FIRST** (2026-07-09 lesson: the SH sensor spiked

@@ -1,29 +1,29 @@
-# v0.10.3 candidate — stage-storage fill continuity
+# v0.10.3 — stage-storage fill continuity
 
-**Status: offline candidate, not production.** Production remains v0.10.2.
-This candidate changes no fitted constant, landmark, input, or clock. It only
+**Status: promoted to production on 2026-09-18.** This release changes no
+fitted constant, landmark, input, or clock. It only
 repairs the stage-storage inverse when tidal base stage begins inside a
 0.1-inch curve bin.
 
 ## Defect and correction
 
-Production `_pluvial_fill()` skips bins whose upper edge is below the base,
+The v0.10.2 `_pluvial_fill()` skipped bins whose upper edge was below the base,
 but charges the first surviving bin from its lower edge. For a non-grid base,
-tiny positive rain storage can therefore return a stage below the tide-set
-base. The candidate starts that first interval at
+tiny positive rain storage could therefore return a stage below the tide-set
+base. v0.10.3 starts that first interval at
 `max(base_stage, previous_bin_edge)`.
 
 The independent reference calculation is:
 
 ```text
-candidate_stage = inverse_curve(volume_at(base_stage) + rain_storage)
+v0.10.3_stage = inverse_curve(volume_at(base_stage) + rain_storage)
 ```
 
 Across base stages 0.00–24.00 inches at 0.01-inch spacing and 13 storage
-budgets from zero through 2,000,000 cell-inches, the candidate matches that
+budgets from zero through 2,000,000 cell-inches, v0.10.3 matches that
 reference to floating-point precision (worst error 1.07e-14 inch). The largest
-correction relative to production is +0.090 inch at a base partway through a
-stage bin and near-zero added storage.
+correction relative to v0.10.2 is +0.090 inch at a base partway through a stage
+bin and near-zero added storage.
 
 ## Frozen candidate differences
 
@@ -44,13 +44,13 @@ the 24-point RMS, and the six-event evidence set are unchanged.
 Run from any directory:
 
 ```text
-python3 history/scripts/reproduce_v0_10_3_fill_candidate.py
+python3 history/scripts/reproduce_v0_10_3.py
 ```
 
 The command verifies the reference equivalence and
-[`v0.10.3-fill-candidate.json`](../../model/data/v0.10.3-fill-candidate.json)
-goldens while asserting production is still v0.10.2. A later promotion must
-be atomic: archive the v0.10.2 spec with repaired links; create the v0.10.3
-spec; replace the production helper; update `CURRENT_MODEL_VERSION`, the
-prediction-log README, tests, and generated surfaces; then gate and frozen
-replay. Do not bundle the held time-varying-head rule or any retuning.
+[`v0.10.3-reproduction.json`](../../model/data/v0.10.3-reproduction.json)
+goldens while asserting production is v0.10.3. Promotion was atomic: the
+v0.10.2 spec was archived with repaired links; the production helper,
+`CURRENT_MODEL_VERSION`, prediction-log README, tests, goldens, and generated
+surfaces moved together. The held time-varying-head rule and all retuning were
+excluded.

@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 12:40 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-18 12:48 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -8,11 +8,10 @@ archival, never instructions.
 
 Production hyperlocal flood forecaster for 342 Bay Ave, Highlands NJ.
 Sandy Hook gauge + NWS + MRMS radar produce water depth at 19 landmarks,
-an hourly site/JSON forecast, best-effort ~10-minute nowcast, per-tide
-pages, nine-town street map, iOS widget source v7.28a, and ntfy/email/SMS
-alerts. Current model **v0.10.2** (`model/v0.10.2.md`); SMS is the
-imminent-impact rail, while ntfy/email carry long-lead watches. Real people
-receive alerts.
+an hourly site/JSON forecast, best-effort ~10-minute nowcast, per-tide pages,
+nine-town street map, iOS widget source v7.28a, and ntfy/email/SMS alerts.
+Current model **v0.10.3** (`model/v0.10.3.md`); SMS is the imminent-impact
+rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Current state
 
@@ -31,8 +30,7 @@ receive alerts.
   exact offset parsing and identifies the driveway entry as cross-fit; John
   must re-copy it into Scriptable.
 - `driveway_central` is explicitly a 4.67-ft cross-fit corner-stage threshold;
-  the separate 4.11-ft map point is `driveway_road_central`. All current
-  landmark-bearing surfaces agree; no model physics or stamp changed.
+  the separate 4.11-ft map point is `driveway_road_central`.
 - CI checksum-pins actionlint 1.7.12 and ShellCheck 0.11.0. Required
   artifacts fail closed, writes are atomic, and ledgers are validated.
 
@@ -45,19 +43,19 @@ receive alerts.
   pluvial risk 7h47 ahead and a near-magnitude burst proxy, but hourly QPF
   put the first flood ~3.5h late. Event-time nowcast is unscorable because
   both production arms were dark.
+- Production v0.10.3 changes only `_pluvial_fill` continuity. It matches an
+  independent volume-at-base inverse to 1.07e-14 inch; sampled correction is
+  at most +0.090 inch, compound peaks move +0.014/+0.063 inch, and no peak
+  clock changes. Constants, landmarks, forcing, lag, and alert policy remain
+  unchanged. v0.10.2 is archived with repaired links.
 - Initial v0.11 assessment rejects one replacement lag, universal point/max
   forcing, standalone persistence, and tide-bias retuning.
-- Follow-on moving-head replay uses 102 official NOAA six-minute rows. Moving
-  astronomy + constant surge cuts Oct 30 RMSE 0.340→0.157 ft, but Dec 19 is
-  0.249→0.251 ft because surge evolves. Standardized tank endpoints move
-  +0.82 inches rising / −0.49 inches falling. Candidate is HELD; production
-  remains fixed-head pending surge-tendency/expiry semantics.
-- `_pluvial_fill` continuity is frozen as an offline **v0.10.3 candidate**.
-  It matches independent volume-at-base arithmetic to 1.07e-14 inch; maximum
-  correction is +0.090 inch, compound peaks move +0.014/+0.063 inch, and no
-  peak clock moves. Production remains v0.10.2 until an atomic rule-5 cutover.
-- Reports/plans live under `history/reports/` and `history/plans/`; candidate
-  verifier: `history/scripts/reproduce_v0_10_3_fill_candidate.py`.
+- Moving astronomy + constant surge cuts Oct 30 head RMSE 0.340→0.157 ft,
+  but Dec 19 is 0.249→0.251 ft because surge evolves. Standardized tank
+  endpoints move +0.82 inches rising / −0.49 inches falling. The rule remains
+  HELD pending surge-tendency, age-expiry, and independent-event evidence.
+- Reproductions: `history/scripts/reproduce_v0_10_1.py` preserves the prior
+  frozen record; `history/scripts/reproduce_v0_10_3.py` verifies production.
 
 ## Open residuals
 
@@ -86,6 +84,6 @@ receive alerts.
 
 ## Immediate next step
 
-Promote the proven fill-only v0.10.3 candidate atomically if continuing this
-arc: archive/repair the v0.10.2 spec, update code/log/version/goldens and all
-generated surfaces together, and do not bundle the held moving-head rule.
+Complete the atomic v0.10.3 generation/gate/push. Afterward, retain the
+moving-head candidate offline until its surge-tendency and expiry contract
+can be tested without consuming the reserved independent event.

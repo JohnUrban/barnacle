@@ -87,6 +87,26 @@ def corrected_pluvial_fill(curve, base_stage, budget):
     return stage
 
 
+def v0_10_2_pluvial_fill(curve, base_stage, budget):
+    """Archived production inversion used before the v0.10.3 correction."""
+    stage = base_stage
+    for index in range(1, len(curve)):
+        upper_stage, area = curve[index]
+        if upper_stage <= base_stage:
+            continue
+        step_volume = area * (upper_stage - curve[index - 1][0])
+        if budget < step_volume:
+            return (
+                curve[index - 1][0] + budget / area
+                if area > 0 else upper_stage
+            )
+        budget -= step_volume
+        stage = upper_stage
+    if budget > 0 and curve[-1][1] > 0:
+        stage += budget / curve[-1][1]
+    return stage
+
+
 def _summary(values):
     values = list(values)
     return {
@@ -104,7 +124,7 @@ def assess_fill():
         base = hundredth / 100.0
         for budget in (1e-6, 0.001, 0.01, 0.1, 1, 10, 100, 1_000,
                        10_000, 100_000, 500_000, 2_000_000):
-            current = ff._pluvial_fill(curve, base, budget)
+            current = v0_10_2_pluvial_fill(curve, base, budget)
             candidate = corrected_pluvial_fill(curve, base, budget)
             row = {
                 "delta_in": candidate - current,
@@ -117,13 +137,12 @@ def assess_fill():
                 worst = row
 
     fixture = reproduction.load_fixture()
-    current_metrics = reproduction.hindcast_metrics(fixture)
-    original = ff._pluvial_fill
-    try:
-        ff._pluvial_fill = corrected_pluvial_fill
-        candidate_metrics = reproduction.hindcast_metrics(fixture)
-    finally:
-        ff._pluvial_fill = original
+    current_metrics = reproduction.hindcast_metrics(
+        fixture, fill_function=v0_10_2_pluvial_fill
+    )
+    candidate_metrics = reproduction.hindcast_metrics(
+        fixture, fill_function=corrected_pluvial_fill
+    )
     events = {}
     for event_id, current in current_metrics.items():
         candidate = candidate_metrics[event_id]

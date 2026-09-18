@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Verify the offline v0.10.3 stage-storage continuity candidate.
+"""Verify the production v0.10.3 stage-storage continuity correction.
 
-This command is read-only.  It proves the candidate inversion is equivalent
-to adding rain storage above the exact tide-set base volume, verifies frozen
-candidate hindcasts, and confirms production remains stamped v0.10.2.
+This command is read-only. It proves production inversion is equivalent to
+adding rain storage above the exact tide-set base volume, verifies frozen
+v0.10.3 hindcasts, and quantifies the correction versus archived v0.10.2.
 """
 
 from __future__ import annotations
@@ -24,27 +24,27 @@ from history.scripts import assess_model_v0_11 as assessment  # noqa: E402
 from history.scripts import reproduce_v0_10_1 as production  # noqa: E402
 
 
-CANDIDATE_PATH = REPO_ROOT / "model" / "data" / "v0.10.3-fill-candidate.json"
+REPRODUCTION_PATH = REPO_ROOT / "model" / "data" / "v0.10.3-reproduction.json"
 BUDGETS = (
     0.0, 1e-6, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1_000.0,
     10_000.0, 100_000.0, 500_000.0, 2_000_000.0,
 )
 
 
-def load_candidate() -> dict:
-    with CANDIDATE_PATH.open(encoding="utf-8") as handle:
-        candidate = json.load(handle)
-    if candidate.get("schema_version") != 1:
-        raise ValueError("unsupported fill-candidate schema")
-    return candidate
+def load_reproduction() -> dict:
+    with REPRODUCTION_PATH.open(encoding="utf-8") as handle:
+        reproduction = json.load(handle)
+    if reproduction.get("schema_version") != 1:
+        raise ValueError("unsupported v0.10.3 reproduction schema")
+    return reproduction
 
 
-def verify_candidate() -> dict:
-    candidate = load_candidate()
-    if ff.CURRENT_MODEL_VERSION != candidate["production_base_version"]:
-        raise AssertionError("offline candidate base no longer matches production")
-    if candidate["parameters_changed"]:
-        raise AssertionError("fill-only candidate must not change parameters")
+def verify_reproduction() -> dict:
+    reproduction = load_reproduction()
+    if ff.CURRENT_MODEL_VERSION != reproduction["model_version"]:
+        raise AssertionError("v0.10.3 reproduction does not match production")
+    if reproduction["parameters_changed"]:
+        raise AssertionError("fill-only release must not change parameters")
 
     curve = ff._load_stage_curve()
     worst_reference_error = 0.0
@@ -56,36 +56,35 @@ def verify_candidate() -> dict:
             expected = production._stage_at_volume(
                 curve, base_volume + budget
             )
-            actual = assessment.corrected_pluvial_fill(curve, base, budget)
+            actual = ff._pluvial_fill(curve, base, budget)
             worst_reference_error = max(
                 worst_reference_error, abs(actual - expected)
             )
-            current = ff._pluvial_fill(curve, base, budget)
+            current = assessment.v0_10_2_pluvial_fill(curve, base, budget)
             worst_production_correction = max(
                 worst_production_correction, actual - current
             )
     if worst_reference_error > 1e-10:
         raise AssertionError(
-            f"candidate differs from reference inversion by "
+            f"production differs from reference inversion by "
             f"{worst_reference_error:.12g} inches"
         )
-    expected_correction = candidate["expected_worst_sampled_correction_in"]
+    expected_correction = reproduction[
+        "expected_worst_sampled_correction_vs_v0_10_2_in"
+    ]
     if not math.isclose(
         worst_production_correction,
         expected_correction,
         rel_tol=0.0,
         abs_tol=1e-12,
     ):
-        raise AssertionError("sampled production correction changed")
+        raise AssertionError("sampled v0.10.2 correction changed")
 
     base_fixture = production.load_fixture()
-    original = ff._pluvial_fill
-    try:
-        ff._pluvial_fill = assessment.corrected_pluvial_fill
-        hindcasts = production.hindcast_metrics(base_fixture)
-    finally:
-        ff._pluvial_fill = original
-    expected_hindcasts = candidate["expected_hindcasts"]
+    hindcasts = production.hindcast_metrics(
+        base_fixture, fill_function=ff._pluvial_fill
+    )
+    expected_hindcasts = reproduction["expected_hindcasts"]
     if hindcasts.keys() != expected_hindcasts.keys():
         raise AssertionError("candidate hindcast event set changed")
     for event_id, expected in expected_hindcasts.items():
@@ -103,8 +102,7 @@ def verify_candidate() -> dict:
                 raise AssertionError(f"{event_id} {key} changed")
 
     return {
-        "candidate_model_version": candidate["candidate_model_version"],
-        "production_model_version": ff.CURRENT_MODEL_VERSION,
+        "model_version": ff.CURRENT_MODEL_VERSION,
         "worst_reference_error_in": worst_reference_error,
         "worst_production_correction_in": worst_production_correction,
         "hindcasts": hindcasts,
@@ -115,12 +113,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
-    result = verify_candidate()
+    result = verify_reproduction()
     if args.json:
         print(json.dumps(result, indent=2, sort_keys=True))
     else:
         print(
-            f"{result['candidate_model_version']} fill candidate: reference "
+            f"{result['model_version']} production fill: reference "
             f"error {result['worst_reference_error_in']:.3g} in; maximum "
             f"production correction "
             f"{result['worst_production_correction_in']:.3f} in"
@@ -130,7 +128,7 @@ def main() -> None:
                 f"{event_id:6s}: peak +{row['peak_stage_in']:.3f} in at "
                 f"{row['peak_local'][11:16]} local"
             )
-        print("verification: PASS (offline candidate; production unchanged)")
+        print("verification: PASS (production v0.10.3)")
 
 
 if __name__ == "__main__":
