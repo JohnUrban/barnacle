@@ -36,11 +36,14 @@ looks stale, trust this file. Ledger lines are append-only:
       K or two-layer soil reservoir. Related: duration-explicit
       V=C·(R−D)·T upgrade. Priming is ONE of SIX structural insights
       queued as the next model session's menu — see "Model
-      consequences" in assets/observations/2026-07-18/README.md.
+      consequences" in assets/observations/2026-07-18/README.md. The
+      2026-09-18 offline assessment found no independent wetness
+      covariate yet; do not fit a post-hoc wet/dry label.
 - [ ] Stateless-nowcast tank window: each run integrates from V=0
       over ~1 h of frames — understates once a burst ages out.
-      Candidate: persist V with decay across runs. (Documented
-      design; day-max memory partially compensates.)
+      Current decay leaves only 2.4% after 60 dry minutes; standalone
+      persistence is deferred until paired with a tested long-tail or
+      antecedent structure. (day-max memory partially compensates.)
 
 - [ ] edge_20260901 map points from event-#8 photos 14-16 (Central
       arm extent at peak) — needs user pick_coords clicks.
@@ -137,10 +140,10 @@ all findings verified — see audits/2026-08-03-a2/)**
       one recession constraint); all_anchors recipe moved off the
       scratchpad import — implemented (77 tests then, 100 now);
       Phase 2 reviewed PASS in round 05.
-- [ ] Versioned model follow-up: `_pluvial_fill()` starts a non-grid
-      base at the preceding 0.1-inch stage bin, so tiny positive
-      storage can calculate up to ~0.08″ below the base. Assess impact,
-      fix only with a model version bump, and update goldens in lockstep.
+- [ ] Versioned model candidate: `_pluvial_fill()` continuity repair is
+      assessed (sampled maximum correction 0.090″; frozen peak changes
+      0–0.063″; no clock changes). Include it only in a model-version bump
+      with goldens updated in lockstep; do not patch v0.10.2 silently.
 - [x] Erratum convention codified + test-enforced (2026-09-02;
       pre-convention rows grandfathered) — see
       data/labeled_observations_README.md.
@@ -231,7 +234,10 @@ all findings verified — see audits/2026-08-03-a2/)**
 - [x] Phase 5 triage: G1-G10 consolidated into
       history/plans/model-v0.11-assessment.md with acceptance criteria. No
       formula or constant changed; any accepted candidate needs its own model
-      version and frozen-golden update.
+      version and frozen-golden update. Initial offline pass completed
+      2026-09-18: fixed-head + fill-continuity advance to candidate work;
+      single-lag, forcing switch, standalone persistence, and tide-bias
+      retune rejected (history/reports/model-v0.11-assessment-2026-09-18.md).
 
 ## LEDGER (append-only; newest last)
 
@@ -319,3 +325,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-18 | OPEN | widget-v7.27a-recopy | GMT migration changed stored tide stamps to include their UTC offset; widget source v7.27a now honors that offset for exact hours-to-peak while preserving local display labels; John must re-copy the published script into Scriptable (installed v7.26a otherwise remains functional) [VERIFIED: source diff; installation state last STATED 2026-09-14]
 2026-09-18 | DONE | pinned-workflow-shell-lint | CI now checksum-verifies actionlint 1.7.12 and ShellCheck 0.11.0, lints all workflows plus four shell entry points, and repaired every initial finding (grouped GITHUB_OUTPUT writes, glob-safe reverse archive loop, visible retry counters, quoted launchd targets, trap annotation, smoke-test shebang); both linters, 151 tests, and publish gate pass [VERIFIED: official release checksums + local pinned-tool run]
 2026-09-18 | DONE | event-9-forecast-skill | scored the last overnight forecast (3a6c96f, generated 03:14:36Z): qualified split-pathway hit — elevated pluvial warning at 7h47 lead and 3.0 in/hr burst proxy near the first peak magnitude, but hourly-QPF timing missed dawn by ~3.5h; its 09:50-11:31 street-water window then captured the photographed 10:03-10:12 compound crest with +5.6 vs observed +7.2-7.5 in; event-time nowcast is unscorable because both production arms were dark [VERIFIED: git-history forecast JSON + event README primary records]
+2026-09-18 | DONE | model-v0.11-offline-assessment | read-only harness + report quantify G1-G10: reject one fixed replacement lag (Event 8 favors 10 min, Event 9 favors 3), universal point/max forcing, standalone persistence, and tide-bias retune; advance time-varying bay head and `_pluvial_fill` continuity as offline candidates; no production formula/constant/stamp changed [VERIFIED: frozen fixture + MRMS cache + photo-point JSON + 14,695 prediction/235-tide join]

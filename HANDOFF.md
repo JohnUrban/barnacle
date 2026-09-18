@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 11:59 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-18 12:12 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -58,16 +58,17 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   It warned of elevated pluvial risk 7h47 ahead and its burst proxy nearly
   bracketed round 1; hourly QPF put the flood ~3.5h late, but that window
   captured round 2 within 1.6–1.9 inches (`assets/observations/2026-09-13/`).
+- The v0.11 offline assessment is complete with a read-only harness. A single
+  replacement lag, universal point/max forcing, standalone persistence, and a
+  tide-bias retune are rejected; time-varying bay head and `_pluvial_fill`
+  continuity advance as offline candidates. Production remains v0.10.2.
 - The rebuilt storm-path dispatch and imminent-SMS pipeline remain WATCH
   items until the next production radar trigger exercises them.
 - Nine measured floods are represented in the all-anchors analysis. Frozen
   v0.10.1 reproduction remains the behavior guard; v0.10.2 added only the
   driveway-entering threshold observable at 4.67 NAVD88.
-- Accepted model debt includes fixed rainfall lag, near-core
-  peak/recession bias, stateless nowcast storage, no antecedent wetness,
-  fixed projection bay head, simplified drainage/delivery, forecast-input
-  versus tank-skill conflation, a sub-bin discontinuity, the cross-fit
-  driveway threshold, and unsegmented historical tide bias.
+- The assessment report is `history/reports/model-v0.11-assessment-2026-09-18.md`;
+  it records evidence gaps and the candidate acceptance sequence.
 
 ## Open residuals
 
@@ -75,8 +76,8 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
   failure, not a wedged GitHub execution domain.
 - Local alert execution redundancy remains owner/security-gated.
 - Exactly-once delivery needs provider idempotency or an external outbox.
-- Browser DOM/accessibility checks, incremental typing, and the separately
-  versioned v0.11 model assessment remain queued in `BACKLOG.md`.
+- Browser DOM/accessibility checks, incremental typing, and separately
+  versioned v0.11 candidate development remain queued in `BACKLOG.md`.
 
 ## Production rules
 
@@ -92,5 +93,5 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Immediate next step
 
-No audit close-out work remains. Next autonomous work: `_pluvial_fill`
-disposition, then the offline v0.11 model assessment.
+No audit close-out work remains. Next autonomous work: clarify the driveway
+threshold across all surfaces, then prototype time-varying nowcast bay head.
