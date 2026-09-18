@@ -9,7 +9,8 @@ Use these seams for incremental refactoring; keep the entry point as the
 compatibility facade until each extraction has offline tests:
 
 1. `station_time` — station-local parsing and UTC conversion; no network or
-   file I/O. **EXTRACTED 2026-09-02** (`station_time.py`).
+   file I/O. **EXTRACTED 2026-09-02** (`station_time.py`) and strict-mypy
+   gated with the pure HTML publish-contract seam since 2026-09-18.
 2. `model_core` — landmark thresholds, tidal conversion, pluvial tank,
    regimes, and flood windows; pure inputs/outputs only.
 3. `data_sources` — NOAA/NWS/MRMS adapters returning explicit unavailable

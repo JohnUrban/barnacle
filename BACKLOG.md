@@ -89,10 +89,15 @@ looks stale, trust this file. Ledger lines are append-only:
       landmarks, unique IDs, valid fragments, accessible controls/links/
       buttons/images/canvases; source labels repaired and the production
       publish gate now enforces the contract.
+- [x] Incremental static typing started at the two pure seams:
+      `station_time.py` and `html_contract.py` are fully annotated and
+      strict-mypy gated in CI with an exact tool version. Expansion remains
+      seam-by-seam; this does not imply the facade is typed.
 - [ ] Engineering breadth: checksum-pinned actionlint 1.7.12 and ShellCheck
       0.11.0 are CI gates. Real browser runtime smoke tests and incremental
-      static typing remain as module seams make them tractable; static DOM/
-      accessibility and the two audit-regression contracts are covered.
+      typing beyond the two pure seams remain as modules become tractable;
+      static DOM/accessibility and the two audit-regression contracts are
+      covered.
 - [ ] Falling-tide stall experiment (user field task; drain coupling
       "breathing" first written up 7/13 tide event).
 - [ ] Drainage-map email to Stephen Winters (user task).
@@ -348,3 +353,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-18 | DONE | v0.10.3-fill-candidate | fill-continuity repair frozen offline with candidate goldens and independent volume-at-base reference: worst numerical disagreement 1.07e-14 in, production correction <=0.090 in, Oct 30 +0.0629 in, Dec 19 +0.0142 in peak / +0.0202 in at observation, all clocks and four pure-pluvial peaks unchanged; production remains v0.10.2 [VERIFIED: reproduce_v0_10_3_fill_candidate.py + tests]
 2026-09-18 | DONE | v0.10.3-shipped | promoted only the proved stage-storage fill-continuity correction: archived/relinked v0.10.2 spec, added v0.10.3 spec and reproduction goldens, restamped code/log docs/generated surfaces, preserved historical ledgers, and excluded the held moving-head rule and all retuning; correction <=0.090 in with unchanged clocks [VERIFIED: production + legacy frozen replays, full tests, live no-send generation, artifact gate]
 2026-09-18 | DONE | html-accessibility-gate | repaired programmatic names for current chart canvases and interactive date/range/model controls across landing, details, town-map, and per-tide arms; added a dependency-free DOM/accessibility validator to both tests and the production publish gate, covering current pages derived from forecast.json while leaving immutable daily archives untouched [VERIFIED: negative fixture + current-surface test + live no-send generation + artifact gate]
+2026-09-18 | DONE | strict-typing-first-seams | fully annotated station_time and html_contract, then added exact-version mypy 1.11.2 strict checks to CI; scope is deliberately the two pure seams, not an unsupported claim that the facade/renderers are typed [VERIFIED: local strict mypy + 26 focused tests + artifact gate]

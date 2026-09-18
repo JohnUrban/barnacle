@@ -10,12 +10,14 @@ formatters preserve ordinary local clock labels. This avoids the repeated
 01:xx ambiguity at the fall-back transition (AGENTS.md rule 3).
 """
 import datetime as dt
+from typing import TypeAlias
 from zoneinfo import ZoneInfo
 
 STATION_TZ = ZoneInfo("America/New_York")
+TimeValue: TypeAlias = dt.datetime | str
 
 
-def _station_local_now(now_utc=None):
+def _station_local_now(now_utc: dt.datetime | None = None) -> dt.datetime:
     """Now in the Sandy Hook station's local timezone (naive).
 
     ``now_utc`` is an injection seam for boundary/DST tests.  Production
@@ -28,12 +30,12 @@ def _station_local_now(now_utc=None):
     return now.astimezone(STATION_TZ).replace(tzinfo=None)
 
 
-def _station_local_today(now_utc=None):
+def _station_local_today(now_utc: dt.datetime | None = None) -> dt.date:
     """Station-local calendar date from the shared injectable clock."""
     return _station_local_now(now_utc).date()
 
 
-def utc_to_station_local(value):
+def utc_to_station_local(value: TimeValue) -> dt.datetime:
     """Parse an aware UTC/offset timestamp and convert it to station time."""
     if isinstance(value, dt.datetime):
         parsed = value
@@ -44,13 +46,13 @@ def utc_to_station_local(value):
     return parsed.astimezone(STATION_TZ)
 
 
-def station_local_to_noaa_gmt(value):
+def station_local_to_noaa_gmt(value: TimeValue) -> str:
     """Format a station-local instant as a NOAA GMT query boundary."""
     return parse_station_local_time(value).astimezone(
         dt.timezone.utc).strftime("%Y%m%d %H:%M")
 
 
-def noaa_gmt_to_station_time(value):
+def noaa_gmt_to_station_time(value: TimeValue) -> dt.datetime:
     """Parse a naive NOAA GMT timestamp into aware station-local time."""
     if isinstance(value, dt.datetime):
         parsed = value
@@ -63,17 +65,17 @@ def noaa_gmt_to_station_time(value):
     return parsed.astimezone(STATION_TZ)
 
 
-def noaa_gmt_to_station_string(value):
+def noaa_gmt_to_station_string(value: TimeValue) -> str:
     """Return an unambiguous offset-bearing station-local ISO minute."""
     return noaa_gmt_to_station_time(value).isoformat(" ", timespec="minutes")
 
 
-def station_time_storage_key(value):
+def station_time_storage_key(value: TimeValue) -> str:
     """Canonical offset-bearing key; accepts legacy naive local values."""
     return parse_station_local_time(value).isoformat(" ", timespec="minutes")
 
 
-def station_time_sort_key(value):
+def station_time_sort_key(value: TimeValue) -> dt.datetime:
     """Chronological UTC key for current or legacy station timestamps.
 
     Offset-bearing local ISO strings cannot be sorted lexically across the
@@ -83,7 +85,7 @@ def station_time_sort_key(value):
     return parse_station_local_time(value).astimezone(dt.timezone.utc)
 
 
-def station_times_match(left, right):
+def station_times_match(left: TimeValue, right: TimeValue) -> bool:
     """Whether two legacy/new station stamps identify the same instant."""
     try:
         a = parse_station_local_time(left).astimezone(dt.timezone.utc)
@@ -93,7 +95,7 @@ def station_times_match(left, right):
     return a == b
 
 
-def parse_station_local_time(value):
+def parse_station_local_time(value: TimeValue) -> dt.datetime:
     """Parse an offset-bearing or legacy naive station-local timestamp.
 
     NOAA's local products omit an explicit UTC offset.  Attaching a fixed
@@ -114,7 +116,10 @@ def parse_station_local_time(value):
     return parsed.astimezone(STATION_TZ)
 
 
-def hours_until_station_time(value, now_utc=None):
+def hours_until_station_time(
+    value: TimeValue,
+    now_utc: dt.datetime | None = None,
+) -> float:
     """Signed hours from an aware UTC ``now`` to a station-local time."""
     target = parse_station_local_time(value).astimezone(dt.timezone.utc)
     now = now_utc or dt.datetime.now(dt.timezone.utc)

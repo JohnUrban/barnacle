@@ -6,34 +6,48 @@ import datetime as dt
 from html.parser import HTMLParser
 import json
 from pathlib import Path
+from typing import TypedDict, TypeAlias
 
 
 VOID_ELEMENTS = {
     "area", "base", "br", "col", "embed", "hr", "img", "input",
     "link", "meta", "param", "source", "track", "wbr",
 }
+Attributes: TypeAlias = dict[str, str | None]
+Control: TypeAlias = tuple[str, Attributes, bool]
+NamedElement: TypeAlias = tuple[Attributes, str]
+
+
+class Frame(TypedDict):
+    tag: str
+    attrs: Attributes
+    text: list[str]
 
 
 class SurfaceParser(HTMLParser):
     """Collect the small DOM subset required by the publish contract."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.stack = []
-        self.ids = []
-        self.fragment_refs = []
-        self.explicit_labels = set()
-        self.controls = []
-        self.canvases = []
-        self.images = []
-        self.links = []
-        self.buttons = []
-        self.html_lang = None
+        self.stack: list[Frame] = []
+        self.ids: list[str] = []
+        self.fragment_refs: list[str] = []
+        self.explicit_labels: set[str] = set()
+        self.controls: list[Control] = []
+        self.canvases: list[Attributes] = []
+        self.images: list[Attributes] = []
+        self.links: list[NamedElement] = []
+        self.buttons: list[NamedElement] = []
+        self.html_lang: str | None = None
         self.main_count = 0
         self.h1_count = 0
-        self.title_text = []
+        self.title_text: list[str] = []
 
-    def handle_starttag(self, tag, attrs):
+    def handle_starttag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
         attributes = dict(attrs)
         if tag == "html":
             self.html_lang = attributes.get("lang")
@@ -43,11 +57,12 @@ class SurfaceParser(HTMLParser):
             self.h1_count += 1
         if identifier := attributes.get("id"):
             self.ids.append(identifier)
-        href = attributes.get("href", "")
+        href = attributes.get("href") or ""
         if href.startswith("#") and len(href) > 1:
             self.fragment_refs.append(href[1:])
-        if tag == "label" and attributes.get("for"):
-            self.explicit_labels.add(attributes["for"])
+        label_target = attributes.get("for")
+        if tag == "label" and label_target:
+            self.explicit_labels.add(label_target)
         wrapped = any(frame["tag"] == "label" for frame in self.stack)
         if tag in {"input", "select", "textarea"}:
             self.controls.append((tag, attributes, wrapped))
@@ -55,20 +70,24 @@ class SurfaceParser(HTMLParser):
             self.canvases.append(attributes)
         if tag == "img":
             self.images.append(attributes)
-        frame = {"tag": tag, "attrs": attributes, "text": []}
+        frame: Frame = {"tag": tag, "attrs": attributes, "text": []}
         if tag not in VOID_ELEMENTS:
             self.stack.append(frame)
 
-    def handle_startendtag(self, tag, attrs):
+    def handle_startendtag(
+        self,
+        tag: str,
+        attrs: list[tuple[str, str | None]],
+    ) -> None:
         self.handle_starttag(tag, attrs)
 
-    def handle_data(self, data):
+    def handle_data(self, data: str) -> None:
         for frame in self.stack:
             frame["text"].append(data)
         if any(frame["tag"] == "title" for frame in self.stack):
             self.title_text.append(data)
 
-    def handle_endtag(self, tag):
+    def handle_endtag(self, tag: str) -> None:
         for index in range(len(self.stack) - 1, -1, -1):
             if self.stack[index]["tag"] != tag:
                 continue
@@ -82,7 +101,7 @@ class SurfaceParser(HTMLParser):
             break
 
 
-def current_surface_paths(root):
+def current_surface_paths(root: str | Path) -> list[Path]:
     """Return landing/reference/map/index plus every current per-tide page."""
     root = Path(root)
     paths = [
@@ -101,7 +120,7 @@ def current_surface_paths(root):
     return list(dict.fromkeys(paths))
 
 
-def validate_surface(path):
+def validate_surface(path: str | Path) -> list[str]:
     """Return DOM/accessibility contract failures for one HTML surface."""
     path = Path(path)
     if not path.is_file():
@@ -159,7 +178,7 @@ def validate_surface(path):
     return failures
 
 
-def validate_current_surfaces(root):
+def validate_current_surfaces(root: str | Path) -> list[tuple[str, str]]:
     """Return (path, reason) failures for every currently published page."""
     try:
         paths = current_surface_paths(root)
