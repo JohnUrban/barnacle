@@ -77,8 +77,8 @@ Edge-of-water photo subfolders (`NE-central-ave-edge`, `NW-bay-ave-edge`,
 the times the corresponding tape measurements were taken. Each edge
 point's location, combined with the concurrent measured water level,
 constrains the ground elevation at that point — a form of free
-topographic data. Encoding these as `flood_edge` category points in
-`assets/map_points.csv` is a queued todo.
+topographic data. These were subsequently encoded as `flood_edge`
+category points in `assets/map_points.csv`.
 
 ## Cross-grate water-level consistency
 
@@ -213,14 +213,15 @@ The 6/14 event was supposed to be the high-surge unblocker for v0.8
 ## Open todos from this event (2026-06-15 session — backlog)
 
 - [x] **STAGED 2026-07-07** — `fire_hydrant_central` (3.85, cross-fit
-      6/14+6/15, used 7/6) and `driveway_central` (4.11) added to
+      6/14+6/15, used 7/6) and `driveway_road_central` (4.11; renamed
+      2026-09-18 to distinguish it from the 4.67 flood threshold) added to
       `assets/map_points.csv` with empty x/y; `pick_coords.py`
       prompts for them (with location hints). NOTE the naming
       convention: `fire_hydrant_central` measures the STREET surface
       next to the sidewalk where the hydrant stands (3.85 NAVD88 =
       road elevation) — the hydrant itself is only the locator that
       makes the spot findable and repeatable. Same idea for
-      `driveway_central`: it measures the ROAD next to the sidewalk
+      `driveway_road_central`: it measures the ROAD next to the sidewalk
       at the driveway (taken at the driveway's mid-width); 4.11
       NAVD88 = road elevation. The sidewalk is considerably LOWER
       there than elsewhere (driveway cut — the 6/14 record shows the

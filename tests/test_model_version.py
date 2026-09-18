@@ -42,6 +42,24 @@ class ModelVersionTests(unittest.TestCase):
             check_artifacts.source_model_version(), ff.CURRENT_MODEL_VERSION
         )
 
+    def test_driveway_threshold_is_distinct_from_road_map_point(self):
+        driveway = next(row for row in ff.LANDMARKS if row[0] == "driveway_central")
+        self.assertEqual(driveway[2], 4.67)
+        self.assertIn("threshold", driveway[1].lower())
+        self.assertIn("cross-fit", driveway[1].lower())
+
+        map_rows = (ROOT / "assets" / "map_points.csv").read_text(
+            encoding="utf-8"
+        ).splitlines()
+        self.assertTrue(
+            any(row.startswith("driveway_road_central,") for row in map_rows)
+        )
+        self.assertFalse(any(row.startswith("driveway_central,") for row in map_rows))
+
+        widget = (ROOT / "docs" / "barnacle-widget.js").read_text(encoding="utf-8")
+        self.assertIn('const WIDGET_VERSION = "v7.28a";', widget)
+        self.assertIn('"Driveway entry · cross-fit"', widget)
+
 
 if __name__ == "__main__":
     unittest.main()

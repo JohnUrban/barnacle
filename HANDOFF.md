@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 12:12 EDT.** Rewrite wholesale each ship and keep
+**Snapshot: 2026-09-18 12:18 EDT.** Rewrite wholesale each ship and keep
 under 100 lines. `BACKLOG.md` OPEN LOOPS is authoritative. The attic is
 archival, never instructions.
 
@@ -9,75 +9,62 @@ archival, never instructions.
 Production hyperlocal flood forecaster for 342 Bay Ave, Highlands NJ.
 Sandy Hook gauge + NWS + MRMS radar produce water depth at 19 landmarks,
 an hourly site/JSON forecast, best-effort ~10-minute nowcast, per-tide
-pages, nine-town street map, iOS widget source v7.27a, and ntfy/email/SMS
-alerts.
-Current model **v0.10.2** (`model/v0.10.2.md`); SMS is the imminent-impact
-rail, while ntfy/email carry long-lead watches. Real people receive alerts.
+pages, nine-town street map, iOS widget source v7.28a, and ntfy/email/SMS
+alerts. Current model **v0.10.2** (`model/v0.10.2.md`); SMS is the
+imminent-impact rail, while ntfy/email carry long-lead watches. Real people
+receive alerts.
 
 ## Current state
 
-- **Audit `2026-09-14-a1` is CLOSED.** Codex reported 6 high, 10 medium,
-  10 model, 9 documentation, and 6 lower-severity findings. Claude Fable 5
-  confirmed every item, Codex implemented four phases, and Claude
-  independently verified 140 tests, the artifact gate, surface stamps,
-  frozen replay, CI, and six critical seams before closing round 04.
-- Phase 1 (`cdaaf2d98`) repaired the real-payload nowcast/SMS contract,
-  projection health/trend/freshness gates, stale NOAA fallbacks, per-rail
-  retry and cap state, and consolidated fail-closed workflow dispatch.
-- Phase 2 (`6717d6b37`) hardened the local scheduler with stale-lock
-  takeover, nonzero failures, structured outcomes, pinned install/self-test,
-  quiet coalescing, explicit arm heartbeats, and an independent watchdog.
-- Phase 3 (`88ae53e38`) made required surfaces and ledgers fail closed,
-  added atomic writes and cross-surface stamps, introduced the append-only
-  day-risk log, strengthened semantic validation, corrected uncertainty
-  prose, capped the unverified NWS parser, and added safe observation append.
-- Phase 4 (`5aea881d9`) repaired D1–D9, froze the legacy event classifier,
-  documented public privacy and confidence calibration, and queued G1–G10
-  for a separate v0.11 assessment without changing v0.10.2 physics.
-- The Mac watchdog was deployed and notification-armed on 2026-09-14. Its
-  2026-09-15 noise repair added quiet-mode-aware limits, stable issue-class
-  deduplication, cooldown, and two-tick debounce. A sleeping Mac remains a
-  sleeping watchdog; an always-on host is still an open option.
-- NOAA GMT migration shipped in this work unit: every CO-OPS request uses
-  GMT, while stored tide and gauge stamps carry the station offset and human
-  displays retain ordinary local clock labels. The repeated fall-back hour is
-  distinct; legacy naive rows use fold=0. Tide caches canonicalize legacy and
-  current identifiers so the cutover cannot duplicate chart points.
-- Widget v7.26a was confirmed installed on John's phone on 2026-09-14.
-  Source v7.27a understands offset-bearing timestamps and awaits re-copy.
-- CI checksum-pins actionlint 1.7.12 and ShellCheck 0.11.0; all workflows
-  and shell entry points pass both checks.
+- Audit `2026-09-14-a1` is CLOSED. Claude Fable 5 independently confirmed
+  all findings, the test/gate/frozen-replay remediation, and six critical
+  seams. No unanswered audit report remains.
+- Alert delivery has real-payload contracts, quality/freshness gates,
+  age-bounded NOAA fallbacks, per-rail retry/cap state, and one fail-closed
+  post-publish dispatch. SMS is fresh-nowcast imminent impact only.
+- Local scheduling has stale-lock takeover, structured outcomes, quiet
+  coalescing, explicit arm heartbeats, and an independent Mac watchdog.
+  Sleeping-Mac coverage and external trigger credentials remain open.
+- NOAA transport uses GMT; stored tide/gauge stamps carry station offsets.
+  Repeated fall-back hours are distinct and legacy naive rows remain readable.
+- Widget v7.26a was confirmed installed 2026-09-14. Source v7.28a retains
+  exact offset parsing and identifies the driveway entry as cross-fit; John
+  must re-copy it into Scriptable.
+- The 4.67-ft `driveway_central` model/API/ledger key is explicitly a
+  cross-fit corner-stage threshold. The separate 4.11-ft road-topography
+  point is `driveway_road_central`; no model physics or stamp changed.
+- CI checksum-pins actionlint 1.7.12 and ShellCheck 0.11.0. Required
+  artifacts fail closed, writes are atomic, and ledgers are semantically
+  validated.
 
-## Evidence and operating context
+## Evidence and model state
 
-- Event #9, 2026-09-13: flash pluvial flood peaked level with lawn step,
-  ~+13.7 inches at 07:01:23 EDT [VERIFIED: 18-photo EXIF timeline]; street
-  response was 10–13 minutes earlier than the fixed-lag hindcast. A second
-  compound curb flood near 10:05 exposed alert-state and cap coupling.
-- Event #9's last overnight forecast is scored: qualified split-pathway hit.
-  It warned of elevated pluvial risk 7h47 ahead and its burst proxy nearly
-  bracketed round 1; hourly QPF put the flood ~3.5h late, but that window
-  captured round 2 within 1.6–1.9 inches (`assets/observations/2026-09-13/`).
-- The v0.11 offline assessment is complete with a read-only harness. A single
-  replacement lag, universal point/max forcing, standalone persistence, and a
-  tide-bias retune are rejected; time-varying bay head and `_pluvial_fill`
-  continuity advance as offline candidates. Production remains v0.10.2.
-- The rebuilt storm-path dispatch and imminent-SMS pipeline remain WATCH
-  items until the next production radar trigger exercises them.
-- Nine measured floods are represented in the all-anchors analysis. Frozen
-  v0.10.1 reproduction remains the behavior guard; v0.10.2 added only the
-  driveway-entering threshold observable at 4.67 NAVD88.
-- The assessment report is `history/reports/model-v0.11-assessment-2026-09-18.md`;
-  it records evidence gaps and the candidate acceptance sequence.
+- Event #9, 2026-09-13, peaked level with the lawn step at ~+13.7 inches at
+  07:01:23 EDT [VERIFIED: 18-photo EXIF timeline]. Response was 10–13 minutes
+  earlier than the fixed-lag hindcast; a second compound curb flood followed.
+- Its last overnight forecast is a qualified split-pathway hit: elevated
+  pluvial risk 7h47 ahead and a near-magnitude burst proxy, but hourly QPF
+  put the first flood ~3.5h late. Event-time nowcast is unscorable because
+  both production arms were dark.
+- The v0.11 offline assessment rejects one replacement lag, universal
+  point/max forcing, standalone persistence, and tide-bias retuning. It
+  advances time-varying nowcast bay head and `_pluvial_fill` continuity as
+  offline candidates. Production remains v0.10.2.
+- Nine measured floods are in the all-anchors analysis. Frozen v0.10.1
+  reproduction remains the behavior guard; v0.10.2 added only the driveway
+  threshold observable.
+- Report: `history/reports/model-v0.11-assessment-2026-09-18.md`.
 
 ## Open residuals
 
-- External 24/7 trigger needs owner credentials; it protects against cron
-  failure, not a wedged GitHub execution domain.
-- Local alert execution redundancy remains owner/security-gated.
-- Exactly-once delivery needs provider idempotency or an external outbox.
-- Browser DOM/accessibility checks, incremental typing, and separately
-  versioned v0.11 candidate development remain queued in `BACKLOG.md`.
+- Observe the rebuilt storm-path dispatch at the next production radar
+  trigger; local watchdog coverage is awake-hours only.
+- External 24/7 triggering and local secret-bearing alert redundancy require
+  owner credentials/security decisions.
+- Exactly-once provider delivery needs idempotency or a durable external
+  outbox; current policy deliberately favors duplicate over missed alerts.
+- Browser DOM/accessibility tests, incremental typing, edge-map clicks, and
+  separately versioned model-candidate development remain queued.
 
 ## Production rules
 
@@ -93,5 +80,6 @@ rail, while ntfy/email carry long-lead watches. Real people receive alerts.
 
 ## Immediate next step
 
-No audit close-out work remains. Next autonomous work: clarify the driveway
-threshold across all surfaces, then prototype time-varying nowcast bay head.
+Prototype the time-varying nowcast bay-head candidate offline, compare it
+with the frozen scalar-head behavior, and do not change production physics
+without a separately accepted model version.

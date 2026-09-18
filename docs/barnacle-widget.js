@@ -39,7 +39,7 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.27a";
+const WIDGET_VERSION = "v7.28a";
 const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -62,7 +62,7 @@ const LANDMARKS = [
   ["road_middle",                       "Road middle",    4.36],
   ["intersection_highpoint",            "Intersection",   4.54],
   ["lawn_step",                         "Lawn step",      4.66],
-  ["driveway_central",                  "Driveway",       4.67],
+  ["driveway_central",                  "Driveway entry · cross-fit", 4.67],
   ["porch_step_base",                   "Porch base",     4.68],
   ["porch_step1_top",                   "Porch step 1",   5.41],
   ["porch_deck",                        "Porch deck",     8.08],

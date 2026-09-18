@@ -109,8 +109,9 @@ the lawn-step top.**
 | 9:03 PM | fire-hydrant-central | water 6.75″ above road | road ~3.85 NAVD88 (consistent with 6/14 estimate) |
 
 These two locations were previously inferred from 6/14 data; tonight
-provides a second anchor at consistent values. Pending addition to
-`assets/map_points.csv` as `driveway_central` and
+provides a second anchor at consistent values. They were subsequently added
+to `assets/map_points.csv` as `driveway_road_central` (renamed 2026-09-18 to
+distinguish the 4.11-ft road point from the 4.67-ft model threshold) and
 `fire_hydrant_central`.
 
 ### Edge-of-water photo locations (no tape, spatial context)

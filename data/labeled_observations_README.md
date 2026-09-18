@@ -142,8 +142,12 @@ see below), with the elevation context this section carries:
   which "water entering the driveway" flips (#6 mud-negative at
   +13.8″ / #8 photographed positive at ~+13.9″; lower edge is
   mud-based). Which point of the ramp that corresponds to is
-  unresolved. An earlier version of this entry claimed the apron
-  and walkway "visibly share a grade" — that was an agent overreach
+  unresolved. Keep this stable model/API/ledger key distinct from
+  **`driveway_road_central`**, the separate 4.11-ft NAVD88 road-topography
+  point in `assets/map_points.csv`; the two elevations answer different
+  questions and must never be interchanged. An earlier version of this
+  entry claimed the apron and walkway "visibly share a grade" — that was
+  an agent overreach
   asserting an unverified field fact, RETRACTED same-night on the
   user's correction. Mud caveat (user): mud deposits preferentially
   along Central (NE corner → hydrant → driveway) and thinly on the

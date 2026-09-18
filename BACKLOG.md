@@ -9,9 +9,10 @@ looks stale, trust this file. Ledger lines are append-only:
 ## OPEN LOOPS (force-ranked)
 
 **Active / near-term**
-- [ ] Re-copy widget source v7.27a into Scriptable. It preserves exact
-      hours-to-peak across the fall-back repeated hour; v7.26a remains
-      installed as of 2026-09-14 and otherwise renders current timestamps.
+- [ ] Re-copy widget source v7.28a into Scriptable. It preserves exact
+      hours-to-peak across the fall-back repeated hour and identifies the
+      driveway entry as a cross-fit threshold; v7.26a remains installed as
+      of 2026-09-14 and otherwise renders current timestamps.
 - [ ] Nowcast scheduler: trigger TRIPPED by event #7 (18-min publish
       gap covered the entire rise). Half-A (launchd, Mac-awake hours)
       believed installed 2026-08-07 but NEVER fired until revived
@@ -44,6 +45,10 @@ looks stale, trust this file. Ledger lines are append-only:
       Current decay leaves only 2.4% after 60 dry minutes; standalone
       persistence is deferred until paired with a tested long-tail or
       antecedent structure. (day-max memory partially compensates.)
+- [ ] Time-varying nowcast bay-head candidate: prototype evolving the
+      astronomical tide plus an age-bounded observed surge through the
+      45-minute projection. Compare it offline against the current frozen
+      scalar head before any versioned production proposal.
 
 - [ ] edge_20260901 map points from event-#8 photos 14-16 (Central
       arm extent at peak) — needs user pick_coords clicks.
@@ -235,7 +240,7 @@ all findings verified — see audits/2026-08-03-a2/)**
       history/plans/model-v0.11-assessment.md with acceptance criteria. No
       formula or constant changed; any accepted candidate needs its own model
       version and frozen-golden update. Initial offline pass completed
-      2026-09-18: fixed-head + fill-continuity advance to candidate work;
+      2026-09-18: time-varying head + fill-continuity advance to candidate work;
       single-lag, forcing switch, standalone persistence, and tide-bias
       retune rejected (history/reports/model-v0.11-assessment-2026-09-18.md).
 
@@ -326,3 +331,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-18 | DONE | pinned-workflow-shell-lint | CI now checksum-verifies actionlint 1.7.12 and ShellCheck 0.11.0, lints all workflows plus four shell entry points, and repaired every initial finding (grouped GITHUB_OUTPUT writes, glob-safe reverse archive loop, visible retry counters, quoted launchd targets, trap annotation, smoke-test shebang); both linters, 151 tests, and publish gate pass [VERIFIED: official release checksums + local pinned-tool run]
 2026-09-18 | DONE | event-9-forecast-skill | scored the last overnight forecast (3a6c96f, generated 03:14:36Z): qualified split-pathway hit — elevated pluvial warning at 7h47 lead and 3.0 in/hr burst proxy near the first peak magnitude, but hourly-QPF timing missed dawn by ~3.5h; its 09:50-11:31 street-water window then captured the photographed 10:03-10:12 compound crest with +5.6 vs observed +7.2-7.5 in; event-time nowcast is unscorable because both production arms were dark [VERIFIED: git-history forecast JSON + event README primary records]
 2026-09-18 | DONE | model-v0.11-offline-assessment | read-only harness + report quantify G1-G10: reject one fixed replacement lag (Event 8 favors 10 min, Event 9 favors 3), universal point/max forcing, standalone persistence, and tide-bias retune; advance time-varying bay head and `_pluvial_fill` continuity as offline candidates; no production formula/constant/stamp changed [VERIFIED: frozen fixture + MRMS cache + photo-point JSON + 14,695 prediction/235-tide join]
+2026-09-18 | DECISION | widget-v7.27a-recopy | superseded before installation by v7.28a, which retains the GMT timestamp repair and adds explicit cross-fit driveway-threshold wording [VERIFIED: source history; installation state last STATED 2026-09-14]
+2026-09-18 | OPEN | widget-v7.28a-recopy | John must re-copy the published v7.28a source into Scriptable; installed v7.26a remains functional but lacks exact fall-back-hour parsing and the clarified driveway-threshold label [VERIFIED: source diff; installation state last STATED 2026-09-14]
+2026-09-18 | DONE | driveway-threshold-semantics | all landmark-bearing display arms now identify `driveway_central` as a cross-fit driveway-entry threshold; its stable model/API/ledger key stays distinct from the renamed 4.11-ft `driveway_road_central` map-topography point; SMS/ntfy are regime/depth based and objectively carry no landmark label [VERIFIED: source, generated surfaces, regression test, artifact gate]
