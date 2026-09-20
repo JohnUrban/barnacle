@@ -106,6 +106,27 @@ def _station_time(value):
     return parsed.astimezone(STATION_TZ)
 
 
+def _station_stamp(value):
+    """Parse a persisted station-local stamp in either accepted form.
+
+    Legacy rows: naive ``YYYY-MM-DD HH:MM`` (fold=0). Rows written after
+    the 2026-09-18 GMT migration: offset-bearing ``YYYY-MM-DD HH:MM-04:00``.
+    Anything else is rejected. (2026-09-19→20 outage: the accuracy writer
+    began emitting offset-bearing observed times while this validator
+    still demanded the naive form — 42 hourly publishes failed the gate.)
+    """
+    text = str(value).strip()
+    try:
+        return dt.datetime.strptime(text, "%Y-%m-%d %H:%M").replace(
+            tzinfo=STATION_TZ)
+    except ValueError:
+        parsed = dt.datetime.fromisoformat(text)
+        if parsed.tzinfo is None:
+            raise ValueError(f"station stamp must be naive HH:MM or "
+                             f"offset-bearing: {text!r}")
+        return parsed
+
+
 def validate_csv_semantics(path, relpath, now_utc=None):
     """Validate domain invariants that a shape-only CSV gate cannot catch."""
     failures = []
@@ -194,7 +215,7 @@ def validate_csv_semantics(path, relpath, now_utc=None):
                     failures.append(f"row {logical_row}: mllw_error_ft arithmetic mismatch")
                 for field in ("forecast_peak_predicted_time",
                               "actual_peak_observed_time"):
-                    dt.datetime.strptime(row[field], "%Y-%m-%d %H:%M")
+                    _station_stamp(row[field])
             except (KeyError, TypeError, ValueError) as exc:
                 failures.append(f"row {logical_row}: invalid accuracy row: {exc}")
             if row.get("forecast_regime") not in allowed_regimes:

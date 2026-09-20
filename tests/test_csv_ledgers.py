@@ -254,3 +254,68 @@ class ErratumConventionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AccuracyStampFormsTests(unittest.TestCase):
+    """2026-09-19→20 outage: forecast_accuracy rows may carry legacy naive
+    stamps, offset-bearing stamps, or (one row written mid-migration) a
+    mix. The gate must accept all three and still reject garbage."""
+
+    def _validate(self, pred_t, act_t):
+        fields = check_artifacts.CSV_SCHEMAS["data/forecast_accuracy.csv"]
+        row = dict(zip(fields, [
+            "2026-09-18", "5.0072", pred_t, "dry", "5.078", act_t,
+            str(5.0072 - 5.078), "medium"]))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "accuracy.csv"
+            with path.open("w", newline="") as dest:
+                writer = csv.DictWriter(dest, fieldnames=fields)
+                writer.writeheader(); writer.writerow(row)
+            return check_artifacts.validate_csv_semantics(
+                str(path), "data/forecast_accuracy.csv")
+
+    def test_legacy_naive_accepted(self):
+        self.assertEqual(self._validate("2026-09-18 13:51",
+                                        "2026-09-18 13:48"), [])
+
+    def test_offset_bearing_accepted(self):
+        self.assertEqual(self._validate("2026-09-18 13:51-04:00",
+                                        "2026-09-18 13:48-04:00"), [])
+
+    def test_mixed_row_118_shape_accepted(self):
+        self.assertEqual(self._validate("2026-09-18 13:51",
+                                        "2026-09-18 13:48-04:00"), [])
+
+    def test_garbage_still_rejected(self):
+        failures = self._validate("2026-09-18T13:51:00Z-ish", "13:48")
+        self.assertTrue(any("invalid accuracy row" in x for x in failures))
+
+    def test_writer_output_passes_the_gate(self):
+        """Producer round-trip (the H1 lesson): run the REAL writer against a
+        fake archive and a stubbed NOAA peak that returns an offset-bearing
+        time, then validate its actual CSV output with the REAL gate."""
+        import json
+        from unittest import mock
+        from forecast import flood_forecast_daily as ff
+        with tempfile.TemporaryDirectory() as tmp:
+            archive = Path(tmp) / "archive"; archive.mkdir()
+            (archive / "2026-09-18.json").write_text(json.dumps({
+                "peak_forecast_observed_mllw": 5.0072,
+                "peak_time_local": "2026-09-18 13:51",
+                "depths_in": {"regime": "dry"},
+                "confidence_level": "medium"}))
+            out = Path(tmp) / "forecast_accuracy.csv"
+            with mock.patch.object(ff, "ARCHIVE_DIR", str(archive)), \
+                    mock.patch.object(ff, "ACCURACY_CSV_PATH", str(out)), \
+                    mock.patch.object(ff, "_fetch_actual_peak_around",
+                                      return_value=(5.078,
+                                                    "2026-09-18 13:48-04:00")), \
+                    mock.patch.object(ff, "_summarize_accuracy",
+                                      return_value=None):
+                ff.update_forecast_accuracy()
+            rows = list(csv.DictReader(out.open()))
+            self.assertEqual(len(rows), 1)
+            self.assertTrue(rows[0]["forecast_peak_predicted_time"].endswith("-04:00"))
+            self.assertTrue(rows[0]["actual_peak_observed_time"].endswith("-04:00"))
+            self.assertEqual(check_artifacts.validate_csv_semantics(
+                str(out), "data/forecast_accuracy.csv"), [])

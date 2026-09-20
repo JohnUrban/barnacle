@@ -995,6 +995,19 @@ def update_forecast_accuracy():
         actual_peak, actual_time = _fetch_actual_peak_around(pred_time)
         if actual_peak is None:
             continue
+        # Persist both stamps in the canonical offset-bearing form (GMT
+        # migration doctrine); mixed naive/offset rows broke the gate
+        # 2026-09-19→20. Unparseable values are kept verbatim so the
+        # gate — not silent coercion — is what rejects them.
+        try:
+            pred_time = station_time_storage_key(pred_time)
+        except (TypeError, ValueError):
+            pass
+        if actual_time:
+            try:
+                actual_time = station_time_storage_key(actual_time)
+            except (TypeError, ValueError):
+                pass
         new_rows.append({
             "forecast_run_date":            date_str,
             "forecast_peak_predicted_mllw": pred_peak,
