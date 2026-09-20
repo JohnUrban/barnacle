@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-18 13:37 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-20 18:30 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
@@ -39,6 +39,15 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
 
 ## Production and evidence
 
+- **OUTAGE 2026-09-19 04:12Z → 2026-09-20 21:10Z (42 h), FIXED 17:21 EDT
+  (b66297bbc); the 22:00Z hourly run self-published again.** Every hourly
+  forecast run failed the publish gate on a mixed naive/offset accuracy
+  row introduced by the 09-18 GMT migration — a writer/validator contract
+  gap invisible to CI. Gate accepts both stamp forms, writer canonicalizes,
+  a real-writer→real-gate test guards it. The 21:10Z delivered alert was
+  acknowledged by reconstruction (no re-send at 22:00Z). Watchdog paged
+  once at 15:25Z (Mac slept the weekend). Daily archives 09-19/09-20 are
+  missing. Codex owes writer-parity tests for every ledger writer.
 - Alerts have real-payload/freshness contracts, age-bounded NOAA fallbacks,
   per-rail retry/cap accounting, and one fail-closed post-publish dispatch.
 - Local scheduler has stale-lock recovery, explicit outcomes/heartbeats,

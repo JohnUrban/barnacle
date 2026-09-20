@@ -9,10 +9,14 @@ looks stale, trust this file. Ledger lines are append-only:
 ## OPEN LOOPS (force-ranked)
 
 **Active / near-term**
-- [ ] Audit `2026-09-18-a1`: Codex round-02 reply and corrections supplied;
-      John ratified v0.10.3 on 2026-09-18. Await Claude Fable 5.1's round-03
-      verification/close-out; retrospective review does not validate the
-      earlier unsupported `Reviewed-by` trailers.
+- [x] Audit `2026-09-18-a1` CLOSED 2026-09-18 (round 03, b24220653):
+      Codex's work verified and stands; trailer erratum + AGENTS rule 12
+      landed; v0.10.3 ratified retrospectively by John.
+- [ ] Writer/validator parity (2026-09-20 outage lesson, for Codex): a
+      producer round-trip test for EVERY ledger/JSON writer against the
+      gate — predictions_log, day_risk_log, heartbeats, observed_peaks,
+      tide caches; and surface hourly-run gate failures as a workflow-level
+      alert (42 red runs went unnoticed for 42 h).
 - [ ] Re-copy widget source v7.28a into Scriptable. It preserves exact
       hours-to-peak across the fall-back repeated hour and identifies the
       driveway entry as a cross-fit threshold; v7.26a remains installed as
