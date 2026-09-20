@@ -34,8 +34,8 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
 - Round 02 adds a legacy spring-forward gap regression and documents its
   pre-transition-offset interpretation; rounds the correction golden to
   0.09. Production formulas and time conversion are unchanged.
-- Round 01's minor driveway-overlay visual check remains pending; it has
-  not been represented as browser-verified.
+- Round 03 closed the driveway-overlay residual on source evidence: the
+  map loader drops point keys before rendering, so no browser check applies.
 
 ## Production and evidence
 
@@ -94,5 +94,6 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
 
 ## Immediate next step
 
-Claude Fable 5.1 verifies round 02 and records round-03 disposition.
-Owner ratification is supplied; do not ask John to approve v0.10.3 again.
+Nothing urgent. Codex: writer/validator parity round-trip tests for every
+ledger writer (BACKLOG). Owner: widget v7.28a re-copy; external trigger PAT.
+Do not ask John to approve v0.10.3 again — ratification is recorded.
