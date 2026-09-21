@@ -84,7 +84,9 @@ class ModelV011AssessmentTests(unittest.TestCase):
 
     def test_fill_correction_is_frozen_in_production(self):
         result = fill_reproduction.verify_reproduction()
-        self.assertEqual(result["model_version"], "v0.10.3")
+        # production stamp may be a documented successor (v0.10.4 removed a
+        # landmark; the fill replay itself is frozen at v0.10.3)
+        self.assertEqual(result["model_version"], ff.CURRENT_MODEL_VERSION)
         self.assertLess(result["worst_reference_error_in"], 1e-10)
         self.assertAlmostEqual(
             result["worst_production_correction_in"], 0.09, places=12

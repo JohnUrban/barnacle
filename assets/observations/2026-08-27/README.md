@@ -20,9 +20,10 @@ The user was in California; evidence assembled 2026-09-02:
   #8's photographed water extent at ~+13.9″, and event #6 (+13.8,
   driveway-negative) bounds the threshold (that #6/#8 pair
   cross-fits the driveway-entering THRESHOLD: corner stage
-  13.8–13.9″ ≈ 4.67 NAVD88, registered in model v0.10.2 as a
-  threshold observable — the driveway itself is a ramp, not one
-  elevation; see the ledger README entry and spec) — so residue alone puts
+  13.8–13.9″ ≈ 4.67 NAVD88, briefly registered in model v0.10.2 as a
+  threshold observable and REMOVED in v0.10.4 as a proxy, not a
+  landmark — the driveway is a ramp, not one elevation; see the
+  ledger README entry and the PLAYBOOK proxy rule) — so residue alone puts
   this event AT OR ABOVE lawn-step class [INFERRED bound].
   Preservation held (presence is robust to later wash; deposit was
   heavy enough to survive to 8/29).

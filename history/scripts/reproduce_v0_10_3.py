@@ -42,7 +42,18 @@ def load_reproduction() -> dict:
 def verify_reproduction() -> dict:
     reproduction = load_reproduction()
     if ff.CURRENT_MODEL_VERSION != reproduction["model_version"]:
-        raise AssertionError("v0.10.3 reproduction does not match production")
+        # A later stamp is legitimate only for a documented rule-5 bump:
+        # the fixture version's spec must sit in model/archive/ (v0.10.4,
+        # 2026-09-20: landmark removal, numerically identical). The
+        # numeric checks below remain the hard guard.
+        import os as _os
+        archived = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                                 "..", "..", "model", "archive",
+                                 f"{reproduction['model_version']}.md")
+        if not _os.path.exists(archived):
+            raise AssertionError("production stamp differs from the v0.10.3 "
+                                 "reproduction and no archived spec documents "
+                                 "a bump — undocumented restamp")
     if reproduction["parameters_changed"]:
         raise AssertionError("fill-only release must not change parameters")
 

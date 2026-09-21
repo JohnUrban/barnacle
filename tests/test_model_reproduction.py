@@ -18,7 +18,7 @@ class ModelReproductionTests(unittest.TestCase):
 
     def test_pinned_fit_reproduces_documented_rms(self):
         self.assertEqual(self.result["frozen_model_version"], "v0.10.1")
-        self.assertEqual(self.result["model_version"], "v0.10.3")
+        self.assertEqual(self.result["model_version"], ff.CURRENT_MODEL_VERSION)
         self.assertEqual(self.result["fit"]["points"], 24)
         self.assertAlmostEqual(
             self.result["fit"]["rms_inches"], 1.3167779158984265, places=10

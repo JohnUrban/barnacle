@@ -34,8 +34,8 @@ another version bump by itself.
    on the sampled grid; frozen peaks move 0–0.063 inch and clocks do not move.
    Production matches volume-at-base reference arithmetic to 1.07e-14 inch
    (`history/scripts/reproduce_v0_10_3.py`).
-8. Keep `driveway_central` a cross-fit threshold observable, never relabel it
-   as surveyed elevation.
+8. RESOLVED 2026-09-20 (v0.10.4): `driveway_central` removed from the model;
+   the driveway is a documented proxy (PLAYBOOK rule), never a rung.
 9. Segment historical tide residuals by model version, lead time, surge source,
    regime, and wind before changing the tide bias.
    **ASSESSED except wind:** current v0.10.2 bias is +0.027 ft and 0–3 h bias

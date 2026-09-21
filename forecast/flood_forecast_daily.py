@@ -97,8 +97,6 @@ INTERSECTION_HIGHPOINT = 4.54  # Bay+Central intersection (local high)       (SH
 # The old FRONT_PORCH_STEP=5.08 corresponded to no physical feature — it
 # was fabricated in v0.5.1 as lawn_step(4.58)+6"; both inputs were wrong.
 LAWN_STEP             = 4.66   # lawn-step top (was 4.58 inferred)           (SH 7.48)
-DRIVEWAY_CENTRAL      = 4.67   # driveway-entering THRESHOLD (cross-fit      (SH 7.49)
-                               #  #6/#8 bracket; ramp — see model/v0.10.3.md)
 PORCH_STEP_BASE       = 4.68   # walkway at the bottom porch step            (SH 7.50)
 PORCH_STEP1_TOP       = 5.41   # top of first porch step (8.75" riser)       (SH 8.23)
 PORCH_DECK            = 8.08   # porch platform (5 risers, 40.75" total)     (SH 10.90)
@@ -122,7 +120,6 @@ LANDMARKS = [
     ("road_middle",           "Bay Ave road middle",              ROAD_MIDDLE,           7.18),
     ("intersection_highpoint", "Intersection high point",         INTERSECTION_HIGHPOINT, 7.36),
     ("lawn_step",             "Lawn / walkway step",              LAWN_STEP,             7.48),
-    ("driveway_central",      "Driveway-entry threshold [cross-fit]", DRIVEWAY_CENTRAL,     7.49),
     ("porch_step_base",       "Bottom of porch steps",            PORCH_STEP_BASE,       7.50),
     ("porch_step1_top",       "Top of first porch step",          PORCH_STEP1_TOP,       8.23),
     ("porch_deck",            "Porch deck (platform)",            PORCH_DECK,           10.90),
@@ -828,7 +825,7 @@ PREDICTIONS_LOG_FIELDS = [
     "regime_predicted",
     "cold_lockout",              # "true" | "false"
     "confidence_level",          # "high" | "medium" | "low" | ""
-    "model_version",             # as-run model spec version (currently v0.10.3)
+    "model_version",             # as-run model spec version (currently v0.10.4)
 ]
 
 DAY_RISK_LOG_PATH = os.path.join(_REPO_ROOT, "data", "day_risk_log.csv")
@@ -1036,7 +1033,7 @@ def update_forecast_accuracy():
     return _summarize_accuracy(last_n=30)
 
 
-CURRENT_MODEL_VERSION = "v0.10.3"
+CURRENT_MODEL_VERSION = "v0.10.4"
 FORECAST_SCHEMA_VERSION = "1.0"
 
 # v0.8 wind-direction sectors for the storm-bump adjustment. Sandy Hook
@@ -3255,7 +3252,6 @@ LANDMARK_SHORT_LABELS = {
     "curb":                  "Curb",
     "road_middle":           "Road middle",
     "intersection_highpoint": "Intersection",
-    "driveway_central":       "Driveway-entry threshold [cross-fit]",
     "lawn_step":             "Lawn step",
     "porch_step_base":       "Porch base",
     "porch_step1_top":       "Porch step 1",

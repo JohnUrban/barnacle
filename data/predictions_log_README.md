@@ -55,7 +55,7 @@ Each workflow run appends one row per upcoming high tide in
 | `regime_predicted` | `dry` / `street` / `light` / `moderate` / `severe` / `cold_lockout` |
 | `cold_lockout` | `true` / `false` — whether the cold-weather drain-backflow suppression applies |
 | `confidence_level` | `high` / `medium` / `low` — forecast-stability label; displayed numeric ranges use the empirical 80th-percentile absolute error for the label when enough rows exist |
-| `model_version` | Model spec used for that as-run prediction. Current production stamp is `v0.10.3` (since 2026-09-18; stage-storage sub-bin continuity correction, no retuning). Historical rows intentionally retain their original versions (`v0.10.2` and earlier). |
+| `model_version` | Model spec used for that as-run prediction. Current production stamp is `v0.10.4` (since 2026-09-20; `driveway_central` removed from the landmark ladder — 18 landmarks — no physics change). Historical rows intentionally retain their original versions (`v0.10.3` and earlier). |
 
 ## Append-only convention
 

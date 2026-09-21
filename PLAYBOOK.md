@@ -34,10 +34,21 @@ as any lesson that changes it.
    mud data as a rule. Tidal floods leave WRACK lines
    (debris/seaweed/silt film) instead — those become
    edge_YYYYMMDD map points.
+   PROXIES vs LANDMARKS (user rule 2026-09-20, v0.10.4): a LANDMARK
+   is a fixed point anyone can report as under / level with / over.
+   Anything that needs interpretation — mud, a verbal description, a
+   photo of an undefined spot — is a PROXY: usable when nothing
+   better exists, always as a RANGE with its provenance attached,
+   never displayed as a peer of the landmarks. The driveway is the
+   type example: "water entering the driveway" coincided with corner
+   stage ≈ +13.7–13.9″ in events #6, #8, #9 and 8/27 — a weak lower
+   bound [INFERRED], not a rung; v0.10.4 removed it from the model.
+   To make it a landmark, do what built the ladder: pick a physical
+   point on that ramp, mark it, tape it.
 
 **In the session after (Claude, cold start) — follow this RECIPE
 in order; every step has been needed at least once:**
-1. Read `AGENTS.md` + `HANDOFF.md` + `model/v0.10.3.md`; event
+1. Read `AGENTS.md` + `HANDOFF.md` + `model/v0.10.4.md`; event
    physics context lives in the per-event READMEs under
    `assets/observations/`.
 2. **Gauge sanity FIRST** (2026-07-09 lesson: the SH sensor spiked

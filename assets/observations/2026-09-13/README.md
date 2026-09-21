@@ -49,8 +49,8 @@ T07:02:13 [VERIFIED] + T07:30 recession.
   ~+13.7 — the v0.10.2 "entering" observable firing at/just below
   its bracket's 13.8 lower edge. Consistent with the spec's
   mud-lags-water caveat (#6's negative was MUD) and the ramp
-  geometry (apron floods first). Registered threshold 4.67 stands
-  within its stated uncertainty; refine only via a version bump.
+  geometry (apron floods first). The 4.67 registration was removed
+  in v0.10.4 — the driveway is a documented proxy, not a rung.
 - **First flood of the watch window [STATED]:** overnight Flood
   Watch (surfaced by Barnacle ~2 AM Sept 12 per user); on waking,
   "little evidence that it had already flooded" — this was the

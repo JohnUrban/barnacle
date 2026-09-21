@@ -56,7 +56,8 @@ fabricated ones. A few dozen observations over months would be plenty.
 `forecast/flood_forecast_daily.py` LANDMARKS:
 `lowest_road_corner`, `gutter_walkway`, `curb`, `road_middle`,
 `intersection_highpoint`, `lawn_step`, `porch_step_base`, etc. — see LANDMARKS in `forecast/flood_forecast_daily.py` for the current 19
-(`driveway_central` registered in v0.10.2 as a threshold observable).
+(`driveway_central` was a registered landmark v0.10.2–v0.10.3 and was
+removed in v0.10.4 — it is a documented proxy; see below).
 
 ## How `sh_obs_mllw_actual` and `model_predicted_depth_in` get filled in
 
@@ -126,13 +127,20 @@ landmark observations here without editing the frozen classifier.
 ## Non-model landmark keys (documented 2026-09-03; audit-sweep loop)
 
 `landmark_key` values in this ledger are NOT limited to the
-registered model landmarks (`ff.LANDMARKS`). Three keys live only
-here (a fourth, `driveway_central`, was promoted into the model —
-see below), with the elevation context this section carries:
+registered model landmarks (`ff.LANDMARKS`). Four keys live only
+here (`driveway_central` was a model landmark from v0.10.2 to v0.10.3
+and was removed in v0.10.4 — see below), with the elevation context
+this section carries:
 
-- **`driveway_central`** — PROMOTED to `ff.LANDMARKS` in model
-  **v0.10.2** (2026-09-03) at 4.67 NAVD88 as a **threshold
-  observable, not a surveyed point** — see `model/archive/v0.10.2.md`.
+- **`driveway_central`** — a documented PROXY, not a landmark.
+  Registered in `ff.LANDMARKS` v0.10.2→v0.10.3 at 4.67 NAVD88 as a
+  "threshold observable"; REMOVED in **v0.10.4** (2026-09-20, owner
+  decision): 4.67 is not the elevation of any locatable point (the
+  road beside the driveway surveys at 4.11), and "water entering the
+  driveway" is interpretive, not a binary under/level/over report.
+  Use per the PLAYBOOK proxy rule: corner stage ≈ +13.7–13.9″
+  coincided with driveway-wet reports in #6, #8, #9 and 8/27
+  [INFERRED]; weak lower bound only. History of the registration:
   RAMP CORRECTION (user field description, 2026-09-03): the
   driveway is not one elevation — the sidewalk drops to the street
   at the curb cut, the road rises from the intersection toward the
