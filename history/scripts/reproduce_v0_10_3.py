@@ -143,7 +143,7 @@ def main() -> None:
                 f"{event_id:6s}: peak +{row['peak_stage_in']:.3f} in at "
                 f"{row['peak_local'][11:16]} local"
             )
-        print("verification: PASS (production {ff.CURRENT_MODEL_VERSION}; fill frozen at v0.10.3)")
+        print(f"verification: PASS (production {ff.CURRENT_MODEL_VERSION}; fill frozen at v0.10.3)")
 
 
 if __name__ == "__main__":
