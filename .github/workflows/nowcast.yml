@@ -5,7 +5,8 @@ name: Barnacle Nowcast
 # deps) decides whether radar is worth paying for — active NWS flood
 # alert or near-term convective wording. When triggered: install
 # xarray/cfgrib (cached), pull the last hour of MRMS PrecipRate over
-# the hillside catchment, run the v0.10.2 tank, and commit
+# the hillside catchment, run the production tank (stamp lives in
+# forecast/flood_forecast_daily.py), and commit
 # docs/nowcast.json plus the rolling scheduler-arm heartbeat ledger.
 # GitHub schedules are best-effort; the site
 # and widget enforce a strict safety rule and never render >20-min-old

@@ -3,7 +3,7 @@
 Append-only log of empirical water-depth observations at named landmarks
 near 342 Bay Ave. Each row is "what John (or another observer) actually saw
 at a given time at a given landmark." Used to validate, calibrate, or
-refine the flood model (current spec: `model/v0.10.3.md`).
+refine the flood model (current spec: `model/v0.10.4.md`).
 
 ## Why this exists (updated 2026-07-06; original rationale below is history)
 
@@ -55,7 +55,7 @@ fabricated ones. A few dozen observations over months would be plenty.
 `landmark_key` should match one of the keys defined in
 `forecast/flood_forecast_daily.py` LANDMARKS:
 `lowest_road_corner`, `gutter_walkway`, `curb`, `road_middle`,
-`intersection_highpoint`, `lawn_step`, `porch_step_base`, etc. — see LANDMARKS in `forecast/flood_forecast_daily.py` for the current 19
+`intersection_highpoint`, `lawn_step`, `porch_step_base`, etc. — see LANDMARKS in `forecast/flood_forecast_daily.py` for the current 18
 (`driveway_central` was a registered landmark v0.10.2–v0.10.3 and was
 removed in v0.10.4 — it is a documented proxy; see below).
 

@@ -1,14 +1,14 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-20 18:30 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-20 20:30 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
 
 Production flood forecaster for 342 Bay Ave, Highlands NJ. Sandy Hook +
-NWS + MRMS produce depth at 19 landmarks, hourly site/JSON, best-effort
+NWS + MRMS produce depth at 18 landmarks, hourly site/JSON, best-effort
 ~10-minute nowcast, per-tide pages, nine-town map, widget, ntfy/email/SMS.
-Model **v0.10.3** (`model/v0.10.3.md`). SMS carries imminent street impact;
+Model **v0.10.4** (`model/v0.10.4.md`). SMS carries imminent street impact;
 ntfy/email carry longer-lead watches. Real people receive these alerts.
 
 ## Audit and attribution state
@@ -54,10 +54,13 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
   quiet publication coalescing, and an armed Mac watchdog (awake hours).
 - NOAA transport uses GMT; storage preserves station offsets, including
   both fall-back hours. Legacy naive timestamps use fold=0.
-- Widget source v7.28a needs John to re-copy into Scriptable; installed
+- Widget source v7.29a (driveway rung removed) needs John to re-copy into
+  Scriptable; installed
   v7.26a was last confirmed 2026-09-14.
-- `driveway_central` is the 4.67-ft cross-fit corner-stage threshold;
-  `driveway_road_central` is the separate 4.11-ft map-topography point.
+- **v0.10.4 (2026-09-20, owner decision + independent candidate review):**
+  `driveway_central` REMOVED from the ladder (18 landmarks) — a PROXY, not
+  a landmark (PLAYBOOK "PROXIES vs LANDMARKS"); numerically identical to
+  v0.10.3. `driveway_road_central` (4.11 ft) is a map-topography point only.
 - CI has checksum-pinned actionlint/ShellCheck; strict mypy covers
   `station_time` and `html_contract`. Static DOM/accessibility checks gate
   current HTML surfaces; full browser runtime accessibility remains open.
@@ -95,5 +98,5 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
 ## Immediate next step
 
 Nothing urgent. Codex: writer/validator parity round-trip tests for every
-ledger writer (BACKLOG). Owner: widget v7.28a re-copy; external trigger PAT.
-Do not ask John to approve v0.10.3 again — ratification is recorded.
+ledger writer (BACKLOG). Owner: widget v7.29a re-copy; external trigger PAT.
+Do not ask John to re-approve v0.10.3 or v0.10.4 — both decisions are recorded.

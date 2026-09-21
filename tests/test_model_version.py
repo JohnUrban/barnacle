@@ -40,6 +40,13 @@ class ModelVersionTests(unittest.TestCase):
                 encoding="utf-8"
             ),
         )
+        # 2026-09-20 candidate review F1/F2/F11: the stamp must reach every
+        # cold-start document, not just the two originally checked.
+        for doc in ("HANDOFF.md", "AGENTS.md", "PLAYBOOK.md",
+                    "data/labeled_observations_README.md"):
+            self.assertIn(f"model/{version}.md",
+                          (ROOT / doc).read_text(encoding="utf-8"), doc)
+        self.assertTrue((ROOT / "model" / f"{version}.md").exists())
 
     def test_gate_reads_same_model_stamp(self):
         self.assertEqual(

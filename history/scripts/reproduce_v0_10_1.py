@@ -302,6 +302,9 @@ def verify_reproduction(fixture: dict | None = None) -> dict:
         archived_spec = (
             REPO_ROOT / "model" / "archive" / f"{fixture['model_version']}.md"
         )
+        current_spec = REPO_ROOT / "model" / f"{ff.CURRENT_MODEL_VERSION}.md"
+        if not current_spec.exists():
+            raise AssertionError(f"{current_spec} missing — restamp without a spec")
         if not archived_spec.exists():
             raise AssertionError(
                 "production model version differs from fixture and "

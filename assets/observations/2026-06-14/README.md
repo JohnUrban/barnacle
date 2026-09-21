@@ -214,7 +214,8 @@ The 6/14 event was supposed to be the high-surge unblocker for v0.8
 
 - [x] **STAGED 2026-07-07** — `fire_hydrant_central` (3.85, cross-fit
       6/14+6/15, used 7/6) and `driveway_road_central` (4.11; renamed
-      2026-09-18 to distinguish it from the 4.67 flood threshold) added to
+      2026-09-18 to distinguish it from the 4.67 flood threshold, itself
+      removed from the model in v0.10.4) added to
       `assets/map_points.csv` with empty x/y; `pick_coords.py`
       prompts for them (with location hints). NOTE the naming
       convention: `fire_hydrant_central` measures the STREET surface

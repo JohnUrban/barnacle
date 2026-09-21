@@ -111,7 +111,8 @@ the lawn-step top.**
 These two locations were previously inferred from 6/14 data; tonight
 provides a second anchor at consistent values. They were subsequently added
 to `assets/map_points.csv` as `driveway_road_central` (renamed 2026-09-18 to
-distinguish the 4.11-ft road point from the 4.67-ft model threshold) and
+distinguish the 4.11-ft road point from the 4.67-ft model threshold — a
+registration removed in v0.10.4; the driveway is a proxy, not a landmark) and
 `fire_hydrant_central`.
 
 ### Edge-of-water photo locations (no tape, spatial context)

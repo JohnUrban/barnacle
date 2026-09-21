@@ -50,6 +50,10 @@ def verify_reproduction() -> dict:
         archived = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
                                  "..", "..", "model", "archive",
                                  f"{reproduction['model_version']}.md")
+        current = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)),
+                                "..", "..", "model", f"{ff.CURRENT_MODEL_VERSION}.md")
+        if not _os.path.exists(current):
+            raise AssertionError("restamp without a current spec")
         if not _os.path.exists(archived):
             raise AssertionError("production stamp differs from the v0.10.3 "
                                  "reproduction and no archived spec documents "
@@ -139,7 +143,7 @@ def main() -> None:
                 f"{event_id:6s}: peak +{row['peak_stage_in']:.3f} in at "
                 f"{row['peak_local'][11:16]} local"
             )
-        print("verification: PASS (production v0.10.3)")
+        print("verification: PASS (production {ff.CURRENT_MODEL_VERSION}; fill frozen at v0.10.3)")
 
 
 if __name__ == "__main__":

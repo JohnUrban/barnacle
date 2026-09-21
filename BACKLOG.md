@@ -17,10 +17,9 @@ looks stale, trust this file. Ledger lines are append-only:
       gate — predictions_log, day_risk_log, heartbeats, observed_peaks,
       tide caches; and surface hourly-run gate failures as a workflow-level
       alert (42 red runs went unnoticed for 42 h).
-- [ ] Re-copy widget source v7.28a into Scriptable. It preserves exact
-      hours-to-peak across the fall-back repeated hour and identifies the
-      driveway entry as a cross-fit threshold; v7.26a remains installed as
-      of 2026-09-14 and otherwise renders current timestamps.
+- [ ] Re-copy widget source v7.29a into Scriptable: exact fall-back-hour
+      parsing (v7.27a) and the driveway rung REMOVED (v0.10.4); v7.26a
+      remains installed as of 2026-09-14 and renders correctly meanwhile.
 - [ ] Nowcast scheduler: trigger TRIPPED by event #7 (18-min publish
       gap covered the entire rise). Half-A (launchd, Mac-awake hours)
       believed installed 2026-08-07 but NEVER fired until revived
