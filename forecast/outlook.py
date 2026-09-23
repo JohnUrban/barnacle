@@ -179,6 +179,7 @@ def build_tides(now_utc, data, all_tides, persisted_surge, classify_fn,
             "pop_pct": srcs.grid_value_at(grid.get("pop_pct"), t_utc),
             "wind": _wind_at(grid, t_utc),
             "xcheck_p_half_inch_pct": xday.get("p_half_inch_pct"),
+            "nbm_p_ge_half_in_6h_pct": ((_bucket_containing(nbm, t_utc) or {}).get("p_ge_half_in_pct")),
         })
     return tides
 
@@ -241,6 +242,24 @@ def build_days(now_utc, tides, data):
             gust_dir = compass(srcs.grid_value_at(grid.get("wind_dir_deg"), when))
         nbm_pops = [b["pop_pct"] for b in nbm
                     if s_utc < _utc(b["end_utc"]) <= e_utc and b.get("pop_pct") is not None]
+        day_b = [b for b in nbm if s_utc < _utc(b["end_utc"]) <= e_utc]
+        nbm_band = None
+        if any(b.get("p90_in") is not None for b in day_b):
+            def _sum(key):
+                vals = [b[key] for b in day_b if b.get(key) is not None]
+                return round(sum(vals), 2) if vals else None
+            def _max(key):
+                vals = [b[key] for b in day_b if b.get(key) is not None]
+                return max(vals) if vals else None
+            nbm_band = {
+                "p10_day_in": _sum("p10_in"), "p50_day_in": _sum("p50_in"),
+                "p90_day_in": _sum("p90_in"),          # crude: percentiles summed
+                "p90_6h_max_in": _max("p90_in"),
+                "p_ge_quarter_in_6h_max_pct": _max("p_ge_quarter_in_pct"),
+                "p_ge_half_in_6h_max_pct": _max("p_ge_half_in_pct"),
+                "p_ge_1in_6h_max_pct": _max("p_ge_1in_pct"),
+                "buckets": len(day_b),
+            }
         days.append({
             "date": d.isoformat(), "label": _day_label(i, d),
             "tides": [{"time": t["time"][11:16], "outlook_mllw": t["outlook_mllw"],
@@ -258,6 +277,7 @@ def build_days(now_utc, tides, data):
             "pop_max_pct": max(pops, default=None),
             "nbm_pop_max_pct": max(nbm_pops, default=None),
             "gust_max_mph": _r(gust_max, 0), "gust_dir": gust_dir,
+            "nbm_band": nbm_band,
             "xcheck_models": (xcheck.get("models") or {}).get(d.isoformat()),
             "xcheck_ensemble": (xcheck.get("ensemble") or {}).get(d.isoformat()),
         })
@@ -427,8 +447,20 @@ def add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn):
         if burst_est > 0.1 and potential_fn:
             pots = [v for v in potential_fn(burst_est, BURST_LOW_TIDE_BAY_NAVD88) if v is not None]
             potential = max(pots) if pots else None
+        # NBM 90th-percentile scenario (NOAA probabilistic rain): the rain
+        # band's HIGH END, labeled, shown beside its exceedance chance. It
+        # does not drive the headline (the P-ETSS high end does not either).
+        band = d.get("nbm_band") or {}
+        p90_6h = band.get("p90_6h_max_in")
+        p90_est = p90_pot = None
+        if p90_6h:
+            p90_est = min(1.7 * (p90_6h / 0.55), BURST_ANALOG_MAX_IN_HR)
+            if p90_est > 0.1 and potential_fn:
+                pots = [v for v in potential_fn(p90_est, BURST_LOW_TIDE_BAY_NAVD88) if v is not None]
+                p90_pot = max(pots) if pots else None
         rain_regime = classify_fn(pluv_peak) if pluv_peak is not None else "dry"
         burst_regime = classify_fn(potential) if potential is not None else "dry"
+        p90_regime = classify_fn(p90_pot) if p90_pot is not None else None
         tidal_regime = d.get("regime_max") or "dry"
         candidates = [(REGIME_RANK.get(tidal_regime, 0), tidal_regime, "tide"),
                       (REGIME_RANK.get(rain_regime, 0), rain_regime, "rain (tank line)"),
@@ -441,6 +473,10 @@ def add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn):
                 "tank_regime": rain_regime,
                 "burst_signal": burst_signal, "burst_est_in_hr": _r(burst_est, 2),
                 "burst_potential_navd88": _r(potential, 2), "burst_regime": burst_regime,
+                "nbm_p90_6h_in": _r(p90_6h, 2), "nbm_p90_est_in_hr": _r(p90_est, 2),
+                "nbm_p90_potential_navd88": _r(p90_pot, 2), "nbm_p90_regime": p90_regime,
+                "nbm_p_ge_half_in_6h_pct": band.get("p_ge_half_in_6h_max_pct"),
+                "nbm_p_ge_1in_6h_pct": band.get("p_ge_1in_6h_max_pct"),
                 "rain_available": bool(rates),
             },
             "tidal_regime_max": tidal_regime,

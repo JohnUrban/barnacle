@@ -1,0 +1,75 @@
+name: Barnacle NBM rain percentiles
+
+# Warm job for the 7-day outlook (2026-09-23): NOAA's NBM probabilistic
+# (qmd) file gives rain-amount percentiles and exceedance chances per 6-h
+# bucket, but each house-sized subset costs ~9 s at NOMADS and the file
+# is published for the 00/06/12/18Z cycles only, a few hours late. The
+# hourly forecast job cannot afford the 28 requests, so this job fetches
+# them into data/outlook_nbm_qmd.json and the hourly run merges that
+# file by valid time. Cron is UTC and does not adjust for DST.
+
+on:
+  schedule:
+    - cron: '40 4,10,16,22 * * *'   # ~4.7 h after each synoptic cycle
+  workflow_dispatch:
+
+concurrency:
+  group: barnacle-nbm-qmd
+  cancel-in-progress: false
+
+permissions:
+  contents: write  # commits data/outlook_nbm_qmd.json
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    env:
+      TZ: America/New_York
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies (GRIB decoder)
+        run: pip install --quiet -r forecast/requirements.txt
+
+      - name: Fetch NBM percentiles (precip-only subsets)
+        run: python forecast/outlook_warm.py --budget 480
+
+      - name: Publish gate (no markers, strict JSON)
+        run: python forecast/check_artifacts.py
+
+      - name: Commit and push the percentile file
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/outlook_nbm_qmd.json
+          if git diff --staged --quiet; then
+            echo "No updates to commit"
+            exit 0
+          fi
+          git commit -m "nbm percentiles $(date -u +%Y-%m-%d) $(date -u +%H):$(date -u +%M) UTC"
+          for attempt in 1 2 3; do
+            if git push; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
+            git fetch origin main
+            if ! git rebase origin/main; then
+              echo "REBASE CONFLICT — aborting (the next warm run refetches)"
+              git rebase --abort
+              exit 1
+            fi
+            if ! python forecast/check_artifacts.py; then
+              echo "PUBLISH GATE FAIL after rebase — aborting"
+              exit 1
+            fi
+          done
+          echo "push failed after 3 attempts"
+          exit 1

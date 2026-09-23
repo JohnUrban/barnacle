@@ -55,8 +55,10 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
 - Confidence labels PHASED OUT (~11:15 EDT): surfaces show measured
   error by lead (forecast.accuracy_by_lead); fields stay in JSON for
   the ledger enum. Peaks+band chart restored at the outlook's bottom.
+- NBM percentile rain bands SHIPPED (~12:00 EDT): p10/p50/p90 + chance
+  of 0.25/0.5/1 in per 6 h; p90 scenario = rain band's labeled high end.
 - OWED: v0.10.5 bump after Codex's independent audit of today's work
-  + John's DECISION; NBM percentile rain bands; confidence JSON removal.
+  + John's DECISION; confidence JSON removal.
 
 ## Audit and attribution state
 
@@ -70,10 +72,8 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
   gate accepts naive or offset stamps, writer canonicalizes, real-writer
   -> real-gate test guards it. Daily archives 09-19/09-20 are missing.
   Codex owes writer/validator parity tests for every ledger writer.
-- Alerts: real-payload/freshness contracts, per-rail retry/cap, one
-  fail-closed dispatch. Local scheduler + Mac watchdog (awake hours).
-- NOAA transport uses GMT; storage preserves station offsets. Legacy
-  naive timestamps use fold=0.
+- Alerts: payload/freshness contracts, per-rail retry/cap, fail-closed
+  dispatch; Mac watchdog awake hours. NOAA transport GMT; offsets stored.
 - Widget v7.29a needs John's re-copy (installed v7.26a, 2026-09-14).
 - v0.10.4: `driveway_central` removed (18 landmarks); driveway = PROXY.
 - CI: pinned linters; strict mypy on two seams; DOM gate. Replays: `history/scripts/reproduce_v0_10_{1,3}.py`.

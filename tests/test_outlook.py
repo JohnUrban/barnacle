@@ -156,6 +156,54 @@ class AdapterParseTests(unittest.TestCase):
         self.assertAlmostEqual(got["qpf_in"], 0.14, places=2)
         self.assertAlmostEqual(got["pop_pct"], 51.0, places=0)
 
+    def test_nbm_qmd_percentiles_and_exceedance(self):
+        try:
+            import eccodes  # noqa: F401
+        except ImportError:
+            self.skipTest("eccodes not installed locally (CI installs it)")
+        got = srcs.parse_nbm_qmd_subset((FIX / "nbm_t06z_qmd_f096_house_20260923.grib2").read_bytes())
+        self.assertLessEqual(got["p10_in"], got["p50_in"])
+        self.assertLessEqual(got["p50_in"], got["p90_in"])
+        self.assertGreater(got["p90_in"], 0.0)
+        for k in ("p_ge_quarter_in_pct", "p_ge_half_in_pct", "p_ge_1in_pct"):
+            self.assertIsNotNone(got[k])
+            self.assertTrue(0.0 <= got[k] <= 100.0)
+        self.assertGreaterEqual(got["p_ge_quarter_in_pct"], got["p_ge_half_in_pct"])
+        self.assertGreaterEqual(got["p_ge_half_in_pct"], got["p_ge_1in_pct"])
+
+    def test_nbm_qmd_file_merges_by_valid_time_with_age_health(self):
+        nbm = {"buckets": [{"end_utc": "2026-09-26T12:00:00Z", "hours": 6, "qpf_in": 0.2, "pop_pct": 40.0},
+                           {"end_utc": "2026-09-26T18:00:00Z", "hours": 6, "qpf_in": 0.1, "pop_pct": 30.0}]}
+        qmd = {"qmd_cycle": "2026-09-23T06:00:00Z", "fetched_at": "2026-09-23T10:30:00Z",
+               "buckets": {"2026-09-26T12:00:00Z": {"p10_in": 0.0, "p50_in": 0.1, "p90_in": 0.9,
+                                                    "p_ge_half_in_pct": 22.0}}}
+        h = srcs.merge_nbm_qmd(nbm, qmd, NOW + dt.timedelta(hours=1))
+        self.assertEqual(h["status"], "ok")
+        self.assertEqual(nbm["buckets"][0]["p90_in"], 0.9)
+        self.assertNotIn("p90_in", nbm["buckets"][1])          # unmatched bucket stays without percentiles
+        self.assertEqual(srcs.merge_nbm_qmd(nbm, qmd, NOW + dt.timedelta(hours=12))["status"], "degraded")
+        self.assertEqual(srcs.merge_nbm_qmd(nbm, qmd, NOW + dt.timedelta(hours=40))["status"], "unavailable")
+        self.assertEqual(srcs.merge_nbm_qmd(nbm, None, NOW)["status"], "unavailable")
+
+    def test_nbm_qmd_fetch_honours_time_budget(self):
+        calls = []
+
+        def fake_request(url, timeout=30):
+            calls.append(url)
+            return (FIX / "nbm_t06z_qmd_f096_house_20260923.grib2").read_bytes()
+        try:
+            import eccodes  # noqa: F401
+        except ImportError:
+            self.skipTest("eccodes not installed locally (CI installs it)")
+        with mock.patch.object(srcs, "_request", side_effect=fake_request):
+            data = srcs.fetch_nbm_qmd(NOW, steps=(6, 12, 18), time_budget_s=1e9)
+        self.assertEqual(data["qmd_cycle"], "2026-09-23T06:00:00Z")
+        self.assertEqual(sorted(data["buckets"]), ["2026-09-23T12:00:00Z", "2026-09-23T18:00:00Z", "2026-09-24T00:00:00Z"])
+        with mock.patch.object(srcs, "_request", side_effect=fake_request):
+            data = srcs.fetch_nbm_qmd(NOW, steps=(6, 12, 18), time_budget_s=-1)
+        self.assertEqual(len(data["buckets"]), 1)             # the first step always runs, the rest hit the budget
+        self.assertTrue(all("time budget" in m for m in data["missing"]))
+
     def test_cache_refresh_contract(self):
         cache, now = {}, NOW
         calls = []
@@ -293,6 +341,36 @@ class RainPathwayTests(unittest.TestCase):
         self.assertIn(w["flood_chance"]["pathway"], ("rain (burst scenario)", "rain (tank line)", "tide"))
         self.assertIsNotNone(w["tide"]["navd88"])
         self.assertGreaterEqual(w["flood_chance"]["navd88"], w["tide"]["navd88"] - 1e-9)
+
+    def test_nbm_percentile_band_feeds_a_labeled_high_end(self):
+        data = _fixture_data()
+        for b in data["nbm"]["buckets"]:
+            b.update({"p10_in": 0.0, "p50_in": 0.1, "p90_in": 0.4,
+                      "p_ge_quarter_in_pct": 30.0, "p_ge_half_in_pct": 12.0, "p_ge_1in_pct": 2.0})
+        for b in data["nbm"]["buckets"]:
+            # 06-12Z and 12-18Z buckets: the 08:01 EDT (12:01Z) tide sits in the second
+            if b["end_utc"] in ("2026-09-26T12:00:00Z", "2026-09-26T18:00:00Z"):
+                b.update({"p90_in": 2.4, "p_ge_half_in_pct": 45.0, "p_ge_1in_pct": 20.0})
+        ol = _build(data=data)
+        sat = next(d for d in ol["days"] if d["date"] == "2026-09-26")
+        band = sat["nbm_band"]
+        self.assertEqual(band["p90_6h_max_in"], 2.4)
+        self.assertEqual(band["p_ge_half_in_6h_max_pct"], 45.0)
+        rp = sat["rain_pathway"]
+        self.assertEqual(rp["nbm_p90_6h_in"], 2.4)
+        self.assertIsNotNone(rp["nbm_p90_potential_navd88"])
+        self.assertGreater(rp["nbm_p90_potential_navd88"], 3.52)
+        self.assertIn(rp["nbm_p90_regime"], ("street", "light", "moderate", "severe"))
+        # the p90 scenario is a labeled high end, not the headline driver
+        self.assertEqual(sat["worst_pathway"], "tide")
+        by = {t["time"]: t for t in ol["tides"]}
+        self.assertEqual(by["2026-09-26 08:01-04:00"]["nbm_p_ge_half_in_6h_pct"], 45.0)
+        from forecast import outlook_page
+        html = outlook_page.render_outlook_page({"generated_utc": "x", "forecast_schema_version": "1.0",
+                                                 "model_version": "v", "outlook_7d": ol, "input_health": {}})
+        self.assertIn("NBM 90th-pct rain 2.40 in/6 h", html)
+        self.assertIn("45% chance of ≥0.5 in in 6 h", html)
+        self.assertIn("NBM P(&ge;0.5 in/6 h)", html)
 
     def test_rain_unavailable_is_not_zero(self):
         data = _fixture_data()

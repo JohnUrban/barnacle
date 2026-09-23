@@ -103,7 +103,10 @@ def _intro(ol, forecast):
          "e-folding time. That decay is an ASSUMPTION scored by the shadow ledger; astronomy "
          "is the only honest number there."),
         ("Rain", f"NWS grid amounts to {grid_qpf_end}Z, then the National Blend of Models (NBM) "
-         "6-h amounts to 7 days, WPC daily totals as fallback. Rain chance is the NWS grid to 7 days."),
+         "6-h amounts to 7 days, WPC daily totals as fallback. Rain chance is the NWS grid to 7 days. "
+         "NBM's probabilistic file adds the 10th/50th/90th percentile amounts and the chance of "
+         "0.25, 0.5 and 1 in per 6 h: the rain band's high end is the 90th percentile run through "
+         "the same tank model, labeled as such."),
         ("Wind", "NWS grid gusts and direction to 7 days."),
         ("Model cross-check", "four global models and a 31-member ensemble from a non-NOAA "
          "service. Never an input; shown so a large disagreement is visible."),
@@ -163,6 +166,15 @@ def _rain_line(rp):
                     f"({_e(_regime_word(rp.get('burst_regime')))})")
     elif rp.get("burst_signal"):
         bits.append("burst-capable hours flagged, magnitude below the potential threshold")
+    if rp.get("nbm_p90_6h_in") is not None:
+        chance = rp.get("nbm_p_ge_half_in_6h_pct")
+        chance_txt = f"{chance:.0f}% chance of ≥0.5 in in 6 h" if chance is not None else "chance n/a"
+        if rp.get("nbm_p90_potential_navd88") is not None:
+            inch = (rp["nbm_p90_potential_navd88"] - 3.52) * 12.0
+            bits.append(f"NBM 90th-pct rain {rp['nbm_p90_6h_in']:.2f} in/6 h → potential <b>{inch:+.1f}\u2033</b> "
+                        f"({_e(_regime_word(rp.get('nbm_p90_regime')))}); {chance_txt}")
+        else:
+            bits.append(f"NBM 90th-pct rain {rp['nbm_p90_6h_in']:.2f} in/6 h; {chance_txt}")
     return "Rain pathway: " + "; ".join(bits)
 
 
@@ -386,17 +398,20 @@ def _tide_table(ol):
             f'<td>{t["curb_in"] if t.get("curb_in") is not None else "—"}</td>'
             f'<td>{prod}</td><td>{rain_txt}</td>'
             f'<td>{("%.0f%%" % t["pop_pct"]) if t.get("pop_pct") is not None else "—"}</td>'
-            f'<td>{wind_txt}</td><td>{xc}</td></tr>')
+            f'<td>{wind_txt}</td>'
+            f'<td>{("%.0f%%" % t["nbm_p_ge_half_in_6h_pct"]) if t.get("nbm_p_ge_half_in_6h_pct") is not None else "—"}</td>'
+            f'<td>{xc}</td></tr>')
     return f"""
   <section>
     <h2>Every high tide</h2>
     <p class="note">ft MLLW at Sandy Hook. Depths are inches of water over the SW grate and the curb top
     at the outlook value. "Production" is what the landing page and alerts use for the same tide.
-    The last column is the GEFS ensemble chance of more than 0.5 in of rain that day (cross-check).</p>
+    "NBM P(≥0.5 in/6 h)" is NOAA's blend probability that the 6-hour bucket holding this tide gets
+    half an inch or more; the last column is the non-NOAA ensemble's chance for the whole day (cross-check).</p>
     <div class="table-wrap"><table class="tide-table">
       <thead><tr><th>High tide</th><th>Lead</th><th>Astro</th><th>Outlook (source)</th><th>Band</th>
       <th>Regime</th><th>SW grate in</th><th>Curb in</th><th>Production</th><th>Rain 6 h</th>
-      <th>Chance</th><th>Gust</th><th>Ens &gt;0.5 in</th></tr></thead>
+      <th>Chance</th><th>Gust</th><th>NBM P(&ge;0.5 in/6 h)</th><th>Ens &gt;0.5 in</th></tr></thead>
       <tbody>{"".join(rows)}</tbody></table></div>
   </section>"""
 

@@ -470,6 +470,158 @@ def parse_nbm_subset(raw):
     return out
 
 
+# Exceedance thresholds we keep from the NBM probabilistic (qmd) file,
+# in inches per 6 h -> field name.
+NBM_EXCEEDANCE_IN = {0.25: "p_ge_quarter_in_pct", 0.5: "p_ge_half_in_pct", 1.0: "p_ge_1in_pct"}
+NBM_PERCENTILES = (10, 50, 90)
+
+
+def nbm_qmd_subset_url(cycle_utc, fhour):
+    params = {
+        "dir": f"/blend.{cycle_utc:%Y%m%d}/{cycle_utc:%H}/qmd",
+        "file": f"blend.t{cycle_utc:%H}z.qmd.f{fhour:03d}.co.grib2",
+        "var_APCP": "on", "all_lev": "on", "subregion": "",   # precip-only: ~9 s, not ~54 s
+        **NBM_BOX,
+    }
+    return NBM_FILTER_URL + "?" + urlencode(params)
+
+
+def parse_nbm_qmd_subset(raw):
+    """6-h rain percentiles (in) and exceedance probabilities (%) at the
+    house from an NBM qmd subset. Percentiles are GRIB template 10
+    (percentileValue); exceedances are template 9 with an upper limit
+    scaled as value x 10^-factor mm."""
+    try:
+        import eccodes as ec
+    except ImportError as e:
+        raise RuntimeError("GRIB decoder not installed (eccodes)") from e
+    out = {f"p{q}_in": None for q in NBM_PERCENTILES}
+    out.update({name: None for name in NBM_EXCEEDANCE_IN.values()})
+    with tempfile.NamedTemporaryFile(suffix=".grib2", delete=False) as tmp:
+        tmp.write(raw)
+        path = tmp.name
+    try:
+        with open(path, "rb") as f:
+            while True:
+                gid = ec.codes_grib_new_from_file(f)
+                if gid is None:
+                    break
+                try:
+                    def g(key):
+                        return ec.codes_get(gid, key) if ec.codes_is_defined(gid, key) else None
+                    if not (g("parameterCategory") == 1 and g("parameterNumber") == 8
+                            and g("lengthOfTimeRange") == 6):
+                        continue
+                    tmpl = g("productDefinitionTemplateNumber")
+                    msg = {"lats": ec.codes_get_array(gid, "latitudes"),
+                           "lons": ec.codes_get_array(gid, "longitudes"),
+                           "values": ec.codes_get_values(gid)}
+                    if tmpl == 10 and g("percentileValue") in NBM_PERCENTILES:
+                        out[f"p{g('percentileValue')}_in"] = _precip_inches(_nearest_value(msg), g("units"))
+                    elif tmpl == 9 and g("probabilityType") == 1:
+                        sv, sf = g("scaledValueOfUpperLimit"), g("scaleFactorOfUpperLimit")
+                        if sv is None or sf is None:
+                            continue
+                        thr_in = round(sv * (10.0 ** -sf) / MM_PER_IN, 3)
+                        for thr, name in NBM_EXCEEDANCE_IN.items():
+                            if abs(thr_in - thr) < 0.02:
+                                out[name] = round(_nearest_value(msg), 1)
+                finally:
+                    ec.codes_release(gid)
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+    if out["p90_in"] is None:
+        raise ValueError("no 6-h percentile messages in NBM qmd subset")
+    return out
+
+
+NBM_QMD_PATH_DEFAULT = os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "data", "outlook_nbm_qmd.json"))
+NBM_QMD_OK_AGE_H = 9.0        # a fresh synoptic cycle every ~6 h plus lag
+NBM_QMD_STALE_AGE_H = 30.0
+
+
+def newest_qmd_cycle(now_utc):
+    """Newest 00/06/12/18Z cycle whose probabilistic file is published."""
+    base = now_utc.replace(hour=(now_utc.hour // 6) * 6, minute=0, second=0, microsecond=0)
+    for back in range(0, 30, 6):
+        c = base - dt.timedelta(hours=back)
+        try:
+            raw = _request(nbm_qmd_subset_url(c, 6), timeout=90)
+        except Exception:
+            continue
+        if raw[:4] == b"GRIB":
+            return c
+    return None
+
+
+def fetch_nbm_qmd(now_utc, steps=NBM_STEPS, time_budget_s=None):
+    """Percentiles + exceedance chances per 6-h bucket from the newest
+    published synoptic cycle, keyed by valid END time. ~9 s per step, so
+    this runs in its own warm job (nbm_qmd.yml), never in the hourly run."""
+    import time as _time
+    qcycle = newest_qmd_cycle(now_utc)
+    if qcycle is None:
+        raise RuntimeError("no NBM qmd cycle published in the last 30 h")
+    started = _time.time()
+    buckets, missing = {}, []
+    for fh in steps:
+        if time_budget_s is not None and _time.time() - started > time_budget_s:
+            missing.append(f"f{fh:03d}: time budget")
+            continue
+        end = qcycle + dt.timedelta(hours=fh)
+        try:
+            got = parse_nbm_qmd_subset(_request(nbm_qmd_subset_url(qcycle, fh), timeout=90))
+        except Exception as e:
+            missing.append(f"f{fh:03d}: {type(e).__name__}")
+            continue
+        buckets[end.strftime("%Y-%m-%dT%H:%M:%SZ")] = got
+    if not buckets:
+        raise RuntimeError(f"NBM qmd: no buckets decoded ({missing[:3]})")
+    return {"qmd_cycle": qcycle.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "fetched_at": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "buckets": buckets, "missing": missing,
+            "summary": f"NBM qmd {qcycle:%Y-%m-%dT%H}Z: {len(buckets)}/{len(steps)} buckets"}
+
+
+def load_nbm_qmd(path):
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) and data.get("buckets") else None
+    except (OSError, ValueError):
+        return None
+
+
+def merge_nbm_qmd(nbm, qmd, now_utc):
+    """Attach percentile fields to NBM amount buckets by valid end time.
+    Returns a health dict for the qmd file (age-based)."""
+    if not qmd:
+        return {"status": "unavailable", "detail": "no NBM percentile file yet",
+                "fetched_at": None, "age_h": None}
+    fetched = _parse_iso(qmd.get("fetched_at"))
+    age_h = ((now_utc - fetched).total_seconds() / 3600.0) if fetched else None
+    n = 0
+    for b in (nbm or {}).get("buckets") or []:
+        q = (qmd.get("buckets") or {}).get(b["end_utc"])
+        if q:
+            b.update({k: v for k, v in q.items() if k != "summary"})
+            n += 1
+    if age_h is None or age_h > NBM_QMD_STALE_AGE_H:
+        status = "unavailable"
+    elif age_h > NBM_QMD_OK_AGE_H:
+        status = "degraded"
+    else:
+        status = "ok"
+    return {"status": status,
+            "detail": (f"percentiles from NBM {str(qmd.get('qmd_cycle', ''))[:13]}Z on {n} buckets"
+                       + (f", file {age_h:.1f} h old" if age_h is not None else "")),
+            "fetched_at": qmd.get("fetched_at"), "age_h": round(age_h, 2) if age_h is not None else None}
+
+
 def fetch_nbm_qpf(now_utc, steps=NBM_STEPS):
     cycle = None
     last_err = None
@@ -612,7 +764,7 @@ def fetch_openmeteo(lat=HOUSE_LAT, lon=HOUSE_LON, days=8):
 PERSISTED_KEYS = ("petss", "nbm", "wpc")   # the expensive, slow-changing sources
 
 
-def gather(now_utc, cache, nbm_needed=True):
+def gather(now_utc, cache, nbm_needed=True, nbm_qmd_path=None):
     """Fetch every source through the cache contract. Returns (data, health).
 
     Only PERSISTED_KEYS live in the on-disk cache (data/outlook_cache.json,
@@ -638,4 +790,9 @@ def gather(now_utc, cache, nbm_needed=True):
         data["wpc"], health["wpc"] = None, {"status": "ok", "detail": "not needed (NBM fresh)",
                                             "fetched_at": None, "age_h": None}
     data["xcheck"], health["xcheck"] = refresh(scratch, "xcheck", fetch_openmeteo, now_utc)
+    # NBM percentiles come from the warm job's file (nbm_qmd.yml), never
+    # fetched here: 28 subsets at ~9 s each do not fit the hourly budget.
+    qmd = load_nbm_qmd(nbm_qmd_path or NBM_QMD_PATH_DEFAULT)
+    health["nbm_qmd"] = merge_nbm_qmd(data.get("nbm"), qmd, now_utc)
+    data["nbm_qmd"] = qmd
     return data, health
