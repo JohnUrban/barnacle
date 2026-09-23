@@ -1,0 +1,373 @@
+#!/usr/bin/env python3
+"""docs/outlook.html: the 7-day outlook page (2026-09-23).
+
+Consumes a completed forecast dict (its `outlook_7d` field) and returns
+HTML; never fetches. Visual grammar follows the site: y axis in inches
+relative to the SW grate, blue for tide+surge, gray for production,
+dashed landmark lines. Two layers on every element: the honest
+astronomical number and the labeled guidance number with its source.
+"""
+
+import datetime as dt
+import html
+import json
+
+try:
+    from .station_time import parse_station_local_time
+except ImportError:                      # run as a script from forecast/
+    from station_time import parse_station_local_time
+
+GRATE_SW_MLLW = 6.34
+LANDMARK_LINES = (("SW grate", 6.34), ("curb top", 6.98), ("lawn step", 7.48))
+SOURCE_LABELS = {
+    "nws_product": "NWS coastal flood product",
+    "nwps": "NWS gauge forecast (shadow)",
+    "petss_mid": "P-ETSS mid-band (GEFS surge)",
+    "persist_decay": "persistence, decayed (assumption)",
+    "astro": "astronomy only (no surge guidance)",
+}
+SOURCE_SHORT = {"nws_product": "NWS product", "nwps": "NWS gauge fcst",
+                "petss_mid": "P-ETSS mid", "persist_decay": "persist. decayed",
+                "astro": "astro only", "nws-coastal-flood-product": "NWS product",
+                "surge-persistence": "persistence", "astronomical-only-degraded": "astro (degraded)"}
+REGIME_LABEL = {"dry": "no flooding", "street": "street water", "light": "light flooding",
+                "moderate": "moderate flooding", "severe": "severe flooding",
+                "cold_lockout": "cold lockout"}
+RAIN_SOURCE = {"nws_grid": "NWS grid", "nbm": "NBM 6-h", "wpc_24h": "WPC 24-h"}
+CHART_TAGS = (
+    '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" '
+    'integrity="sha384-FcQlsUOd0TJjROrBxhJdUhXTUgNJQxTMcxZe6nHbaEfFL1zjQ+bq/uRoBQxb0KMo" '
+    'crossorigin="anonymous"></script>')
+
+
+def _e(v):
+    return html.escape("" if v is None else str(v))
+
+
+def _ft(v):
+    return "—" if v is None else f"{v:.2f} ft"
+
+
+def _inch(mllw):
+    return None if mllw is None else round((mllw - GRATE_SW_MLLW) * 12.0, 1)
+
+
+def _short_time(stamp):
+    try:
+        t = parse_station_local_time(stamp)
+    except (TypeError, ValueError):
+        return _e(stamp)
+    return t.strftime("%a %-I:%M %p").replace(":00", "")
+
+
+def _day_title(day):
+    d = dt.date.fromisoformat(day["date"])
+    return f"{day['label']} · {d.strftime('%a %-m/%-d')}"
+
+
+def _regime_word(r):
+    return REGIME_LABEL.get(r or "dry", r or "dry")
+
+
+# ---------------------------------------------------------------------------
+def _intro(ol, forecast):
+    reach = ol.get("reach") or {}
+    a = ol.get("assumptions") or {}
+    src = ol.get("sources") or {}
+
+    def ok(k):
+        return (src.get(k) or {}).get("status") == "ok"
+    grid_qpf_end = (reach.get("grid_qpf_end_utc") or "")[:16].replace("T", " ")
+    items = [
+        ("Astronomical tide", "NOAA predictions for every high tide in the next 7 days. "
+         "This is the honest floor: it needs no model."),
+        ("NWS coastal flood product", "forecaster tide table, used when an advisory or "
+         "warning is active, about 3 days."),
+        ("NWS gauge forecast for Sandy Hook", "the forecasters' hourly water level, 72 h, "
+         "every day. SHADOW: shown and scored, not yet the production surge source."),
+        ("P-ETSS", "NOAA's GEFS-based probabilistic surge, hourly to 102 h; the shaded "
+         "band is its 10th to 90th percentile and the line is the midpoint."),
+        ("Beyond 102 h", f"this hour's surge decayed with a {a.get('persistence_decay_tau_h', 48):.0f}-hour "
+         "e-folding time. That decay is an ASSUMPTION scored by the shadow ledger; astronomy "
+         "is the only honest number there."),
+        ("Rain", f"NWS grid amounts to {grid_qpf_end}Z, then the National Blend of Models (NBM) "
+         "6-h amounts to 7 days, WPC daily totals as fallback. Rain chance is the NWS grid to 7 days."),
+        ("Wind", "NWS grid gusts and direction to 7 days."),
+        ("Model cross-check", "four global models and a 31-member ensemble from a non-NOAA "
+         "service. Never an input; shown so a large disagreement is visible."),
+    ]
+    lis = "".join(f"<li><b>{_e(k)}:</b> {_e(v)}</li>" for k, v in items)
+    return f"""
+  <section class="outlook-intro">
+    <h2>How to read this page</h2>
+    <p>Every number here has two layers. The <b>astronomical tide</b> is the honest part:
+    it is known years ahead. The <b>guidance</b> layer adds surge, rain and wind from the
+    sources below, each labeled with where it comes from and how far it reaches. The
+    production forecast on the <a href="index.html">landing page</a> and its alerts are
+    unchanged by this page; alerts consider only the next 48 hours.</p>
+    <ul class="more-info-list">{lis}</ul>
+  </section>"""
+
+
+def _xcheck_block(day):
+    m = day.get("xcheck_models") or {}
+    ens = day.get("xcheck_ensemble") or {}
+    if not m and not ens:
+        return ""
+    cells = "".join(
+        f"<li>{_e(name.upper())}: {('%.2f in' % v['precip_in']) if v.get('precip_in') is not None else '—'}"
+        f", gust {('%.0f mph' % v['gust_mph']) if v.get('gust_mph') is not None else '—'}</li>"
+        for name, v in m.items())
+    ens_line = ""
+    if ens:
+        ens_line = (f"<li>GEFS ensemble ({ens.get('members')} members): "
+                    f"{ens.get('p_half_inch_pct')}% chance of more than 0.5 in; median "
+                    f"{ens.get('median_in')} in, 90th pct {ens.get('p90_in')} in, max {ens.get('max_in')} in; "
+                    f"gust median {ens.get('gust_median_mph')} mph, max {ens.get('gust_max_mph')} mph</li>")
+    return (f'<details class="xcheck"><summary>Model cross-check (non-NOAA)</summary>'
+            f'<ul>{cells}{ens_line}</ul></details>')
+
+
+def _day_cards(ol):
+    cards = []
+    for i, d in enumerate(ol.get("days") or []):
+        regime = d.get("regime_max") or "dry"
+        src = SOURCE_LABELS.get(d.get("outlook_source") or "astro", d.get("outlook_source") or "")
+        tides = ", ".join(
+            f"{_e(t['time'])} {t['outlook_mllw']:.1f}" if t.get("outlook_mllw") is not None else _e(t["time"])
+            for t in d.get("tides") or [])
+        band = ""
+        if d.get("band_hi_max_mllw") is not None:
+            band = (f'<p class="dc-line">Guidance high end: <b>{d["band_hi_max_mllw"]:.2f} ft</b> '
+                    f'({_e(_regime_word(d.get("regime_hi_max")))}) at the P-ETSS 90th percentile</p>')
+        rain = "Rain: —"
+        if d.get("qpf_in") is not None:
+            rain = (f"Rain: <b>{d['qpf_in']:.2f} in</b> ({_e(RAIN_SOURCE.get(d.get('qpf_source'), d.get('qpf_source')))})")
+        pop = f" · chance {d['pop_max_pct']:.0f}%" if d.get("pop_max_pct") is not None else ""
+        wind = "Wind: —"
+        if d.get("gust_max_mph") is not None:
+            wind = f"Wind: gusts to <b>{d['gust_max_mph']:.0f} mph</b> {_e(d.get('gust_dir') or '')}"
+        cls = "day-card day-card-today" if i == 0 else "day-card"
+        cards.append(f"""
+    <div class="{cls} regime-{_e(regime)}">
+      <h3>{_e(_day_title(d))}</h3>
+      <p class="dc-line">Astronomical high tide: <b>{_ft(d.get('astro_max_mllw'))}</b> MLLW</p>
+      <p class="dc-line">With guidance: <b>{_ft(d.get('outlook_max_mllw'))}</b> → <b>{_e(_regime_word(regime))}</b>
+         <span class="note">({_e(src)})</span></p>
+      {band}
+      <p class="dc-line">Tides: {tides}</p>
+      <p class="dc-line">{rain}{pop}</p>
+      <p class="dc-line">{wind}</p>
+      {_xcheck_block(d)}
+    </div>""")
+    return f'<section><h2>Seven days at the corner</h2><div class="day-cards">{"".join(cards)}</div></section>'
+
+
+def _chart(ol):
+    tides = ol.get("tides") or []
+    labels = [_short_time(t["time"]) for t in tides]
+    def series(key):
+        return [_inch(t.get(key)) for t in tides]
+    data = {
+        "labels": labels,
+        "astro": series("astro_mllw"),
+        "outlook": series("outlook_mllw"),
+        "lo": series("band_lo_mllw"),
+        "hi": series("band_hi_mllw"),
+        "production": series("production_mllw"),
+        "sources": [t.get("outlook_source") for t in tides],
+        "landmarks": [{"label": n, "y": _inch(v)} for n, v in LANDMARK_LINES],
+    }
+    aria = ("Seven-day high-tide outlook at Sandy Hook in inches relative to the SW grate: "
+            + "; ".join(f"{l} {o:+.0f} in" for l, o in zip(labels, data["outlook"]) if o is not None))
+    payload = json.dumps(data)
+    script = """
+<script>
+(function () {
+  var D = __DATA__;
+  var el = document.getElementById('outlook-peaks-chart');
+  if (!el || typeof Chart === 'undefined') { return; }
+  var datasets = [
+    { label: 'Guidance band (P-ETSS 10-90%)', data: D.hi, borderWidth: 0,
+      backgroundColor: 'rgba(26,95,168,0.15)', pointRadius: 0, fill: '+1', spanGaps: false },
+    { label: 'band low', data: D.lo, borderWidth: 0, pointRadius: 0, fill: false, spanGaps: false },
+    { label: 'Outlook (tide + guidance)', data: D.outlook, borderColor: '#1a5fa8',
+      backgroundColor: '#1a5fa8', borderWidth: 2.5, pointRadius: 4, tension: 0.2,
+      pointStyle: D.sources.map(function (s) { return s === 'astro' ? 'crossRot' : (s === 'persist_decay' ? 'triangle' : 'circle'); }) },
+    { label: 'Astronomical tide only', data: D.astro, borderColor: '#7aa6d8', borderDash: [6, 4],
+      borderWidth: 1.5, pointRadius: 2, tension: 0.2 },
+    { label: 'Production forecast (landing page, 72 h)', data: D.production, borderColor: '#555555',
+      backgroundColor: '#555555', borderWidth: 0, pointRadius: 5, pointStyle: 'rectRot', showLine: false }
+  ];
+  D.landmarks.forEach(function (lm) {
+    datasets.push({ label: lm.label, data: D.labels.map(function () { return lm.y; }),
+      borderColor: '#999999', borderDash: lm.label === 'SW grate' ? [] : [4, 4], borderWidth: 1,
+      pointRadius: 0 });
+  });
+  new Chart(el, { type: 'line', data: { labels: D.labels, datasets: datasets },
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      scales: { y: { title: { display: true, text: 'inches vs SW grate' }, suggestedMin: -30, suggestedMax: 24 },
+                x: { ticks: { maxRotation: 60, autoSkip: true } } },
+      plugins: { legend: { labels: { filter: function (i) { return i.text !== 'band low'; } } } } } });
+})();
+</script>"""
+    return (f'<section><h2>High tides, next 7 days</h2>'
+            f'<p class="note">Blue line: outlook with guidance (circle = NWS/P-ETSS guidance, triangle = '
+            f'decayed persistence, cross = astronomy only). Dashed light blue: astronomy alone. Shaded: '
+            f'P-ETSS 10th to 90th percentile surge band. Gray diamonds: the production forecast for the '
+            f'same tides. Gray lines: SW grate (0), curb top, lawn step.</p>'
+            f'<div style="position:relative;height:360px"><canvas id="outlook-peaks-chart" role="img" '
+            f'aria-label="{_e(aria)}"></canvas></div>{CHART_TAGS}'
+            + script.replace("__DATA__", payload) + "</section>")
+
+
+def _tide_table(ol):
+    rows = []
+    for t in ol.get("tides") or []:
+        band = ("—" if t.get("band_lo_mllw") is None
+                else f"{t['band_lo_mllw']:.2f}–{t['band_hi_mllw']:.2f}")
+        rain = t.get("rain") or {}
+        rain_txt = ("—" if rain.get("qpf_in") is None
+                    else f"{rain['qpf_in']:.2f} in ({_e(RAIN_SOURCE.get(rain.get('source'), rain.get('source')))})")
+        wind = t.get("wind") or {}
+        wind_txt = ("—" if wind.get("gust_mph") is None
+                    else f"{wind['gust_mph']:.0f} mph {_e(_compass(wind.get('dir_deg')))}")
+        prod = ("—" if t.get("production_mllw") is None
+                else f"{t['production_mllw']:.2f} ({_e(SOURCE_SHORT.get(t.get('production_source'), t.get('production_source')))})")
+        xc = "—" if t.get("xcheck_p_half_inch_pct") is None else f"{t['xcheck_p_half_inch_pct']}%"
+        rows.append(
+            f'<tr class="regime-{_e(t.get("regime") or "dry")}">'
+            f'<td>{_e(_short_time(t["time"]))}</td><td>{t["lead_h"]:+.0f} h</td>'
+            f'<td>{t["astro_mllw"]:.2f}</td>'
+            f'<td><b>{t["outlook_mllw"]:.2f}</b> <span class="note">{_e(SOURCE_SHORT.get(t.get("outlook_source"), t.get("outlook_source")))}</span></td>'
+            f'<td>{band}</td><td>{_e(_regime_word(t.get("regime")))}'
+            + (f' <span class="note">(up to {_e(_regime_word(t.get("regime_hi")))})</span>' if t.get("regime_hi") and t.get("regime_hi") != t.get("regime") else "")
+            + f'</td><td>{t["grate_sw_in"] if t.get("grate_sw_in") is not None else "—"}</td>'
+            f'<td>{t["curb_in"] if t.get("curb_in") is not None else "—"}</td>'
+            f'<td>{prod}</td><td>{rain_txt}</td>'
+            f'<td>{("%.0f%%" % t["pop_pct"]) if t.get("pop_pct") is not None else "—"}</td>'
+            f'<td>{wind_txt}</td><td>{xc}</td></tr>')
+    return f"""
+  <section>
+    <h2>Every high tide</h2>
+    <p class="note">ft MLLW at Sandy Hook. Depths are inches of water over the SW grate and the curb top
+    at the outlook value. "Production" is what the landing page and alerts use for the same tide.
+    The last column is the GEFS ensemble chance of more than 0.5 in of rain that day (cross-check).</p>
+    <div class="table-wrap"><table class="tide-table">
+      <thead><tr><th>High tide</th><th>Lead</th><th>Astro</th><th>Outlook (source)</th><th>Band</th>
+      <th>Regime</th><th>SW grate in</th><th>Curb in</th><th>Production</th><th>Rain 6 h</th>
+      <th>Chance</th><th>Gust</th><th>Ens &gt;0.5 in</th></tr></thead>
+      <tbody>{"".join(rows)}</tbody></table></div>
+  </section>"""
+
+
+def _compass(deg):
+    if deg is None:
+        return ""
+    pts = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+           "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"]
+    return pts[int((float(deg) + 11.25) // 22.5) % 16]
+
+
+def _shadow(ol):
+    sh = ol.get("shadow") or {}
+    rd = sh.get("readiness") or {}
+    names = {
+        "nwps_vs_persistence_le72h": "NWS gauge forecast vs production persistence (≤72 h)",
+        "product_vs_persistence_le72h": "NWS coastal product vs persistence (≤72 h)",
+        "decay_vs_flat_persistence_le168h": "Decayed vs flat persistence (all leads)",
+        "outlook_vs_production_le72h": "Outlook line vs production forecast (≤72 h)",
+    }
+    lis = []
+    for key, label in names.items():
+        r = rd.get(key) or {}
+        mae = ("" if r.get("mae_candidate") is None
+               else f" — MAE {r['mae_candidate']:.2f} vs {r['mae_baseline']:.2f} ft, n={r.get('n')}")
+        lis.append(f"<li><b>{_e(label)}:</b> {_e(r.get('verdict', 'NO DATA YET'))}{_e(mae)}</li>")
+    buckets = sh.get("buckets") or []
+    cols = ["astro", "nws_product", "nwps", "petss_p10", "petss_p90", "persist_flat",
+            "persist_decay", "production", "outlook"]
+    head = "".join(f"<th>{_e(c)}</th>" for c in cols)
+    body = ""
+    for b in buckets:
+        cells = ""
+        for c in cols:
+            s = (b.get("sources") or {}).get(c)
+            cells += ("<td>—</td>" if not s else
+                      f"<td>{s['mae']:.2f}<br><span class=\"note\">{s['bias']:+.2f}, n={s['n']}</span></td>")
+        body += f"<tr><td>{_e(b['label'])}</td>{cells}</tr>"
+    return f"""
+  <section>
+    <h2>Shadow scoreboard: should guidance be promoted?</h2>
+    <p class="note">Every run logs each source's value for each tide (data/outlook_log.csv, append-only).
+    Once a tide's observed peak is known, every source is scored against it. The verdicts compare
+    candidate and baseline on the SAME tides, and need {sh.get('min_n', 28) if False else 28} scored tides before
+    they can say READY. Scored rows so far: {sh.get('scored_rows', 0)}.</p>
+    <ul class="more-info-list">{"".join(lis)}</ul>
+    <div class="table-wrap"><table class="tide-table">
+      <thead><tr><th>Lead</th>{head}</tr></thead><tbody>{body}</tbody></table></div>
+    <p class="note">Cells: mean absolute error in ft, then bias and count.</p>
+  </section>"""
+
+
+def _sources(ol):
+    rows = ""
+    for k, h in (ol.get("sources") or {}).items():
+        rows += (f"<tr><td>{_e(k)}</td><td>{_e((h or {}).get('status'))}</td>"
+                 f"<td>{_e((h or {}).get('detail'))}</td></tr>")
+    reach = ol.get("reach") or {}
+    return f"""
+  <section>
+    <h2>Sources this run</h2>
+    <div class="table-wrap"><table class="tide-table">
+      <thead><tr><th>Source</th><th>Status</th><th>Detail</th></tr></thead><tbody>{rows}</tbody></table></div>
+    <p class="note">NBM cycle {_e(reach.get('nbm_cycle'))} · P-ETSS cycle {_e(reach.get('petss_cycle'))} ·
+    gauge forecast issued {_e(reach.get('nwps_issued'))}. Unavailable data is shown as unavailable and is
+    never treated as a forecast of zero.</p>
+  </section>"""
+
+
+def render_outlook_page(forecast):
+    ol = forecast.get("outlook_7d") or {}
+    gen = forecast.get("generated_utc", "")
+    body = ""
+    if ol.get("tides"):
+        body = _intro(ol, forecast) + _day_cards(ol) + _chart(ol) + _tide_table(ol) + _shadow(ol) + _sources(ol)
+    else:
+        h = (forecast.get("input_health") or {}).get("outlook_7d") or {}
+        body = (f'<section><h2>Outlook unavailable this run</h2><p>{_e(h.get("detail") or "no outlook data")}'
+                f'. The <a href="index.html">72-hour forecast</a> is unaffected.</p></section>')
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="barnacle-generated-utc" content="{_e(gen)}">
+<meta name="barnacle-schema-version" content="{_e(forecast.get('forecast_schema_version', ''))}">
+<meta name="barnacle-model-version" content="{_e(forecast.get('model_version', ''))}">
+<title>Bay Ave Barnacle — 7-day outlook</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .outlook-intro li {{ margin: 4px 0; }}
+  details.xcheck {{ margin-top: 6px; font-size: 13px; }}
+  details.xcheck summary {{ cursor: pointer; color: #1a5fa8; }}
+  .table-wrap {{ overflow-x: auto; }}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><a href="index.html" style="text-decoration:none;color:inherit">Bay Ave Barnacle</a> — 7-day outlook</h1>
+    <p class="subtitle"><a href="index.html">&larr; back to the 72-hour forecast</a> &middot; astronomy plus labeled guidance &middot; generated {_e(gen)}</p>
+  </header>
+{body}
+  <footer>
+    <p><a href="index.html">&larr; back to the live forecast</a> &middot;
+       <a href="details.html">details &amp; reference</a> &middot;
+       <a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a></p>
+  </footer>
+</main>
+</body>
+</html>
+"""

@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 09:09 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 09:53 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
@@ -13,21 +13,13 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
 
 ## LIVE EVENT: nor'easter, Coastal Flood Advisory CF.Y.0021
 
-- Advisory 2026-09-23 16:00 EDT -> 2026-09-26 02:00 EDT (Eastern
-  Monmouth), Wind Advisory NE 25-35 mph gusts 50, High Surf 6-12 ft.
-- NWS Sandy Hook projections (CFW KPHI issued 2026-09-23 08:28Z; Minor
-  at 6.7 ft MLLW): Wed PM 6.9 (+1.8), Thu AM 6.4, Thu PM 7.2 (+1.9),
-  Fri AM 7.2 (+2.1), Fri PM 7.5 (+2.2). Worst tide Fri 19:40 EDT.
-- **Parser first real event.** Every hourly run 2026-09-22 21:00Z ..
-  2026-09-23 10:00Z published `nws_coastal_product` DEGRADED ("No Sandy
-  Hook section") and used surge persistence (+1.48 ft), 0.3-0.6 ft
-  under NWS. Cause: the alerts API `description` carries only the
-  bulleted narrative; the tide table sits after the segment's `&&`,
-  which the API drops. Fix: parser reads the raw KPHI CFW product
-  (alert's own issuance first, newest-first, <=24 h). Block ends at
-  the next gauge header (Watson Creek shares the `&&` block). Success
-  path now sets `nws_status`. Fixture + 17 tests; 187 tests, gate
-  clean; live no-write build_forecast sources all six tides from NWS.
+- Advisory 2026-09-23 16:00 EDT -> 2026-09-26 02:00 EDT; NE gusts to 50.
+  NWS Sandy Hook (CFW 08:28Z; Minor 6.7): Wed PM 6.9, Thu PM 7.2, Fri AM
+  7.2, Fri PM 7.5 (worst, 19:40 EDT).
+- **Parser first real event.** Runs 09-22 21Z .. 09-23 10Z were DEGRADED
+  ("No Sandy Hook section") on persistence 0.3-0.6 ft under NWS: the
+  alerts API drops the tide table after `&&`. Fixed 8e8e5cfcd: parser
+  reads the raw KPHI CFW product; block ends at the next gauge header.
 - Confidence rule deliberately caps NWS-product tides at MEDIUM until
   the first real event is scored (BACKLOG collector c: NWS projections
   vs observed peaks for the 09-23 PM .. 09-25 PM tides).
@@ -49,9 +41,15 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
   first; NWPS gauge forecast in SHADOW with promotion scoring on the
   page; rule 5 change classes adopted. Phase 0 shipped: ALERT_WINDOW_HOURS
   = 48. Saturday must be readable on the site by end of day.
-- Guidance reach verified 2026-09-23: NWS grid QPF 72 h; NWS grid wind /
-  gust / PoP 7 d; NWPS SDHN4 hourly forecast 72 h; P-ETSS station text
-  (e10/e90, hourly, 102 h) on NOMADS over HTTPS; STOFS netCDF 180 h.
+- SHIPPED outlook v1 (~10:00 EDT): forecast.outlook_7d + docs/outlook.html
+  (3 links on the landing page, email link line). Modules outlook_sources /
+  outlook / outlook_page. Ladder: product -> NWPS shadow -> P-ETSS band ->
+  decayed persistence (ASSUMPTION) -> astronomy. Shadow ledger
+  data/outlook_log.csv + readiness verdicts on the page (28 scored tides
+  needed). Production surge, alerts, widget, per-tide pages untouched.
+- OWED: v0.10.5 rule-5(b) bump with independent review + DECISION
+  (BACKLOG). Expected one 'light tide Thu 7:01 PM' alert re-send today
+  from the 48-h window (BACKLOG FACT).
 
 ## Audit and attribution state
 

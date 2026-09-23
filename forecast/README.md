@@ -15,6 +15,11 @@ compatibility facade until each extraction has offline tests:
    regimes, and flood windows; pure inputs/outputs only.
 3. `data_sources` — NOAA/NWS/MRMS adapters returning explicit unavailable
    states and provenance.
+   **First module 2026-09-23:** `outlook_sources.py` (7-day outlook
+   adapters: CO-OPS, NWS grid, NWPS gauge forecast, P-ETSS, NBM, WPC,
+   cross-check) with a cache/health contract; `outlook.py` (pure
+   builder, ledger, shadow scoring) and `outlook_page.py` (renderer)
+   sit beside it. None import the facade; the facade calls them.
 4. `ledgers` — strict append-only CSV readers/writers and observed-peak/tide
    caches; atomic writes where state is replaced.
 5. `alerts` — pure evaluation, independent delivery channels, then atomic

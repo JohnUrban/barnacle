@@ -449,6 +449,8 @@ def _render_more_info_links_html():
     links += ('<li><a href="highlands.html">Highlands street flood '
               'map (beta) — every street\'s elevation and flood '
               'onset</a></li>')
+    links += ('<li><a href="outlook.html">7-day outlook — every high '
+              'tide for a week, astronomy plus labeled guidance</a></li>')
     return ('<section class="more-info"><h2>For more information</h2>'
             f'<ul class="more-info-list">{links}</ul></section>')
 
@@ -1291,6 +1293,9 @@ def render_email(forecast):
     accuracy_block = ("\n".join(accuracy_lines) + "\n\n") if accuracy_lines else ""
     lookahead_lines = _render_lookahead_text(forecast)
     lookahead_block = ("\n".join(lookahead_lines) + "\n\n") if lookahead_lines else ""
+    # 7-day outlook: link only (John 2026-09-23; email is alert territory)
+    lookahead_block += ("7-day outlook (astronomy + labeled guidance): "
+                        "https://johnurban.github.io/barnacle/outlook.html\n\n")
     cold_lines = _render_cold_advisory_text(forecast)
     cold_block = ("\n".join(cold_lines) + "\n\n") if cold_lines else ""
 
@@ -1466,6 +1471,7 @@ Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = ta
 {accuracy_html}
 {low_html}
 {lookahead_html}
+<p><a href="https://johnurban.github.io/barnacle/outlook.html">7-day outlook</a> &mdash; every high tide for a week, astronomy plus labeled surge, rain and wind guidance.</p>
 <p style="font-size:small;color:#666">
 Model {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph on the chart; scenario brackets = tank steady-state / tanh).
 Local enhancement {LOCAL_ENHANCEMENT_FT:+.2f} ft (measured-event calibration).
@@ -3182,6 +3188,7 @@ def render_html_page(forecast):
     <h1>Bay Ave Barnacle</h1>
     <p class="subtitle">Hyperlocal flood forecast for the intersection of Bay Ave &amp; Central Ave in Highlands NJ &mdash; water levels referenced to 342 Bay Ave</p>
     <p class="subtitle">For general street predictions across Highlands, Atlantic Highlands, Leonardo, and Sea Bright, see our <a href="highlands.html">new barnacle street map</a>.</p>
+    <p class="subtitle">Looking further out? The <a href="outlook.html">new 7-day outlook</a> shows every high tide for a week: the astronomical tide plus labeled surge, rain and wind guidance.</p>
     <p class="last-updated"
        data-generated-at="{forecast.get('generated_utc', '')}">
       <span id="last-updated-display">Last updated …</span>
@@ -3484,6 +3491,7 @@ def render_html_page(forecast):
        {LOCAL_ENHANCEMENT_FT:+.2f} ft.
        Updated hourly (best-effort) via GitHub Actions.</p>
     <p><a href="https://github.com/JohnUrban/barnacle">Source code &amp; model</a> &middot;
+       <a href="outlook.html">7-day outlook</a> &middot;
        <a href="archive/">Past daily archives</a> &middot;
        <a href="tides/">Per-tide archive</a> &middot;
        <a href="barnacle-widget.js">iOS widget script (Scriptable)</a></p>

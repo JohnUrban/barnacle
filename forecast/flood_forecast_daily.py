@@ -37,6 +37,14 @@ from zoneinfo import ZoneInfo
 # existing import (`ff._station_local_now`, tests, nowcast facade)
 # working unchanged. See forecast/README.md for the extraction rules.
 try:
+    from . import outlook as _outlook            # noqa: F401
+    from . import outlook_sources as _outlook_sources
+    from .outlook_page import render_outlook_page   # noqa: F401
+except ImportError:                      # run as a script from forecast/
+    import outlook as _outlook           # noqa: F401
+    import outlook_sources as _outlook_sources
+    from outlook_page import render_outlook_page    # noqa: F401
+try:
     from .station_time import (          # noqa: F401
         STATION_TZ, _station_local_now, _station_local_today,
         utc_to_station_local, parse_station_local_time,
@@ -790,6 +798,43 @@ def fetch_surge_swing_6h():
 # Archive + accuracy-log paths resolved relative to this script. Lets the
 # daily workflow run from anywhere and still find the right files.
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+OUTLOOK_LOG_PATH = os.path.join(_REPO_ROOT, "data", "outlook_log.csv")
+OUTLOOK_CACHE_PATH = os.path.join(_REPO_ROOT, "data", "outlook_cache.json")
+
+
+def build_outlook_7d_field(now_utc, all_tides, persisted_surge, surge_age_min):
+    """(outlook_7d, health_entries) for the 7-day outlook (2026-09-23).
+
+    A NEW field: never widens all_tides, so alerts, per-tide pages, the
+    widget and the prediction ledger are untouched. Each source carries
+    its own input_health entry (rule 7). Tests patch this function.
+    """
+    cache = _outlook_sources.load_cache(OUTLOOK_CACHE_PATH)
+    data, health = _outlook_sources.gather(now_utc, cache)
+    try:
+        _outlook_sources.save_cache(OUTLOOK_CACHE_PATH, cache)
+    except OSError as e:
+        health["cache"] = {"status": "degraded", "detail": f"cache not saved: {e}"}
+    entries = {f"outlook_{k}": {"status": h.get("status", "unavailable"),
+                                "detail": h.get("detail", "")}
+               for k, h in health.items()}
+    if not (data.get("astro") or {}).get("highs"):
+        entries["outlook_7d"] = {"status": "unavailable",
+                                 "detail": "no astronomical highs; outlook not built"}
+        return None, entries
+    observed = _load_observed_peaks_cache()
+    shadow = _outlook.score_shadow(_outlook.read_outlook_log(OUTLOOK_LOG_PATH), observed)
+    outlook_7d = _outlook.build_outlook_7d(
+        now_utc, data, health, all_tides, persisted_surge, surge_age_min,
+        classify_regime_from_water,
+        lambda peak: predict_landmark_depths(peak, 0.0, False),
+        MLLW_TO_NAVD88_OFFSET, CURRENT_MODEL_VERSION, shadow=shadow)
+    n_guided = sum(1 for t in outlook_7d["tides"] if t["outlook_source"] != "astro")
+    entries["outlook_7d"] = {
+        "status": "ok",
+        "detail": (f"{len(outlook_7d['tides'])} tides to +{_outlook.HORIZON_HOURS} h, "
+                   f"{n_guided} with surge guidance")}
+    return outlook_7d, entries
 ARCHIVE_DIR        = os.path.join(_REPO_ROOT, "docs", "archive")
 ACCURACY_CSV_PATH  = os.path.join(_REPO_ROOT, "data", "forecast_accuracy.csv")
 ACCURACY_CSV_FIELDS = [
@@ -2519,12 +2564,25 @@ def build_forecast():
     today_rel_grate_sw_in = (round((today_peak_water - GRATE_SW) * 12, 1)
                              if today_peak_water is not None else None)
 
+    # 7-DAY OUTLOOK (2026-09-23): a NEW display-only field built from its
+    # own adapters; a failure here degrades only the outlook entries.
+    outlook_7d = None
+    try:
+        outlook_7d, _ol_health = build_outlook_7d_field(
+            generated_utc, all_tides, persisted_surge,
+            surge_meta.get("age_min"))
+        input_health.update(_ol_health)
+    except Exception as e:
+        input_health["outlook_7d"] = {"status": "unavailable",
+                                      "detail": f"outlook failed: {e}"}
+
     degraded_inputs = sorted(
         name for name, health in input_health.items()
         if health.get("status") != "ok"
     )
     return {
         "generated_utc": generated_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "outlook_7d": outlook_7d,
         "forecast_schema_version": FORECAST_SCHEMA_VERSION,
         "model_version": CURRENT_MODEL_VERSION,
         "input_health": input_health,
@@ -7375,6 +7433,10 @@ def main():
     try:
         append_predictions_log(forecast)
         append_day_risk_log(forecast)
+        if forecast.get("outlook_7d"):
+            _outlook.append_outlook_log(OUTLOOK_LOG_PATH, _outlook.outlook_log_rows(
+                forecast["outlook_7d"], forecast["generated_utc"],
+                forecast["model_version"]))
     except Exception as e:
         # Canonical provenance loss makes the generated run degraded and
         # must be visible. Publication workflows gate the resulting files.
@@ -7456,6 +7518,10 @@ def main():
                                     "details.html")
         _atomic_write_text(details_path, render_details_page(forecast))
         print(f"Wrote details page: {details_path}")
+        outlook_path = os.path.join(os.path.dirname(out_path),
+                                    "outlook.html")
+        _atomic_write_text(outlook_path, render_outlook_page(forecast))
+        print(f"Wrote 7-day outlook page: {outlook_path}")
 
         # Generate per-tide deep-link pages (HANDOFF 9b.2). Each upcoming
         # tide gets docs/tides/<slug>/{index.html,forecast.json,evolution.csv}.

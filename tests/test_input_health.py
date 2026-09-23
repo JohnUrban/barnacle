@@ -77,6 +77,7 @@ class InputHealthTests(unittest.TestCase):
             mock.patch.object(ff, "build_water_series", return_value=[]),
             mock.patch.object(ff, "build_seasonal_context", return_value={}),
             mock.patch.object(ff, "_today_lookback", return_value=None),
+            mock.patch.object(ff, "build_outlook_7d_field", return_value=(None, {})),
             mock.patch.object(
                 nws_surge_parser, "get_surge_forecast",
                 return_value=(False, [], None, "No active Coastal Flood event"),
@@ -84,7 +85,7 @@ class InputHealthTests(unittest.TestCase):
         ]
         with patches[0], patches[1], patches[2], patches[3], patches[4], \
                 patches[5], patches[6], patches[7], patches[8], patches[9], \
-                patches[10], patches[11], patches[12], patches[13]:
+                patches[10], patches[11], patches[12], patches[13], patches[14]:
             forecast = ff.build_forecast()
 
         self.assertRegex(forecast["generated_utc"], r"Z$")
@@ -126,6 +127,7 @@ class InputHealthTests(unittest.TestCase):
             mock.patch.object(ff, "build_water_series", return_value=[]),
             mock.patch.object(ff, "build_seasonal_context", return_value={}),
             mock.patch.object(ff, "_today_lookback", return_value=None),
+            mock.patch.object(ff, "build_outlook_7d_field", return_value=(None, {})),
             mock.patch.object(
                 nws_surge_parser, "get_surge_forecast",
                 return_value=(True, [projection], "product text",
@@ -134,7 +136,7 @@ class InputHealthTests(unittest.TestCase):
         ]
         with patches[0], patches[1], patches[2], patches[3], patches[4], \
                 patches[5], patches[6], patches[7], patches[8], patches[9], \
-                patches[10], patches[11], patches[12], patches[13]:
+                patches[10], patches[11], patches[12], patches[13], patches[14]:
             forecast = ff.build_forecast()
 
         self.assertEqual(forecast["surge_source"], "nws-coastal-flood-product")
@@ -166,6 +168,7 @@ class InputHealthTests(unittest.TestCase):
             mock.patch.object(ff, "build_water_series", return_value=[]),
             mock.patch.object(ff, "build_seasonal_context", return_value={}),
             mock.patch.object(ff, "_today_lookback", return_value=None),
+            mock.patch.object(ff, "build_outlook_7d_field", return_value=(None, {})),
             mock.patch.object(
                 nws_surge_parser, "get_surge_forecast",
                 return_value=(True, [], "narrative",
@@ -174,7 +177,7 @@ class InputHealthTests(unittest.TestCase):
         ]
         with patches[0], patches[1], patches[2], patches[3], patches[4], \
                 patches[5], patches[6], patches[7], patches[8], patches[9], \
-                patches[10], patches[11], patches[12], patches[13]:
+                patches[10], patches[11], patches[12], patches[13], patches[14]:
             forecast = ff.build_forecast()
 
         self.assertEqual(forecast["surge_source"], "surge-persistence")

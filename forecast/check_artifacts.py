@@ -33,6 +33,14 @@ FUTURE_TOLERANCE = dt.timedelta(minutes=5)
 # Canonical, actively consumed ledgers. Raw vendor downloads and archived
 # research CSVs intentionally remain outside this shape gate.
 CSV_SCHEMAS = {
+    "data/outlook_log.csv": [
+        "generated_utc", "target_tide_time", "lead_h", "astro_mllw",
+        "nws_product_mllw", "nwps_mllw", "petss_p10_mllw", "petss_p90_mllw",
+        "persist_flat_mllw", "persist_decay_mllw", "production_mllw",
+        "production_source", "outlook_mllw", "outlook_source", "qpf6_in",
+        "qpf6_source", "pop_pct", "gust_mph", "xcheck_p_half_inch_pct",
+        "model_version",
+    ],
     "data/forecast_accuracy.csv": [
         "forecast_run_date", "forecast_peak_predicted_mllw",
         "forecast_peak_predicted_time", "forecast_regime",
@@ -533,6 +541,7 @@ def validate_surface_stamps(root=ROOT):
 
     check_html(os.path.join(root, "docs", "index.html"))
     check_html(os.path.join(root, "docs", "details.html"))
+    check_html(os.path.join(root, "docs", "outlook.html"))
     for tide in forecast.get("all_tides") or []:
         stamp = str(tide.get("time", ""))[:16]
         if " " not in stamp:
@@ -598,7 +607,7 @@ def check_artifacts(root=ROOT):
         bad.append((alert_path, why))
     bad.extend(validate_surface_stamps(root))
     bad.extend(validate_current_surfaces(root))
-    for relpath in ("docs/index.html", "docs/details.html",
+    for relpath in ("docs/index.html", "docs/details.html", "docs/outlook.html",
                     "docs/forecast.json", "docs/nowcast.json",
                     "docs/barnacle-widget.js"):
         path = os.path.join(root, relpath)

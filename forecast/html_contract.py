@@ -107,6 +107,7 @@ def current_surface_paths(root: str | Path) -> list[Path]:
     paths = [
         root / "docs" / "index.html",
         root / "docs" / "details.html",
+        root / "docs" / "outlook.html",
         root / "docs" / "highlands.html",
         root / "docs" / "tides" / "index.html",
     ]
