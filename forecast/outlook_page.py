@@ -220,6 +220,7 @@ def _day_cards(ol):
         if d.get("band_hi_max_mllw") is not None:
             band = (f'<p class="dc-line">Guidance high end: <b>{d["band_hi_max_mllw"]:.2f} ft</b> '
                     f'({_e(_regime_word(d.get("regime_hi_max")))}) at the P-ETSS 90th percentile</p>')
+        partial_note = ("<span class=\"note\">(partial: %s h in scope)</span>" % d.get("hours_in_scope")) if d.get("partial") else ""
         rain = "Rain: —"
         if d.get("qpf_in") is not None:
             rain = (f"Rain: <b>{d['qpf_in']:.2f} in</b> ({_e(RAIN_SOURCE.get(d.get('qpf_source'), d.get('qpf_source')))}"
@@ -231,7 +232,7 @@ def _day_cards(ol):
         cls = "day-card day-card-today" if i == 0 else "day-card"
         cards.append(f"""
     <div class="{cls} regime-{_e(regime)}">
-      <h3>{_e(_day_title(d))}{(" <span class=\"note\">(partial: %s h in scope)</span>" % d.get("hours_in_scope")) if d.get("partial") else ""}</h3>
+      <h3>{_e(_day_title(d))}{partial_note}</h3>
       <p class="dc-line"><b>{_e(_regime_word(regime).upper())}</b> <span class="note">— worst pathway: {_e(pathway)}</span></p>
       <p class="dc-line">Tide: astronomy <b>{_ft(d.get('astro_max_mllw'))}</b>, with guidance <b>{_ft(d.get('outlook_max_mllw'))}</b>
          → {_e(_regime_word(tidal_regime))} <span class="note">({_e(src)})</span></p>
