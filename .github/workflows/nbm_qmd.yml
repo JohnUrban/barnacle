@@ -1,16 +1,15 @@
-name: Barnacle NBM rain percentiles
+name: Barnacle outlook guidance (warm job)
 
-# Warm job for the 7-day outlook (2026-09-23): NOAA's NBM probabilistic
-# (qmd) file gives rain-amount percentiles and exceedance chances per 6-h
-# bucket, but each house-sized subset costs ~9 s at NOMADS and the file
-# is published for the 00/06/12/18Z cycles only, a few hours late. The
-# hourly forecast job cannot afford the 28 requests, so this job fetches
-# them into data/outlook_nbm_qmd.json and the hourly run merges that
-# file by valid time. Cron is UTC and does not adjust for DST.
+# Warm job for the 7-day outlook (2026-09-23; audit 2026-09-23-a1 R1): the
+# hourly production job must never wait on NOMADS, so NBM amounts, NBM
+# percentiles (synoptic cycles only, ~9 s per subset, published 3+ h late),
+# P-ETSS surge text and WPC daily rain are fetched here on their own budget
+# into data/outlook_guidance.json. The hourly run admits each source by its
+# cycle age. Cron is UTC and does not adjust for DST.
 
 on:
   schedule:
-    - cron: '50 5,11,17,23 * * *'   # ~5.8 h after each synoptic cycle (12Z qmd was still absent at 16:03Z)
+    - cron: '50 2,5,8,11,14,17,20,23 * * *'   # every 3 h; the :50 of 05/11/17/23Z is ~5.8 h after each synoptic cycle
   workflow_dispatch:
 
 concurrency:
@@ -23,7 +22,7 @@ permissions:
 jobs:
   warm:
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 20
     env:
       TZ: America/New_York
 
@@ -39,22 +38,22 @@ jobs:
       - name: Install dependencies (GRIB decoder)
         run: pip install --quiet -r forecast/requirements.txt
 
-      - name: Fetch NBM percentiles (precip-only subsets)
+      - name: Fetch outlook guidance (NBM amounts + percentiles, P-ETSS, WPC)
         run: python forecast/outlook_warm.py --budget 480
 
       - name: Publish gate (no markers, strict JSON)
         run: python forecast/check_artifacts.py
 
-      - name: Commit and push the percentile file
+      - name: Commit and push the guidance file
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/outlook_nbm_qmd.json
+          git add data/outlook_guidance.json
           if git diff --staged --quiet; then
             echo "No updates to commit"
             exit 0
           fi
-          git commit -m "nbm percentiles $(date -u +%Y-%m-%d) $(date -u +%H):$(date -u +%M) UTC"
+          git commit -m "outlook guidance $(date -u +%Y-%m-%d) $(date -u +%H):$(date -u +%M) UTC"
           for attempt in 1 2 3; do
             if git push; then
               echo "pushed on attempt $attempt"

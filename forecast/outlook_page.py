@@ -44,7 +44,7 @@ SOURCE_SHORT = {"nws_product": "NWS product", "nwps": "NWS gauge fcst",
                 "surge-persistence": "persistence", "astronomical-only-degraded": "astro (degraded)"}
 REGIME_LABEL = {"dry": "no flooding", "street": "street water", "light": "light flooding",
                 "moderate": "moderate flooding", "severe": "severe flooding",
-                "cold_lockout": "cold lockout"}
+                "cold_lockout": "cold lockout", "unknown": "unknown (no rain forecast)"}
 RAIN_SOURCE = {"nws_grid": "NWS grid", "nbm": "NBM 6-h", "wpc_24h": "WPC 24-h"}
 CHART_TAGS = (
     '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js" '
@@ -151,8 +151,11 @@ def _rain_line(rp):
     if not rp:
         return "Rain pathway: —"
     if not rp.get("rain_available"):
-        return "Rain pathway: rain forecast unavailable for this day (not zero)"
+        return "Rain pathway: NO rain forecast for this day — unknown, not dry"
     bits = []
+    if rp.get("rain_coverage") is not None and rp["rain_coverage"] < 1.0:
+        bits.append(f"rain known for {rp.get('rain_known_hours')} of {rp.get('rain_hours')} hours "
+                    f"(the rest is unknown, not dry)")
     if rp.get("tank_peak_navd88") is not None:
         inch = (rp["tank_peak_navd88"] - 3.52) * 12.0
         bits.append(f"tank line peaks <b>{inch:+.1f}\u2033</b> vs SW grate at {_e(rp.get('tank_peak_time'))} "

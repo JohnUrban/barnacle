@@ -799,7 +799,7 @@ def fetch_surge_swing_6h():
 # daily workflow run from anywhere and still find the right files.
 _REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 OUTLOOK_LOG_PATH = os.path.join(_REPO_ROOT, "data", "outlook_log.csv")
-OUTLOOK_CACHE_PATH = os.path.join(_REPO_ROOT, "data", "outlook_cache.json")
+OUTLOOK_GUIDANCE_PATH = os.path.join(_REPO_ROOT, "data", "outlook_guidance.json")
 
 
 def build_outlook_7d_field(now_utc, all_tides, persisted_surge, surge_age_min,
@@ -810,14 +810,14 @@ def build_outlook_7d_field(now_utc, all_tides, persisted_surge, surge_age_min,
     widget and the prediction ledger are untouched. Each source carries
     its own input_health entry (rule 7). Tests patch this function.
     """
-    cache = _outlook_sources.load_cache(OUTLOOK_CACHE_PATH)
-    data, health = _outlook_sources.gather(now_utc, cache)
-    try:
-        _outlook_sources.save_cache(OUTLOOK_CACHE_PATH, cache)
-    except OSError as e:
-        health["cache"] = {"status": "degraded", "detail": f"cache not saved: {e}"}
-    entries = {f"outlook_{k}": {"status": h.get("status", "unavailable"),
-                                "detail": h.get("detail", "")}
+    # Audit 2026-09-23-a1 R1: five quick requests under one deadline; the
+    # expensive sources come from the warm job's file and are admitted by
+    # cycle age. Nothing here can hold the alert path beyond the budget.
+    data, health = _outlook_sources.gather(
+        now_utc, guidance_path=OUTLOOK_GUIDANCE_PATH,
+        deadline=_outlook_sources.Deadline(_outlook_sources.OUTLOOK_FETCH_BUDGET_S))
+    entries = {f"outlook_{k.strip('_')}": {"status": h.get("status", "unavailable"),
+                                           "detail": h.get("detail", "")}
                for k, h in health.items()}
     if not (data.get("astro") or {}).get("highs"):
         entries["outlook_7d"] = {"status": "unavailable",

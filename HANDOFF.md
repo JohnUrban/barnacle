@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 13:05 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 13:29 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
@@ -31,6 +31,14 @@ or promotion in the audit commit. Claude owes round-02 reply.
   tables, gauge-specific error-statistics wording. See full acceptance list.
 - Recommendation: fix R1–R9, independently verify candidate, then John's
   promotion DECISION. This HOLD is not an owner decision or a review PASS.
+- REPAIR SHIP A (Claude, after 14:00 EDT): R1 isolated — hourly gather is
+  five quick requests under one 60-s Deadline; NBM/percentiles/P-ETSS/WPC
+  come from the warm job's data/outlook_guidance.json (every 3 h) and are
+  admitted by cycle age. R4 validated (NWPS issuance/units, expiry before
+  merge). R3 part: coverage to now+168 h, series ends with day 7, rain
+  unknown != dry. R9: budget semantics fixed; CI installs the decoder and
+  forbids skips. Ships B (R5/R6/R8/R2) and C (R7/R11/R12, JSON confidence
+  removal, burst-at-high-tide line) follow, then the round-02 reply.
 
 ## Live event: coastal advisory CF.Y.0021
 

@@ -17,6 +17,18 @@ from forecast import flood_forecast_daily as ff
 from forecast import outlook, outlook_page
 from forecast import outlook_sources as srcs
 from forecast.station_time import station_time_storage_key
+import os
+
+
+def _need_grib(testcase):
+    """CI sets BARNACLE_REQUIRE_GRIB=1 after installing eccodes: then a
+    missing decoder is a FAILURE, never a skip (audit R9)."""
+    try:
+        import eccodes  # noqa: F401
+    except ImportError:
+        if os.environ.get("BARNACLE_REQUIRE_GRIB") == "1":
+            testcase.fail("eccodes missing although BARNACLE_REQUIRE_GRIB=1")
+        testcase.skipTest("eccodes not installed locally (CI installs it)")
 
 UTC = dt.timezone.utc
 FIX = Path(__file__).parent / "fixtures"
@@ -30,7 +42,7 @@ def _fixture_data():
         "astro_hourly": json.loads((FIX / "astro_hourly_20260923.json").read_text()),
         "grid": srcs.parse_nws_grid(json.loads(
             (FIX / "nws_grid_phi_61_102_20260923.json").read_text())["properties"]),
-        "nwps": srcs.parse_nwps(json.loads((FIX / "nwps_sdhn4_stageflow_20260923.json").read_text())),
+        "nwps": srcs.parse_nwps(json.loads((FIX / "nwps_sdhn4_stageflow_20260923.json").read_text()), NOW),
         "petss": {"cycle": "2026-09-23T06:00:00Z",
                   "p10": srcs.parse_petss_station(
                       (FIX / "petss_t06z_e90_stormsurge_east_20260923.txt").read_text(), CYCLE),
@@ -148,19 +160,13 @@ class AdapterParseTests(unittest.TestCase):
         self.assertEqual(set(x["models"]["2026-09-26"]), {"gfs", "ecmwf", "icon", "gem"})
 
     def test_nbm_subset_picks_deterministic_amount_not_probability(self):
-        try:
-            import eccodes  # noqa: F401
-        except ImportError:
-            self.skipTest("eccodes not installed locally (CI installs it)")
+        _need_grib(self)
         got = srcs.parse_nbm_subset((FIX / "nbm_t06z_core_f096_house_20260923.grib2").read_bytes())
         self.assertAlmostEqual(got["qpf_in"], 0.14, places=2)
         self.assertAlmostEqual(got["pop_pct"], 51.0, places=0)
 
     def test_nbm_qmd_percentiles_and_exceedance(self):
-        try:
-            import eccodes  # noqa: F401
-        except ImportError:
-            self.skipTest("eccodes not installed locally (CI installs it)")
+        _need_grib(self)
         got = srcs.parse_nbm_qmd_subset((FIX / "nbm_t06z_qmd_f096_house_20260923.grib2").read_bytes())
         self.assertLessEqual(got["p10_in"], got["p50_in"])
         self.assertLessEqual(got["p50_in"], got["p90_in"])
@@ -177,13 +183,19 @@ class AdapterParseTests(unittest.TestCase):
         qmd = {"qmd_cycle": "2026-09-23T06:00:00Z", "fetched_at": "2026-09-23T10:30:00Z",
                "buckets": {"2026-09-26T12:00:00Z": {"p10_in": 0.0, "p50_in": 0.1, "p90_in": 0.9,
                                                     "p_ge_half_in_pct": 22.0}}}
-        h = srcs.merge_nbm_qmd(nbm, qmd, NOW + dt.timedelta(hours=1))
+        h = srcs.merge_nbm_qmd(nbm, qmd, NOW + dt.timedelta(hours=1))   # cycle 6 h old
         self.assertEqual(h["status"], "ok")
         self.assertEqual(nbm["buckets"][0]["p90_in"], 0.9)
         self.assertNotIn("p90_in", nbm["buckets"][1])          # unmatched bucket stays without percentiles
-        self.assertEqual(srcs.merge_nbm_qmd(nbm, qmd, NOW + dt.timedelta(hours=12))["status"], "degraded")
-        self.assertEqual(srcs.merge_nbm_qmd(nbm, qmd, NOW + dt.timedelta(hours=40))["status"], "unavailable")
+        self.assertEqual(srcs.merge_nbm_qmd(nbm, qmd, NOW + dt.timedelta(hours=20))["status"], "degraded")   # cycle 25 h
+        # R4: expired percentiles are NOT merged and previously merged fields are cleared
+        h = srcs.merge_nbm_qmd(nbm, qmd, NOW + dt.timedelta(hours=40))
+        self.assertEqual(h["status"], "unavailable")
+        self.assertNotIn("p90_in", nbm["buckets"][0])
         self.assertEqual(srcs.merge_nbm_qmd(nbm, None, NOW)["status"], "unavailable")
+        # fresh file with zero matching buckets is degraded, not ok
+        h = srcs.merge_nbm_qmd({"buckets": [{"end_utc": "2027-01-01T00:00:00Z", "hours": 6}]}, qmd, NOW)
+        self.assertEqual(h["status"], "degraded")
 
     def test_nbm_qmd_fetch_honours_time_budget(self):
         calls = []
@@ -191,25 +203,24 @@ class AdapterParseTests(unittest.TestCase):
         def fake_request(url, timeout=30):
             calls.append(url)
             return (FIX / "nbm_t06z_qmd_f096_house_20260923.grib2").read_bytes()
-        try:
-            import eccodes  # noqa: F401
-        except ImportError:
-            self.skipTest("eccodes not installed locally (CI installs it)")
+        _need_grib(self)
         with mock.patch.object(srcs, "_request", side_effect=fake_request):
-            data = srcs.fetch_nbm_qmd(NOW, steps=(6, 12, 18), time_budget_s=1e9)
+            data = srcs.fetch_nbm_qmd(NOW, cycle=CYCLE, steps=(6, 12, 18), time_budget_s=1e9)
         self.assertEqual(data["qmd_cycle"], "2026-09-23T06:00:00Z")
         self.assertEqual(sorted(data["buckets"]), ["2026-09-23T12:00:00Z", "2026-09-23T18:00:00Z", "2026-09-24T00:00:00Z"])
+        self.assertEqual(len(calls), 3)                        # no discovery request when the cycle is given
         with mock.patch.object(srcs, "_request", side_effect=fake_request):
-            data = srcs.fetch_nbm_qmd(NOW, steps=(6, 12, 18), time_budget_s=-1)
+            data = srcs.fetch_nbm_qmd(NOW, cycle=CYCLE, steps=(6, 12, 18), time_budget_s=-1)
         self.assertEqual(len(data["buckets"]), 1)             # the first step always runs, the rest hit the budget
+        self.assertEqual(len(data["missing"]), 2)
         self.assertTrue(all("time budget" in m for m in data["missing"]))
 
     def test_cache_refresh_contract(self):
         cache, now = {}, NOW
         calls = []
 
-        def fetch():
-            calls.append(1)
+        def fetch(timeout):
+            calls.append(timeout)
             if len(calls) == 2:
                 raise OSError("down")
             return {"summary": "fresh", "v": len(calls)}
@@ -221,38 +232,10 @@ class AdapterParseTests(unittest.TestCase):
         self.assertEqual((d3["v"], h3["status"]), (1, "degraded"))  # fetch failed, stale served
         d4, h4 = srcs.refresh(cache, "nwps", fetch, now + dt.timedelta(hours=30))
         self.assertEqual(d4["v"], 3)
-        with mock.patch.object(srcs, "MAX_STALE_H", {**srcs.MAX_STALE_H, "nwps": 0}):
-            calls.append(1)   # make the next call the failing one
-            d5, h5 = srcs.refresh({"nwps": {"fetched_at": "2026-09-23T00:00:00Z", "data": {"v": 9}}},
-                                  "nwps", lambda: (_ for _ in ()).throw(OSError("down")), now)
+        spent = srcs.Deadline(0.0, clock=lambda: 100.0)
+        d5, h5 = srcs.refresh({}, "nwps", fetch, now, deadline=spent)
         self.assertIsNone(d5)
-        self.assertEqual(h5["status"], "unavailable")
-
-
-class WarmJobTests(unittest.TestCase):
-    def test_warm_job_skips_refetch_when_newest_cycle_is_on_disk(self):
-        import importlib, sys, tempfile, os, json as _json
-        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "forecast"))
-        warm = importlib.import_module("outlook_warm")
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "q.json")
-            _json.dump({"qmd_cycle": "2026-09-23T06:00:00Z", "fetched_at": "2026-09-23T10:00:00Z",
-                        "buckets": {f"b{i}": {} for i in range(28)}}, open(path, "w"))
-            # the script imports its own `outlook_sources` module object; patch that one
-            with mock.patch.object(warm.srcs, "newest_qmd_cycle", return_value=CYCLE), \
-                    mock.patch.object(warm.srcs, "fetch_nbm_qmd") as fetch:
-                rc = warm.main(["--path", path])
-            self.assertEqual(rc, 0)
-            fetch.assert_not_called()
-            # a newer cycle triggers the fetch and rewrites the file
-            newer = CYCLE + dt.timedelta(hours=6)
-            with mock.patch.object(warm.srcs, "newest_qmd_cycle", return_value=newer), \
-                    mock.patch.object(warm.srcs, "fetch_nbm_qmd", return_value={
-                        "qmd_cycle": newer.strftime("%Y-%m-%dT%H:%M:%SZ"), "fetched_at": "x",
-                        "buckets": {"a": {}}, "missing": [], "summary": "s"}):
-                rc = warm.main(["--path", path])
-            self.assertEqual(rc, 0)
-            self.assertEqual(_json.load(open(path))["qmd_cycle"], newer.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        self.assertIn("budget", h5["detail"])
 
 
 class LadderTests(unittest.TestCase):
@@ -404,9 +387,17 @@ class RainPathwayTests(unittest.TestCase):
         ol = _build(data=data)
         late = [p for p in ol["series"] if p["lead_h"] > 80]
         self.assertTrue(late)
-        self.assertTrue(all(p["rain_source"] is None and p["rain_in_hr"] is None for p in late))
+        self.assertTrue(all(p["rain_source"] is None and p["rain_in_hr"] is None and p["rain_unknown"] for p in late))
         d = next(d for d in ol["days"] if d["date"] == "2026-09-28")
         self.assertFalse(d["rain_pathway"]["rain_available"])
+        self.assertEqual(d["rain_pathway"]["tank_regime"], "unknown")        # not "dry"
+        self.assertEqual(d["rain_pathway"]["burst_regime"], "unknown")
+        # partial day: the grid ends inside 09-26, so that day is partial, not complete
+        sat = next(d for d in ol["days"] if d["date"] == "2026-09-26")
+        self.assertLess(sat["rain_pathway"]["rain_coverage"], 1.0)
+        self.assertGreater(sat["rain_pathway"]["rain_coverage"], 0.0)
+        # the series never runs into an eighth calendar date
+        self.assertEqual(max(p["time"][:10] for p in ol["series"]), ol["days"][-1]["date"])
 
 
 class MapSeriesTests(unittest.TestCase):
@@ -511,9 +502,7 @@ class FacadeWiringTests(unittest.TestCase):
         data = _fixture_data()
         health = {k: {"status": "ok", "detail": "fixture"} for k in data}
         health["nbm"] = {"status": "unavailable", "detail": "NOMADS down"}
-        with mock.patch.object(ff._outlook_sources, "load_cache", return_value={}), \
-                mock.patch.object(ff._outlook_sources, "gather", return_value=(data, health)), \
-                mock.patch.object(ff._outlook_sources, "save_cache"), \
+        with mock.patch.object(ff._outlook_sources, "gather", return_value=(data, health)), \
                 mock.patch.object(ff, "_load_observed_peaks_cache", return_value={}), \
                 mock.patch.object(ff._outlook, "read_outlook_log", return_value=[]):
             ol, entries = ff.build_outlook_7d_field(NOW, _product_tides(), 1.8, 6.0,

@@ -1,20 +1,32 @@
 #!/usr/bin/env python3
-"""7-day outlook data adapters (opened 2026-09-23, John's green light).
+"""7-day outlook data adapters (opened 2026-09-23; audit 2026-09-23-a1 R1/R3/R4/R9).
 
-Every adapter returns plain JSON-safe data or raises; the caller wraps it
-in `refresh()` which owns the cache, the TTL and the health status
-(AGENTS rule 7: unavailable is never zero). No adapter imports the
-production facade; station-time helpers come from station_time.
+Two producers, by design:
 
-Sources and their verified reach (2026-09-23):
-  astro   NOAA CO-OPS hi/lo predictions              any range
-  grid    NWS gridpoint wind / gust / direction / PoP  ~7 d; QPF ~72 h
-  nwps    NWS water-prediction gauge forecast SDHN4    72 h hourly (MLLW)
-  petss   P-ETSS GEFS-based storm SURGE, 10th/90th pct 102 h hourly (text)
-  nbm     National Blend of Models 6-h QPF + PoP       out to 264 h (GRIB2
-          subset via the NOMADS filter; needs eccodes)
-  wpc     WPC 24-h QPF, days 2-7 (GRIB, fallback)
-  xcheck  non-NOAA multi-model + GEFS ensemble         7 d (cross-check only)
+  * The HOURLY production run (flood_forecast_daily.py) calls `gather()`,
+    which makes only five quick requests (astronomy, hourly astronomy, the
+    NWS grid, the NWS gauge forecast, the cross-check) under ONE monotonic
+    deadline (OUTLOOK_FETCH_BUDGET_S). When the budget is spent, remaining
+    sources are reported "unavailable: budget", never awaited. It reads the
+    expensive sources from the warm job's file and admits them by issuance
+    age. It never blocks alert evaluation for a vendor.
+  * The WARM job (outlook_warm.py, nbm_qmd.yml) fetches the expensive or
+    slow-changing sources (NBM amounts to now+168 h, NBM percentiles from
+    the newest synoptic cycle, P-ETSS surge, WPC daily rain) into
+    data/outlook_guidance.json on its own budget.
+
+Every adapter returns JSON-safe data or raises; health is decided by the
+caller (rule 7: unavailable is never zero). No adapter imports the facade.
+
+Sources and verified reach (2026-09-23):
+  astro/astro_hourly  NOAA CO-OPS predictions                  any range
+  grid    NWS gridpoint wind / gust / direction / PoP ~7 d; QPF ~72 h
+  nwps    NWS water-prediction gauge forecast SDHN4   72 h hourly (ft MLLW)
+  petss   P-ETSS GEFS-based storm SURGE, e90/e10 = p10/p90, 102 h hourly
+  nbm     National Blend of Models 6-h QPF + PoP (core, hourly cycles)
+  nbm_qmd NBM percentiles + exceedance chances (00/06/12/18Z, lags 3+ h)
+  wpc     WPC 24-h QPF days 2-7 (per-interval fallback for rain)
+  xcheck  non-NOAA multi-model + GEFS ensemble (cross-check only)
 """
 
 import datetime as dt
@@ -24,6 +36,7 @@ import os
 import re
 import statistics
 import tempfile
+import time
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -50,25 +63,51 @@ OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 OPEN_METEO_ENS_URL = "https://ensemble-api.open-meteo.com/v1/ensemble"
 
 HORIZON_HOURS = 168
-NBM_STEPS = tuple(range(6, HORIZON_HOURS + 1, 6))       # 28 subsets
+NBM_MAX_FHOUR = 264
 WPC_STEPS = (48, 72, 96, 120, 144, 168)                 # 24-h totals
-# House-centred subset box for the NBM filter (2.5 km grid -> ~80 points)
 NBM_BOX = {"toplat": 40.5, "bottomlat": 40.3, "leftlon": -74.1, "rightlon": -73.9}
 
-# Refetch when the cached copy is older than TTL; keep serving a stale copy
-# (status "degraded") up to MAX_STALE when the refetch fails.
-TTL_H = {"astro": 1, "astro_hourly": 1, "grid": 1, "nwps": 1, "petss": 3, "nbm": 3,
-         "wpc": 6, "xcheck": 3}
-MAX_STALE_H = {"astro": 48, "astro_hourly": 48, "grid": 12, "nwps": 12, "petss": 12,
-               "nbm": 12, "wpc": 30, "xcheck": 12}
+# Hourly-run budget (R1): five quick requests, one deadline, alerts never wait.
+OUTLOOK_FETCH_BUDGET_S = 60.0
+PER_REQUEST_CAP_S = 15.0
+
+# Warm-file admission by ISSUANCE / cycle age (R4), hours.
+GUIDANCE_AGE_H = {          # (ok_below, degraded_below); beyond -> unavailable
+    # nbm_qmd: four cycles a day published ~4-5 h late, warm job every 3 h ->
+    # ~14 h staleness in normal operation is not a fault.
+    "nbm": (9.0, 24.0), "nbm_qmd": (15.0, 30.0), "petss": (12.0, 30.0), "wpc": (18.0, 36.0),
+}
+NWPS_MAX_ISSUE_AGE_H = 24.0
+
+GUIDANCE_PATH_DEFAULT = os.path.abspath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "data", "outlook_guidance.json"))
 
 MM_PER_IN = 25.4
 MPH_PER_KMH = 0.621371
 
 
 # ---------------------------------------------------------------------------
-# transport
+# transport + deadline
 # ---------------------------------------------------------------------------
+class Deadline:
+    """Monotonic budget shared by every request of one gather()."""
+
+    def __init__(self, seconds, clock=time.monotonic):
+        self._clock = clock
+        self.seconds = float(seconds)
+        self._end = clock() + self.seconds
+
+    def remaining(self):
+        return self._end - self._clock()
+
+    def timeout(self, cap=PER_REQUEST_CAP_S):
+        """Socket timeout for the next request, or None when spent."""
+        r = self.remaining()
+        if r <= 2.0:
+            return None
+        return max(1.0, min(cap, r))
+
+
 def _request(url, timeout=30):
     req = Request(url, headers={"User-Agent": UA})
     with urlopen(req, timeout=timeout) as r:
@@ -91,6 +130,10 @@ def _parse_iso(stamp):
     return when
 
 
+def _stamp(when):
+    return when.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def _iso_duration_hours(text):
     """'PT6H' -> 6, 'P3DT22H' -> 94, 'P1D' -> 24, 'PT30M' -> 0.5."""
     m = re.match(r"^P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?$", text or "")
@@ -100,34 +143,18 @@ def _iso_duration_hours(text):
     return days * 24 + hours + minutes / 60.0
 
 
+def _finite(v):
+    return isinstance(v, (int, float)) and math.isfinite(v)
+
+
 # ---------------------------------------------------------------------------
-# cache
+# quick-source cache contract (used with an in-memory dict per run)
 # ---------------------------------------------------------------------------
-def load_cache(path):
-    try:
-        with open(path) as f:
-            data = json.load(f)
-        return data if isinstance(data, dict) else {}
-    except (OSError, ValueError):
-        return {}
+def refresh(cache, key, fetch_fn, now_utc, ttl_h=1.0, max_stale_h=12.0, deadline=None):
+    """(data, health) for one quick source under the deadline contract.
 
-
-def save_cache(path, cache):
-    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
-    tmp = path + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump(cache, f, indent=1, sort_keys=True)
-    os.replace(tmp, path)
-
-
-def refresh(cache, key, fetch_fn, now_utc, ttl_h=None, max_stale_h=None):
-    """(data, health) for one source, honouring the cache contract.
-
-    health = {"status": ok|degraded|unavailable, "detail": str,
-              "fetched_at": iso|None, "age_h": float|None}
+    fetch_fn(timeout) must return JSON-safe data with a 'summary' or raise.
     """
-    ttl_h = TTL_H[key] if ttl_h is None else ttl_h
-    max_stale_h = MAX_STALE_H[key] if max_stale_h is None else max_stale_h
     entry = cache.get(key) or {}
     fetched = _parse_iso(entry.get("fetched_at"))
     age_h = ((now_utc - fetched).total_seconds() / 3600.0) if fetched else None
@@ -136,9 +163,17 @@ def refresh(cache, key, fetch_fn, now_utc, ttl_h=None, max_stale_h=None):
         return data, {"status": "ok",
                       "detail": f"{data.get('summary', 'cached')} (cache {age_h:.1f} h)",
                       "fetched_at": entry.get("fetched_at"), "age_h": round(age_h, 2)}
+    timeout = deadline.timeout() if deadline is not None else 30.0
+    if timeout is None:
+        if data is not None and age_h is not None and age_h <= max_stale_h:
+            return data, {"status": "degraded",
+                          "detail": f"skipped: outlook time budget exhausted; cached copy {age_h:.1f} h old",
+                          "fetched_at": entry.get("fetched_at"), "age_h": round(age_h, 2)}
+        return None, {"status": "unavailable", "detail": "skipped: outlook time budget exhausted",
+                      "fetched_at": None, "age_h": None}
     try:
-        fresh = fetch_fn()
-    except Exception as e:  # transport, parse, decoder missing: all reported
+        fresh = fetch_fn(timeout)
+    except Exception as e:  # transport, parse, validation: all reported
         if data is not None and age_h is not None and age_h <= max_stale_h:
             return data, {"status": "degraded",
                           "detail": (f"refetch failed ({type(e).__name__}: {e}); "
@@ -147,52 +182,46 @@ def refresh(cache, key, fetch_fn, now_utc, ttl_h=None, max_stale_h=None):
         return None, {"status": "unavailable",
                       "detail": f"fetch failed ({type(e).__name__}: {e})",
                       "fetched_at": None, "age_h": None}
-    stamp = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+    stamp = _stamp(now_utc)
     cache[key] = {"fetched_at": stamp, "data": fresh}
     return fresh, {"status": "ok", "detail": fresh.get("summary", "fresh"),
                    "fetched_at": stamp, "age_h": 0.0}
 
 
 # ---------------------------------------------------------------------------
-# astro: NOAA CO-OPS hi/lo predictions
+# astro: NOAA CO-OPS predictions
 # ---------------------------------------------------------------------------
-def fetch_astro_highs(now_utc, hours=HORIZON_HOURS + 6):
-    begin = (now_utc - dt.timedelta(hours=2)).strftime("%Y%m%d %H:%M")
+def _coops_predictions(now_utc, hours_back, hours, interval, timeout):
+    begin = (now_utc - dt.timedelta(hours=hours_back)).strftime("%Y%m%d %H:%M")
     params = dict(product="predictions", application="barnacle-outlook",
-                  begin_date=begin, range=int(hours + 2), datum="MLLW",
+                  begin_date=begin, range=int(hours + hours_back + 1), datum="MLLW",
                   station=SANDY_HOOK_STATION, time_zone="gmt", units="english",
-                  interval="hilo", format="json")
-    data = _get_json(COOPS_URL + "?" + urlencode(params))
-    highs = []
+                  interval=interval, format="json")
+    data = _get_json(COOPS_URL + "?" + urlencode(params), timeout)
+    pts = []
     for p in data.get("predictions") or []:
-        if p.get("type") != "H":
-            continue
         gmt = p["t"]
         when = dt.datetime.strptime(gmt, "%Y-%m-%d %H:%M").replace(tzinfo=dt.timezone.utc)
-        highs.append({"utc": when.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                      "time": noaa_gmt_to_station_string(gmt),
-                      "mllw": round(float(p["v"]), 3)})
+        v = float(p["v"])
+        if not math.isfinite(v):
+            continue
+        pts.append({"utc": _stamp(when), "time": noaa_gmt_to_station_string(gmt),
+                    "mllw": round(v, 3), "type": p.get("type")})
+    return pts
+
+
+def fetch_astro_highs(now_utc, hours=HORIZON_HOURS + 6, timeout=30):
+    highs = [{k: v for k, v in p.items() if k != "type"}
+             for p in _coops_predictions(now_utc, 2, hours, "hilo", timeout) if p.get("type") == "H"]
     if not highs:
         raise ValueError("no high tides in CO-OPS response")
     return {"highs": highs, "summary": f"{len(highs)} astronomical highs"}
 
 
-def fetch_astro_hourly(now_utc, hours_back=6, hours=HORIZON_HOURS):
-    """Hourly astronomical predictions (ft MLLW) from -hours_back to +hours:
-    the backbone of the continuous 7-day water series."""
-    begin = (now_utc - dt.timedelta(hours=hours_back)).strftime("%Y%m%d %H:%M")
-    params = dict(product="predictions", application="barnacle-outlook",
-                  begin_date=begin, range=int(hours + hours_back + 1), datum="MLLW",
-                  station=SANDY_HOOK_STATION, time_zone="gmt", units="english",
-                  interval="h", format="json")
-    data = _get_json(COOPS_URL + "?" + urlencode(params))
-    pts = []
-    for p in data.get("predictions") or []:
-        gmt = p["t"]
-        when = dt.datetime.strptime(gmt, "%Y-%m-%d %H:%M").replace(tzinfo=dt.timezone.utc)
-        pts.append({"utc": when.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "time": noaa_gmt_to_station_string(gmt),
-                    "mllw": round(float(p["v"]), 3)})
+def fetch_astro_hourly(now_utc, hours_back=6, hours=HORIZON_HOURS, timeout=30):
+    """Hourly astronomical predictions: the backbone of the 7-day series."""
+    pts = [{k: v for k, v in p.items() if k != "type"}
+           for p in _coops_predictions(now_utc, hours_back, hours, "h", timeout)]
     if len(pts) < 24:
         raise ValueError(f"only {len(pts)} hourly predictions")
     return {"points": pts, "summary": f"{len(pts)} hourly astronomical points"}
@@ -220,28 +249,27 @@ def parse_nws_grid(props):
             if start is None:
                 continue
             val = v.get("value")
-            out.append({"start": start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                        "hours": _iso_duration_hours(dur),
-                        "value": (round(conv(val), 3) if val is not None else None)})
+            out.append({"start": _stamp(start), "hours": _iso_duration_hours(dur),
+                        "value": (round(conv(val), 3) if _finite(val) else None)})
         series[name] = out
     last = {}
     for name, rows in series.items():
         if rows:
             end = _parse_iso(rows[-1]["start"]) + dt.timedelta(hours=rows[-1]["hours"])
-            last[name] = end.strftime("%Y-%m-%dT%H:%M:%SZ")
+            last[name] = _stamp(end)
     return {"update_time": props.get("updateTime"), "series": series, "reach": last,
             "summary": ("grid QPF to " + last.get("qpf_in", "?")[:13] + "Z, wind to "
                         + last.get("gust_mph", "?")[:13] + "Z")}
 
 
-def fetch_nws_grid(lat=HOUSE_LAT, lon=HOUSE_LON):
-    pts = _get_json(NWS_POINTS_URL.format(lat=lat, lon=lon))
+def fetch_nws_grid(lat=HOUSE_LAT, lon=HOUSE_LON, timeout=30):
+    pts = _get_json(NWS_POINTS_URL.format(lat=lat, lon=lon), timeout)
     grid_url = pts["properties"]["forecastGridData"]
-    return parse_nws_grid(_get_json(grid_url)["properties"])
+    return parse_nws_grid(_get_json(grid_url, timeout)["properties"])
 
 
 def grid_value_at(series, when_utc):
-    """Value of a grid series covering `when_utc` (bucket start <= t < end)."""
+    """Value of a grid series covering `when_utc` (start <= t < end)."""
     for row in series or []:
         start = _parse_iso(row["start"])
         if start <= when_utc < start + dt.timedelta(hours=row["hours"]):
@@ -252,23 +280,38 @@ def grid_value_at(series, when_utc):
 # ---------------------------------------------------------------------------
 # nwps: NWS water-prediction gauge forecast (SDHN4, ft MLLW, hourly, 72 h)
 # ---------------------------------------------------------------------------
-def parse_nwps(doc):
+def parse_nwps(doc, now_utc=None):
+    """Validated (R4): issuance parseable, not future, <= 24 h old; units
+    ft; finite plausible values; at least 12 future points."""
     f = doc.get("forecast") or {}
+    issued = _parse_iso(f.get("issuedTime"))
+    if issued is None:
+        raise ValueError("NWPS forecast has no parseable issuedTime")
+    if now_utc is not None:
+        age_h = (now_utc - issued).total_seconds() / 3600.0
+        if age_h < -1.0:
+            raise ValueError(f"NWPS issuedTime is in the future ({f.get('issuedTime')})")
+        if age_h > NWPS_MAX_ISSUE_AGE_H:
+            raise ValueError(f"NWPS forecast is {age_h:.1f} h old (issued {f.get('issuedTime')})")
+    units = (f.get("primaryUnits") or "").strip().lower()
+    if units != "ft":
+        raise ValueError(f"NWPS units {f.get('primaryUnits')!r}, expected ft")
     pts = []
     for x in f.get("data") or []:
         v = x.get("primary")
-        if v is None or v <= -900:
+        t = _parse_iso(x.get("validTime"))
+        if t is None or not _finite(v) or v <= -900 or not (-5.0 <= v <= 25.0):
             continue
-        pts.append({"utc": x["validTime"], "ft": round(float(v), 3)})
-    if not pts:
-        raise ValueError("NWPS forecast has no points")
-    return {"issued": f.get("issuedTime"), "units": f.get("primaryUnits"),
-            "series": pts,
-            "summary": f"{len(pts)} hourly points issued {f.get('issuedTime')}"}
+        pts.append({"utc": _stamp(t), "ft": round(float(v), 3)})
+    future = sum(1 for p in pts if now_utc is None or _parse_iso(p["utc"]) >= now_utc)
+    if future < 12:
+        raise ValueError(f"NWPS forecast has only {future} future points")
+    return {"issued": _stamp(issued), "units": "ft", "series": pts,
+            "summary": f"{len(pts)} hourly points issued {_stamp(issued)}"}
 
 
-def fetch_nwps_forecast(gauge=NWPS_GAUGE):
-    return parse_nwps(_get_json(NWPS_URL.format(gauge=gauge)))
+def fetch_nwps_forecast(now_utc=None, gauge=NWPS_GAUGE, timeout=30):
+    return parse_nwps(_get_json(NWPS_URL.format(gauge=gauge), timeout), now_utc)
 
 
 def series_max_near(series, when_utc, window_h=2.0, key="ft"):
@@ -301,12 +344,8 @@ _PETSS_STATION_RE = re.compile(r"^\s*(\d{7})\s+[A-Z]")
 
 
 def parse_petss_station(text, cycle_utc, station=SANDY_HOOK_STATION):
-    """Hourly surge (ft) for one station from a P-ETSS text product.
-
-    Row layout: the third header line names the first column's hour
-    ("07Z" for a 06Z cycle), i.e. value i is valid at cycle + (i+1) h.
-    Values are tenths of a foot; |v| >= 300 (e.g. -400) is missing.
-    """
+    """Hourly surge (ft) for one station: value i is valid at cycle + (i+1) h;
+    tenths of a foot; |v| >= 300 (e.g. -400) is missing and DROPPED."""
     lines = text.splitlines()
     hdr = next((l for l in lines[:6] if re.search(r"\b\d{2}Z\b", l)), None)
     if hdr is None:
@@ -336,13 +375,11 @@ def parse_petss_station(text, cycle_utc, station=SANDY_HOOK_STATION):
     for i, v in enumerate(vals):
         if v is None:
             continue
-        t = cycle_utc + dt.timedelta(hours=i + 1)
-        series.append({"utc": t.strftime("%Y-%m-%dT%H:%M:%SZ"), "surge_ft": v})
+        series.append({"utc": _stamp(cycle_utc + dt.timedelta(hours=i + 1)), "surge_ft": v})
     return series
 
 
 def _petss_cycles(now_utc):
-    """Candidate (cycle_utc) newest first, at least 90 min old."""
     out = []
     for back in (0, 1):
         day = (now_utc - dt.timedelta(days=back)).date()
@@ -353,36 +390,29 @@ def _petss_cycles(now_utc):
     return sorted(out, reverse=True)
 
 
-def fetch_petss(now_utc):
+def fetch_petss(now_utc, timeout=120):
     last_err = None
     for cycle in _petss_cycles(now_utc)[:4]:
         try:
-            out = {"cycle": cycle.strftime("%Y-%m-%dT%H:%M:%SZ")}
-            # P-ETSS files are named by EXCEEDANCE probability: e10 is the
-            # value exceeded by only 10 % of members (the HIGH end, our
-            # p90); e90 is exceeded by 90 % (the LOW end, our p10).
+            out = {"cycle": _stamp(cycle)}
+            # P-ETSS files are named by EXCEEDANCE probability: e10 is exceeded
+            # by only 10 % of members (our p90); e90 is exceeded by 90 % (p10).
             for pct, key in (("e90", "p10"), ("e10", "p90")):
                 url = PETSS_URL.format(ymd=cycle.strftime("%Y%m%d"), hh=cycle.hour, pct=pct)
-                text = _request(url, timeout=120).decode("ascii", "replace")
-                out[key] = parse_petss_station(text, cycle)
-            if any(a["surge_ft"] > b["surge_ft"] + 0.05
-                   for a, b in zip(out["p10"], out["p90"])):
+                out[key] = parse_petss_station(_request(url, timeout).decode("ascii", "replace"), cycle)
+            if any(a["surge_ft"] > b["surge_ft"] + 0.05 for a, b in zip(out["p10"], out["p90"])):
                 raise ValueError("P-ETSS p10 exceeds p90: exceedance mapping wrong")
-            n = len(out["p90"])
-            out["summary"] = (f"P-ETSS cycle {out['cycle'][:13]}Z, {n} h, "
-                              f"p10/p90 surge")
+            out["summary"] = f"P-ETSS cycle {out['cycle'][:13]}Z, {len(out['p90'])} h, p10/p90 surge"
             return out
         except Exception as e:
             last_err = e
-            continue
     raise RuntimeError(f"no P-ETSS cycle readable: {last_err}")
 
 
 # ---------------------------------------------------------------------------
 # GRIB helpers (eccodes; installed by forecast/requirements.txt)
 # ---------------------------------------------------------------------------
-def _grib_messages(raw):
-    """Yield dicts for every message in a GRIB byte string (needs eccodes)."""
+def _grib_messages(raw, keys=()):
     try:
         import eccodes as ec
     except ImportError as e:
@@ -399,16 +429,14 @@ def _grib_messages(raw):
                 try:
                     def g(key):
                         return ec.codes_get(gid, key) if ec.codes_is_defined(gid, key) else None
-                    yield {
-                        "template": g("productDefinitionTemplateNumber"),
-                        "length_h": g("lengthOfTimeRange"),
-                        "end_step": g("endStep"),
-                        "units": g("units"),
-                        "short_name": g("shortName"),
-                        "lats": ec.codes_get_array(gid, "latitudes"),
-                        "lons": ec.codes_get_array(gid, "longitudes"),
-                        "values": ec.codes_get_values(gid),
-                    }
+                    msg = {k: g(k) for k in ("productDefinitionTemplateNumber", "lengthOfTimeRange",
+                                             "units", "shortName", "parameterCategory",
+                                             "parameterNumber", "percentileValue", "probabilityType",
+                                             "scaledValueOfUpperLimit", "scaleFactorOfUpperLimit")}
+                    msg.update({"lats": ec.codes_get_array(gid, "latitudes"),
+                                "lons": ec.codes_get_array(gid, "longitudes"),
+                                "values": ec.codes_get_values(gid)})
+                    yield msg
                 finally:
                     ec.codes_release(gid)
     finally:
@@ -419,16 +447,16 @@ def _grib_messages(raw):
 
 
 def _nearest_value(msg, lat=HOUSE_LAT, lon=HOUSE_LON):
-    """Value at the grid point nearest the house (vectorized: WPC files
-    carry 3.4 M points)."""
     import numpy as np   # eccodes depends on numpy; keep the import local
     lats = np.asarray(msg["lats"], dtype=float)
     lons = np.asarray(msg["lons"], dtype=float)
     lons = np.where(lons > 180.0, lons - 360.0, lons)
     coslat = math.cos(math.radians(lat))
     d = (lats - lat) ** 2 + ((lons - lon) * coslat) ** 2
-    i = int(np.argmin(d))
-    return float(msg["values"][i])
+    v = float(msg["values"][int(np.argmin(d))])
+    if not math.isfinite(v):
+        raise ValueError("non-finite GRIB value at the house")
+    return v
 
 
 def _precip_inches(value, units):
@@ -445,112 +473,111 @@ def _precip_inches(value, units):
 # nbm: National Blend of Models 6-h QPF + PoP via the NOMADS filter
 # ---------------------------------------------------------------------------
 def nbm_subset_url(cycle_utc, fhour):
-    params = {
-        "dir": f"/blend.{cycle_utc:%Y%m%d}/{cycle_utc:%H}/core",
-        "file": f"blend.t{cycle_utc:%H}z.core.f{fhour:03d}.co.grib2",
-        "all_lev": "on", "var_APCP": "on", "subregion": "",
-        **NBM_BOX,
-    }
+    params = {"dir": f"/blend.{cycle_utc:%Y%m%d}/{cycle_utc:%H}/core",
+              "file": f"blend.t{cycle_utc:%H}z.core.f{fhour:03d}.co.grib2",
+              "all_lev": "on", "var_APCP": "on", "subregion": "", **NBM_BOX}
     return NBM_FILTER_URL + "?" + urlencode(params)
 
 
 def parse_nbm_subset(raw):
-    """{'qpf_in': 6-h amount, 'pop_pct': 6-h probability} at the house."""
+    """{'qpf_in': 6-h amount, 'pop_pct': 6-h probability} at the house
+    (template 8 = deterministic accumulation, 9 = probability)."""
     out = {"qpf_in": None, "pop_pct": None}
     for msg in _grib_messages(raw):
-        if msg["length_h"] != 6:
+        if msg["lengthOfTimeRange"] != 6:
             continue
         v = _nearest_value(msg)
-        if msg["template"] == 8:          # deterministic accumulation
+        if msg["productDefinitionTemplateNumber"] == 8:
             out["qpf_in"] = _precip_inches(v, msg["units"])
-        elif msg["template"] == 9:        # probability of exceedance (PoP)
-            out["pop_pct"] = round(v, 1) if v is not None else None
+        elif msg["productDefinitionTemplateNumber"] == 9:
+            out["pop_pct"] = round(v, 1)
     if out["qpf_in"] is None:
         raise ValueError("no 6-h APCP message in NBM subset")
     return out
 
 
-# Exceedance thresholds we keep from the NBM probabilistic (qmd) file,
-# in inches per 6 h -> field name.
+def nbm_steps_to_cover(cycle_utc, horizon_end_utc, step=6, max_fhour=NBM_MAX_FHOUR):
+    """6-h forecast hours from the cycle to cover horizon_end (R3): the
+    horizon is measured from NOW, not from the cycle."""
+    need = (horizon_end_utc - cycle_utc).total_seconds() / 3600.0
+    last = min(max_fhour, int(math.ceil(need / step)) * step)
+    return tuple(range(step, max(step, last) + 1, step))
+
+
+def fetch_nbm_qpf(now_utc, horizon_end_utc=None, timeout=60):
+    horizon_end = horizon_end_utc or (now_utc + dt.timedelta(hours=HORIZON_HOURS + 6))
+    cycle, first, last_err = None, None, None
+    for lag in range(3, 10):
+        c = (now_utc - dt.timedelta(hours=lag)).replace(minute=0, second=0, microsecond=0)
+        try:
+            raw = _request(nbm_subset_url(c, 6), timeout)
+            if raw[:4] != b"GRIB":
+                raise ValueError("not GRIB")
+            cycle, first = c, parse_nbm_subset(raw)
+            break
+        except Exception as e:
+            last_err = e
+    if cycle is None:
+        raise RuntimeError(f"no NBM cycle available: {last_err}")
+    steps = nbm_steps_to_cover(cycle, horizon_end)
+    buckets, missing = [], []
+    for fh in steps:
+        try:
+            got = first if fh == 6 else parse_nbm_subset(_request(nbm_subset_url(cycle, fh), timeout))
+        except Exception as e:
+            missing.append(f"f{fh:03d}: {type(e).__name__}")
+            continue
+        buckets.append({"end_utc": _stamp(cycle + dt.timedelta(hours=fh)), "hours": 6,
+                        "qpf_in": got["qpf_in"], "pop_pct": got["pop_pct"]})
+    if len(buckets) < len(steps) // 2:
+        raise RuntimeError(f"NBM: only {len(buckets)}/{len(steps)} buckets ({missing[:3]})")
+    return {"cycle": _stamp(cycle), "buckets": buckets, "missing": missing,
+            "summary": (f"NBM cycle {cycle:%Y-%m-%dT%H}Z, {len(buckets)}/{len(steps)} "
+                        f"6-h buckets to +{steps[-1]} h")}
+
+
+# NBM probabilistic (qmd): percentiles + exceedance chances, precip-only subsets
 NBM_EXCEEDANCE_IN = {0.25: "p_ge_quarter_in_pct", 0.5: "p_ge_half_in_pct", 1.0: "p_ge_1in_pct"}
 NBM_PERCENTILES = (10, 50, 90)
+NBM_QMD_FIELDS = tuple(f"p{q}_in" for q in NBM_PERCENTILES) + tuple(NBM_EXCEEDANCE_IN.values())
 
 
 def nbm_qmd_subset_url(cycle_utc, fhour):
-    params = {
-        "dir": f"/blend.{cycle_utc:%Y%m%d}/{cycle_utc:%H}/qmd",
-        "file": f"blend.t{cycle_utc:%H}z.qmd.f{fhour:03d}.co.grib2",
-        "var_APCP": "on", "all_lev": "on", "subregion": "",   # precip-only: ~9 s, not ~54 s
-        **NBM_BOX,
-    }
+    params = {"dir": f"/blend.{cycle_utc:%Y%m%d}/{cycle_utc:%H}/qmd",
+              "file": f"blend.t{cycle_utc:%H}z.qmd.f{fhour:03d}.co.grib2",
+              "var_APCP": "on", "all_lev": "on", "subregion": "", **NBM_BOX}
     return NBM_FILTER_URL + "?" + urlencode(params)
 
 
 def parse_nbm_qmd_subset(raw):
-    """6-h rain percentiles (in) and exceedance probabilities (%) at the
-    house from an NBM qmd subset. Percentiles are GRIB template 10
-    (percentileValue); exceedances are template 9 with an upper limit
-    scaled as value x 10^-factor mm."""
-    try:
-        import eccodes as ec
-    except ImportError as e:
-        raise RuntimeError("GRIB decoder not installed (eccodes)") from e
-    out = {f"p{q}_in": None for q in NBM_PERCENTILES}
-    out.update({name: None for name in NBM_EXCEEDANCE_IN.values()})
-    with tempfile.NamedTemporaryFile(suffix=".grib2", delete=False) as tmp:
-        tmp.write(raw)
-        path = tmp.name
-    try:
-        with open(path, "rb") as f:
-            while True:
-                gid = ec.codes_grib_new_from_file(f)
-                if gid is None:
-                    break
-                try:
-                    def g(key):
-                        return ec.codes_get(gid, key) if ec.codes_is_defined(gid, key) else None
-                    if not (g("parameterCategory") == 1 and g("parameterNumber") == 8
-                            and g("lengthOfTimeRange") == 6):
-                        continue
-                    tmpl = g("productDefinitionTemplateNumber")
-                    msg = {"lats": ec.codes_get_array(gid, "latitudes"),
-                           "lons": ec.codes_get_array(gid, "longitudes"),
-                           "values": ec.codes_get_values(gid)}
-                    if tmpl == 10 and g("percentileValue") in NBM_PERCENTILES:
-                        out[f"p{g('percentileValue')}_in"] = _precip_inches(_nearest_value(msg), g("units"))
-                    elif tmpl == 9 and g("probabilityType") == 1:
-                        sv, sf = g("scaledValueOfUpperLimit"), g("scaleFactorOfUpperLimit")
-                        if sv is None or sf is None:
-                            continue
-                        thr_in = round(sv * (10.0 ** -sf) / MM_PER_IN, 3)
-                        for thr, name in NBM_EXCEEDANCE_IN.items():
-                            if abs(thr_in - thr) < 0.02:
-                                out[name] = round(_nearest_value(msg), 1)
-                finally:
-                    ec.codes_release(gid)
-    finally:
-        try:
-            os.unlink(path)
-        except OSError:
-            pass
+    out = {k: None for k in NBM_QMD_FIELDS}
+    for msg in _grib_messages(raw):
+        if not (msg["parameterCategory"] == 1 and msg["parameterNumber"] == 8
+                and msg["lengthOfTimeRange"] == 6):
+            continue
+        tmpl = msg["productDefinitionTemplateNumber"]
+        if tmpl == 10 and msg["percentileValue"] in NBM_PERCENTILES:
+            out[f"p{msg['percentileValue']}_in"] = _precip_inches(_nearest_value(msg), msg["units"])
+        elif tmpl == 9 and msg["probabilityType"] == 1:
+            sv, sf = msg["scaledValueOfUpperLimit"], msg["scaleFactorOfUpperLimit"]
+            if sv is None or sf is None:
+                continue
+            thr_in = round(sv * (10.0 ** -sf) / MM_PER_IN, 3)
+            for thr, name in NBM_EXCEEDANCE_IN.items():
+                if abs(thr_in - thr) < 0.02:
+                    out[name] = round(_nearest_value(msg), 1)
     if out["p90_in"] is None:
         raise ValueError("no 6-h percentile messages in NBM qmd subset")
     return out
 
 
-NBM_QMD_PATH_DEFAULT = os.path.abspath(os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "..", "data", "outlook_nbm_qmd.json"))
-NBM_QMD_OK_AGE_H = 9.0        # a fresh synoptic cycle every ~6 h plus lag
-NBM_QMD_STALE_AGE_H = 30.0
-
-
-def newest_qmd_cycle(now_utc):
+def newest_qmd_cycle(now_utc, timeout=90):
     """Newest 00/06/12/18Z cycle whose probabilistic file is published."""
     base = now_utc.replace(hour=(now_utc.hour // 6) * 6, minute=0, second=0, microsecond=0)
     for back in range(0, 30, 6):
         c = base - dt.timedelta(hours=back)
         try:
-            raw = _request(nbm_qmd_subset_url(c, 6), timeout=90)
+            raw = _request(nbm_qmd_subset_url(c, 6), timeout)
         except Exception:
             continue
         if raw[:4] == b"GRIB":
@@ -558,107 +585,76 @@ def newest_qmd_cycle(now_utc):
     return None
 
 
-def fetch_nbm_qmd(now_utc, steps=NBM_STEPS, time_budget_s=None):
-    """Percentiles + exceedance chances per 6-h bucket from the newest
-    published synoptic cycle, keyed by valid END time. ~9 s per step, so
-    this runs in its own warm job (nbm_qmd.yml), never in the hourly run."""
-    import time as _time
-    qcycle = newest_qmd_cycle(now_utc)
+def fetch_nbm_qmd(now_utc, cycle=None, steps=None, time_budget_s=None, timeout=90,
+                  horizon_end_utc=None):
+    """Percentiles per 6-h bucket keyed by valid END time (warm job only).
+    The budget clock covers discovery too (R9); the first step is always
+    attempted so a published cycle yields at least one bucket."""
+    started = time.monotonic()
+    qcycle = cycle or newest_qmd_cycle(now_utc, timeout)
     if qcycle is None:
         raise RuntimeError("no NBM qmd cycle published in the last 30 h")
-    started = _time.time()
+    if steps is None:
+        steps = nbm_steps_to_cover(qcycle, horizon_end_utc or (now_utc + dt.timedelta(hours=HORIZON_HOURS + 6)))
     buckets, missing = {}, []
-    for fh in steps:
-        if time_budget_s is not None and _time.time() - started > time_budget_s:
+    for i, fh in enumerate(steps):
+        if i > 0 and time_budget_s is not None and time.monotonic() - started > time_budget_s:
             missing.append(f"f{fh:03d}: time budget")
             continue
-        end = qcycle + dt.timedelta(hours=fh)
         try:
-            got = parse_nbm_qmd_subset(_request(nbm_qmd_subset_url(qcycle, fh), timeout=90))
+            buckets[_stamp(qcycle + dt.timedelta(hours=fh))] = parse_nbm_qmd_subset(
+                _request(nbm_qmd_subset_url(qcycle, fh), timeout))
         except Exception as e:
             missing.append(f"f{fh:03d}: {type(e).__name__}")
-            continue
-        buckets[end.strftime("%Y-%m-%dT%H:%M:%SZ")] = got
     if not buckets:
         raise RuntimeError(f"NBM qmd: no buckets decoded ({missing[:3]})")
-    return {"qmd_cycle": qcycle.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "fetched_at": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "buckets": buckets, "missing": missing,
+    return {"qmd_cycle": _stamp(qcycle), "buckets": buckets, "missing": missing,
             "summary": f"NBM qmd {qcycle:%Y-%m-%dT%H}Z: {len(buckets)}/{len(steps)} buckets"}
-
-
-def load_nbm_qmd(path):
-    try:
-        with open(path) as f:
-            data = json.load(f)
-        return data if isinstance(data, dict) and data.get("buckets") else None
-    except (OSError, ValueError):
-        return None
 
 
 def merge_nbm_qmd(nbm, qmd, now_utc):
     """Attach percentile fields to NBM amount buckets by valid end time.
-    Returns a health dict for the qmd file (age-based)."""
-    if not qmd:
+
+    R4: expiry is decided FIRST (by the qmd CYCLE age); stale data is not
+    merged; any percentile fields already on the buckets are cleared before
+    the merge so a missing or expired file cannot leave old values behind.
+    ok requires at least one matching bucket.
+    """
+    buckets = (nbm or {}).get("buckets") or []
+    for b in buckets:
+        for k in NBM_QMD_FIELDS:
+            b.pop(k, None)
+    if not qmd or not qmd.get("buckets"):
         return {"status": "unavailable", "detail": "no NBM percentile file yet",
-                "fetched_at": None, "age_h": None}
-    fetched = _parse_iso(qmd.get("fetched_at"))
-    age_h = ((now_utc - fetched).total_seconds() / 3600.0) if fetched else None
+                "issued": None, "age_h": None}
+    cycle = _parse_iso(qmd.get("qmd_cycle"))
+    age_h = ((now_utc - cycle).total_seconds() / 3600.0) if cycle else None
+    ok_h, deg_h = GUIDANCE_AGE_H["nbm_qmd"]
+    if age_h is None or age_h < -1.0 or age_h > deg_h:
+        return {"status": "unavailable",
+                "detail": (f"NBM percentiles cycle {qmd.get('qmd_cycle')} "
+                           + ("unparseable" if age_h is None else f"{age_h:.1f} h old, expired")
+                           + "; not used"),
+                "issued": qmd.get("qmd_cycle"), "age_h": round(age_h, 2) if age_h is not None else None}
     n = 0
-    for b in (nbm or {}).get("buckets") or []:
+    for b in buckets:
         q = (qmd.get("buckets") or {}).get(b["end_utc"])
-        if q:
-            b.update({k: v for k, v in q.items() if k != "summary"})
+        if q and _finite(q.get("p90_in")):
+            b.update({k: v for k, v in q.items() if k in NBM_QMD_FIELDS})
             n += 1
-    if age_h is None or age_h > NBM_QMD_STALE_AGE_H:
-        status = "unavailable"
-    elif age_h > NBM_QMD_OK_AGE_H:
+    if n == 0:
+        status = "degraded"
+    elif age_h > ok_h:
         status = "degraded"
     else:
         status = "ok"
     return {"status": status,
-            "detail": (f"percentiles from NBM {str(qmd.get('qmd_cycle', ''))[:13]}Z on {n} buckets"
-                       + (f", file {age_h:.1f} h old" if age_h is not None else "")),
-            "fetched_at": qmd.get("fetched_at"), "age_h": round(age_h, 2) if age_h is not None else None}
-
-
-def fetch_nbm_qpf(now_utc, steps=NBM_STEPS):
-    cycle = None
-    last_err = None
-    for lag in range(3, 10):
-        c = (now_utc - dt.timedelta(hours=lag)).replace(minute=0, second=0, microsecond=0)
-        try:
-            raw = _request(nbm_subset_url(c, steps[0]), timeout=60)
-            if raw[:4] != b"GRIB":
-                raise ValueError("not GRIB")
-            cycle = c
-            first = parse_nbm_subset(raw)
-            break
-        except Exception as e:
-            last_err = e
-    if cycle is None:
-        raise RuntimeError(f"no NBM cycle available: {last_err}")
-    buckets, missing = [], []
-    for fh in steps:
-        try:
-            got = first if fh == steps[0] else parse_nbm_subset(
-                _request(nbm_subset_url(cycle, fh), timeout=60))
-        except Exception as e:
-            missing.append(f"f{fh:03d}: {type(e).__name__}")
-            continue
-        end = cycle + dt.timedelta(hours=fh)
-        buckets.append({"end_utc": end.strftime("%Y-%m-%dT%H:%M:%SZ"), "hours": 6,
-                        "qpf_in": got["qpf_in"], "pop_pct": got["pop_pct"]})
-    if len(buckets) < len(steps) // 2:
-        raise RuntimeError(f"NBM: only {len(buckets)}/{len(steps)} buckets ({missing[:3]})")
-    return {"cycle": cycle.strftime("%Y-%m-%dT%H:%M:%SZ"), "buckets": buckets,
-            "missing": missing,
-            "summary": (f"NBM cycle {cycle:%Y-%m-%dT%H}Z, {len(buckets)}/{len(steps)} "
-                        f"6-h buckets to +{steps[-1]} h")}
+            "detail": f"percentiles from NBM {str(qmd.get('qmd_cycle', ''))[:13]}Z on {n} buckets, cycle {age_h:.1f} h old",
+            "issued": qmd.get("qmd_cycle"), "age_h": round(age_h, 2)}
 
 
 # ---------------------------------------------------------------------------
-# wpc: WPC 24-h QPF files (fallback)
+# wpc: WPC 24-h QPF files (per-interval rain fallback)
 # ---------------------------------------------------------------------------
 def _wpc_cycles(now_utc):
     out = []
@@ -677,24 +673,22 @@ def parse_wpc_file(raw):
     raise ValueError("empty WPC GRIB")
 
 
-def fetch_wpc_qpf(now_utc, steps=WPC_STEPS):
+def fetch_wpc_qpf(now_utc, steps=WPC_STEPS, timeout=90):
     last_err = None
     for cycle in _wpc_cycles(now_utc)[:2]:
         buckets, missing = [], []
         for fh in steps:
             url = WPC_QPF_URL.format(ymd=cycle.strftime("%Y%m%d"), hh=cycle.hour, fff=fh)
             try:
-                qpf = parse_wpc_file(_request(url, timeout=90))
+                qpf = parse_wpc_file(_request(url, timeout))
             except Exception as e:
                 missing.append(f"f{fh:03d}: {type(e).__name__}")
                 last_err = e
                 continue
-            end = cycle + dt.timedelta(hours=fh)
-            buckets.append({"end_utc": end.strftime("%Y-%m-%dT%H:%M:%SZ"), "hours": 24,
+            buckets.append({"end_utc": _stamp(cycle + dt.timedelta(hours=fh)), "hours": 24,
                             "qpf_in": qpf})
         if buckets:
-            return {"cycle": cycle.strftime("%Y-%m-%dT%H:%M:%SZ"), "buckets": buckets,
-                    "missing": missing,
+            return {"cycle": _stamp(cycle), "buckets": buckets, "missing": missing,
                     "summary": f"WPC cycle {cycle:%Y-%m-%dT%H}Z, {len(buckets)} daily totals"}
     raise RuntimeError(f"no WPC cycle readable: {last_err}")
 
@@ -712,16 +706,17 @@ def parse_openmeteo(models_doc, ens_doc):
     for i, day in enumerate(dd.get("time") or []):
         row = {}
         for api_name, short in XCHECK_MODELS:
-            p = (dd.get(f"precipitation_sum_{api_name}") or [None])[i] if i < len(dd.get(f"precipitation_sum_{api_name}") or []) else None
-            g = (dd.get(f"wind_gusts_10m_max_{api_name}") or [None])[i] if i < len(dd.get(f"wind_gusts_10m_max_{api_name}") or []) else None
-            row[short] = {"precip_in": p, "gust_mph": g}
+            ps = dd.get(f"precipitation_sum_{api_name}") or []
+            gs = dd.get(f"wind_gusts_10m_max_{api_name}") or []
+            row[short] = {"precip_in": ps[i] if i < len(ps) else None,
+                          "gust_mph": gs[i] if i < len(gs) else None}
         out["models"][day] = row
     ed = ens_doc.get("daily") or {}
     pk = [k for k in ed if k.startswith("precipitation_sum")]
     gk = [k for k in ed if k.startswith("wind_gusts_10m_max")]
     for i, day in enumerate(ed.get("time") or []):
-        p = sorted(v for v in (ed[k][i] for k in pk if i < len(ed[k])) if v is not None)
-        g = sorted(v for v in (ed[k][i] for k in gk if i < len(ed[k])) if v is not None)
+        p = sorted(v for v in (ed[k][i] for k in pk if i < len(ed[k])) if _finite(v))
+        g = sorted(v for v in (ed[k][i] for k in gk if i < len(ed[k])) if _finite(v))
         if not p:
             continue
         out["ensemble"][day] = {
@@ -742,57 +737,136 @@ def parse_openmeteo(models_doc, ens_doc):
     return out
 
 
-def fetch_openmeteo(lat=HOUSE_LAT, lon=HOUSE_LON, days=8):
+def fetch_openmeteo(lat=HOUSE_LAT, lon=HOUSE_LON, days=8, timeout=30):
     common = {"latitude": f"{lat:.4f}", "longitude": f"{lon:.4f}", "forecast_days": days,
               "timezone": "America/New_York", "wind_speed_unit": "mph",
               "precipitation_unit": "inch"}
     models = _get_json(OPEN_METEO_URL + "?" + urlencode({
         **common, "daily": "precipitation_sum,wind_gusts_10m_max",
-        "models": ",".join(m for m, _ in XCHECK_MODELS)}))
+        "models": ",".join(m for m, _ in XCHECK_MODELS)}), timeout)
     try:
         ens = _get_json(OPEN_METEO_ENS_URL + "?" + urlencode({
             **common, "daily": "precipitation_sum,wind_gusts_10m_max",
-            "models": "gfs_seamless"}), timeout=45)
+            "models": "gfs_seamless"}), timeout)
     except Exception:
         ens = {}
     return parse_openmeteo(models, ens)
 
 
 # ---------------------------------------------------------------------------
-# orchestration
+# warm-file guidance: producer (warm job) and admission (hourly run)
 # ---------------------------------------------------------------------------
-PERSISTED_KEYS = ("petss", "nbm", "wpc")   # the expensive, slow-changing sources
+def load_guidance(path):
+    try:
+        with open(path) as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
 
 
-def gather(now_utc, cache, nbm_needed=True, nbm_qmd_path=None):
-    """Fetch every source through the cache contract. Returns (data, health).
+def save_guidance(path, data):
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=1, sort_keys=True)
+    os.replace(tmp, path)
 
-    Only PERSISTED_KEYS live in the on-disk cache (data/outlook_cache.json,
-    committed hourly by the bot): P-ETSS and NBM change every few hours
-    and cost 28 NOMADS requests, so they are worth carrying between runs.
-    The cheap single-request sources use a throwaway cache so they are
-    always fresh and never add commit churn.
-    """
-    data, health = {}, {}
-    scratch = {}
-    for key in [k for k in list(cache) if k not in PERSISTED_KEYS]:
-        cache.pop(key, None)
-    data["astro"], health["astro"] = refresh(scratch, "astro", lambda: fetch_astro_highs(now_utc), now_utc)
-    data["astro_hourly"], health["astro_hourly"] = refresh(
-        scratch, "astro_hourly", lambda: fetch_astro_hourly(now_utc), now_utc)
-    data["grid"], health["grid"] = refresh(scratch, "grid", fetch_nws_grid, now_utc)
-    data["nwps"], health["nwps"] = refresh(scratch, "nwps", fetch_nwps_forecast, now_utc)
-    data["petss"], health["petss"] = refresh(cache, "petss", lambda: fetch_petss(now_utc), now_utc)
-    data["nbm"], health["nbm"] = refresh(cache, "nbm", lambda: fetch_nbm_qpf(now_utc), now_utc)
-    if data["nbm"] is None or health["nbm"]["status"] != "ok":
-        data["wpc"], health["wpc"] = refresh(cache, "wpc", lambda: fetch_wpc_qpf(now_utc), now_utc)
-    else:
-        data["wpc"], health["wpc"] = None, {"status": "ok", "detail": "not needed (NBM fresh)",
-                                            "fetched_at": None, "age_h": None}
-    data["xcheck"], health["xcheck"] = refresh(scratch, "xcheck", fetch_openmeteo, now_utc)
-    # NBM percentiles come from the warm job's file (nbm_qmd.yml), never
-    # fetched here: 28 subsets at ~9 s each do not fit the hourly budget.
-    qmd = load_nbm_qmd(nbm_qmd_path or NBM_QMD_PATH_DEFAULT)
-    health["nbm_qmd"] = merge_nbm_qmd(data.get("nbm"), qmd, now_utc)
-    data["nbm_qmd"] = qmd
+
+def fetch_guidance(now_utc, existing=None, qmd_budget_s=480.0):
+    """Warm job: refetch every expensive source; on a failure keep the
+    previous copy (its own cycle stamp decides admission later)."""
+    existing = existing or {}
+    out = {"fetched_at": _stamp(now_utc), "errors": {}}
+    horizon_end = now_utc + dt.timedelta(hours=HORIZON_HOURS + 6)
+    for key, fn in (("nbm", lambda: fetch_nbm_qpf(now_utc, horizon_end)),
+                    ("petss", lambda: fetch_petss(now_utc)),
+                    ("wpc", lambda: fetch_wpc_qpf(now_utc))):
+        try:
+            out[key] = fn()
+        except Exception as e:
+            out["errors"][key] = f"{type(e).__name__}: {e}"
+            out[key] = existing.get(key)
+    prev_qmd = existing.get("nbm_qmd") or {}
+    try:
+        newest = newest_qmd_cycle(now_utc)
+        if newest is None:
+            raise RuntimeError("no NBM qmd cycle published in the last 30 h")
+        needed = nbm_steps_to_cover(newest, horizon_end)
+        if (prev_qmd.get("qmd_cycle") == _stamp(newest)
+                and len(prev_qmd.get("buckets") or {}) >= len(needed)):
+            out["nbm_qmd"] = prev_qmd
+            out["errors"]["nbm_qmd"] = "unchanged: newest cycle already on disk"
+        else:
+            out["nbm_qmd"] = fetch_nbm_qmd(now_utc, cycle=newest, steps=needed,
+                                           time_budget_s=qmd_budget_s)
+    except Exception as e:
+        out["errors"]["nbm_qmd"] = f"{type(e).__name__}: {e}"
+        out["nbm_qmd"] = prev_qmd or None
+    return out
+
+
+def _cycle_age_h(data, key, now_utc):
+    stamp = (data or {}).get("qmd_cycle" if key == "nbm_qmd" else "cycle")
+    when = _parse_iso(stamp)
+    return None if when is None else (now_utc - when).total_seconds() / 3600.0
+
+
+def admit_guidance(guidance, key, now_utc):
+    """(data or None, health) for one warm-file source by CYCLE age and
+    structural validity (R4). Unavailable data is never returned."""
+    data = (guidance or {}).get(key)
+    if not data:
+        return None, {"status": "unavailable", "detail": f"{key}: not in the warm file",
+                      "issued": None, "age_h": None}
+    age_h = _cycle_age_h(data, key, now_utc)
+    ok_h, deg_h = GUIDANCE_AGE_H[key]
+    stamp = data.get("cycle")
+    if age_h is None or age_h < -1.0 or age_h > deg_h:
+        return None, {"status": "unavailable",
+                      "detail": (f"{key} cycle {stamp} " + ("unparseable" if age_h is None
+                                 else f"{age_h:.1f} h old, expired")),
+                      "issued": stamp, "age_h": round(age_h, 2) if age_h is not None else None}
+    buckets = data.get("buckets")
+    if key in ("nbm", "wpc"):
+        good = [b for b in (buckets or []) if isinstance(b, dict) and _parse_iso(b.get("end_utc"))
+                and _finite(b.get("qpf_in")) and b["qpf_in"] >= 0]
+        if not good:
+            return None, {"status": "unavailable", "detail": f"{key}: no valid buckets",
+                          "issued": stamp, "age_h": round(age_h, 2)}
+        data = dict(data, buckets=good)
+        future = sum(1 for b in good if _parse_iso(b["end_utc"]) > now_utc)
+        coverage = f"{future} future buckets"
+    else:  # petss
+        if not (data.get("p10") and data.get("p90")):
+            return None, {"status": "unavailable", "detail": "petss: missing percentile series",
+                          "issued": stamp, "age_h": round(age_h, 2)}
+        future = sum(1 for p in data["p90"] if _parse_iso(p["utc"]) > now_utc)
+        coverage = f"{future} future hours"
+    status = "ok" if age_h <= ok_h else "degraded"
+    return data, {"status": status,
+                  "detail": f"{data.get('summary', key)}; cycle {age_h:.1f} h old; {coverage}",
+                  "issued": stamp, "age_h": round(age_h, 2)}
+
+
+def gather(now_utc, guidance_path=None, deadline=None):
+    """Hourly run: five quick requests under one deadline, plus admission of
+    the warm file's sources. Never raises; every source carries health."""
+    dl = deadline or Deadline(OUTLOOK_FETCH_BUDGET_S)
+    data, health, scratch = {}, {}, {}
+    quick = (
+        ("astro", lambda t: fetch_astro_highs(now_utc, timeout=t)),
+        ("astro_hourly", lambda t: fetch_astro_hourly(now_utc, timeout=t)),
+        ("grid", lambda t: fetch_nws_grid(timeout=t)),
+        ("nwps", lambda t: fetch_nwps_forecast(now_utc, timeout=t)),
+        ("xcheck", lambda t: fetch_openmeteo(timeout=t)),
+    )
+    for key, fn in quick:
+        data[key], health[key] = refresh(scratch, key, fn, now_utc, deadline=dl)
+    g = load_guidance(guidance_path or GUIDANCE_PATH_DEFAULT)
+    for key in ("nbm", "petss", "wpc"):
+        data[key], health[key] = admit_guidance(g, key, now_utc)
+    data["nbm_qmd"] = g.get("nbm_qmd")
+    health["nbm_qmd"] = merge_nbm_qmd(data.get("nbm"), data["nbm_qmd"], now_utc)
+    health["_budget"] = {"status": "ok", "detail": f"{dl.seconds - max(0.0, dl.remaining()):.1f} s of {dl.seconds:.0f} s used"}
     return data, health

@@ -37,7 +37,7 @@ PRODUCT_MATCH_H = 2.0
 PERSISTENCE_DECAY_TAU_H = 48.0     # assumption, scored by the shadow ledger
 LEAD_BUCKETS = ((0, 24, "0-24 h"), (24, 48, "24-48 h"), (48, 72, "48-72 h"),
                 (72, 102, "72-102 h"), (102, 168, "102-168 h"))
-REGIME_RANK = {"dry": 0, "cold_lockout": 0, "street": 1, "light": 2,
+REGIME_RANK = {"dry": 0, "cold_lockout": 0, "unknown": 0, "street": 1, "light": 2,
                "moderate": 3, "severe": 4}
 READINESS_MIN_N = 28               # about one week of tides
 LADDER = ("nws_product", "nwps", "petss_mid", "persist_decay")
@@ -372,6 +372,13 @@ def _burst_hours(nws_hourly, qpf_hourly, nbm):
     return hours, convective_days
 
 
+def series_end_utc(now_utc):
+    """End of the seventh station-local calendar day (exclusive)."""
+    local_now = utc_to_station_local(now_utc)
+    d = (local_now + dt.timedelta(days=7)).date()
+    return dt.datetime(d.year, d.month, d.day, tzinfo=local_now.tzinfo).astimezone(dt.timezone.utc)
+
+
 def build_series(now_utc, data, tides, nws_hourly, qpf_hourly, simulate_fn,
                  mllw_to_navd88_offset, enhancement_ft):
     """Hourly points from -6 h to +168 h:
@@ -389,11 +396,14 @@ def build_series(now_utc, data, tides, nws_hourly, qpf_hourly, simulate_fn,
     rain_at = _hourly_rain_lookup(qpf_hourly, nbm, wpc)
     burst_hours, _conv = _burst_hours(nws_hourly, qpf_hourly, nbm)
     lo = now_utc - dt.timedelta(hours=6)
-    hi = now_utc + dt.timedelta(hours=HORIZON_HOURS)
+    # The series ends with the seventh calendar day (station-local), the
+    # same scope as the day cards (audit R3: no eighth-date tail without a
+    # card or a burst potential).
+    hi = min(now_utc + dt.timedelta(hours=HORIZON_HOURS), series_end_utc(now_utc))
     times, tide_w, rates, pts = [], [], [], []
     for p in hourly:
         t = _utc(p["utc"])
-        if t < lo or t > hi:
+        if t < lo or t >= hi:            # end exclusive: no eighth-date point
             continue
         astro = float(p["mllw"])
         key = t.replace(minute=0, second=0, microsecond=0)
@@ -412,6 +422,10 @@ def build_series(now_utc, data, tides, nws_hourly, qpf_hourly, simulate_fn,
                     "astro_mllw": _r(astro, 3), "tide_navd88": _r(tide_navd, 3),
                     "surge_source": src, "rain_in_hr": _r(rate, 3),
                     "rain_source": rsrc,
+                    # R3: an hour with no rain forecast is UNKNOWN, not dry;
+                    # the tank runs with 0 for it, and every consumer sees
+                    # the flag (water_navd88 there is tide-only).
+                    "rain_unknown": rate is None,
                     "burst_risk": p["time"][:13] in burst_hours})
     pluv = simulate_fn(times, tide_w, rates) if simulate_fn and len(times) >= 2 else [None] * len(times)
     for pt, tw, pv in zip(pts, tide_w, pluv):
@@ -427,7 +441,9 @@ def add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn):
     _hours, convective_days = _burst_hours(nws_hourly, [], [])
     for d in days:
         pts = [p for p in series if p["time"][:10] == d["date"]]
-        rates = [p["rain_in_hr"] for p in pts if p.get("rain_in_hr") is not None]
+        known = [p for p in pts if not p.get("rain_unknown")]
+        coverage = (len(known) / len(pts)) if pts else 0.0
+        rates = [p["rain_in_hr"] for p in known if p.get("rain_in_hr") is not None]
         peak_rate = max(rates, default=0.0)
         max_6h = 0.0
         for i in range(len(rates)):
@@ -458,8 +474,13 @@ def add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn):
             if p90_est > 0.1 and potential_fn:
                 pots = [v for v in potential_fn(p90_est, BURST_LOW_TIDE_BAY_NAVD88) if v is not None]
                 p90_pot = max(pots) if pots else None
-        rain_regime = classify_fn(pluv_peak) if pluv_peak is not None else "dry"
-        burst_regime = classify_fn(potential) if potential is not None else "dry"
+        # R3: with no rain forecast for the day the rain regimes are UNKNOWN,
+        # never "dry"; with partial coverage they are labeled partial.
+        if coverage == 0.0:
+            rain_regime = burst_regime = "unknown"
+        else:
+            rain_regime = classify_fn(pluv_peak) if pluv_peak is not None else "dry"
+            burst_regime = classify_fn(potential) if potential is not None else "dry"
         p90_regime = classify_fn(p90_pot) if p90_pot is not None else None
         tidal_regime = d.get("regime_max") or "dry"
         candidates = [(REGIME_RANK.get(tidal_regime, 0), tidal_regime, "tide"),
@@ -477,7 +498,9 @@ def add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn):
                 "nbm_p90_potential_navd88": _r(p90_pot, 2), "nbm_p90_regime": p90_regime,
                 "nbm_p_ge_half_in_6h_pct": band.get("p_ge_half_in_6h_max_pct"),
                 "nbm_p_ge_1in_6h_pct": band.get("p_ge_1in_6h_max_pct"),
-                "rain_available": bool(rates),
+                "rain_available": coverage > 0.0,
+                "rain_coverage": round(coverage, 2),
+                "rain_known_hours": len(known), "rain_hours": len(pts),
             },
             "tidal_regime_max": tidal_regime,
             "water_peak_navd88": _r(water_peak, 2),

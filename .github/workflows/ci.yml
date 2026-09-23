@@ -73,7 +73,12 @@ jobs:
             forecast/station_time.py \
             forecast/html_contract.py
 
-      - name: Run offline regression tests
+      - name: Install production dependencies (GRIB decoder)
+        run: python -m pip install --disable-pip-version-check -r forecast/requirements.txt
+
+      - name: Run offline regression tests (decoder tests must run, not skip)
+        env:
+          BARNACLE_REQUIRE_GRIB: "1"
         run: python -m unittest discover -s tests -q
 
       - name: Validate committed artifacts and ledgers
