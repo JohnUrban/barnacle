@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 13:29 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 15:35 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
@@ -11,40 +11,33 @@ nowcast, nine-town map, per-tide pages, widget, ntfy/email/SMS.
 Model **v0.10.4** (`model/v0.10.4.md`). SMS = fresh imminent street impact;
 ntfy/email = longer-lead watches. Real people receive these alerts.
 
-## Immediate: independent audit HOLD on v0.10.5
+## Immediate: v0.10.5 HOLD after independent repair verification
 
-Codex reviewed `ece4c2314`, all 11 Claude commits in the 24-hour window
-ending 2026-09-23 12:51:57 EDT, and broader production contracts.
-Report: `audits/2026-09-23-a1/01-repository-and-v0.10.5-candidate-codex.md`.
-Reproductions and verification record are beside it. No production fixes
-or promotion in the audit commit. Claude owes round-02 reply.
+Audit folder: `audits/2026-09-23-a1/`.
+Round 01 reviewed the original candidate and Claude's 24-hour work window.
+Claude confirmed all twelve findings in round 02 and shipped repairs A/B/C.
+Codex's round 03 independently reviews repaired candidate `bf2e601b4`:
+`03-repaired-candidate-verification-codex.md`. Reproduction script/output
+are beside it. Review complete; candidate NOT approved; audit stays OPEN.
 
-- R1: optional outlook fetches can starve the 5-minute alert job; isolate.
-- R2: shadow READY counts forecast rows, not independent tides.
-- R3–R5: missing rain becomes zero inside the tank; horizon gaps; expired
-  percentile data still drives scenarios; rain boundary accounting is wrong.
-- R6–R8: map future/time/pathway semantics; landing/email still tide-first;
-  CFW-first cards and NWPS-first continuous guidance need reconciliation.
-- R9: default suite 238 OK / 3 skipped; full GRIB environment FAILS one
-  budget test. CI skips the decoder tests. Both frozen replays + gate PASS.
-- R10–R12 follow-ups: semantic gates/writer parity, mislabeled day/window
-  tables, gauge-specific error-statistics wording. See full acceptance list.
-- Recommendation: fix R1–R9, independently verify candidate, then John's
-  promotion DECISION. This HOLD is not an owner decision or a review PASS.
-- REPAIR SHIP A (Claude, after 14:00 EDT): R1 isolated — hourly gather is
-  five quick requests under one 60-s Deadline; NBM/percentiles/P-ETSS/WPC
-  come from the warm job's data/outlook_guidance.json (every 3 h) and are
-  admitted by cycle age. R4 validated (NWPS issuance/units, expiry before
-  merge). R3 part: coverage to now+168 h, series ends with day 7, rain
-  unknown != dry. R9: budget semantics fixed; CI installs the decoder and
-  forbids skips. SHIP B: R5 prorated/[start,end) rain, R6 future-only
-  worst + offset-aware browser now + toggles follow the selection, R8
-  CFW anchors the hourly line, R2 per-tide scoring. SHIP C: R7 day_worst
-  feeds cards/ribbon/headline/email, R11 scope labels, R12 wording, R10
-  outlook gate, confidence fields removed from JSON, burst-at-high-tide
-  compound scenario. ROUND-02 REPLY written (audits/2026-09-23-a1/02);
-  model/v0.10.5-candidate.md drafted. NEXT: independent verification of
-  bd133fa58+ (not by Claude), then John's DECISION, then the promotion.
+Verified: full decoder suite **252 OK, no skips**; artifact gate and both
+frozen replays PASS; repaired map-control probe PASS. Distinct-tide counting,
+expiry-before-merge, rain interval/proration, map controls, CFW anchoring,
+and decoder CI have concrete repairs. Remaining findings:
+
+- S1: signed errors cancel before MAE, producing false READY; pairing differs.
+- S2: unknown rain disappears from map/chart; null grid values count as dry.
+- S3: declared 168 hours exceeds continuous horizon while table goes farther.
+- S4: email HTML WORST panel disagrees with subject; past points leak into
+  forward day_worst headlines.
+- S5: compound scenario chart uses a different potential than map points.
+- S6: missing bucket duration passes admission and crashes its consumer.
+- S7: optional acquisition still synchronous; shared deadline is soft.
+
+Next: Claude's numbered response and fixes, independent candidate PASS,
+then John's explicit promotion DECISION. Neither earlier build green lights
+nor this completed review constitute promotion approval. Candidate spec
+`model/v0.10.5-candidate.md` needs to reflect the repaired behavior.
 
 ## Live event: coastal advisory CF.Y.0021
 
@@ -53,38 +46,36 @@ Captured 08:28Z CFW Sandy Hook projections: Sep 23 PM 6.9, Sep 24 PM
 7.2, Sep 25 AM 7.2, Sep 25 PM 7.5 ft MLLW. Score against observed peaks
 as the event passes (BACKLOG collector c); parser success is not skill.
 Raw KPHI CFW repair `8e8e5cfcd` fixes alerts-API table truncation and
-next-gauge leakage. Public 16:14:10Z forecast uses the repaired source.
-Read PLAYBOOK for event support; log John's reports immediately.
-Quiet-hours pre-07:00 tide exemption now uses the station-time helper.
+next-gauge leakage. Read PLAYBOOK for event support; log John's reports
+immediately. Quiet-hour pre-07:00 exemption uses station-time helper.
 
-## 7-day outlook arc: shipped, repairs pending
+## Outlook arc and scientific residuals
 
-Owner decisions recorded 2026-09-23: separate outlook field/page; core
-alerts <=48 h; NBM amounts with WPC fallback; non-NOAA cross-check only;
-NWPS in shadow; widget unchanged; email link-only for new 7-day content.
-No tidal supremacy: compare tide, tank and burst pathways; maps open NOW.
+Owner decisions: separate outlook field/page; core alerts <=48 h; NBM amounts
+with WPC fallback; non-NOAA cross-check only; NWPS in shadow; widget unchanged;
+email link-only for new seven-day content. No tidal supremacy: compare tide,
+tank and burst pathways; maps open NOW and expose the forecast horizon.
 
-Modules outlook_sources / outlook / outlook_page, shadow outlook_log.csv,
-NBM qmd warm job/file, continuous hourly series and map sliders to +168 h,
-measured error-by-lead in place of human confidence labels are on main.
-The inputs/policy shipped stamped v0.10.4; document this honestly at bump.
-Confidence JSON remains for ledger compatibility; final removal is open.
-Class-(b) bump needs Inputs & policy spec, unchanged replay goldens, atomic
-spec/archive/code/docs stamps, independent review and owner DECISION.
-No v0.10.5 promotion approval is implied by the earlier build green lights.
+Confidence JSON removal and compound scenarios shipped in repairs. Production
+still stamps v0.10.4 despite shipped inputs/policy changes: document honestly
+at the class-(b) bump. Keep old replay goldens unchanged; archive/spec/code/
+log-doc updates are atomic. Do not retune based on this audit.
 
-## Prior audits and operational residuals
+Claude recorded a rain/tide retrospective in BACKLOG (`14e942c4f`), outside
+round-03 validation. Compound behavior still needs independent event evidence.
+Production 30-hour series still uses the worst tide's surge as a constant;
+this residual affects new day_worst headlines and remains unresolved.
 
-Audits 09-14-a1, 09-18-a1, 09-20-a1 CLOSED. v0.10.3 ratified 09-18;
-v0.10.4 promoted 09-20 with review + DECISION. Do not re-ask.
+## Prior audits and operations
+
+Audits 09-14-a1, 09-18-a1, 09-20-a1 CLOSED; prior model approvals stand.
 42-hour 09-19/20 publishing outage fixed; missing daily archives remain.
 Writer/validator parity and hourly-failure visibility remain open.
-Nowcast storm-path dispatch still needs live validation. Watchdog covers
-Mac-awake hours; external 24/7 trigger awaits owner credentials.
-Delivery favors duplicate over missed until a durable outbox exists.
-Moving-head/surge-tendency work requires an independent compound event.
-Widget source v7.29a needs re-copy (installed v7.26a per 09-14 record).
-Driveway is a PROXY, not a landmark; never restore it to the ladder.
+Nowcast storm-path dispatch needs live validation; watchdog covers Mac-awake
+hours; external 24/7 trigger awaits owner credentials. Delivery favors duplicate
+over missed until a durable outbox exists. Moving-head/surge-tendency work
+requires independent compound-event evidence. Widget v7.29a needs re-copy
+(installed v7.26a per 09-14 record). Driveway is a PROXY, not a landmark.
 
 ## Operating rules
 
@@ -92,5 +83,5 @@ Run `date` before relative-time prose; use station-time helpers. Preserve
 primary provenance, append-only ledgers, and transactional alert state.
 Explicit staging only: commit -> gate -> push; rejected push -> rebase or
 abort -> gate again -> retry. Ledger conflicts resolve by union.
-Review attribution must name actual participation and scope. No audit
-closeout before an independent reply; no model promotion without DECISION.
+Attribution must name actual participation and scope. No audit closeout
+without independent reply; no model promotion without review + DECISION.

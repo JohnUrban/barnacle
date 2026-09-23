@@ -8,19 +8,19 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **Independent repo / v0.10.5 audit — HOLD (2026-09-23).** Codex
-      reviewed candidate `ece4c2314`, all 11 Claude commits in the preceding
-      24-hour window, and wider production contracts. Report:
-      `audits/2026-09-23-a1/01-repository-and-v0.10.5-candidate-codex.md`.
-      Release findings R1–R9: isolate outlook fetches from alert delivery;
-      count unique tides for shadow readiness; propagate missing rain and
-      complete the rolling horizon; reject expired guidance; conserve rain
-      amounts/timing; repair map time/pathway controls; extend worst-pathway
-      semantics to existing headline arms; reconcile central-source ladders;
-      run decoder tests in CI (full-dependency suite currently fails).
-      R10–R12 are explicit follow-ups: semantic gates/writer parity, date-scope
-      labels, and honest gauge-error statistics. Claude owes round-02 reply;
-      repaired-candidate verification + John's promotion DECISION precede bump.
+- [ ] **Independent repo / v0.10.5 audit — HOLD, round 03 (2026-09-23).**
+      Claude's round-02 repairs independently reviewed by Codex at `bf2e601b4`.
+      Report: `audits/2026-09-23-a1/03-repaired-candidate-verification-codex.md`.
+      Full decoder suite 252 OK / no skips, gate, frozen replays, and repaired
+      map-control probe PASS. Remaining: S1 signed-error cancellation gives
+      false READY; S2 unknown rain lost in consumers/null grid counted dry;
+      S3 168-hour metadata vs shorter series/table; S4 email HTML divergence
+      and past points in forward headlines; S5 compound chart/map mismatch;
+      S6 incomplete warm-bucket validation; S7 soft acquisition deadline.
+      Distinct-tide counting, expiry-before-merge, rain boundaries/proration,
+      map controls, CFW anchoring, and decoder CI have verified improvements.
+      Claude's next numbered response + independent candidate PASS + John's
+      promotion DECISION precede bump. Round 03 is a review, not approval.
 
 - [ ] **7-DAY OUTLOOK (arc opened 2026-09-23, John).** Extend
       predictions to 7 days as a NEW display-only field + page, never by
@@ -40,8 +40,8 @@ looks stale, trust this file. Ledger lines are append-only:
       inputs, alert window and shadow policy — needs an independent
       candidate review + owner DECISION before the promoting commit
       (rule 12); replay goldens must pass unchanged. NBM percentile bands
-      and human confidence-label phase-out shipped; audit repairs above and
-      confidence-JSON removal remain open. Continue score collector (c).
+      and human confidence-label phase-out shipped; remaining audit repairs above stay open;
+      confidence-JSON removal is shipped. Continue score collector (c).
 **Active / near-term**
 - [x] Audit `2026-09-18-a1` CLOSED 2026-09-18 (round 03, b24220653):
       Codex's work verified and stands; trailer erratum + AGENTS rule 12
@@ -455,3 +455,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-23 | OPEN | series-constant-surge-residual | inherited: build_water_series applies the WORST tide's surge (today +2.2 ft from Friday's product row) as a constant across the 30-h series, so today's continuous maximum (7.30 ft MLLW) exceeds today's own product tide (6.9); day_worst / today_regime therefore read 'light' while the tide row says 'street'. Cards, headline and email are now mutually consistent (they read day_worst), but the series itself should interpolate per-tide surge like the outlook's hourly line. Class-(b) input change: fold into the v0.10.5 candidate after independent review; never a retune [VERIFIED: scratch generation 2026-09-23 ~18:00Z]
 2026-09-23 | DONE | audit-2026-09-23-a1-round02 | Claude's reply audits/2026-09-23-a1/02-repairs-reply-claude.md confirms all twelve findings; R1-R9 repaired in three ships (21612aa89, 8fa116d27, bd133fa58) with regression tests inverting Codex's probes, R10-R12 repaired in part with the remainder scheduled; verify_repairs_claude.js is the offline town-map probe of the repaired handler; model/v0.10.5-candidate.md drafted (Inputs & policy; not promoted). OPEN for an independent verification of the repaired candidate (reviewer != author) and John's DECISION line before any promoting commit [VERIFIED: tests + CI + live publishes]
 2026-09-23 | FACT | rain-flood-retrospective-round-1 | first pass of the low-tide-assumption retrospective (John 15:25), forcing = the radar box-mean rate in each event README, potentials from the production estimate_pluvial_water_models. Bay at peak (NAVD88, = SH-2.82): 10-30 4.81 [compound, pre-Barnacle, peak back-fit from photos], 07-06 2.77, 07-09 ~3.2 [gauge failed, despiked estimate], 07-18 ~2.2 [no usable radar rate], 08-03 ~2.6, 08-07 0.77, 09-01 ~0.0, 09-13 round 1 ~1.5, round 2 3.95. The tank's steady state is FLAT in bay level up to 3.0 ft NAVD88 and rises only above ~3.5 (2.0 in/hr: +15.5 in at bay 0..3.0, +16.4 at 4.0, +21.2 at 4.8), i.e. the code already holds John's plug level at 3.0-3.5 ft NAVD88 (5.8-6.3 MLLW). Consequences on the record: for the six low-bay rain floods the fixed-2.5 potential and the actual-bay potential are identical, and their errors (obs minus potential: +0.4, 0.0, -3.7, -5.1, -1.6, -4.5 in) show no tide dependence; the over-predictions belong to short bursts that never reached steady state (the time-integrating nowcast tank was within ~0.4-1.5 in on 09-01/09-13/08-03) and the two exact hits (07-06, 07-09) are the calibration anchors. Above the plug: 10-30 at bay 4.81 with 1.45 in/hr gives +13.9 in at the fixed bay but +20.1 in at the actual bay vs +20.8 observed (n=1, supports 'the tide adds above the plug'); 09-13 round 2 at bay 3.95 with ~0.6 in/hr [INFERRED rate] gives +10.0 / +11.8 vs +7.4 observed (n=1, compound over-predicts at moderate rain on submerged grates). Pre-event FORECAST potentials (QPF-driven burst_est) erred separately: 07-06 dry vs +15; 07-09 +11..15 vs +18.7; 07-18 +16.3 vs +19.9; 08-03 +15.6 vs +13.8; 08-07 none vs +15.4; 09-01 +11.8..17.9 vs +13.9; 09-13 +16.4..17.9 vs +13.7 — forecast-rain error, not tide. No retune; the compound scenario at the actual bay (shipped bd133fa58) is the right evaluation above the plug and costs nothing below it [VERIFIED: labeled_observations rows, event READMEs, docs/archive/<date>.json, production function replay]
+
+2026-09-23 | FACT | audit-a1-round03-independent-verification | Codex reviewed repairs through bf2e601b4; 252 decoder-enabled tests pass without skips, gate and frozen replays pass, map-control probe passes. HOLD remains: S1 score cancellation/pairing, S2 missing-rain propagation, S3 horizon consistency, S4 HTML email/time scope, S5 compound consumer parity, S6 warm bucket validation, S7 soft deadline. Evidence: audits/2026-09-23-a1/03-repaired-candidate-verification-codex.md and runnable offline probe/output. This qualifies repair claims in round02 without rewriting that record; no promotion approval or model change [VERIFIED]
