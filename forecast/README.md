@@ -52,3 +52,17 @@ read-only. Its source-controlled inputs and expected outputs are in
 `model/data/v0.10.1-reproduction.json`; `tests/test_model_reproduction.py`
 holds the corresponding behavioral and physics gates. This is a frozen replay,
 not authorization to search for or promote new parameters.
+
+### Continuous curve and scoped health (2026-09-23 recovery)
+
+`water_series` uses fresh observed-surge persistence, independent of each
+high tide's NWS product projection. `water_series_input` records the actual
+source/value/observation time/age; `current_surge_ft` keeps its historical
+worst-tide meaning for compatibility. An unavailable observed surge produces
+no continuous forecast, never a zero-surge tank forecast. Explicit zero passed
+to `build_water_series` remains valid (nowcast astronomy-only use).
+
+`input_health` retains all sources. `degraded_inputs` is production-only;
+`outlook_degraded_inputs` scopes the optional outlook. The gate accepts legacy
+artifacts without the split and validates both lists when the new field exists.
+The widget source is unchanged and consumes the corrected JSON automatically.

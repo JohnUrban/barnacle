@@ -8,15 +8,16 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **SELECTIVE RECOVERY PLAN (Codex, 2026-09-23; proposal only).** John
-      requested a keep/repair/revert plan after identifying the uniformly raised
-      widget/site curve. `history/plans/2026-09-23-selective-recovery-plan.md`
-      recommends restoring fresh observed-surge input to the production series,
-      retaining per-tide NWS projections, scoping core/outlook health, and reviewing
-      all dependent surfaces before the v0.10.5 decision. No implementation
-      authorized by this planning request. Evidence JSON beside the plan records
-      the identical-time curve/gauge comparison; experimental time-varying surge
-      and rain/tide calibration stay separate evaluation decisions.
+- [ ] **SELECTIVE RECOVERY — IMPLEMENTED, Claude review pending (2026-09-23).**
+      John authorized implementation after reviewing the plan. Production curve
+      restored to fresh observed-surge persistence; per-tide NWS products kept.
+      Missing observed surge gives no definite continuous/tank curve; new
+      water_series_input records provenance. Core/outlook health split is in
+      place with consumer warnings. Codex reviewed Claude round 04 and repaired
+      one remaining percentile admission issue. Round 05:
+      `audits/2026-09-23-a1/05-round04-review-and-recovery-codex.md`.
+      266 tests + frozen replays + gate pass. Next: Claude independently reviews
+      Codex's new patch; model promotion remains separate and on HOLD.
 
 - [ ] **UNVALIDATED ELEMENTS INTRODUCED 2026-09-23 (John: keep this list so we
       can return to it).** Each is labeled on its surface and none drives an
@@ -32,37 +33,23 @@ looks stale, trust this file. Ledger lines are append-only:
       6-h total spread evenly over hours (understates bursts by construction,
       like the 72-h QPF). (5) Warm-file freshness bars are judgment calls
       (P-ETSS read degraded at 2 PM only because of one). (6) Inherited and
-      now more visible: the 30-h production series applies the worst tide's
-      surge to every hour (`series-constant-surge-residual`). (7) The three
-      repair ships of the afternoon were reviewed by Codex round 03 (HOLD,
-      S1-S7); ship E repaired all seven (round 04 reply) and awaits an
-      independent pass. Retire items here only with a scored comparison or
-      an owner decision.
-- [ ] **DEGRADED-INPUTS SPLIT (proposal stored 2026-09-23 at John's request;
-      not started).** The outlook's source-health entries (`outlook_*`) share
-      `forecast.degraded_inputs` with the production inputs, so the widget's
-      degraded line can show e.g. `outlook_petss` when a guidance cycle ages
-      out, which says nothing about the forecast the widget displays. Proposal:
-      keep `degraded_inputs` production-only, add `outlook_degraded_inputs`
-      (same rule-7 visibility, on the outlook page and JSON), no widget change.
-      Site vs widget differences that remain by design: the site's cards,
-      today's headline and the email subject read the cross-pathway
-      `day_worst` while the widget's TODAY reads the production series regime
-      and its 72H block lists tidal and rain days separately; beyond 30 h the
-      site's maps use per-hour burst potentials at the actual tide while the
-      widget's chart uses the fixed low-tide potential; the widget stops at
-      72 h. Owner decision pending on whether the widget should ever change.
-- [ ] **Independent repo / v0.10.5 audit — HOLD; round 04 repairs shipped
-      (2026-09-23), independent pass owed.** Codex round 03 reviewed
-      `bf2e601b4` (S1-S7, HOLD). Ship E repaired all seven plus the 6-h-window
-      follow-up; reply `audits/2026-09-23-a1/04-round03-repairs-reply-claude.md`
-      with probe `verify_round04_claude.py` (inverts every round-03 assertion,
-      exit 0) and its output. S3 taken the preferred way: rolling 168 h with
-      partial first/last cards. Wording corrected: alerts wait at most 75 s on
-      the optional outlook fetch (wall-clock boundary), not "never". Next:
-      Codex verifies this exact candidate (round 05); then John's promotion
-      DECISION line; only then the atomic class-(b) promoting commit. No
-      round so far is approval.
+      now repaired by John's selective-recovery authorization: production curve
+      again uses observed-surge persistence, not the worst product surge.
+      Constant persistence remains an approximation; time-varying replacement
+      requires independent comparison. (7) Round-04 S1-S7 repairs independently
+      checked by Codex in round 05; Codex's new recovery and final percentile
+      fix await Claude review. Retire scientific assumptions only with scored
+      comparisons or an owner decision.
+- [x] **DEGRADED-INPUTS SPLIT (2026-09-23 recovery).** Production-only
+      degraded_inputs, separate outlook_degraded_inputs, all input_health
+      preserved. Outlook page/maps show their failures; widget source unchanged.
+      Existing site/widget differences in forecast scope remain explicit; no
+      experimental compound scenario has been promoted into core/widget policy.
+- [ ] **Independent repo / v0.10.5 audit — HOLD, round 05.** Independent
+      verification of Claude's targeted round-04 repairs is recorded. Codex's
+      selective-recovery patch and one P-ETSS inversion fix need Claude's
+      independent review next; then John's promotion DECISION precedes the
+      atomic class-(b) bump. Code remains v0.10.4 (corrective rule-5(c) recovery).
 
 - [ ] **7-DAY OUTLOOK (arc opened 2026-09-23, John).** Extend
       predictions to 7 days as a NEW display-only field + page, never by
@@ -505,3 +492,7 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-23 | FACT | guard-commit-red-on-py311 | the guard commit 8034e1c24 was itself red in CI 35914619065: its scanner touched tokenize.FSTRING_START unguarded, an AttributeError on 3.11 (the same interpreter gap, one layer up). Fixed in the next commit: the scanner returns nothing and the self-test skips below 3.12, where the interpreter enforces the rule anyway. Separately, scheduled hourly run 35914396840 (20:12:34Z) failed on a push race with the dispatched run 35914393979 two seconds earlier (rebase conflict on docs/data, workflow aborts); the dispatched run published the 20:13Z artifact, so no forecast was lost. Dispatch off the schedule minute [VERIFIED: CI + run logs]
 
 2026-09-23 | OPEN | selective-recovery-plan | John requested investigation and a plan to keep intended improvements and repair/revert regressions. Codex plan: history/plans/2026-09-23-selective-recovery-plan.md; recommends fresh observed-surge production series with per-tide NWS retained, scoped health, exact-candidate review, separate evaluation of time-varying surge/compound rain. Planning only, no production change or owner implementation DECISION. 261-test suite, author round04 probe and gate pass; not independent audit closeout. Evidence JSON records 13 gauge-overlay comparisons (2.88 vs 10.61 in absolute difference), explicitly not prospective skill or measured intersection depth [VERIFIED]
+
+2026-09-23 | DECISION | selective-recovery-implementation | John: "It is best if you implement the plan. Also Claude is done with the most recent audit round. So go ahead and follow-up with that and implement your plan. I will have Claude check it out after." Authorizes the corrective recovery + audit follow-up; not final v0.10.5 promotion [STATED in session]
+2026-09-23 | DONE | selective-recovery-core | Codex restored observed-surge input to production water_series, retained individual NWS high tides, added water_series_input provenance, suppressed numeric continuous/tank forecast when surge unavailable, scoped degraded lists with warnings on outlook consumers, preserved widget source and explicit-zero nowcast caller. Rule-5(c) restoration, no constants/formulas/goldens changed. 266 tests pass, frozen replays pass, gate clean; no-send generation 20:43:29Z uses +1.4752 ft observed surge vs retained +2.5 ft worst product surge. Six official high-tide totals unchanged; old ledgers byte-prefix preserved. Claude review pending [VERIFIED: round05 report + JSON]
+2026-09-23 | FACT | audit-a1-round05 | Codex independently verified Claude's round04 targeted S1-S7 repairs and JS controls; additional S6 defect fixed: inverted P-ETSS p90 points now strictly dropped/counted/degraded. This report distinguishes independent review of Claude from author verification of Codex; latter requires Claude's review. v0.10.5 HOLD remains; no retrospective promotion approval [VERIFIED: audits/2026-09-23-a1/05-round04-review-and-recovery-codex.md]

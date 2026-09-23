@@ -512,6 +512,12 @@ def _sources(ol):
 def render_outlook_page(forecast):
     ol = forecast.get("outlook_7d") or {}
     gen = forecast.get("generated_utc", "")
+    # Also includes acquisition/budget failures absent from per-source cards.
+    try:
+        from .rendering import _render_input_health_html
+    except ImportError:
+        from rendering import _render_input_health_html
+    health_banner = _render_input_health_html(forecast, scope="outlook")
     body = ""
     if ol.get("tides"):
         body = (_intro(ol, forecast) + _day_cards(ol) + _chart(ol) + _tide_table(ol)
@@ -545,6 +551,7 @@ def render_outlook_page(forecast):
     <h1><a href="index.html" style="text-decoration:none;color:inherit">Bay Ave Barnacle</a> — 7-day outlook</h1>
     <p class="subtitle"><a href="index.html">&larr; back to the 72-hour forecast</a> &middot; astronomy plus labeled guidance &middot; generated {_e(gen)}</p>
   </header>
+{health_banner}
 {body}
   <footer>
     <p><a href="index.html">&larr; back to the live forecast</a> &middot;

@@ -885,7 +885,9 @@ def admit_guidance(guidance, key, now_utc):
                 else:
                     dropped += 1
         lo_by = {q["utc"]: q["surge_ft"] for q in p10}
-        p90 = [q for q in p90 if lo_by.get(q["utc"], -99) <= q["surge_ft"] + 0.05]
+        ordered = [q for q in p90 if lo_by.get(q["utc"], -99) <= q["surge_ft"]]
+        dropped += len(p90) - len(ordered)
+        p90 = ordered
         if not (p10 and p90):
             return None, {"status": "unavailable", "detail": f"petss: no valid percentile series ({dropped} malformed dropped)",
                           "issued": stamp, "age_h": round(age_h, 2)}

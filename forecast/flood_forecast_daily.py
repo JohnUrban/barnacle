@@ -427,6 +427,10 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
     NOAA transport is GMT; public series times remain station-local with an
     explicit UTC offset.
     """
+    # Missing bay forcing cannot produce a definite tide/tank forecast.
+    # Explicit zero remains valid (including nowcast's astronomy-only caller).
+    if surge_ft is None:
+        return []
     now = _station_local_now()
     start = now - dt.timedelta(hours=hours_back)
     end = now + dt.timedelta(hours=hours_forward)
@@ -664,6 +668,7 @@ def fetch_current_surge():
         "status": "unavailable",
         "detail": "no usable observations",
         "age_min": None,
+        "observation_time": None,
     })
     obs = fetch_observed_recent()
     if not obs:
@@ -675,6 +680,7 @@ def fetch_current_surge():
         _LAST_SURGE_OBSERVATION_META["detail"] = (
             f"invalid latest observation time {last_obs_time!r}")
         return None
+    _LAST_SURGE_OBSERVATION_META["observation_time"] = station_time_storage_key(last_obs_time)
     _LAST_SURGE_OBSERVATION_META["age_min"] = round(age_min, 1)
     if age_min < -2 or age_min > SURGE_OBS_MAX_AGE_MIN:
         _LAST_SURGE_OBSERVATION_META.update({
@@ -2130,6 +2136,7 @@ def build_forecast():
         "status": "unavailable",
         "detail": "no usable observed/predicted pair",
         "age_min": None,
+        "observation_time": None,
     })
     try:
         persisted_surge = fetch_current_surge()
@@ -2459,10 +2466,18 @@ def build_forecast():
     }
 
     # Model-predicted water level series for the widget tide-curve
-    # chart (2026-07-06). Uses the worst tide's surge as the constant
-    # surge across the window — same persistence assumption as the
-    # per-tide forecasts.
-    water_series = build_water_series(worst["surge_ft"], qpf_result)
+    # chart: restore observed-surge persistence (2026-09-23 recovery).
+    # Product rows remain authoritative for THEIR high tides, not a constant
+    # offset for every hour. No observed surge means no definite tank/curve.
+    water_series = build_water_series(persisted_surge, qpf_result)
+    water_series_input = {
+        "source": "surge-persistence" if persisted_surge is not None else "unavailable",
+        "surge_ft": persisted_surge,
+        "observation_time": surge_meta.get("observation_time"),
+        "age_min": surge_meta.get("age_min"),
+        "status": "ok" if persisted_surge is not None else "unavailable",
+        "detail": surge_meta.get("detail", ""),
+    }
     input_health["tide_predictions"] = {
         "status": ("degraded" if _TIDE_FALLBACK_USED["flag"] else "ok"),
         "detail": ("cached/synthesized astronomical predictions"
@@ -2593,7 +2608,11 @@ def build_forecast():
 
     degraded_inputs = sorted(
         name for name, health in input_health.items()
-        if health.get("status") != "ok"
+        if health.get("status") != "ok" and not name.startswith("outlook_")
+    )
+    outlook_degraded_inputs = sorted(
+        name for name, health in input_health.items()
+        if health.get("status") != "ok" and name.startswith("outlook_")
     )
     return {
         "generated_utc": generated_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -2603,6 +2622,8 @@ def build_forecast():
         "model_version": CURRENT_MODEL_VERSION,
         "input_health": input_health,
         "degraded_inputs": degraded_inputs,
+        "outlook_degraded_inputs": outlook_degraded_inputs,
+        "water_series_input": water_series_input,
         # Headline fields (worst-case tide)
         "peak_predicted_mllw": worst["predicted_mllw"],
         "peak_forecast_observed_mllw": worst["forecast_peak_mllw"],
@@ -2992,10 +3013,14 @@ _INPUT_LABELS = {
 }
 
 
-def _degraded_health_rows(forecast):
+def _degraded_health_rows(forecast, scope="production"):
     health = forecast.get("input_health") or {}
     rows = []
-    for name in forecast.get("degraded_inputs") or []:
+    # Derive scoped rows for legacy payloads too; keep all health in JSON.
+    names = [name for name, item in health.items()
+             if item.get("status") != "ok"
+             and name.startswith("outlook_") == (scope == "outlook")]
+    for name in sorted(names):
         item = health.get(name) or {}
         rows.append({
             "name": name,
@@ -5390,6 +5415,10 @@ def _render_water_series_section(forecast):
     when pluvial risk is active."""
     series = forecast.get("water_series") or []
     if len(series) < 4:
+        if (forecast.get("water_series_input") or {}).get("source") == "unavailable":
+            return ('<section class="water-series"><h2>Predicted near-term water levels</h2>'
+                    '<p>Continuous forecast unavailable: no fresh observed surge. '
+                    'Individual NWS high-tide projections remain separate below.</p></section>')
         return ""
     def to_in(v):
         return None if v is None else round((v - GRATE_SW) * 12, 1)
@@ -5619,7 +5648,9 @@ def _render_water_series_section(forecast):
                 f"in the calibrated range and diverge for violent "
                 f"bursts.")
         note_bits.append(band_note)
-    note_bits.append("Windows below are derived from these curves.")
+    note_bits.append("The blue curve holds the latest valid observed surge constant; "
+                     "individual NWS high-tide projections use their own guidance and may differ. "
+                     "Windows below are derived from these curves.")
     return f"""
   <section class="water-series">
     <h2>Predicted near-term water levels</h2>
@@ -6450,7 +6481,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             + (burst ? ' \u2014 BURST POTENTIAL' : '')
             + (pt.b && !burst ? ' (rain-risk hour)' : '')
             + (pt.u ? ' \u2014 RAIN FORECAST UNAVAILABLE: tide-only, not a flood forecast' : '')
-            + (pt.o ? ' (7-day outlook guidance)' : '');
+            + (pt.o ? ' (7-day outlook guidance)' : ' (observed-surge persistence)');
           rerender();
         }}
         function jumpTo(i) {{
@@ -6644,6 +6675,9 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
   <section class="{container_class}">
     <{hh}>Flood Map Forecast</{hh}>
     {intro_note}{toggle_html}{shading_html}
+    <p class="note">Near-term curve: observed-surge persistence. Later points use
+    experimental outlook guidance; a change at the source boundary is not an observed jump.</p>
+    {_render_input_health_html(forecast, scope="outlook")}
     <div class="map-wrap" style="position:relative">
       <canvas id="heatmap-canvas" role="img"
               aria-label="Forecast flood depth map" style="{canvas_styles}"></canvas>

@@ -201,3 +201,11 @@ series + scoped input health + dependent-surface verification**, preserving the
 per-tide NWS product and useful seven-day additions. Time-varying surge and new
 rain calibration remain separate research/promotion decisions. This document
 records the recommendation; it does not record John's approval to execute it.
+
+## Implementation update — 2026-09-23
+
+John subsequently authorized the recovery and audit follow-up. The first work
+unit is implemented; see `audits/2026-09-23-a1/05-round04-review-and-recovery-codex.md`.
+That report records the actual scope and checks. Claude's independent review and
+final promotion decision remain pending; research/evaluation steps remain separate.
+The original proposal above is retained as the decision context.

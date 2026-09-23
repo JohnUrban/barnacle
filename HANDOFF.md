@@ -1,97 +1,85 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 16:36 EDT.** Rewrite wholesale each ship; <100 lines.
-`BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
+**Snapshot: 2026-09-23 16:47 EDT.** Rewrite wholesale each ship; <100 lines.
+`BACKLOG.md` OPEN LOOPS is authoritative. Attic is archival.
 
 ## System
 
-Production flood forecaster for 342 Bay Ave, Highlands NJ: Sandy Hook,
-NWS, MRMS; 18 surveyed landmarks; hourly site/JSON, best-effort ~10-minute
-nowcast, nine-town map, per-tide pages, widget, ntfy/email/SMS.
-Model **v0.10.4** (`model/v0.10.4.md`). SMS = fresh imminent street impact;
-ntfy/email = longer-lead watches. Real people receive these alerts.
+Production hyperlocal flood forecaster for 342 Bay Ave, Highlands NJ.
+Sandy Hook + NWS + catchment MRMS; 18 surveyed landmarks; hourly JSON/site,
+best-effort ~10-minute nowcast, town map, per-tide pages, widget, ntfy/email/SMS.
+Model **v0.10.4**. Real people receive alerts. SMS is fresh imminent impact;
+ntfy/email are longer-lead watches. Core alert tide horizon remains <=48 h.
 
-## Owner-requested recovery plan (proposal, not implementation)
+## Immediate: recovery implemented; Claude review next; v0.10.5 HOLD
 
-John noticed the lifted widget/site curve. Codex's keep/repair/revert plan:
-`history/plans/2026-09-23-selective-recovery-plan.md` (evidence JSON beside it).
-Recommended: restore fresh observed-surge series, keep per-tide NWS projections,
-scope core/outlook health, then verify all consumers. Preserve useful additions;
-evaluate time-varying surge separately. No implementation DECISION given.
+John noticed the uniformly raised widget/site curve and authorized Codex's
+selective recovery plan. Report + evidence:
+`audits/2026-09-23-a1/05-round04-review-and-recovery-codex.md` and adjacent JSON.
+Plan: `history/plans/2026-09-23-selective-recovery-plan.md`.
 
-## Immediate: v0.10.5 HOLD; round-04 repairs shipped, independent pass owed
+- Curve/tank now use fresh observed-surge persistence; no longer the worst
+  future product tide's surge. Individual NWS high-tide projections stay intact.
+- `water_series_input` records actual source/value/observation time/age/status.
+  `current_surge_ft` keeps its legacy worst-tide meaning.
+- Missing observed surge: no definite continuous/tank curve; visible unavailable
+  status. Explicit zero remains valid for nowcast astronomy-only helper.
+- `degraded_inputs` is production-only; `outlook_degraded_inputs` scopes outlook.
+  Full input_health retained. Outlook/map warnings remain visible; unused
+  P-ETSS no longer marks the widget's core forecast degraded. Widget unchanged.
+- Maps identify persistence/outlook transition; no hidden blending introduced.
+- Rule-5(c) corrective restoration; no formula/constant/landmark/golden changes.
+  This does not promote the existing class-(b) work into v0.10.5.
 
-Audit folder: `audits/2026-09-23-a1/`. Round 01 (Codex) reviewed the
-candidate; round 02 (Claude) confirmed R1-R12 and shipped repairs A/B/C;
-round 03 (Codex) verified those at `bf2e601b4` and found S1-S7 (HOLD);
-round 04 (Claude, ship E) repaired all seven and the 6-h-window follow-up:
-`04-round03-repairs-reply-claude.md`, probe `verify_round04_claude.py`
-(inverts every round-03 assertion; exit 0) and its JSON output beside it.
+No-send generation 20:43:29Z: +1.4752 ft observed surge (16:36 EDT, 7.5 min old)
+vs retained +2.5 ft worst product surge. Curve 1.025 ft lower at 72 common points
+than 20:13Z. Six official high-tide totals unchanged. Core health clear;
+outlook_petss degraded. Browser chart verified; no alerts sent by verification.
 
-What changed in ship E: shadow scoring uses absolute errors per issued
-forecast, paired on the same ledger row; unknown rain reaches both maps
-and the chart, and null grid intervals are unknown hours; the outlook is a
-rolling 168 h with partial first/last cards (8 cards); one function feeds
-the email subject, text and HTML worst panel, and day_worst looks forward
-from the run instant; the chart's burst band is the maps' per-point
-compound value with the three scenarios named; warm-file admission checks
-every consumer field and downgrades on any dropped row; nested requests
-recompute their timeout and a 75-s wall clock bounds the outlook fetch
-(spec and reply now say "at most 75 s", never "never").
+## Audit state
 
-Ship E (`017ab4a63`) was red on the 3.11 workflows (PEP 701 f-string;
-one hourly run published nothing at 20:09Z); hotfix `aba853908` and
-guard `tests/test_py311_syntax.py` followed, CI green at `c5a761147`.
-The 20:13Z publish on the repaired code verified: series to 167.8 h,
-8 cards, `u` in the map payload, one email headline, gate clean.
+01 Codex broad audit -> 02 Claude repairs -> 03 Codex HOLD S1-S7 ->
+04 Claude ship E -> 05 Codex review + recovery implementation.
+Round-04 targeted probes pass; source review supports repairs. One extra S6
+issue fixed here: strictly reject/count crossed P-ETSS percentile points.
+266 decoder-enabled tests OK, no skips; both frozen replays and gate PASS;
+round04 probe + JS map-control probe PASS. Python-3.11 hotfix preserved.
+All original ledger bytes preserved; normal generation appends retained.
 
-Next: Codex verifies this exact candidate (round 05), then John's explicit
-promotion DECISION, then the atomic class-(b) bump. No round is approval.
-`model/v0.10.5-candidate.md` reflects the repaired behavior.
+Next: Claude independently reviews Codex's new patch, especially missing-surge
+handling, scoped health, every consumer, percentile fix and generated artifacts.
+Codex's author verification is not independent approval. Then John's explicit
+promotion DECISION before atomic class-(b) spec/archive/code/log-doc bump.
+The 20:09Z Python-3.11 failed publish stays honestly recorded.
 
-## Live event: coastal advisory CF.Y.0021
+## Live advisory / scientific limits
 
-Advisory window 2026-09-23 16:00 -> 2026-09-26 02:00 EDT.
-Captured 08:28Z CFW Sandy Hook projections: Sep 23 PM 6.9, Sep 24 PM
-7.2, Sep 25 AM 7.2, Sep 25 PM 7.5 ft MLLW. Score against observed peaks
-as the event passes (BACKLOG collector c); parser success is not skill.
-Raw KPHI CFW repair `8e8e5cfcd` fixes alerts-API table truncation and
-next-gauge leakage. Read PLAYBOOK for event support; log John's reports
-immediately. Quiet-hour pre-07:00 exemption uses station-time helper.
+CF.Y.0021 advisory: September 23 16:00 -> September 26 02:00 EDT.
+Read PLAYBOOK for event work and log John's observations immediately.
+Latest generated official peaks: Sep23 PM 7.0, Sep24 AM 6.4 / PM 7.1,
+Sep25 AM 7.0 / PM 7.9, Sep26 AM 7.9 ft MLLW. Score actual observed peaks;
+parser success is not skill. Raw KPHI parser remains repaired.
 
-## Outlook arc and scientific residuals
+Seven-day outlook stays separate, labeled and experimental: NBM/WPC amounts,
+NWPS shadow, P-ETSS bands, decay assumption, compound/p90 burst scenarios.
+Persistence itself is an approximation. Compare time-varying alternatives on
+matched issued forecasts before replacing core. Rain/tide plug-level research
+is separate; existing head-dependent drainage remains, no retune. Claude's
+retrospective `14e942c4f` still needs independent scientific validation.
 
-Owner decisions: separate outlook field/page; core alerts <=48 h; NBM amounts
-with WPC fallback; non-NOAA cross-check only; NWPS in shadow; widget unchanged;
-email link-only for new seven-day content. No tidal supremacy: compare tide,
-tank and burst pathways; maps open NOW and expose the forecast horizon.
+## Operations / standing residuals
 
-Confidence JSON removal and compound scenarios shipped in repairs. Production
-still stamps v0.10.4 despite shipped inputs/policy changes: document honestly
-at the class-(b) bump. Keep old replay goldens unchanged; archive/spec/code/
-log-doc updates are atomic. Do not retune based on this audit.
+Prior 09-14/18/20 audits closed; prior model approvals stand.
+42-hour publishing outage fixed; missing archives, writer/validator parity and
+hourly failure visibility remain open. Optional outlook fetch bounded at 75 s
+but still precedes alerts; moving it out of that path is separate work.
+Nowcast storm dispatch needs live validation; watchdog covers Mac-awake hours;
+external trigger awaits credentials. Durable delivery outbox remains open.
+Widget v7.29a re-copy obligation remains (v7.26a installed per 09-14 record),
+but this backend curve repair needs no new source copy. Driveway stays a proxy.
 
-Claude recorded a rain/tide retrospective in BACKLOG (`14e942c4f`), outside
-round-03 validation. Compound behavior still needs independent event evidence.
-Production 30-hour series still uses the worst tide's surge as a constant;
-this residual affects new day_worst headlines and remains unresolved.
-
-## Prior audits and operations
-
-Audits 09-14-a1, 09-18-a1, 09-20-a1 CLOSED; prior model approvals stand.
-42-hour 09-19/20 publishing outage fixed; missing daily archives remain.
-Writer/validator parity and hourly-failure visibility remain open.
-Nowcast storm-path dispatch needs live validation; watchdog covers Mac-awake
-hours; external 24/7 trigger awaits owner credentials. Delivery favors duplicate
-over missed until a durable outbox exists. Moving-head/surge-tendency work
-requires independent compound-event evidence. Widget v7.29a needs re-copy
-(installed v7.26a per 09-14 record). Driveway is a PROXY, not a landmark.
-
-## Operating rules
-
-Run `date` before relative-time prose; use station-time helpers. Preserve
-primary provenance, append-only ledgers, and transactional alert state.
-Explicit staging only: commit -> gate -> push; rejected push -> rebase or
-abort -> gate again -> retry. Ledger conflicts resolve by union.
-Attribution must name actual participation and scope. No audit closeout
-without independent reply; no model promotion without review + DECISION.
+Run date before relative-time prose; use station-time helpers. Preserve primary
+provenance and append-only data. Explicit staging; commit -> gate -> push;
+rejected push -> rebase or abort -> gate -> retry. Ledger conflicts union.
+Review credit must name actual scope/participation; no model promotion without
+independent review and owner DECISION.

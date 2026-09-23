@@ -548,8 +548,8 @@ def _render_input_health_text(forecast):
     return lines
 
 
-def _render_input_health_html(forecast):
-    rows = _degraded_health_rows(forecast)
+def _render_input_health_html(forecast, scope="production"):
+    rows = _degraded_health_rows(forecast, scope=scope)
     if not rows:
         return ""
     items = "".join(
@@ -562,7 +562,7 @@ def _render_input_health_html(forecast):
     return (
         '<section class="input-health" style="border:2px solid #b45309;'
         'background:#fff7ed;padding:10px 14px;margin:12px 0">'
-        '<h2 style="margin:0 0 6px 0">⚠ Degraded forecast inputs</h2>'
+        f'<h2 style="margin:0 0 6px 0">⚠ Degraded {"outlook" if scope == "outlook" else "forecast"} inputs</h2>'
         '<p>Unavailable data is shown as unavailable and is not being '
         f'treated as a measured or forecast zero.</p><ul>{items}</ul></section>'
     )

@@ -389,12 +389,28 @@ def validate_forecast_metadata(path, expected_model_version=None, now_utc=None):
             if status not in allowed:
                 failures.append(f"input_health.{name} has invalid status {status!r}")
             elif status != "ok":
-                expected.append(name)
+                if "outlook_degraded_inputs" not in forecast or not name.startswith("outlook_"):
+                    expected.append(name)
         if sorted(degraded) != sorted(expected):
             failures.append(
                 f"degraded_inputs mismatch: expected {sorted(expected)!r}, "
                 f"got {sorted(degraded)!r}"
             )
+    if isinstance(health, dict) and "outlook_degraded_inputs" in forecast:
+        expected_outlook = sorted(name for name, item in health.items()
+                                  if isinstance(item, dict) and item.get("status") != "ok"
+                                  and name.startswith("outlook_"))
+        if forecast["outlook_degraded_inputs"] != expected_outlook:
+            failures.append("outlook_degraded_inputs mismatch")
+    si = forecast.get("water_series_input")
+    if si is not None:
+        if not isinstance(si, dict) or si.get("source") not in {"surge-persistence", "unavailable"}:
+            failures.append("invalid water_series_input")
+        elif si["source"] == "unavailable":
+            if si.get("surge_ft") is not None or forecast.get("water_series"):
+                failures.append("unavailable series input must not produce a numeric curve")
+        elif not isinstance(si.get("surge_ft"), (int, float)) or not math.isfinite(si["surge_ft"]):
+            failures.append("series persistence requires finite surge")
     failures.extend(validate_outlook_field(forecast))
     return failures
 

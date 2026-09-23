@@ -69,6 +69,7 @@
     <div class="town-slider">
       <span class="note">Slide through the forecast:</span>
       <span id="town-time-label" class="note"></span>
+      <span id="town-input-health" class="note" style="color:#92400e"></span>
       <input type="range" id="town-time" aria-label="Forecast time"
              min="0" max="0" step="1" value="0">
     </div>
@@ -813,7 +814,7 @@
     slider.value = (lvl + MLLW_OFF).toFixed(2);
     tLabel.textContent = p.time + extra
       + (p.rain_unknown ? " — RAIN FORECAST UNAVAILABLE: tide-only, not a flood forecast" : "")
-      + (p.outlook ? " (7-day outlook guidance)" : "");
+      + (p.outlook ? " (7-day outlook guidance)" : " (observed-surge persistence)");
   }
   function jumpTo(pred) {
     if (!SERIES || !SERIES.length) return;
@@ -901,6 +902,13 @@
     .then(function(r) { return r.json(); })
     .then(function(f) {
       forecastPeak = f.peak_forecast_observed_mllw || null;
+      var bad = Object.keys(f.input_health || {}).filter(function(k) {
+        return f.input_health[k].status !== "ok";
+      });
+      document.getElementById("town-input-health").textContent = bad.length
+        ? "Degraded inputs (core and outlook): " + bad.map(function(k) {
+            return k.replace(/_/g, " ") + ": " + (f.input_health[k].detail || f.input_health[k].status);
+          }).join("; ") : "";
       var pr = f.pluvial_risk || {};
       POT = Math.max(pr.potential_low_tide_navd88 || -99,
                      pr.potential_low_tide_navd88_tanh || -99);
