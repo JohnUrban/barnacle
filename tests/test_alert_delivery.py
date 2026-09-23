@@ -99,9 +99,9 @@ class AlertWindowTests(unittest.TestCase):
         })
         with mock.patch.object(ff, "headline_for", return_value=("NO FLOODING", "")):
             txt = ff.build_sms_text(forecast)
-        self.assertIn("Street tide flooding", txt)
-        self.assertNotIn("Severe", txt)
-        self.assertNotIn("09/27", txt)
+        self.assertIn("street tide flooding Thu 7:01 PM (7.20 ft)", txt)
+        self.assertNotIn("severe", txt.lower())
+        self.assertNotIn("Sun", txt)   # the 09-27 tide must not be named
 
 
 class QuietHoursTonightTests(unittest.TestCase):
