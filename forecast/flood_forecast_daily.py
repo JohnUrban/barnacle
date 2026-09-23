@@ -2807,10 +2807,64 @@ def _tide_confidence(forecast, t):
     return level, text
 
 
+def _accuracy_by_lead_summary(max_age_days=14):
+    """Compact, JSON-safe lead-time error table (2026-09-23): the
+    replacement for the confidence labels on every human surface. Mean
+    absolute error and bias of past predictions grouped by how far ahead
+    they were made, from predictions_log joined to observed peaks."""
+    try:
+        lt = _compute_leadtime_accuracy(max_age_days)
+    except Exception:
+        lt = None
+    empty = {"window_days": max_age_days, "n_total": 0, "n_tides": 0, "buckets": []}
+    if not lt or not lt.get("buckets"):
+        return empty
+    bounds = {label: (lo, hi) for lo, hi, label in LEADTIME_BUCKETS}
+    buckets = []
+    for b in lt["buckets"]:
+        if not b.get("n"):
+            continue
+        lo, hi = bounds.get(b["label"], (None, None))
+        buckets.append({"label": b["label"], "lo_h": lo, "hi_h": hi, "n": b["n"],
+                        "mae_ft": round(b["mean_abs_err_ft"], 3),
+                        "bias_ft": round(b["mean_err_ft"], 3)})
+    return {"window_days": max_age_days, "n_total": lt.get("n_total", 0),
+            "n_tides": lt.get("n_tides", 0), "buckets": buckets}
+
+
+def accuracy_for_lead(forecast, hours_ahead):
+    """The lead bucket covering `hours_ahead`, or None."""
+    acc = forecast.get("accuracy_by_lead") or {}
+    if hours_ahead is None:
+        return None
+    for b in acc.get("buckets") or []:
+        lo, hi = b.get("lo_h"), b.get("hi_h")
+        if lo is not None and hi is not None and lo <= hours_ahead < hi:
+            return b
+    return None
+
+
+def format_accuracy_line(forecast):
+    """One sentence of measured error, or a plain statement that there is
+    none yet. Never a label."""
+    acc = forecast.get("accuracy_by_lead") or {}
+    buckets = acc.get("buckets") or []
+    if not buckets:
+        return "Forecast error so far: no scored tides in the last 14 days yet."
+    bits = [f"{b['label'].replace(' before peak', '')} \u00b1{b['mae_ft']:.2f} ft (n={b['n']})"
+            for b in buckets]
+    return (f"Forecast error so far (mean |error| of past predictions, last "
+            f"{acc.get('window_days', 14)} days, {acc.get('n_tides', 0)} tides): "
+            + " \u00b7 ".join(bits))
+
+
 def _attach_summary_and_confidence(forecast):
-    """Compute plain-language summary + confidence + unusual-forecast flag
-    + forecast-accuracy summary after the forecast dict is otherwise
-    complete."""
+    """Compute plain-language summary + accuracy-by-lead + unusual-forecast
+    flag + forecast-accuracy summary after the forecast dict is otherwise
+    complete. The confidence fields are still COMPUTED (the ledgers'
+    confidence_level column and its gate enum depend on them) but no human
+    surface shows them any more (John, 2026-09-23: the labels were never
+    useful once; error statistics replace them)."""
     level, reason = assess_confidence(forecast)
     forecast["confidence_level"] = level
     forecast["confidence_reason"] = reason
@@ -2818,6 +2872,7 @@ def _attach_summary_and_confidence(forecast):
     forecast["confidence_regime_band"] = _compute_regime_band(
         forecast, forecast["confidence_uncertainty_ft"]
     )
+    forecast["accuracy_by_lead"] = _accuracy_by_lead_summary()
     forecast["plain_language_summary"] = plain_language_summary(forecast)
     # Unusual-forecast flag (HANDOFF 16e): where does today's peak sit in
     # the 1996-2025 distribution of daily peaks for this calendar month?

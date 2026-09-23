@@ -52,18 +52,17 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
   production tank; day headline = worst pathway; worst.flood_chance.
   Landing + town maps: slider to +168 h, opens on NOW, buttons Now /
   Worst tide / Worst flood chance. Widget unchanged.
-- OWED: v0.10.5 rule-5(b) bump with independent review + DECISION;
-  confidence-label phase-out sweep; NBM percentile rain bands.
+- Confidence labels PHASED OUT (~11:15 EDT): surfaces show measured
+  error by lead (forecast.accuracy_by_lead); fields stay in JSON for
+  the ledger enum. Peaks+band chart restored at the outlook's bottom.
+- OWED: v0.10.5 bump after Codex's independent audit of today's work
+  + John's DECISION; NBM percentile rain bands; confidence JSON removal.
 
 ## Audit and attribution state
 
-- Audits `2026-09-14-a1`, `2026-09-18-a1`, `2026-09-20-a1` are CLOSED.
-- v0.10.3 ratified by John 2026-09-18 (retrospective, labeled so);
-  v0.10.4 promoted 2026-09-20 with owner DECISION + independent
-  candidate review recorded first. Do not ask John to re-approve either.
-- AGENTS rule 12: attribution follows actual participation; `Reviewed-by`
-  only for a cited completed review; model promotions need independent
-  review + owner DECISION before the commit.
+- Audits 09-14-a1, 09-18-a1, 09-20-a1 CLOSED; v0.10.3 ratified 09-18,
+  v0.10.4 promoted 09-20 with DECISION + review. Never re-ask. Rule 12:
+  attribution follows participation; promotions need review + DECISION.
 
 ## Production and evidence
 

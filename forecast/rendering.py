@@ -36,6 +36,7 @@ try:
         SH_FIRST_WATER, _client_map_section_html,
         _compute_classifier_metrics, _compute_leadtime_accuracy,
         _confidence_qualifier_sentences, _degraded_health_rows,
+        accuracy_for_lead, format_accuracy_line,
         _flood_peaks_chart_data, _fmt_metric,
         _high_value_calibration_callouts, _html_escape,
         _landmarks_footer_html, _landmarks_footer_text, _load_accuracy_rows,
@@ -61,6 +62,7 @@ except ImportError:                      # run as a script from forecast/
         SH_FIRST_WATER, _client_map_section_html,
         _compute_classifier_metrics, _compute_leadtime_accuracy,
         _confidence_qualifier_sentences, _degraded_health_rows,
+        accuracy_for_lead, format_accuracy_line,
         _flood_peaks_chart_data, _fmt_metric,
         _high_value_calibration_callouts, _html_escape,
         _landmarks_footer_html, _landmarks_footer_text, _load_accuracy_rows,
@@ -85,14 +87,8 @@ def _render_summary_text(forecast):
     summary = ""
     if summary:
         out.append(summary)
-    level = forecast.get("confidence_level")
-    reason = forecast.get("confidence_reason") or ""
-    if level:
-        # Primary line: badge + reason
-        out.append(f"Confidence: {level.upper()} — {reason}")
-        # Augment lines for non-high confidence (HANDOFF 9b.6)
-        for extra in _confidence_qualifier_sentences(forecast):
-            out.append(f"  {extra}")
+    # 2026-09-23: measured error replaces the confidence label.
+    out.append(format_accuracy_line(forecast))
     unusual = _unusual_forecast_text(forecast)
     if unusual:
         out.append(unusual)
@@ -482,9 +478,9 @@ def _render_summary_html(forecast, include_confidence=True,
     # reapplied 2026-07-21 after the edit was lost in a reset cycle);
     # this banner keeps only outage / confidence / unusual notes.
     summary = ""
-    level = (forecast.get("confidence_level") or "") \
-        if include_confidence else ""
-    reason = forecast.get("confidence_reason") or ""
+    # 2026-09-23: `include_confidence` now gates the measured-error line
+    # (the confidence label itself is gone from every human surface).
+    level = format_accuracy_line(forecast) if include_confidence else ""
     unusual = _unusual_forecast_text(forecast) if include_unusual else None
     if not summary and not level and not unusual:
         return ""
@@ -497,17 +493,7 @@ def _render_summary_html(forecast, include_confidence=True,
             'just not refreshed). Rain-risk inputs (QPF, alerts) are '
             'unaffected and live.</p>')
     if level:
-        # Primary confidence line: badge + reason
-        confidence_html = (
-            f'<p class="tldr-confidence confidence-{level}">'
-            f'<b>Confidence: {level.upper()}</b> &mdash; '
-            f'<span>{reason}</span>'
-        )
-        # Augment with qualifier sentences for non-high confidence (9b.6)
-        for extra in _confidence_qualifier_sentences(forecast):
-            confidence_html += f'<br><span class="confidence-qualifier">{extra}</span>'
-        confidence_html += "</p>"
-        parts.append(confidence_html)
+        parts.append(f'<p class="tldr-accuracy">{level}</p>')
     if unusual:
         parts.append(f'<p class="tldr-unusual">{unusual}</p>')
     parts.append('</section>')
@@ -2902,10 +2888,9 @@ def render_per_tide_page(tide, forecast,
             var hu = parseFloat(cols[idx['hours_until_peak']]);
             var sh = parseFloat(cols[idx['sh_peak_mllw_predicted']]);
             var wat = parseFloat(cols[idx['water_navd88_predicted']]);
-            var conf = cols[idx['confidence_level']] || '';
             if (isNaN(hu) || isNaN(sh)) continue;
             // x = "hours from peak" (negative = before; convergence reads left→right)
-            points.push({{ x: -hu, y: sh, water: wat, conf: conf, hours_until_peak: hu }});
+            points.push({{ x: -hu, y: sh, water: wat, hours_until_peak: hu }});
           }}
           points.sort(function(a, b) {{ return a.x - b.x; }});
           if (points.length < 2) {{
@@ -2950,7 +2935,6 @@ def render_per_tide_page(tide, forecast,
                       }}
                       lines.push('Made ' + Math.abs(p.x).toFixed(1) + ' h '
                         + (p.x < 0 ? 'before' : 'after') + ' peak');
-                      if (p.conf) lines.push('Confidence: ' + p.conf.toUpperCase());
                       return lines;
                     }}
                   }}
@@ -3132,13 +3116,11 @@ def render_html_page(forecast):
         if is_past:
             conf_cell = '<td class="note">—</td>'
         else:
-            _cl, _ct = _tide_confidence(forecast, t)
-            _ct_attr = _ct.replace('&', '&amp;').replace('"', '&quot;') \
-                          .replace('<', '&lt;')
-            conf_cell = (
-                f'<td><button type="button" class="conf-badge '
-                f'conf-{_cl}" data-conf="{_ct_attr}">'
-                f'{_cl.upper()}</button></td>')
+            # 2026-09-23: measured error at this lead replaces the label
+            _acc = accuracy_for_lead(forecast, t.get("hours_from_now"))
+            conf_cell = (f'<td class="note">&plusmn;{_acc["mae_ft"]:.2f} ft '
+                         f'<span class="note">(n={_acc["n"]})</span></td>'
+                         if _acc else '<td class="note">no data yet</td>')
         tide_rows += (
             f'<tr{row_class}{data_attr}>'
             f'<td>{time_cell}</td>'
@@ -3344,10 +3326,9 @@ def render_html_page(forecast):
       <label><input type="radio" name="duration" value="72" checked> 72h</label>
     </div>
     <table class="tide-table">
-      <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th><th>Conf</th></tr></thead>
+      <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th><th>Error so far</th></tr></thead>
       <tbody>{tide_rows}</tbody>
     </table>
-    <div id="conf-pop"></div>
     <details class="chart-explain">
     <summary>Explain this table</summary>
     <p class="note">Highlighted row is the worst tide of the 72 h (the
@@ -3357,8 +3338,10 @@ def render_html_page(forecast):
        chart, full landmark table). <b>Above</b> = inches above the highest
        exceeded landmark (negative if water below the lowest landmark).
        <b>Rel</b> = inches above the lowest landmark (lowest road corner,
-       3.64 NAVD88) — always. <b>Conf</b> = per-tide confidence — click a
-       value to see what drives it and the &plusmn; band it implies.
+       3.64 NAVD88) — always. <b>Error so far</b> = mean absolute error of
+       past predictions made this far ahead of their tide (last 14 days,
+       from the predictions log scored against NOAA observed peaks) —
+       measured, not a label.
        Surge persistence is increasingly unreliable
        for tides beyond ~24h out — use the longer windows for planning,
        not for trust. The most recent high tide stays visible (greyed
@@ -3387,24 +3370,6 @@ def render_html_page(forecast):
         }});
         // Apply the default (72) on load
         applyFilter(72);
-        // Confidence popup (2026-07-21): click a badge -> bubble with
-        // the per-tide reasoning, positioned under that row; any
-        // further click (bubble included) dismisses it.
-        var pop = document.getElementById('conf-pop');
-        document.querySelectorAll('.conf-badge').forEach(function(b) {{
-          b.addEventListener('click', function(ev) {{
-            ev.stopPropagation();
-            pop.textContent = b.getAttribute('data-conf');
-            pop.style.display = 'block';
-            var sec = pop.offsetParent || pop.parentElement;
-            var br = b.getBoundingClientRect();
-            var sr = sec.getBoundingClientRect();
-            pop.style.top = (br.bottom - sr.top + 6) + 'px';
-          }});
-        }});
-        document.addEventListener('click', function() {{
-          pop.style.display = 'none';
-        }});
       }})();
     </script>
   </section>
