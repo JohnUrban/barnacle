@@ -229,6 +229,32 @@ class AdapterParseTests(unittest.TestCase):
         self.assertEqual(h5["status"], "unavailable")
 
 
+class WarmJobTests(unittest.TestCase):
+    def test_warm_job_skips_refetch_when_newest_cycle_is_on_disk(self):
+        import importlib, sys, tempfile, os, json as _json
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "forecast"))
+        warm = importlib.import_module("outlook_warm")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "q.json")
+            _json.dump({"qmd_cycle": "2026-09-23T06:00:00Z", "fetched_at": "2026-09-23T10:00:00Z",
+                        "buckets": {f"b{i}": {} for i in range(28)}}, open(path, "w"))
+            # the script imports its own `outlook_sources` module object; patch that one
+            with mock.patch.object(warm.srcs, "newest_qmd_cycle", return_value=CYCLE), \
+                    mock.patch.object(warm.srcs, "fetch_nbm_qmd") as fetch:
+                rc = warm.main(["--path", path])
+            self.assertEqual(rc, 0)
+            fetch.assert_not_called()
+            # a newer cycle triggers the fetch and rewrites the file
+            newer = CYCLE + dt.timedelta(hours=6)
+            with mock.patch.object(warm.srcs, "newest_qmd_cycle", return_value=newer), \
+                    mock.patch.object(warm.srcs, "fetch_nbm_qmd", return_value={
+                        "qmd_cycle": newer.strftime("%Y-%m-%dT%H:%M:%SZ"), "fetched_at": "x",
+                        "buckets": {"a": {}}, "missing": [], "summary": "s"}):
+                rc = warm.main(["--path", path])
+            self.assertEqual(rc, 0)
+            self.assertEqual(_json.load(open(path))["qmd_cycle"], newer.strftime("%Y-%m-%dT%H:%M:%SZ"))
+
+
 class LadderTests(unittest.TestCase):
     def test_sources_by_lead(self):
         ol = _build()

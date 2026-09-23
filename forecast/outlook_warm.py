@@ -40,6 +40,15 @@ def main(argv=None):
         print(json.dumps(health))
         return 0 if health["status"] != "unavailable" else 1
     existing = srcs.load_nbm_qmd(args.path)
+    # One request answers "is there anything newer?" before spending ~4 min
+    # on 28 subsets (the dispatched CI run of 2026-09-23 refetched a cycle
+    # it already had).
+    newest = srcs.newest_qmd_cycle(now)
+    if newest is not None and existing \
+            and existing.get("qmd_cycle") == newest.strftime("%Y-%m-%dT%H:%M:%SZ") \
+            and len(existing.get("buckets") or {}) >= len(srcs.NBM_STEPS):
+        print(f"newest published cycle {existing['qmd_cycle']} is already on disk; nothing to fetch")
+        return 0
     try:
         data = srcs.fetch_nbm_qmd(now, time_budget_s=args.budget)
     except Exception as e:
