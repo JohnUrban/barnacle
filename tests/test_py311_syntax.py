@@ -14,6 +14,8 @@ SCAN = ["forecast", "tests", "history/scripts", "audits", "scripts"]
 
 def pep701_violations(source, path=""):
     out = []
+    if not hasattr(tokenize, "FSTRING_START"):      # pre-3.12: the interpreter itself enforces the rule
+        return out
     toks = list(tokenize.generate_tokens(io.StringIO(source).readline))
     stack = []                                   # per open f-string: [quote, brace depth]
     for t in toks:
@@ -45,6 +47,8 @@ def pep701_violations(source, path=""):
 
 class Py311SyntaxTests(unittest.TestCase):
     def test_scanner_flags_the_construct_that_broke_the_hourly_job(self):
+        if not hasattr(tokenize, "FSTRING_START"):
+            self.skipTest("pre-3.12 tokenizer: no f-string tokens to scan")
         bad = ('html = f"""<h3>{("<span class=\\"note\\">x</span>" % 1) if d else ""}</h3>"""\n')
         self.assertTrue(pep701_violations(bad))
         good = ('note = "x"\nhtml = f"""<h3>{note}</h3> {d[\'a\']} {"a" if d else "b"} \\u2014"""\n')
