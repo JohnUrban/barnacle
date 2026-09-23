@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 09:53 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 10:41 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
@@ -47,9 +47,13 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
   decayed persistence (ASSUMPTION) -> astronomy. Shadow ledger
   data/outlook_log.csv + readiness verdicts on the page (28 scored tides
   needed). Production surge, alerts, widget, per-tide pages untouched.
-- OWED: v0.10.5 rule-5(b) bump with independent review + DECISION
-  (BACKLOG). Expected one 'light tide Thu 7:01 PM' alert re-send today
-  from the 48-h window (BACKLOG FACT).
+- v2 (~11:30 EDT): NO TIDAL SUPREMACY (AGENTS rule 6). outlook_7d.series
+  (hourly, 7 d) carries tide+guidance AND the rain pathway through the
+  production tank; day headline = worst pathway; worst.flood_chance.
+  Landing + town maps: slider to +168 h, opens on NOW, buttons Now /
+  Worst tide / Worst flood chance. Widget unchanged.
+- OWED: v0.10.5 rule-5(b) bump with independent review + DECISION;
+  confidence-label phase-out sweep; NBM percentile rain bands.
 
 ## Audit and attribution state
 
@@ -71,10 +75,8 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
   fail-closed dispatch. Local scheduler + Mac watchdog (awake hours).
 - NOAA transport uses GMT; storage preserves station offsets. Legacy
   naive timestamps use fold=0.
-- Widget source v7.29a (driveway rung removed) needs John to re-copy into
-  Scriptable; installed v7.26a last confirmed 2026-09-14.
-- v0.10.4: `driveway_central` REMOVED from the ladder (18 landmarks); the
-  driveway is a documented PROXY; numerically identical to v0.10.3.
+- Widget v7.29a needs John's re-copy (installed v7.26a, 2026-09-14).
+- v0.10.4: `driveway_central` removed (18 landmarks); driveway = PROXY.
 - CI: pinned linters; strict mypy on two seams; DOM gate. Replays: `history/scripts/reproduce_v0_10_{1,3}.py`.
 
 ## Residuals and operating rules

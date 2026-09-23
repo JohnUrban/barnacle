@@ -112,7 +112,9 @@ def _intro(ol, forecast):
     return f"""
   <section class="outlook-intro">
     <h2>How to read this page</h2>
-    <p>Every number here has two layers. The <b>astronomical tide</b> is the honest part:
+    <p><b>Two pathways, every day.</b> Tidal flooding is one; rain flooding is the other, and it can be
+    the worse one at low tide when the input rate beats the drains. Each day card's headline is the worst
+    of the two, and the chart draws both. The <b>astronomical tide</b> is the honest part:
     it is known years ahead. The <b>guidance</b> layer adds surge, rain and wind from the
     sources below, each labeled with where it comes from and how far it reaches. The
     production forecast on the <a href="index.html">landing page</a> and its alerts are
@@ -140,11 +142,51 @@ def _xcheck_block(day):
             f'<ul>{cells}{ens_line}</ul></details>')
 
 
+def _rain_line(rp):
+    """The rain pathway on a card: tank line peak and burst scenario, each
+    with its regime; never gated by the tide."""
+    if not rp:
+        return "Rain pathway: —"
+    if not rp.get("rain_available"):
+        return "Rain pathway: rain forecast unavailable for this day (not zero)"
+    bits = []
+    if rp.get("tank_peak_navd88") is not None:
+        inch = (rp["tank_peak_navd88"] - 3.52) * 12.0
+        bits.append(f"tank line peaks <b>{inch:+.1f}\u2033</b> vs SW grate at {_e(rp.get('tank_peak_time'))} "
+                    f"({_e(_regime_word(rp.get('tank_regime')))})")
+    else:
+        bits.append(f"tank line stays below the grate (peak rate {rp.get('peak_rate_in_hr', 0):.2f} in/hr, "
+                    f"max 6-h {rp.get('max_6h_in', 0):.2f} in)")
+    if rp.get("burst_potential_navd88") is not None:
+        inch = (rp["burst_potential_navd88"] - 3.52) * 12.0
+        bits.append(f"burst scenario {rp.get('burst_est_in_hr'):.1f} in/hr → potential <b>{inch:+.1f}\u2033</b> "
+                    f"({_e(_regime_word(rp.get('burst_regime')))})")
+    elif rp.get("burst_signal"):
+        bits.append("burst-capable hours flagged, magnitude below the potential threshold")
+    return "Rain pathway: " + "; ".join(bits)
+
+
+def _worst_line(ol):
+    w = ol.get("worst") or {}
+    t, f = w.get("tide") or {}, w.get("flood_chance") or {}
+    if not f:
+        return ""
+    def inch(v):
+        return f"{(v - 3.52) * 12.0:+.1f}\u2033"
+    return (f'<p><b>Worst flood chance in the next 7 days:</b> {inch(f["navd88"])} vs the SW grate '
+            f'at {_e(_short_time(f["time"]))} via <b>{_e(f.get("pathway"))}</b>. '
+            f'Worst tide: {inch(t["navd88"])} at {_e(_short_time(t["time"]))}. '
+            f'The two are not the same question: rain can flood this corner at low tide.</p>')
+
+
 def _day_cards(ol):
     cards = []
     for i, d in enumerate(ol.get("days") or []):
         regime = d.get("regime_max") or "dry"
+        pathway = d.get("worst_pathway") or "tide"
         src = SOURCE_LABELS.get(d.get("outlook_source") or "astro", d.get("outlook_source") or "")
+        rp = d.get("rain_pathway") or {}
+        tidal_regime = d.get("tidal_regime_max") or regime
         tides = ", ".join(
             f"{_e(t['time'])} {t['outlook_mllw']:.1f}" if t.get("outlook_mllw") is not None else _e(t["time"])
             for t in d.get("tides") or [])
@@ -163,82 +205,128 @@ def _day_cards(ol):
         cards.append(f"""
     <div class="{cls} regime-{_e(regime)}">
       <h3>{_e(_day_title(d))}</h3>
-      <p class="dc-line">Astronomical high tide: <b>{_ft(d.get('astro_max_mllw'))}</b> MLLW</p>
-      <p class="dc-line">With guidance: <b>{_ft(d.get('outlook_max_mllw'))}</b> → <b>{_e(_regime_word(regime))}</b>
-         <span class="note">({_e(src)})</span></p>
+      <p class="dc-line"><b>{_e(_regime_word(regime).upper())}</b> <span class="note">— worst pathway: {_e(pathway)}</span></p>
+      <p class="dc-line">Tide: astronomy <b>{_ft(d.get('astro_max_mllw'))}</b>, with guidance <b>{_ft(d.get('outlook_max_mllw'))}</b>
+         → {_e(_regime_word(tidal_regime))} <span class="note">({_e(src)})</span></p>
       {band}
+      <p class="dc-line">{_rain_line(rp)}</p>
       <p class="dc-line">Tides: {tides}</p>
       <p class="dc-line">{rain}{pop}</p>
       <p class="dc-line">{wind}</p>
       {_xcheck_block(d)}
     </div>""")
-    return f'<section><h2>Seven days at the corner</h2><div class="day-cards">{"".join(cards)}</div></section>'
+    return (f'<section><h2>Seven days at the corner</h2>{_worst_line(ol)}'
+            f'<div class="day-cards">{"".join(cards)}</div></section>')
 
 
 def _chart(ol):
+    series = ol.get("series") or []
     tides = ol.get("tides") or []
-    labels = [_short_time(t["time"]) for t in tides]
-    def series(key):
-        return [_inch(t.get(key)) for t in tides]
-    data = {
-        "labels": labels,
-        "astro": series("astro_mllw"),
-        "outlook": series("outlook_mllw"),
-        "lo": series("band_lo_mllw"),
-        "hi": series("band_hi_mllw"),
-        "production": series("production_mllw"),
-        "sources": [t.get("outlook_source") for t in tides],
-        "landmarks": [{"label": n, "y": y, "color": c, "solid": solid}
-                      for n, y, c, solid in LANDMARK_LINES],
-    }
-    all_vals = [v for k in ("astro", "outlook", "lo", "hi", "production")
-                for v in data[k] if v is not None] + [y for _n, y, _c, _s in LANDMARK_LINES]
+    if not series:
+        return _peaks_chart(ol)
+    pot_by_day = ((ol.get("worst") or {}).get("burst_potential_by_day")) or {}
+
+    def inch_navd(v):
+        return None if v is None else round((v - 3.52) * 12.0, 1)
+    labels = [_short_time(p["time"]) for p in series]
+    tide = [inch_navd(p.get("tide_navd88")) for p in series]
+    astro = [_inch(p.get("astro_mllw")) for p in series]
+    pluv = [inch_navd(p.get("pluvial_navd88")) for p in series]
+    burst = []
+    for p in series:
+        pot = pot_by_day.get(p["time"][:10])
+        burst.append(inch_navd(max(pot, p["tide_navd88"])) if (p.get("burst_risk") and pot is not None) else None)
+    src = [p.get("surge_source") for p in series]
+    now_i = next((i for i, p in enumerate(series) if (p.get("lead_h") or 0) >= 0), 0)
+    data = {"labels": labels, "tide": tide, "astro": astro, "pluv": pluv, "burst": burst,
+            "src": src, "now_i": now_i,
+            "landmarks": [{"label": n, "y": y, "color": c, "solid": solid}
+                          for n, y, c, solid in LANDMARK_LINES]}
+    all_vals = [v for k in ("tide", "astro", "pluv", "burst") for v in data[k] if v is not None] + \
+               [y for _n, y, _c, _s in LANDMARK_LINES]
     data["y_min"] = min(Y_FRAME[0], (min(all_vals) - 3) if all_vals else Y_FRAME[0])
     data["y_max"] = max(Y_FRAME[1], (max(all_vals) + 3) if all_vals else Y_FRAME[1])
-    aria = ("Seven-day high-tide outlook at Sandy Hook in inches relative to the SW grate: "
-            + "; ".join(f"{l} {o:+.0f} in" for l, o in zip(labels, data["outlook"]) if o is not None))
+    aria = ("Seven-day water level at the corner in inches relative to the SW grate: tide plus "
+            "guidance surge (blue), rain street-water from the tank model (amber), burst "
+            "scenario band (navy) on burst-capable hours.")
     payload = json.dumps(data)
     script = """
 <script>
 (function () {
   var D = __DATA__;
-  var el = document.getElementById('outlook-peaks-chart');
+  var el = document.getElementById('outlook-series-chart');
   if (!el || typeof Chart === 'undefined') { return; }
   var datasets = [
-    { label: 'Guidance band (P-ETSS 10-90%)', data: D.hi, borderWidth: 0,
-      backgroundColor: 'rgba(26,95,168,0.15)', pointRadius: 0, fill: '+1', spanGaps: false },
-    { label: 'band low', data: D.lo, borderWidth: 0, pointRadius: 0, fill: false, spanGaps: false },
-    { label: 'Outlook (tide + guidance)', data: D.outlook, borderColor: '#1a5fa8',
-      backgroundColor: '#1a5fa8', borderWidth: 2.5, pointRadius: 4, tension: 0.2,
-      pointStyle: D.sources.map(function (s) { return s === 'astro' ? 'crossRot' : (s === 'persist_decay' ? 'triangle' : 'circle'); }) },
+    { label: 'Burst scenario (rain, no clock)', data: D.burst, borderWidth: 0,
+      backgroundColor: 'rgba(11,61,107,0.30)', pointRadius: 0, fill: { target: 2 }, spanGaps: false },
+    { label: 'Rain street-water (tank line)', data: D.pluv, borderColor: '#d97706',
+      backgroundColor: '#d97706', borderWidth: 2, pointRadius: 0, tension: 0.2, spanGaps: false },
+    { label: 'Tide + guidance surge (bay water)', data: D.tide, borderColor: '#1a5fa8',
+      borderWidth: 2, pointRadius: 0, tension: 0.3 },
     { label: 'Astronomical tide only', data: D.astro, borderColor: '#7aa6d8', borderDash: [6, 4],
-      borderWidth: 1.5, pointRadius: 2, tension: 0.2 },
-    { label: 'Production forecast (landing page, 72 h)', data: D.production, borderColor: '#555555',
-      backgroundColor: '#555555', borderWidth: 0, pointRadius: 5, pointStyle: 'rectRot', showLine: false }
+      borderWidth: 1.2, pointRadius: 0, tension: 0.3 }
   ];
   D.landmarks.forEach(function (lm) {
     datasets.push({ label: lm.label, data: D.labels.map(function () { return lm.y; }),
       borderColor: lm.color, borderWidth: lm.solid ? 1.5 : 1.2,
       borderDash: lm.solid ? [] : [6, 5], fill: false, pointRadius: 0 });
   });
-  new Chart(el, { type: 'line', data: { labels: D.labels, datasets: datasets },
+  var nowLine = { id: 'nowLine', afterDraw: function (chart) {
+    var x = chart.scales.x.getPixelForValue(D.now_i), c = chart.ctx, a = chart.chartArea;
+    c.save(); c.strokeStyle = '#222'; c.lineWidth = 1.2; c.beginPath();
+    c.moveTo(x, a.top); c.lineTo(x, a.bottom); c.stroke(); c.restore(); } };
+  new Chart(el, { type: 'line', data: { labels: D.labels, datasets: datasets }, plugins: [nowLine],
     options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
       scales: { y: { title: { display: true, text: 'inches vs SW grate (\u00b1 = above/below)' },
                      min: D.y_min, max: D.y_max },
-                x: { ticks: { maxRotation: 60, autoSkip: true, font: { size: 10 } } } },
-      plugins: { legend: { display: true, labels: { boxWidth: 22, boxHeight: 2, font: { size: 10 },
-                 filter: function (i) { return i.text !== 'band low'; } } } } } });
+                x: { ticks: { maxTicksLimit: 14, maxRotation: 50, font: { size: 10 } } } },
+      plugins: { legend: { display: true, labels: { boxWidth: 22, boxHeight: 2, font: { size: 10 } } } } } });
 })();
 </script>"""
-    return (f'<section><h2>High tides, next 7 days</h2>'
-            f'<p class="note">Blue line: outlook with guidance (circle = NWS/P-ETSS guidance, triangle = '
-            f'decayed persistence, cross = astronomy only). Dashed light blue: astronomy alone. Shaded: '
-            f'P-ETSS 10th to 90th percentile surge band. Gray diamonds: the production forecast for the '
-            f'same tides. Landmark lines are the same five as the landing chart, in the same colors. '
-            f'The frame is the landing chart\'s standard \u221260 to +36 inches and only widens if a line would be clipped.</p>'
-            f'<div style="position:relative;height:360px"><canvas id="outlook-peaks-chart" role="img" '
+    return (f'<section><h2>Water at the corner, next 7 days</h2>'
+            f'<p class="note">Same grammar as the landing chart: blue is bay water (astronomical tide plus '
+            f'guidance surge: NWS gauge forecast inside 72 h, then P-ETSS, then decayed persistence); '
+            f'amber is rain street-water from the production tank model driven by the forecast rain '
+            f'(NWS grid, then NBM); the navy band is the burst scenario on burst-capable hours, drawn as a '
+            f'level because a burst has no knowable clock. Dashed light blue is astronomy alone. The frame '
+            f'is the landing chart\'s standard \u221260 to +36 inches; the vertical line is now.</p>'
+            f'<div style="position:relative;height:380px"><canvas id="outlook-series-chart" role="img" '
             f'aria-label="{_e(aria)}"></canvas></div>{CHART_TAGS}'
             + script.replace("__DATA__", payload) + "</section>")
+
+
+def _peaks_chart(ol):
+    """Fallback when the hourly series is unavailable: high-tide peaks only."""
+    tides = ol.get("tides") or []
+    labels = [_short_time(t["time"]) for t in tides]
+    data = {"labels": labels, "outlook": [_inch(t.get("outlook_mllw")) for t in tides],
+            "astro": [_inch(t.get("astro_mllw")) for t in tides],
+            "landmarks": [{"label": n, "y": y, "color": c, "solid": solid}
+                          for n, y, c, solid in LANDMARK_LINES]}
+    vals = [v for k in ("outlook", "astro") for v in data[k] if v is not None] + [y for _n, y, _c, _s in LANDMARK_LINES]
+    data["y_min"] = min(Y_FRAME[0], (min(vals) - 3) if vals else Y_FRAME[0])
+    data["y_max"] = max(Y_FRAME[1], (max(vals) + 3) if vals else Y_FRAME[1])
+    script = """
+<script>
+(function () {
+  var D = __DATA__; var el = document.getElementById('outlook-series-chart');
+  if (!el || typeof Chart === 'undefined') { return; }
+  var datasets = [
+    { label: 'High tide + guidance', data: D.outlook, borderColor: '#1a5fa8', borderWidth: 2, pointRadius: 4 },
+    { label: 'Astronomical tide only', data: D.astro, borderColor: '#7aa6d8', borderDash: [6, 4], borderWidth: 1.2, pointRadius: 2 }];
+  D.landmarks.forEach(function (lm) { datasets.push({ label: lm.label, data: D.labels.map(function () { return lm.y; }),
+    borderColor: lm.color, borderWidth: lm.solid ? 1.5 : 1.2, borderDash: lm.solid ? [] : [6, 5], fill: false, pointRadius: 0 }); });
+  new Chart(el, { type: 'line', data: { labels: D.labels, datasets: datasets },
+    options: { responsive: true, maintainAspectRatio: false,
+      scales: { y: { title: { display: true, text: 'inches vs SW grate' }, min: D.y_min, max: D.y_max } },
+      plugins: { legend: { labels: { boxWidth: 22, boxHeight: 2, font: { size: 10 } } } } } });
+})();
+</script>"""
+    return (f'<section><h2>High tides, next 7 days</h2><p class="note">The hourly series was unavailable '
+            f'this run, so only high-tide peaks are drawn.</p>'
+            f'<div style="position:relative;height:360px"><canvas id="outlook-series-chart" role="img" '
+            f'aria-label="High-tide peaks, next 7 days"></canvas></div>{CHART_TAGS}'
+            + script.replace("__DATA__", json.dumps(data)) + "</section>")
 
 
 def _tide_table(ol):

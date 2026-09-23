@@ -57,9 +57,10 @@ NBM_BOX = {"toplat": 40.5, "bottomlat": 40.3, "leftlon": -74.1, "rightlon": -73.
 
 # Refetch when the cached copy is older than TTL; keep serving a stale copy
 # (status "degraded") up to MAX_STALE when the refetch fails.
-TTL_H = {"astro": 1, "grid": 1, "nwps": 1, "petss": 3, "nbm": 3, "wpc": 6, "xcheck": 3}
-MAX_STALE_H = {"astro": 48, "grid": 12, "nwps": 12, "petss": 12, "nbm": 12,
-               "wpc": 30, "xcheck": 12}
+TTL_H = {"astro": 1, "astro_hourly": 1, "grid": 1, "nwps": 1, "petss": 3, "nbm": 3,
+         "wpc": 6, "xcheck": 3}
+MAX_STALE_H = {"astro": 48, "astro_hourly": 48, "grid": 12, "nwps": 12, "petss": 12,
+               "nbm": 12, "wpc": 30, "xcheck": 12}
 
 MM_PER_IN = 25.4
 MPH_PER_KMH = 0.621371
@@ -174,6 +175,27 @@ def fetch_astro_highs(now_utc, hours=HORIZON_HOURS + 6):
     if not highs:
         raise ValueError("no high tides in CO-OPS response")
     return {"highs": highs, "summary": f"{len(highs)} astronomical highs"}
+
+
+def fetch_astro_hourly(now_utc, hours_back=6, hours=HORIZON_HOURS):
+    """Hourly astronomical predictions (ft MLLW) from -hours_back to +hours:
+    the backbone of the continuous 7-day water series."""
+    begin = (now_utc - dt.timedelta(hours=hours_back)).strftime("%Y%m%d %H:%M")
+    params = dict(product="predictions", application="barnacle-outlook",
+                  begin_date=begin, range=int(hours + hours_back + 1), datum="MLLW",
+                  station=SANDY_HOOK_STATION, time_zone="gmt", units="english",
+                  interval="h", format="json")
+    data = _get_json(COOPS_URL + "?" + urlencode(params))
+    pts = []
+    for p in data.get("predictions") or []:
+        gmt = p["t"]
+        when = dt.datetime.strptime(gmt, "%Y-%m-%d %H:%M").replace(tzinfo=dt.timezone.utc)
+        pts.append({"utc": when.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "time": noaa_gmt_to_station_string(gmt),
+                    "mllw": round(float(p["v"]), 3)})
+    if len(pts) < 24:
+        raise ValueError(f"only {len(pts)} hourly predictions")
+    return {"points": pts, "summary": f"{len(pts)} hourly astronomical points"}
 
 
 # ---------------------------------------------------------------------------
@@ -604,6 +626,8 @@ def gather(now_utc, cache, nbm_needed=True):
     for key in [k for k in list(cache) if k not in PERSISTED_KEYS]:
         cache.pop(key, None)
     data["astro"], health["astro"] = refresh(scratch, "astro", lambda: fetch_astro_highs(now_utc), now_utc)
+    data["astro_hourly"], health["astro_hourly"] = refresh(
+        scratch, "astro_hourly", lambda: fetch_astro_hourly(now_utc), now_utc)
     data["grid"], health["grid"] = refresh(scratch, "grid", fetch_nws_grid, now_utc)
     data["nwps"], health["nwps"] = refresh(scratch, "nwps", fetch_nwps_forecast, now_utc)
     data["petss"], health["petss"] = refresh(cache, "petss", lambda: fetch_petss(now_utc), now_utc)

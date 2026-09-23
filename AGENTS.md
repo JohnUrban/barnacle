@@ -64,6 +64,13 @@ live obligation) → `BACKLOG.md` OPEN LOOPS. On a flood event:
    uncertainty. Never reason "tide is low, so no flood risk."
    Radar sampling region = the catchment (CATCH_* constants), never
    a house-centered box.
+   **No tidal supremacy (John, 2026-09-23):** every surface's headline
+   and every "worst case" is the worst across PATHWAYS (tide, the rain
+   tank line, a burst scenario), never "the worst tide"; rain floods can
+   exceed tidal floods at low tide because the drains' output rate is
+   finite. Default views show NOW; "worst tide" and "worst flood
+   chance" are separate buttons. Sliders run as far as we predict:
+   never gate-keep a horizon we have.
 7. **Unavailable ≠ zero.** Every input carries health status;
    degraded inputs surface loudly (input_health in forecast.json).
 8. **Surfaces & PARALLEL ARMS (hard rule, 2026-08-09).** Barnacle

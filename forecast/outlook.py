@@ -264,12 +264,227 @@ def build_days(now_utc, tides, data):
     return days
 
 
+# ---------------------------------------------------------------------------
+# continuous series: tide + guidance surge, and the RAIN PATHWAY through the
+# production tank (rain doctrine: never deferred, never subordinate to tide)
+# ---------------------------------------------------------------------------
+BURST_RATE_FLAG_IN_HR = 0.15      # production rule: an hour >= this is burst-capable
+BURST_ANALOG_MAX_IN_HR = 3.0
+BURST_LOW_TIDE_BAY_NAVD88 = 2.5   # production convention for the potential level
+
+
+def _surge_knots(tides):
+    knots = []
+    for t in tides:
+        if t.get("outlook_mllw") is None or t.get("astro_mllw") is None:
+            continue
+        knots.append((_utc(t["utc"]), t["outlook_mllw"] - t["astro_mllw"],
+                      t["outlook_source"]))
+    return sorted(knots)
+
+
+def _surge_at(knots, t_utc):
+    """Linear interpolation of the per-tide guidance surge between tides;
+    held flat before the first and after the last knot."""
+    if not knots:
+        return 0.0, "astro"
+    if t_utc <= knots[0][0]:
+        return knots[0][1], knots[0][2]
+    if t_utc >= knots[-1][0]:
+        return knots[-1][1], knots[-1][2]
+    for (t1, s1, src1), (t2, s2, src2) in zip(knots, knots[1:]):
+        if t1 <= t_utc <= t2:
+            f = (t_utc - t1).total_seconds() / max(1.0, (t2 - t1).total_seconds())
+            return s1 + (s2 - s1) * f, (src1 if f < 0.5 else src2)
+    return knots[-1][1], knots[-1][2]
+
+
+def _hourly_rain_lookup(qpf_hourly, nbm, wpc):
+    prod = {}
+    for tt, rate in qpf_hourly or []:
+        try:
+            prod[tt.astimezone(dt.timezone.utc).replace(minute=0, second=0, microsecond=0)] = float(rate)
+        except Exception:
+            continue
+
+    def at(t_utc):
+        key = t_utc.replace(minute=0, second=0, microsecond=0)
+        if key in prod:
+            return prod[key], "nws_grid"
+        b = _bucket_containing(nbm, t_utc)
+        if b is not None and b.get("qpf_in") is not None:
+            return b["qpf_in"] / float(b["hours"]), "nbm"
+        b = _bucket_containing(wpc, t_utc)
+        if b is not None and b.get("qpf_in") is not None:
+            return b["qpf_in"] / float(b["hours"]), "wpc_24h"
+        return None, None
+    return at
+
+
+def _burst_hours(nws_hourly, qpf_hourly, nbm):
+    """Station-local 'YYYY-MM-DD HH' keys that are burst-capable, by the
+    production rule (PoP >= 60 with thunder/heavy-rain wording, PoP >= 80,
+    or a rate >= 0.15 in/hr), extended over the whole hourly forecast and
+    the NBM buckets."""
+    hours = set()
+    convective_days = set()
+    for p in nws_hourly or []:
+        try:
+            tt = _utc(p["startTime"])
+        except (KeyError, ValueError, TypeError):
+            continue
+        local = utc_to_station_local(tt)
+        pop = ((p.get("probabilityOfPrecipitation") or {}).get("value")) or 0
+        sf = (p.get("shortForecast") or "").lower()
+        conv = pop >= 60 and ("thunder" in sf or "heavy rain" in sf)
+        if conv or pop >= 80:
+            hours.add(local.strftime("%Y-%m-%d %H"))
+        if conv:
+            convective_days.add(local.strftime("%Y-%m-%d"))
+    for tt, rate in qpf_hourly or []:
+        if rate is not None and rate >= BURST_RATE_FLAG_IN_HR:
+            hours.add(utc_to_station_local(tt).strftime("%Y-%m-%d %H"))
+    for b in nbm or []:
+        if b.get("qpf_in") is not None and b["qpf_in"] / float(b["hours"]) >= BURST_RATE_FLAG_IN_HR:
+            end = _utc(b["end_utc"])
+            for h in range(int(b["hours"])):
+                hours.add(utc_to_station_local(end - dt.timedelta(hours=h + 1)).strftime("%Y-%m-%d %H"))
+    return hours, convective_days
+
+
+def build_series(now_utc, data, tides, nws_hourly, qpf_hourly, simulate_fn,
+                 mllw_to_navd88_offset, enhancement_ft):
+    """Hourly points from -6 h to +168 h:
+    tide_navd88 = astro + guidance surge (NWPS hourly inside its reach,
+    else the per-tide ladder interpolated), pluvial_navd88 from the
+    production tank driven by NWS-grid / NBM / WPC rain, water = max."""
+    hourly = (data.get("astro_hourly") or {}).get("points") or []
+    if not hourly:
+        return []
+    nwps = (data.get("nwps") or {}).get("series") or []
+    nwps_by_hour = {_utc(p["utc"]).replace(minute=0, second=0, microsecond=0): p["ft"] for p in nwps}
+    nbm = (data.get("nbm") or {}).get("buckets") or []
+    wpc = (data.get("wpc") or {}).get("buckets") or []
+    knots = _surge_knots(tides)
+    rain_at = _hourly_rain_lookup(qpf_hourly, nbm, wpc)
+    burst_hours, _conv = _burst_hours(nws_hourly, qpf_hourly, nbm)
+    lo = now_utc - dt.timedelta(hours=6)
+    hi = now_utc + dt.timedelta(hours=HORIZON_HOURS)
+    times, tide_w, rates, pts = [], [], [], []
+    for p in hourly:
+        t = _utc(p["utc"])
+        if t < lo or t > hi:
+            continue
+        astro = float(p["mllw"])
+        key = t.replace(minute=0, second=0, microsecond=0)
+        lead = (t - now_utc).total_seconds() / 3600.0
+        if key in nwps_by_hour and lead <= NWPS_HORIZON_H:
+            total, src = float(nwps_by_hour[key]), "nwps"
+        else:
+            sg, src = _surge_at(knots, t)
+            total = astro + sg
+        tide_navd = total + enhancement_ft + mllw_to_navd88_offset
+        rate, rsrc = rain_at(t)
+        times.append(t)
+        tide_w.append(tide_navd)
+        rates.append(rate if rate is not None else 0.0)
+        pts.append({"time": p["time"], "utc": p["utc"], "lead_h": _r(lead, 1),
+                    "astro_mllw": _r(astro, 3), "tide_navd88": _r(tide_navd, 3),
+                    "surge_source": src, "rain_in_hr": _r(rate, 3),
+                    "rain_source": rsrc,
+                    "burst_risk": p["time"][:13] in burst_hours})
+    pluv = simulate_fn(times, tide_w, rates) if simulate_fn and len(times) >= 2 else [None] * len(times)
+    for pt, tw, pv in zip(pts, tide_w, pluv):
+        pt["pluvial_navd88"] = _r(pv, 3) if pv is not None else None
+        pt["water_navd88"] = _r(max(tw, pv) if pv is not None else tw, 3)
+    return pts
+
+
+def add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn):
+    """Per day: the tank line's peak, the burst scenario and its potential
+    level, the rain regime, and the CROSS-PATHWAY headline (worst of tidal
+    and rain). The tide never gates the rain pathway."""
+    _hours, convective_days = _burst_hours(nws_hourly, [], [])
+    for d in days:
+        pts = [p for p in series if p["time"][:10] == d["date"]]
+        rates = [p["rain_in_hr"] for p in pts if p.get("rain_in_hr") is not None]
+        peak_rate = max(rates, default=0.0)
+        max_6h = 0.0
+        for i in range(len(rates)):
+            max_6h = max(max_6h, sum(rates[i:i + 6]))
+        pluv_vals = [p["pluvial_navd88"] for p in pts if p.get("pluvial_navd88") is not None]
+        pluv_peak = max(pluv_vals, default=None)
+        pluv_peak_time = None
+        if pluv_peak is not None:
+            pluv_peak_time = next(p["time"][11:16] for p in pts if p.get("pluvial_navd88") == pluv_peak)
+        water_peak = max((p["water_navd88"] for p in pts if p.get("water_navd88") is not None), default=None)
+        burst_signal = (d["date"] in convective_days) or any(p["burst_risk"] for p in pts)
+        burst_est = peak_rate
+        if burst_signal:
+            analog = 1.7 * (max_6h / 0.55) if max_6h > 0 else 1.7
+            burst_est = max(burst_est, min(analog, BURST_ANALOG_MAX_IN_HR))
+        potential = None
+        if burst_est > 0.1 and potential_fn:
+            pots = [v for v in potential_fn(burst_est, BURST_LOW_TIDE_BAY_NAVD88) if v is not None]
+            potential = max(pots) if pots else None
+        rain_regime = classify_fn(pluv_peak) if pluv_peak is not None else "dry"
+        burst_regime = classify_fn(potential) if potential is not None else "dry"
+        tidal_regime = d.get("regime_max") or "dry"
+        candidates = [(REGIME_RANK.get(tidal_regime, 0), tidal_regime, "tide"),
+                      (REGIME_RANK.get(rain_regime, 0), rain_regime, "rain (tank line)"),
+                      (REGIME_RANK.get(burst_regime, 0), burst_regime, "rain (burst scenario)")]
+        rank, regime, pathway = max(candidates)
+        d.update({
+            "rain_pathway": {
+                "peak_rate_in_hr": _r(peak_rate, 2), "max_6h_in": _r(max_6h, 2),
+                "tank_peak_navd88": _r(pluv_peak, 2), "tank_peak_time": pluv_peak_time,
+                "tank_regime": rain_regime,
+                "burst_signal": burst_signal, "burst_est_in_hr": _r(burst_est, 2),
+                "burst_potential_navd88": _r(potential, 2), "burst_regime": burst_regime,
+                "rain_available": bool(rates),
+            },
+            "tidal_regime_max": tidal_regime,
+            "water_peak_navd88": _r(water_peak, 2),
+            "regime_max": regime,
+            "worst_pathway": pathway,
+        })
+    return days
+
+
+def worst_points(series, days):
+    """The two map buttons: worst TIDE (bay water) and worst FLOOD CHANCE
+    (tide, tank line, or a burst scenario, whichever is highest)."""
+    if not series:
+        return {}
+    pot_by_day = {d["date"]: (d.get("rain_pathway") or {}).get("burst_potential_navd88")
+                  for d in days}
+    wt = max(series, key=lambda p: p["tide_navd88"])
+    best = None
+    for p in series:
+        lvl, path = p["water_navd88"], ("rain (tank line)" if p.get("pluvial_navd88") is not None
+                                        and p["pluvial_navd88"] >= p["tide_navd88"] else "tide")
+        pot = pot_by_day.get(p["time"][:10])
+        if p.get("burst_risk") and pot is not None and pot > lvl:
+            lvl, path = pot, "rain (burst scenario)"
+        if best is None or lvl > best[0]:
+            best = (lvl, p["time"], path)
+    return {"tide": {"time": wt["time"], "navd88": wt["tide_navd88"]},
+            "flood_chance": {"time": best[1], "navd88": _r(best[0], 3), "pathway": best[2]},
+            "burst_potential_by_day": pot_by_day}
+
+
 def build_outlook_7d(now_utc, data, health, all_tides, persisted_surge,
                      surge_age_min, classify_fn, depths_fn,
-                     mllw_to_navd88_offset, model_version, shadow=None):
+                     mllw_to_navd88_offset, model_version, shadow=None,
+                     nws_hourly=None, qpf_hourly=None, simulate_fn=None,
+                     potential_fn=None, enhancement_ft=0.0):
     tides = build_tides(now_utc, data, all_tides, persisted_surge,
                         classify_fn, depths_fn, mllw_to_navd88_offset)
     days = build_days(now_utc, tides, data)
+    series = build_series(now_utc, data, tides, nws_hourly, qpf_hourly,
+                          simulate_fn, mllw_to_navd88_offset, enhancement_ft)
+    days = add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn)
+    worst = worst_points(series, days)
     petss = data.get("petss") or {}
     nwps = data.get("nwps") or {}
     nbm = data.get("nbm") or {}
@@ -296,6 +511,8 @@ def build_outlook_7d(now_utc, data, health, all_tides, persisted_surge,
         },
         "tides": tides,
         "days": days,
+        "series": series,
+        "worst": worst,
         "shadow": shadow,
     }
 

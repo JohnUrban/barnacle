@@ -802,7 +802,8 @@ OUTLOOK_LOG_PATH = os.path.join(_REPO_ROOT, "data", "outlook_log.csv")
 OUTLOOK_CACHE_PATH = os.path.join(_REPO_ROOT, "data", "outlook_cache.json")
 
 
-def build_outlook_7d_field(now_utc, all_tides, persisted_surge, surge_age_min):
+def build_outlook_7d_field(now_utc, all_tides, persisted_surge, surge_age_min,
+                           nws_hourly=None, qpf_hourly=None):
     """(outlook_7d, health_entries) for the 7-day outlook (2026-09-23).
 
     A NEW field: never widens all_tides, so alerts, per-tide pages, the
@@ -828,7 +829,11 @@ def build_outlook_7d_field(now_utc, all_tides, persisted_surge, surge_age_min):
         now_utc, data, health, all_tides, persisted_surge, surge_age_min,
         classify_regime_from_water,
         lambda peak: predict_landmark_depths(peak, 0.0, False),
-        MLLW_TO_NAVD88_OFFSET, CURRENT_MODEL_VERSION, shadow=shadow)
+        MLLW_TO_NAVD88_OFFSET, CURRENT_MODEL_VERSION, shadow=shadow,
+        nws_hourly=nws_hourly, qpf_hourly=qpf_hourly,
+        simulate_fn=simulate_pluvial_series,
+        potential_fn=estimate_pluvial_water_models,
+        enhancement_ft=LOCAL_ENHANCEMENT_FT)
     n_guided = sum(1 for t in outlook_7d["tides"] if t["outlook_source"] != "astro")
     entries["outlook_7d"] = {
         "status": "ok",
@@ -2570,7 +2575,8 @@ def build_forecast():
     try:
         outlook_7d, _ol_health = build_outlook_7d_field(
             generated_utc, all_tides, persisted_surge,
-            surge_meta.get("age_min"))
+            surge_meta.get("age_min"), nws_hourly=nws_hourly,
+            qpf_hourly=(qpf_hourly if qpf_available else None))
         input_health.update(_ol_health)
     except Exception as e:
         input_health["outlook_7d"] = {"status": "unavailable",
@@ -5914,12 +5920,15 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         "style: window.barnacleMapStyle }});"
     ).replace("{{", "{").replace("}}", "}")
     intro_note = (
-        '<p class="note">Overlay shows predicted tidal water depth across '
-        'nearby topography. Classic shading: darker blue = deeper '
-        '(saturates at 2 ft); depth bands: labeled physical ranges '
-        '(splash / ankle / knee / waist / first floor / over head) '
-        'that stay informative up to Sandy class. No meaningful rain '
-        'forecast — overlay is tide-only.</p>'
+        '<p class="note">Overlay shows the predicted water depth at the '
+        'moment selected on the time slider below (it opens on NOW). '
+        '"Worst tide" jumps to the highest bay water and "Worst flood '
+        'chance" to the highest water from ANY pathway — tide, the rain '
+        'tank line, or a burst scenario — in the next 7 days; the slider '
+        'runs the 30-h production series and then the 7-day outlook. '
+        'Classic shading: darker blue = deeper (saturates at 2 ft); depth '
+        'bands: labeled physical ranges (splash / ankle / knee / waist / '
+        'first floor / over head).</p>'
     )
 
     if water_no_rain is not None:
@@ -5948,10 +5957,14 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         )
         script_render += no_rain_render
         intro_note = (
-            '<p class="note">Overlay shows predicted water depth across '
-            'nearby topography (classic blue or labeled depth bands — '
-            'see the shading toggle). Toggle between including the '
-            'forecast rain bonus or tide-only (HANDOFF 9b.5).</p>'
+            '<p class="note">Overlay shows the predicted water depth at '
+            'the moment selected on the time slider below (it opens on '
+            'NOW). "Worst tide" jumps to the highest bay water and "Worst '
+            'flood chance" to the highest water from ANY pathway — tide, '
+            'the rain tank line, or a burst scenario — in the next 7 days; '
+            'the slider runs the 30-h production series and then the 7-day '
+            'outlook. Toggle between including the forecast rain bonus or '
+            'tide-only.</p>'
         )
 
     toggle_script = ""
@@ -5997,17 +6010,14 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
                 "knee": PLUVIAL_DRAIN_FULL_BELOW,
                 "base": PLUVIAL_STREET_BASE,
                 "scale": PLUVIAL_FREE_RATE_SCALE})
-        _map_series = [
-            {"t": pt["time"], "w": pt.get("water_navd88"),
-             "b": bool(pt.get("burst_risk"))}
-            for pt in (forecast.get("water_series") or [])
-            if pt.get("water_navd88") is not None]
+        _map_series, _prod_len, _pot_by_day, _worst_i = _map_time_series(forecast)
         _pots_m = [v for v in (
             (forecast.get("pluvial_risk") or {}).get("potential_low_tide_navd88"),
             (forecast.get("pluvial_risk") or {}).get("potential_low_tide_navd88_tanh"))
             if v is not None]
         map_series_js = json.dumps(
-            {"series": _map_series,
+            {"series": _map_series, "prod_len": _prod_len,
+             "pot_by_day": _pot_by_day, "worst": _worst_i,
              "potential": (max(_pots_m) if _pots_m else None)})
         slider_html = f"""
     <div class="depth-slider time-slider">
@@ -6015,6 +6025,9 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
       <input type="range" id="time-slider-input" min="0"
              max="{max(0, len(_map_series) - 1)}" step="1" value="0">
       <span id="time-slider-value">&mdash;</span>
+      <button type="button" id="time-now">Now</button>
+      <button type="button" id="time-worst-tide">Worst tide</button>
+      <button type="button" id="time-worst-flood">Worst flood chance</button>
     </div>
     <div class="depth-slider burst-toggle-row">
       <label><input type="checkbox" id="burst-potential-toggle" checked>
@@ -6029,7 +6042,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
              value="{water_with_rain:.2f}"
              data-current="{water_with_rain:.4f}">
       <span id="depth-slider-value">{water_with_rain:.2f} ft NAVD88</span>
-      <button type="button" id="depth-slider-reset">Snap to current forecast</button>
+      <button type="button" id="depth-slider-reset">Reset to now</button>
     </div>
     <div class="depth-slider unit-toggle">
       <span class="note">Units:</span>
@@ -6260,16 +6273,25 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           var pt = MS.series[i];
           var lvl = pt.w;
           var burst = false;
-          if (bToggle && bToggle.checked && pt.b && MS.potential != null) {{
-            lvl = Math.max(lvl, MS.potential);
+          var potHere = (MS.pot_by_day && MS.pot_by_day[pt.t.slice(0, 10)] != null)
+            ? MS.pot_by_day[pt.t.slice(0, 10)] : (pt.o ? null : MS.potential);
+          if (bToggle && bToggle.checked && pt.b && potHere != null) {{
+            lvl = Math.max(lvl, potHere);
             burst = true;
           }}
           dSlider.value = String(lvl);
           if (thumbOn) drawThumb(i, lvl);
           tLabel.textContent = fmtT(pt.t)
+            + (i === startI ? ' \u2014 now' : '')
             + (burst ? ' \u2014 BURST POTENTIAL' : '')
-            + (pt.b && !burst ? ' (rain-risk hour)' : '');
+            + (pt.b && !burst ? ' (rain-risk hour)' : '')
+            + (pt.o ? ' (7-day outlook guidance)' : '');
           rerender();
+        }}
+        function jumpTo(i) {{
+          if (i == null || !MS.series || !MS.series.length) return;
+          tSlider.value = String(Math.max(0, Math.min(MS.series.length - 1, i)));
+          scrub();
         }}
         // CHART THUMBNAIL over the map corner (user 2026-07-20):
         // miniature of the near-term series + ladder lines + a ball
@@ -6282,22 +6304,24 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         function drawThumb(idx, lvl) {{
           if (!thumbC || !MS.series || !MS.series.length) return;
           var c = thumbC.getContext('2d');
+          var TS = MS.series.slice(0, MS.prod_len || MS.series.length);
+          if (idx != null && idx >= TS.length) idx = TS.length - 1;
           var W = thumbC.width, H = thumbC.height, P = 6;
           c.clearRect(0, 0, W, H);
-          var ws = MS.series.map(function(p) {{ return p.w; }});
-          var anyB = MS.series.some(function(p) {{ return p.b; }});
+          var ws = TS.map(function(p) {{ return p.w; }});
+          var anyB = TS.some(function(p) {{ return p.b; }});
           var lo = Math.min.apply(null, ws.concat([3.5]));
           var hi = Math.max.apply(null, ws.concat(
             [5.6, lvl || 0,
              (anyB && MS.potential != null) ? MS.potential : 0]));
-          function X(i) {{ return P + (W - 2*P) * i / (MS.series.length - 1); }}
+          function X(i) {{ return P + (W - 2*P) * i / (TS.length - 1); }}
           function Y(v) {{ return H - P - (H - 2*P) * (v - lo) / (hi - lo); }}
           // navy burst band, same grammar as the big chart: bottom =
           // the curve, flat top = potential, burst-flagged hours only
           if (anyB && MS.potential != null) {{
             c.fillStyle = 'rgba(11,61,107,0.30)';
-            var half = (W - 2*P) / (MS.series.length - 1) / 2;
-            MS.series.forEach(function(p, i) {{
+            var half = (W - 2*P) / (TS.length - 1) / 2;
+            TS.forEach(function(p, i) {{
               if (!p.b) return;
               var top = Math.max(MS.potential, p.w);
               c.fillRect(X(i) - half, Y(top), half * 2, Y(p.w) - Y(top));
@@ -6322,7 +6346,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           // dotted midnight lines, same as the big chart
           c.strokeStyle = '#999999'; c.lineWidth = 1;
           c.setLineDash([2, 3]);
-          MS.series.forEach(function(p2, mi) {{
+          TS.forEach(function(p2, mi) {{
             if (p2.t.slice(-5) === '00:00') {{
               c.beginPath(); c.moveTo(X(mi), P); c.lineTo(X(mi), H - P);
               c.stroke();
@@ -6332,8 +6356,8 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           // fixed NOW line (user 2026-07-20): stays put while the
           // ball travels, so "now" is always visible for orientation
           var nowMs2 = Date.now(), nowI = 0;
-          for (var ni = 0; ni < MS.series.length; ni++) {{
-            var nm = MS.series[ni].t.match(/(\\d+)-(\\d+)-(\\d+) (\\d+):(\\d+)/);
+          for (var ni = 0; ni < TS.length; ni++) {{
+            var nm = TS[ni].t.match(/(\\d+)-(\\d+)-(\\d+) (\\d+):(\\d+)/);
             if (nm && new Date(+nm[1], nm[2]-1, +nm[3], +nm[4], +nm[5]).getTime() >= nowMs2) {{
               nowI = ni; break;
             }}
@@ -6343,14 +6367,14 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           c.stroke();
           c.strokeStyle = '#1a5fa8'; c.lineWidth = 1.6;
           c.beginPath();
-          MS.series.forEach(function(p, i) {{
+          TS.forEach(function(p, i) {{
             if (i === 0) c.moveTo(X(i), Y(p.w)); else c.lineTo(X(i), Y(p.w));
           }});
           c.stroke();
           if (idx != null) {{
             c.fillStyle = '#b91c1c';
             c.beginPath();
-            c.arc(X(idx), Y(lvl != null ? lvl : MS.series[idx].w), 3.5, 0, 7);
+            c.arc(X(idx), Y(lvl != null ? lvl : TS[idx].w), 3.5, 0, 7);
             c.fill();
           }}
         }}
@@ -6369,6 +6393,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             applyThumb();
           }});
         }}
+        var startI = 0;
         var _scrubPending = false;
         function scrubThrottled() {{
           if (_scrubPending) return;
@@ -6381,7 +6406,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         if (tSlider) {{
           // start the scrubber at "now" (first future point)
           var nowMs = Date.now();
-          var startI = 0;
+          startI = 0;
           for (var i = 0; i < MS.series.length; i++) {{
             var mm = MS.series[i].t.match(/(\\d{{4}})-(\\d{{2}})-(\\d{{2}}) (\\d{{2}}):(\\d{{2}})/);
             if (mm && new Date(+mm[1], mm[2]-1, +mm[3], +mm[4], +mm[5]).getTime() >= nowMs) {{
@@ -6391,6 +6416,16 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           tSlider.value = String(startI);
           tSlider.addEventListener('input', scrubThrottled);
           if (bToggle) bToggle.addEventListener('change', scrub);
+          // DEFAULT = NOW (John 2026-09-23): the map opens on the present
+          // moment, never on the worst tide; the buttons jump elsewhere.
+          if (MS.series[startI]) defaultWater = MS.series[startI].w;
+          var bNow = document.getElementById('time-now');
+          var bWT = document.getElementById('time-worst-tide');
+          var bWF = document.getElementById('time-worst-flood');
+          if (bNow) bNow.addEventListener('click', function() {{ jumpTo(startI); }});
+          if (bWT) bWT.addEventListener('click', function() {{ jumpTo(MS.worst && MS.worst.tide); }});
+          if (bWF) bWF.addEventListener('click', function() {{ jumpTo(MS.worst && MS.worst.flood); }});
+          scrub();
         }}
         applyThumb();
         dBtn.addEventListener('click', function() {{
@@ -7327,6 +7362,54 @@ def deliver_alert(forecast, subject, text, html, inline_png=None,
             "channel": "all", "error": "no delivery channels configured",
         })
     return result
+
+
+def _map_time_series(forecast):
+    """Time-scrubber series for the intersection map (John 2026-09-23:
+    the slider runs as far as we predict, defaults to NOW, and the worst
+    case is judged across pathways, never as the worst tide).
+
+    Returns (points, production_length, burst_potential_by_day, worst)
+    where points = [{t, w, tide, b, o}] — the 30-h production series
+    followed by the 7-day outlook's hourly series (o = outlook point),
+    and worst = {"tide": index, "flood": index}: the highest bay water,
+    and the highest of water / tank line / burst scenario."""
+    pts = []
+    for pt in (forecast.get("water_series") or []):
+        if pt.get("water_navd88") is None:
+            continue
+        pts.append({"t": pt["time"], "w": pt["water_navd88"],
+                    "tide": pt.get("tide_navd88"), "b": bool(pt.get("burst_risk")),
+                    "o": False})
+    prod_len = len(pts)
+    last = pts[-1]["t"] if pts else ""
+    ol = forecast.get("outlook_7d") or {}
+    for pt in (ol.get("series") or []):
+        if pt.get("water_navd88") is None or pt["time"] <= last:
+            continue
+        pts.append({"t": pt["time"], "w": pt["water_navd88"],
+                    "tide": pt.get("tide_navd88"), "b": bool(pt.get("burst_risk")),
+                    "o": True})
+    pot_by_day = {k: v for k, v in (((ol.get("worst") or {}).get("burst_potential_by_day")) or {}).items()
+                  if v is not None}
+    pr = forecast.get("pluvial_risk") or {}
+    prod_pot = max([v for v in (pr.get("potential_low_tide_navd88"),
+                                pr.get("potential_low_tide_navd88_tanh")) if v is not None] or [None]) \
+        if any(v is not None for v in (pr.get("potential_low_tide_navd88"),
+                                       pr.get("potential_low_tide_navd88_tanh"))) else None
+    worst = {"tide": None, "flood": None}
+    best_t = best_f = None
+    for i, q in enumerate(pts):
+        tide = q.get("tide") if q.get("tide") is not None else q["w"]
+        if best_t is None or tide > best_t:
+            best_t, worst["tide"] = tide, i
+        lvl = q["w"]
+        pot = pot_by_day.get(q["t"][:10], prod_pot if not q["o"] else None)
+        if q["b"] and pot is not None and pot > lvl:
+            lvl = pot
+        if best_f is None or lvl > best_f:
+            best_f, worst["flood"] = lvl, i
+    return pts, prod_len, pot_by_day, worst
 
 
 def _compute_map_water_level(forecast, include_rain=True):

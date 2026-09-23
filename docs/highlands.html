@@ -56,7 +56,9 @@
     <div class="town-slider">
       <b style="font-size:14px">Water surface:</b>
       <span id="town-level-label" style="font-size:14px"></span>
-      <button type="button" id="town-snap">Snap to current forecast</button>
+      <button type="button" id="town-snap">Now</button>
+      <button type="button" id="town-worst-tide">Worst tide</button>
+      <button type="button" id="town-worst-flood">Worst flood chance</button>
       <button type="button" id="town-reset">Reset view</button>
       <div id="flood-ticks"></div>
       <input type="range" id="town-level" aria-label="Water surface level"
@@ -201,6 +203,7 @@
   var ctx = canvas.getContext("2d");
   var thumbC = document.getElementById("town-thumb");
   var slider = document.getElementById("town-level");
+  var POTD = {}, WORST = null;
   var label = document.getElementById("town-level-label");
   var readout = document.getElementById("town-readout");
   var tSlider = document.getElementById("town-time");
@@ -778,8 +781,10 @@
       ? p.water_navd88 : p.tide_navd88;
     var extra = "";
     if (rainBox.checked) {
-      if (p.burst_risk && POT != null && POT > lvl) {
-        lvl = POT;
+      var potHere = (POTD[(p.time || "").slice(0, 10)] != null)
+        ? POTD[(p.time || "").slice(0, 10)] : POT;
+      if (p.burst_risk && potHere != null && potHere > lvl) {
+        lvl = potHere;
         extra = " — burst-capable hour: showing burst potential" +
           " (tide " + (p.tide_navd88 + MLLW_OFF).toFixed(2) + " ft)";
       } else if (p.water_navd88 != null &&
@@ -791,8 +796,31 @@
       }
     }
     slider.value = (lvl + MLLW_OFF).toFixed(2);
-    tLabel.textContent = p.time + extra;
+    tLabel.textContent = p.time + extra
+      + (p.outlook ? " (7-day outlook guidance)" : "");
   }
+  function jumpTo(pred) {
+    if (!SERIES || !SERIES.length) return;
+    var best = -1, bestV = -Infinity;
+    for (var i = 0; i < SERIES.length; i++) {
+      var v = pred(SERIES[i]);
+      if (v != null && v > bestV) { bestV = v; best = i; }
+    }
+    if (best < 0) return;
+    tSlider.value = best;
+    syncScrub();
+    requestRender();
+  }
+  document.getElementById("town-worst-tide").addEventListener("click",
+    function() { jumpTo(function(p) { return p.tide_navd88; }); });
+  document.getElementById("town-worst-flood").addEventListener("click",
+    function() { jumpTo(function(p) {
+      var v = (p.water_navd88 != null) ? p.water_navd88 : p.tide_navd88;
+      var potHere = (POTD[(p.time || "").slice(0, 10)] != null)
+        ? POTD[(p.time || "").slice(0, 10)] : POT;
+      if (p.burst_risk && potHere != null && potHere > v) v = potHere;
+      return v;
+    }); });
   tSlider.addEventListener("input", function() {
     syncScrub();
     requestRender();
@@ -852,9 +880,19 @@
       POT = Math.max(pr.potential_low_tide_navd88 || -99,
                      pr.potential_low_tide_navd88_tanh || -99);
       if (POT < -90) POT = null;
-      SERIES = (f.water_series || []).filter(function(p) {
+      // Slider runs as far as we predict (John 2026-09-23): the 30-h
+      // production series, then the 7-day outlook's hourly series.
+      var prod = (f.water_series || []).filter(function(p) {
         return p.tide_navd88 != null;
       });
+      var ol = f.outlook_7d || {};
+      var last = prod.length ? prod[prod.length - 1].time : "";
+      var ext = (ol.series || []).filter(function(p) {
+        return p.tide_navd88 != null && p.time > last;
+      }).map(function(p) { p.outlook = true; return p; });
+      SERIES = prod.concat(ext);
+      POTD = (ol.worst && ol.worst.burst_potential_by_day) || {};
+      WORST = ol.worst || null;
       if (SERIES.length) {
         tSlider.max = SERIES.length - 1;
         var now = new Date();

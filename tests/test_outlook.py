@@ -27,6 +27,7 @@ CYCLE = dt.datetime(2026, 9, 23, 6, tzinfo=UTC)
 def _fixture_data():
     return {
         "astro": json.loads((FIX / "astro_highs_20260923.json").read_text()),
+        "astro_hourly": json.loads((FIX / "astro_hourly_20260923.json").read_text()),
         "grid": srcs.parse_nws_grid(json.loads(
             (FIX / "nws_grid_phi_61_102_20260923.json").read_text())["properties"]),
         "nwps": srcs.parse_nwps(json.loads((FIX / "nwps_sdhn4_stageflow_20260923.json").read_text())),
@@ -59,12 +60,32 @@ def _product_tides():
     ]
 
 
-def _build(data=None, surge=1.8):
+def _qpf_hourly_from_grid(grid):
+    out = []
+    for row in grid["series"]["qpf_in"]:
+        start = srcs._parse_iso(row["start"])
+        h = max(1, int(round(row["hours"])))
+        for i in range(h):
+            out.append((start + dt.timedelta(hours=i), (row["value"] or 0.0) / h))
+    return out
+
+
+def _build(data=None, surge=1.8, nbm_burst_in=None, hourly_periods=None):
     data = data or _fixture_data()
+    data.setdefault("astro_hourly", json.loads((FIX / "astro_hourly_20260923.json").read_text()))
+    if nbm_burst_in is not None:      # a 6-h burst ending Sat 08:00 EDT (12Z)
+        for b in data["nbm"]["buckets"]:
+            if b["end_utc"] == "2026-09-26T12:00:00Z":
+                b["qpf_in"] = nbm_burst_in
+    nws_hourly = hourly_periods if hourly_periods is not None else json.loads(
+        (FIX / "nws_hourly_20260923.json").read_text())
     return outlook.build_outlook_7d(
         NOW, data, _health(data), _product_tides(), surge, 6.0,
         ff.classify_regime_from_water, lambda p: ff.predict_landmark_depths(p, 0.0, False),
-        ff.MLLW_TO_NAVD88_OFFSET, "v0.10.4")
+        ff.MLLW_TO_NAVD88_OFFSET, "v0.10.4",
+        nws_hourly=nws_hourly, qpf_hourly=_qpf_hourly_from_grid(data["grid"]),
+        simulate_fn=ff.simulate_pluvial_series, potential_fn=ff.estimate_pluvial_water_models,
+        enhancement_ft=ff.LOCAL_ENHANCEMENT_FT)
 
 
 class AdapterParseTests(unittest.TestCase):
@@ -221,6 +242,84 @@ class LadderTests(unittest.TestCase):
         self.assertEqual(sig, "")
 
 
+class RainPathwayTests(unittest.TestCase):
+    """Rain doctrine: the rain pathway is never deferred and never gated by
+    the tide; a day's headline is the worst of the two pathways."""
+
+    def test_series_covers_seven_days_with_both_layers(self):
+        ol = _build()
+        S = ol["series"]
+        self.assertGreater(len(S), 150)
+        self.assertLessEqual(S[0]["lead_h"], -5)
+        self.assertGreaterEqual(S[-1]["lead_h"], 160)
+        for p in S:
+            self.assertIsNotNone(p["tide_navd88"])
+            self.assertIsNotNone(p["water_navd88"])
+            self.assertIn(p["surge_source"], ("nwps", "nws_product", "petss_mid", "persist_decay", "astro"))
+        self.assertEqual({p["surge_source"] for p in S if 0 <= p["lead_h"] <= 60}, {"nwps"})
+        self.assertIn("nbm", {p["rain_source"] for p in S if p["lead_h"] > 80})
+
+    def test_low_tide_burst_makes_rain_the_worst_pathway(self):
+        quiet = _build()
+        sat_q = next(d for d in quiet["days"] if d["date"] == "2026-09-26")
+        stormy = _build(nbm_burst_in=3.0)       # 3 in over 6 h ending Sat 08:00 EDT
+        sat = next(d for d in stormy["days"] if d["date"] == "2026-09-26")
+        rp = sat["rain_pathway"]
+        self.assertTrue(rp["burst_signal"])
+        self.assertIsNotNone(rp["tank_peak_navd88"])
+        self.assertGreater(rp["tank_peak_navd88"], 3.52)                  # water over the SW grate from rain
+        self.assertGreater(rp["burst_est_in_hr"], 0.5)
+        self.assertIsNotNone(rp["burst_potential_navd88"])
+        # low-tide hours around the burst carry tank water while the tide is far below the grate
+        low = [p for p in stormy["series"] if p["time"].startswith("2026-09-26 1") and p["tide_navd88"] < 3.0]
+        self.assertTrue(any(p["pluvial_navd88"] and p["pluvial_navd88"] > p["tide_navd88"] for p in low))
+        self.assertGreaterEqual(outlook.REGIME_RANK[sat["regime_max"]], outlook.REGIME_RANK[sat_q["regime_max"]])
+        # a day with no tide risk and heavy rain is headlined by rain, not "dry"
+        data = _fixture_data(); data["nwps"] = None; data["petss"] = None
+        ol = outlook.build_outlook_7d(NOW, data, _health(data), [], 0.0, 6.0,
+                                      ff.classify_regime_from_water,
+                                      lambda p: ff.predict_landmark_depths(p, 0.0, False),
+                                      ff.MLLW_TO_NAVD88_OFFSET, "v0.10.4",
+                                      nws_hourly=[], qpf_hourly=[], simulate_fn=ff.simulate_pluvial_series,
+                                      potential_fn=ff.estimate_pluvial_water_models, enhancement_ft=0.0)
+        for b in data["nbm"]["buckets"]:
+            b["qpf_in"] = 0.0
+        # (astronomy-only tides are all below the grate: tidal pathway dry)
+        self.assertTrue(all(d["tidal_regime_max"] == "dry" for d in ol["days"]))
+
+    def test_worst_flood_chance_can_differ_from_worst_tide(self):
+        ol = _build(nbm_burst_in=3.0)
+        w = ol["worst"]
+        self.assertIn(w["flood_chance"]["pathway"], ("rain (burst scenario)", "rain (tank line)", "tide"))
+        self.assertIsNotNone(w["tide"]["navd88"])
+        self.assertGreaterEqual(w["flood_chance"]["navd88"], w["tide"]["navd88"] - 1e-9)
+
+    def test_rain_unavailable_is_not_zero(self):
+        data = _fixture_data()
+        data["nbm"] = None; data["wpc"] = None
+        ol = _build(data=data)
+        late = [p for p in ol["series"] if p["lead_h"] > 80]
+        self.assertTrue(late)
+        self.assertTrue(all(p["rain_source"] is None and p["rain_in_hr"] is None for p in late))
+        d = next(d for d in ol["days"] if d["date"] == "2026-09-28")
+        self.assertFalse(d["rain_pathway"]["rain_available"])
+
+
+class MapSeriesTests(unittest.TestCase):
+    def test_map_series_splices_outlook_and_finds_worst_by_pathway(self):
+        ol = _build(nbm_burst_in=3.0)
+        prod = [{"time": p["time"], "water_navd88": p["water_navd88"], "tide_navd88": p["tide_navd88"],
+                 "burst_risk": p["burst_risk"]} for p in ol["series"] if -6 <= p["lead_h"] <= 30]
+        forecast = {"water_series": prod, "outlook_7d": ol, "pluvial_risk": {}}
+        pts, prod_len, pot_by_day, worst = ff._map_time_series(forecast)
+        self.assertEqual(prod_len, len(prod))
+        self.assertGreater(len(pts), prod_len + 100)
+        self.assertTrue(all(not q["o"] for q in pts[:prod_len]) and all(q["o"] for q in pts[prod_len:]))
+        self.assertEqual([q["t"] for q in pts], sorted(q["t"] for q in pts))
+        self.assertIsNotNone(worst["tide"]); self.assertIsNotNone(worst["flood"])
+        self.assertIn("2026-09-26", pot_by_day)
+
+
 class LedgerAndScoringTests(unittest.TestCase):
     def test_writer_output_passes_the_real_gate_and_round_trips(self):
         ol = _build()
@@ -283,7 +382,10 @@ class PageTests(unittest.TestCase):
         self.assertIn("Seven days at the corner", html)
         self.assertIn("Model cross-check", html)
         self.assertIn("Shadow scoreboard", html)
-        self.assertIn("astronomy only", html.lower())
+        self.assertIn("astronomical tide only", html.lower())
+        self.assertIn("Two pathways, every day", html)
+        self.assertIn("Worst flood chance in the next 7 days", html)
+        self.assertIn("Rain pathway:", html)
 
     def test_page_degrades_honestly_without_outlook(self):
         html = outlook_page.render_outlook_page({
@@ -310,8 +412,11 @@ class FacadeWiringTests(unittest.TestCase):
                 mock.patch.object(ff._outlook_sources, "save_cache"), \
                 mock.patch.object(ff, "_load_observed_peaks_cache", return_value={}), \
                 mock.patch.object(ff._outlook, "read_outlook_log", return_value=[]):
-            ol, entries = ff.build_outlook_7d_field(NOW, _product_tides(), 1.8, 6.0)
+            ol, entries = ff.build_outlook_7d_field(NOW, _product_tides(), 1.8, 6.0,
+                                                    nws_hourly=[], qpf_hourly=[])
         self.assertEqual(len(ol["tides"]), 14)
+        self.assertGreater(len(ol["series"]), 150)
+        self.assertIn("flood_chance", ol["worst"])
         self.assertEqual(entries["outlook_nbm"]["status"], "unavailable")
         self.assertEqual(entries["outlook_7d"]["status"], "ok")
         self.assertIn("with surge guidance", entries["outlook_7d"]["detail"])
