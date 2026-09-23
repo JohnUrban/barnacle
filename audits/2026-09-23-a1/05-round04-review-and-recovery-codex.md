@@ -145,3 +145,15 @@ alert critical path, and final v0.10.5 promotion. The plan intentionally did not
 turn those research candidates into production behavior. A map source seam can
 still show differing predictions and is labeled; this is an explicit remaining
 modeling limitation, not a secretly smoothed or silently unified curve.
+
+### Post-push verification addendum
+
+Recovery commit `eb8e79475` deployed successfully (Pages run 35918530814).
+Public forecast.json, index.html, highlands.html and outlook.html bytes matched
+committed output. CI run 35918532176 failed one documentation contract:
+`test_current_spec_and_readmes_match_source_stamp`, because Codex omitted the
+literal model/v0.10.4.md link in the HANDOFF rewrite after local testing.
+The forecast-code tests passed; this was still a failed commit check and is not
+hidden. A documentation-only follow-up restores the link and reruns the full
+local suite and remote checks. This corrects the scope of the pre-commit test
+claim: 266 tests passed before the final HANDOFF edit, not after it.

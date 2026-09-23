@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 16:47 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 16:51 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. Attic is archival.
 
 ## System
@@ -8,7 +8,7 @@
 Production hyperlocal flood forecaster for 342 Bay Ave, Highlands NJ.
 Sandy Hook + NWS + catchment MRMS; 18 surveyed landmarks; hourly JSON/site,
 best-effort ~10-minute nowcast, town map, per-tide pages, widget, ntfy/email/SMS.
-Model **v0.10.4**. Real people receive alerts. SMS is fresh imminent impact;
+Model **v0.10.4** (`model/v0.10.4.md`). Real people receive alerts. SMS is fresh imminent impact;
 ntfy/email are longer-lead watches. Core alert tide horizon remains <=48 h.
 
 ## Immediate: recovery implemented; Claude review next; v0.10.5 HOLD
@@ -45,6 +45,8 @@ issue fixed here: strictly reject/count crossed P-ETSS percentile points.
 266 decoder-enabled tests OK, no skips; both frozen replays and gate PASS;
 round04 probe + JS map-control probe PASS. Python-3.11 hotfix preserved.
 All original ledger bytes preserved; normal generation appends retained.
+First recovery CI failed a missing HANDOFF spec link (Codex omission after
+local tests); link restored. Production artifact deployment was unaffected.
 
 Next: Claude independently reviews Codex's new patch, especially missing-surge
 handling, scoped health, every consumer, percentile fix and generated artifacts.
