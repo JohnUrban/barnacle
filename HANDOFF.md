@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 16:00 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 16:25 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
@@ -30,6 +30,12 @@ compound value with the three scenarios named; warm-file admission checks
 every consumer field and downgrades on any dropped row; nested requests
 recompute their timeout and a 75-s wall clock bounds the outlook fetch
 (spec and reply now say "at most 75 s", never "never").
+
+Ship E (`017ab4a63`) was red on the 3.11 workflows (PEP 701 f-string;
+one hourly run published nothing at 20:09Z); hotfix `aba853908` and
+guard `tests/test_py311_syntax.py` followed, CI green at `c5a761147`.
+The 20:13Z publish on the repaired code verified: series to 167.8 h,
+8 cards, `u` in the map payload, one email headline, gate clean.
 
 Next: Codex verifies this exact candidate (round 05), then John's explicit
 promotion DECISION, then the atomic class-(b) bump. No round is approval.
