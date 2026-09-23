@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 07:32 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 08:49 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
@@ -33,6 +33,24 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
   vs observed peaks for the 09-23 PM .. 09-25 PM tides).
 - Per PLAYBOOK live-support: log John's reports immediately; verify the
   nowcast is publishing; capture radar for the event README.
+- **Quiet-hours exemption fixed (2026-09-23 ~09:00 EDT):** since the GMT
+  migration the pre-07:00-tide exemption never fired (strptime on an
+  offset stamp, swallowed). Now uses parse_station_local_time; 5 tests.
+
+## 7-DAY OUTLOOK ARC (opened 2026-09-23; BACKLOG top loop)
+
+- John's decisions today: alerts stay <=48 h (Phase 0 filter); the
+  outlook is a NEW field + page, honest astronomy layer plus labeled
+  guidance layer; widget unchanged; email link-only; confidence labels
+  to be phased out for error stats (separate sweep); v0.11 queue is not
+  a blocker; versioning rule for input/ladder changes to be proposed.
+- Pending John: days 4-7 rain-amount source (NOAA GRIB reader vs
+  non-NOAA multi-model API vs occurrence-only), and shadow-vs-promote
+  for the NWPS 72-h gauge forecast. He wants Saturday's storm readable
+  on the site by end of day 2026-09-23.
+- Guidance reach verified 2026-09-23: NWS grid QPF 72 h; NWS grid wind /
+  gust / PoP 7 d; NWPS SDHN4 hourly forecast 72 h; P-ETSS station text
+  (e10/e90, hourly, 102 h) on NOMADS over HTTPS; STOFS netCDF 180 h.
 
 ## Audit and attribution state
 
@@ -50,33 +68,22 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
   gate accepts naive or offset stamps, writer canonicalizes, real-writer
   -> real-gate test guards it. Daily archives 09-19/09-20 are missing.
   Codex owes writer/validator parity tests for every ledger writer.
-- Alerts have real-payload/freshness contracts, age-bounded NOAA
-  fallbacks, per-rail retry/cap accounting, one fail-closed dispatch.
-- Local scheduler has stale-lock recovery, heartbeats, quiet coalescing,
-  and an armed Mac watchdog (awake hours only).
+- Alerts: real-payload/freshness contracts, per-rail retry/cap, one
+  fail-closed dispatch. Local scheduler + Mac watchdog (awake hours).
 - NOAA transport uses GMT; storage preserves station offsets. Legacy
   naive timestamps use fold=0.
 - Widget source v7.29a (driveway rung removed) needs John to re-copy into
   Scriptable; installed v7.26a last confirmed 2026-09-14.
 - v0.10.4: `driveway_central` REMOVED from the ladder (18 landmarks); the
   driveway is a documented PROXY; numerically identical to v0.10.3.
-- CI: checksum-pinned actionlint/ShellCheck; strict mypy on `station_time`
-  and `html_contract`; static DOM/accessibility gate on current surfaces.
-- Event #9 (2026-09-13) crest was 10-13 min earlier than the fixed-lag
-  hindcast; offline assessment rejects a single replacement lag, universal
-  point/max forcing, standalone persistence, and tide-bias retuning.
-- Reproductions: `history/scripts/reproduce_v0_10_1.py` (legacy),
-  `history/scripts/reproduce_v0_10_3.py` (production).
+- CI: pinned actionlint/ShellCheck; strict mypy on two seams; DOM gate.
+  Reproductions: `history/scripts/reproduce_v0_10_{1,3}.py`.
 
 ## Residuals and operating rules
 
-- Next real radar trigger must verify storm-path dispatch in production.
-- External 24/7 triggering and secret-bearing local alert redundancy need
-  owner credentials; sleeping-Mac coverage remains open.
-- Exactly-once delivery needs provider idempotency; current crash policy
-  favors duplicate over missed alerts.
-- Model research needs a predeclared surge-tendency/expiry contract and an
-  independent compound event.
+- Open: storm-path dispatch unverified in production; 24/7 external
+  trigger needs owner credentials; delivery favors duplicate over missed;
+  surge-tendency/expiry contract needs an independent compound event.
 - Read PLAYBOOK for flood work. Use station-time helpers; run `date` before
   relative-time prose. Preserve provenance and append-only ledgers.
 - Explicit staging only. Commit -> gate -> push; rejection -> fetch/rebase

@@ -4529,14 +4529,17 @@ def _night_urgent(forecast, label, sig, now_local):
         next7 += dt.timedelta(days=1)
     for bit in sig.split("|"):
         if bit.startswith("tide:"):
+            # 2026-09-23: signatures carry offset-bearing station stamps
+            # since the GMT migration; the old strptime("%Y-%m-%d %H:%M")
+            # raised on the "-04:00" tail and the except swallowed it, so
+            # a pre-07:00 tide never earned this exemption. The station
+            # helper reads both the offset and legacy naive forms.
             try:
-                tide_t = dt.datetime.strptime(
-                    bit[5:], "%Y-%m-%d %H:%M").replace(
-                    tzinfo=now_local.tzinfo)
-                if now_local <= tide_t <= next7:
-                    return True
+                tide_t = parse_station_local_time(bit[5:])
             except ValueError:
-                pass
+                continue
+            if now_local <= tide_t <= next7:
+                return True
     for a in ((forecast.get("pluvial_risk") or {})
               .get("nws_flood_alerts") or []):
         if "warning" in (a.get("event") or "").lower():

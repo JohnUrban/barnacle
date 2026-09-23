@@ -45,6 +45,44 @@ def _tide_forecast(regime, when="2026-07-21 14:30"):
     }
 
 
+class QuietHoursTonightTests(unittest.TestCase):
+    """The 20:00-07:00 hold exempts a tide peaking before 07:00 (user
+    2026-08-09). Since the GMT migration the signature carries an
+    offset-bearing stamp; until 2026-09-23 the exemption's strptime
+    raised on it and the except swallowed the miss, so it never fired."""
+
+    NIGHT = dt.datetime(2026, 9, 23, 1, 30, tzinfo=ff.STATION_TZ)
+
+    def test_pre_dawn_tide_with_offset_stamp_is_tonight(self):
+        self.assertTrue(ff._night_urgent(
+            {}, "tide", "tide:2026-09-23 06:04-04:00", self.NIGHT))
+
+    def test_pre_dawn_tide_with_legacy_naive_stamp_is_tonight(self):
+        self.assertTrue(ff._night_urgent(
+            {}, "tide", "tide:2026-09-23 06:04", self.NIGHT))
+
+    def test_evening_tide_is_not_tonight(self):
+        self.assertFalse(ff._night_urgent(
+            {}, "tide", "tide:2026-09-23 18:19-04:00", self.NIGHT))
+
+    def test_unparseable_signature_bit_is_skipped(self):
+        self.assertFalse(ff._night_urgent(
+            {}, "tide", "tide:garbage|pluv", self.NIGHT))
+
+    def test_evaluate_alert_sends_pre_dawn_street_tide_during_quiet_hours(self):
+        with mock.patch.object(ff, "_radar_live_state", return_value=None):
+            now_utc = dt.datetime(2026, 9, 23, 5, 30, tzinfo=UTC)  # 01:30 EDT
+            held = ff.evaluate_alert(
+                _tide_forecast("street", when="2026-09-23 18:19-04:00"),
+                _state(), now_utc)
+            sent = ff.evaluate_alert(
+                _tide_forecast("street", when="2026-09-23 06:04-04:00"),
+                _state(), now_utc)
+        self.assertFalse(held["send"])
+        self.assertIn("quiet hours", held["reason"])
+        self.assertTrue(sent["send"])
+
+
 class AlertDecisionTests(unittest.TestCase):
 
     def setUp(self):
