@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 16:18 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 16:36 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
@@ -10,6 +10,14 @@ NWS, MRMS; 18 surveyed landmarks; hourly site/JSON, best-effort ~10-minute
 nowcast, nine-town map, per-tide pages, widget, ntfy/email/SMS.
 Model **v0.10.4** (`model/v0.10.4.md`). SMS = fresh imminent street impact;
 ntfy/email = longer-lead watches. Real people receive these alerts.
+
+## Owner-requested recovery plan (proposal, not implementation)
+
+John noticed the lifted widget/site curve. Codex's keep/repair/revert plan:
+`history/plans/2026-09-23-selective-recovery-plan.md` (evidence JSON beside it).
+Recommended: restore fresh observed-surge series, keep per-tide NWS projections,
+scope core/outlook health, then verify all consumers. Preserve useful additions;
+evaluate time-varying surge separately. No implementation DECISION given.
 
 ## Immediate: v0.10.5 HOLD; round-04 repairs shipped, independent pass owed
 
