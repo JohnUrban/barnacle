@@ -296,37 +296,69 @@ def _chart(ol):
 
 
 def _peaks_chart(ol):
-    """Fallback when the hourly series is unavailable: high-tide peaks only."""
     tides = ol.get("tides") or []
     labels = [_short_time(t["time"]) for t in tides]
-    data = {"labels": labels, "outlook": [_inch(t.get("outlook_mllw")) for t in tides],
-            "astro": [_inch(t.get("astro_mllw")) for t in tides],
-            "landmarks": [{"label": n, "y": y, "color": c, "solid": solid}
-                          for n, y, c, solid in LANDMARK_LINES]}
-    vals = [v for k in ("outlook", "astro") for v in data[k] if v is not None] + [y for _n, y, _c, _s in LANDMARK_LINES]
-    data["y_min"] = min(Y_FRAME[0], (min(vals) - 3) if vals else Y_FRAME[0])
-    data["y_max"] = max(Y_FRAME[1], (max(vals) + 3) if vals else Y_FRAME[1])
+    def series(key):
+        return [_inch(t.get(key)) for t in tides]
+    data = {
+        "labels": labels,
+        "astro": series("astro_mllw"),
+        "outlook": series("outlook_mllw"),
+        "lo": series("band_lo_mllw"),
+        "hi": series("band_hi_mllw"),
+        "production": series("production_mllw"),
+        "sources": [t.get("outlook_source") for t in tides],
+        "landmarks": [{"label": n, "y": y, "color": c, "solid": solid}
+                      for n, y, c, solid in LANDMARK_LINES],
+    }
+    all_vals = [v for k in ("astro", "outlook", "lo", "hi", "production")
+                for v in data[k] if v is not None] + [y for _n, y, _c, _s in LANDMARK_LINES]
+    data["y_min"] = min(Y_FRAME[0], (min(all_vals) - 3) if all_vals else Y_FRAME[0])
+    data["y_max"] = max(Y_FRAME[1], (max(all_vals) + 3) if all_vals else Y_FRAME[1])
+    aria = ("Seven-day high-tide outlook at Sandy Hook in inches relative to the SW grate: "
+            + "; ".join(f"{l} {o:+.0f} in" for l, o in zip(labels, data["outlook"]) if o is not None))
+    payload = json.dumps(data)
     script = """
 <script>
 (function () {
-  var D = __DATA__; var el = document.getElementById('outlook-series-chart');
+  var D = __DATA__;
+  var el = document.getElementById('outlook-peaks-chart');
   if (!el || typeof Chart === 'undefined') { return; }
   var datasets = [
-    { label: 'High tide + guidance', data: D.outlook, borderColor: '#1a5fa8', borderWidth: 2, pointRadius: 4 },
-    { label: 'Astronomical tide only', data: D.astro, borderColor: '#7aa6d8', borderDash: [6, 4], borderWidth: 1.2, pointRadius: 2 }];
-  D.landmarks.forEach(function (lm) { datasets.push({ label: lm.label, data: D.labels.map(function () { return lm.y; }),
-    borderColor: lm.color, borderWidth: lm.solid ? 1.5 : 1.2, borderDash: lm.solid ? [] : [6, 5], fill: false, pointRadius: 0 }); });
+    { label: 'Guidance band (P-ETSS 10-90%)', data: D.hi, borderWidth: 0,
+      backgroundColor: 'rgba(26,95,168,0.15)', pointRadius: 0, fill: '+1', spanGaps: false },
+    { label: 'band low', data: D.lo, borderWidth: 0, pointRadius: 0, fill: false, spanGaps: false },
+    { label: 'Outlook (tide + guidance)', data: D.outlook, borderColor: '#1a5fa8',
+      backgroundColor: '#1a5fa8', borderWidth: 2.5, pointRadius: 4, tension: 0.2,
+      pointStyle: D.sources.map(function (s) { return s === 'astro' ? 'crossRot' : (s === 'persist_decay' ? 'triangle' : 'circle'); }) },
+    { label: 'Astronomical tide only', data: D.astro, borderColor: '#7aa6d8', borderDash: [6, 4],
+      borderWidth: 1.5, pointRadius: 2, tension: 0.2 },
+    { label: 'Production forecast (landing page, 72 h)', data: D.production, borderColor: '#555555',
+      backgroundColor: '#555555', borderWidth: 0, pointRadius: 5, pointStyle: 'rectRot', showLine: false }
+  ];
+  D.landmarks.forEach(function (lm) {
+    datasets.push({ label: lm.label, data: D.labels.map(function () { return lm.y; }),
+      borderColor: lm.color, borderWidth: lm.solid ? 1.5 : 1.2,
+      borderDash: lm.solid ? [] : [6, 5], fill: false, pointRadius: 0 });
+  });
   new Chart(el, { type: 'line', data: { labels: D.labels, datasets: datasets },
-    options: { responsive: true, maintainAspectRatio: false,
-      scales: { y: { title: { display: true, text: 'inches vs SW grate' }, min: D.y_min, max: D.y_max } },
-      plugins: { legend: { labels: { boxWidth: 22, boxHeight: 2, font: { size: 10 } } } } } });
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      scales: { y: { title: { display: true, text: 'inches vs SW grate (\u00b1 = above/below)' },
+                     min: D.y_min, max: D.y_max },
+                x: { ticks: { maxRotation: 60, autoSkip: true, font: { size: 10 } } } },
+      plugins: { legend: { display: true, labels: { boxWidth: 22, boxHeight: 2, font: { size: 10 },
+                 filter: function (i) { return i.text !== 'band low'; } } } } } });
 })();
 </script>"""
-    return (f'<section><h2>High tides, next 7 days</h2><p class="note">The hourly series was unavailable '
-            f'this run, so only high-tide peaks are drawn.</p>'
-            f'<div style="position:relative;height:360px"><canvas id="outlook-series-chart" role="img" '
-            f'aria-label="High-tide peaks, next 7 days"></canvas></div>{CHART_TAGS}'
-            + script.replace("__DATA__", json.dumps(data)) + "</section>")
+    return (f'<section><h2>High tides with the surge band, next 7 days</h2>'
+            f'<p class="note">Restored at John\'s request (2026-09-23): the per-tide view with the P-ETSS 10th to 90th percentile band, which is where a tide\'s reasonable high end shows (Saturday\'s band reaches the first porch step). Blue line: outlook with guidance (circle = NWS/P-ETSS guidance, triangle = '
+            f'decayed persistence, cross = astronomy only). Dashed light blue: astronomy alone. Shaded: '
+            f'P-ETSS 10th to 90th percentile surge band. Gray diamonds: the production forecast for the '
+            f'same tides. Landmark lines are the same five as the landing chart, in the same colors. '
+            f'The frame is the landing chart\'s standard \u221260 to +36 inches and only widens if a line would be clipped.</p>'
+            f'<div style="position:relative;height:360px"><canvas id="outlook-peaks-chart" role="img" '
+            f'aria-label="{_e(aria)}"></canvas></div>{CHART_TAGS}'
+            + script.replace("__DATA__", payload) + "</section>")
 
 
 def _tide_table(ol):
@@ -440,7 +472,9 @@ def render_outlook_page(forecast):
     gen = forecast.get("generated_utc", "")
     body = ""
     if ol.get("tides"):
-        body = _intro(ol, forecast) + _day_cards(ol) + _chart(ol) + _tide_table(ol) + _shadow(ol) + _sources(ol)
+        body = (_intro(ol, forecast) + _day_cards(ol) + _chart(ol) + _tide_table(ol)
+                + _shadow(ol) + _sources(ol)
+                + (_peaks_chart(ol) if ol.get("series") else ""))   # bottom: the per-tide band view
     else:
         h = (forecast.get("input_health") or {}).get("outlook_7d") or {}
         body = (f'<section><h2>Outlook unavailable this run</h2><p>{_e(h.get("detail") or "no outlook data")}'
