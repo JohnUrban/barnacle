@@ -51,6 +51,14 @@ live obligation) → `BACKLOG.md` OPEN LOOPS. On a flood event:
    (`CURRENT_MODEL_VERSION`) + log README updated in the SAME
    commit. When archiving a spec, repair its relative links from the new
    directory and test them. Document mis-stamps honestly; never rewrite history.
+   Change classes (John, 2026-09-23; one version line, every change
+   type has a rule): (a) formula / constant / landmark changes bump
+   with NEW replay goldens; (b) new input sources, fallback ladders,
+   horizons and alert-policy changes ALSO bump, the spec gains an
+   "Inputs & policy" section, and the existing replay goldens must PASS
+   UNCHANGED; (c) bug fixes that restore intended behavior and
+   documentation take a BACKLOG ledger line and no bump. Both bump
+   classes keep the rule-12 review-plus-DECISION checkpoint.
 6. **Rain DNA.** Rain modeling is the project's value-add — never
    defer it; ship crude-but-directionally-right and label
    uncertainty. Never reason "tide is low, so no flood risk."

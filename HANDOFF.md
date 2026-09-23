@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 08:49 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 09:09 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
@@ -44,10 +44,11 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
   guidance layer; widget unchanged; email link-only; confidence labels
   to be phased out for error stats (separate sweep); v0.11 queue is not
   a blocker; versioning rule for input/ladder changes to be proposed.
-- Pending John: days 4-7 rain-amount source (NOAA GRIB reader vs
-  non-NOAA multi-model API vs occurrence-only), and shadow-vs-promote
-  for the NWPS 72-h gauge forecast. He wants Saturday's storm readable
-  on the site by end of day 2026-09-23.
+- GREENLIT 09:07: rain amounts = NBM (NOMADS subset) primary, WPC
+  fallback, non-NOAA cross-check as click-to-reveal/column, occurrence
+  first; NWPS gauge forecast in SHADOW with promotion scoring on the
+  page; rule 5 change classes adopted. Phase 0 shipped: ALERT_WINDOW_HOURS
+  = 48. Saturday must be readable on the site by end of day.
 - Guidance reach verified 2026-09-23: NWS grid QPF 72 h; NWS grid wind /
   gust / PoP 7 d; NWPS SDHN4 hourly forecast 72 h; P-ETSS station text
   (e10/e90, hourly, 102 h) on NOMADS over HTTPS; STOFS netCDF 180 h.
@@ -76,8 +77,7 @@ ntfy/email carry longer-lead watches. Real people receive these alerts.
   Scriptable; installed v7.26a last confirmed 2026-09-14.
 - v0.10.4: `driveway_central` REMOVED from the ladder (18 landmarks); the
   driveway is a documented PROXY; numerically identical to v0.10.3.
-- CI: pinned actionlint/ShellCheck; strict mypy on two seams; DOM gate.
-  Reproductions: `history/scripts/reproduce_v0_10_{1,3}.py`.
+- CI: pinned linters; strict mypy on two seams; DOM gate. Replays: `history/scripts/reproduce_v0_10_{1,3}.py`.
 
 ## Residuals and operating rules
 

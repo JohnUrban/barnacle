@@ -45,6 +45,65 @@ def _tide_forecast(regime, when="2026-07-21 14:30"):
     }
 
 
+def _tide_forecast_at(regime, hours_from_now, when="2026-09-27 08:37-04:00"):
+    return {
+        "all_tides": [{
+            "time": when,
+            "hours_from_now": hours_from_now,
+            "forecast_peak_mllw": 7.4,
+            "depths_in": {"regime": regime},
+        }],
+        "pluvial_risk": {},
+        "today_regime": "dry",
+    }
+
+
+class AlertWindowTests(unittest.TestCase):
+    """Alerts are short-term attention (user 2026-09-23): only tides
+    within ALERT_WINDOW_HOURS may raise the ntfy/email alert rank, so a
+    longer display horizon can never widen alerting."""
+
+    def setUp(self):
+        p = mock.patch.object(ff, "_radar_live_state", return_value=None)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def test_window_is_48_hours(self):
+        self.assertEqual(ff.ALERT_WINDOW_HOURS, 48)
+
+    def test_tide_beyond_window_cannot_raise_rank(self):
+        rank, label, sig = ff.compute_alert_level(_tide_forecast_at("severe", 60.0))
+        self.assertEqual(rank, 0)
+        self.assertEqual(sig, "")
+        self.assertEqual(label, "no tidal flooding")
+
+    def test_tide_inside_window_raises_rank(self):
+        rank, _label, sig = ff.compute_alert_level(_tide_forecast_at("street", 30.0))
+        self.assertGreater(rank, 0)
+        self.assertEqual(sig, "tide:2026-09-27 08:37-04:00")
+
+    def test_day6_tide_does_not_send(self):
+        now_utc = dt.datetime(2026, 9, 23, 16, 0, tzinfo=UTC)
+        decision = ff.evaluate_alert(_tide_forecast_at("severe", 130.0), _state(), now_utc)
+        self.assertFalse(decision["send"])
+
+    def test_legacy_entries_without_lead_stay_eligible(self):
+        rank, _l, _s = ff.compute_alert_level(_tide_forecast("street"))
+        self.assertGreater(rank, 0)
+
+    def test_alert_text_ignores_tide_beyond_window(self):
+        forecast = _tide_forecast_at("severe", 60.0)
+        forecast["all_tides"].append({
+            "time": "2026-09-24 19:01-04:00", "hours_from_now": 30.0,
+            "forecast_peak_mllw": 7.2, "depths_in": {"regime": "street"},
+        })
+        with mock.patch.object(ff, "headline_for", return_value=("NO FLOODING", "")):
+            txt = ff.build_sms_text(forecast)
+        self.assertIn("Street tide flooding", txt)
+        self.assertNotIn("Severe", txt)
+        self.assertNotIn("09/27", txt)
+
+
 class QuietHoursTonightTests(unittest.TestCase):
     """The 20:00-07:00 hold exempts a tide peaking before 07:00 (user
     2026-08-09). Since the GMT migration the signature carries an

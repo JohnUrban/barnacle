@@ -4416,18 +4416,39 @@ def _radar_live_state(now_utc=None):
     return nc
 
 
+# Alerts are short-term attention (user 2026-09-23: "if you haven't
+# noticed this, then notice it now before it is too late" — mainly 24 h
+# notices, 48 h at the longest). ntfy/email tide alerting therefore reads
+# only tides within this many hours; the display horizon (72 h rollup,
+# 7-day outlook) is independent and can grow without touching alerts.
+# SMS is nowcast-only (evaluate_sms_gate) and never reads the tide list.
+ALERT_WINDOW_HOURS = 48
+
+
+def _alert_window_tides(forecast):
+    """Tides eligible to raise an alert: within ALERT_WINDOW_HOURS ahead.
+    Entries without `hours_from_now` (legacy/test fixtures) stay eligible;
+    production entries always carry it (build_forecast)."""
+    out = []
+    for t in (forecast.get("all_tides") or []):
+        hfn = t.get("hours_from_now")
+        if hfn is None or hfn <= ALERT_WINDOW_HOURS:
+            out.append(t)
+    return out
+
+
 def compute_alert_level(forecast):
     """(rank, label, signature) for the event-driven alert policy
     (user, 2026-07-17: the daily-morning email became ignorable —
     'mostly not telling me it will flood'). rank>0 = some flood risk
-    exists in the 72h window or the rain pathway. signature
+    exists within ALERT_WINDOW_HOURS or the rain pathway. signature
     identifies the risk episode so we alert on APPEARANCE and
     ESCALATION, never repeat on steady state, and reset after
     all-clear."""
     tide_rank = 0
     tide_label = "no tidal flooding"
     tide_time = ""
-    for t in (forecast.get("all_tides") or []):
+    for t in _alert_window_tides(forecast):
         r = ((t.get("depths_in") or {}).get("regime")) or "dry"
         if _ALERT_RANKS.get(r, 0) > tide_rank:
             tide_rank = _ALERT_RANKS.get(r, 0)
@@ -4929,7 +4950,7 @@ def build_sms_text(forecast):
     trailing clarifier only when it differs."""
     rank, label, _ = compute_alert_level(forecast)
     tide_rank, tide_best = 0, None
-    for t in (forecast.get("all_tides") or []):
+    for t in _alert_window_tides(forecast):
         r = ((t.get("depths_in") or {}).get("regime")) or "dry"
         if _ALERT_RANKS.get(r, 0) > tide_rank:
             tide_rank = _ALERT_RANKS.get(r, 0)
