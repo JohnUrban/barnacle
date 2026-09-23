@@ -1,98 +1,82 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 10:41 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 13:05 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
 
-Production flood forecaster for 342 Bay Ave, Highlands NJ. Sandy Hook +
-NWS + MRMS produce depth at 18 landmarks, hourly site/JSON, best-effort
-~10-minute nowcast, per-tide pages, nine-town map, widget, ntfy/email/SMS.
-Model **v0.10.4** (`model/v0.10.4.md`). SMS carries imminent street impact;
-ntfy/email carry longer-lead watches. Real people receive these alerts.
+Production flood forecaster for 342 Bay Ave, Highlands NJ: Sandy Hook,
+NWS, MRMS; 18 surveyed landmarks; hourly site/JSON, best-effort ~10-minute
+nowcast, nine-town map, per-tide pages, widget, ntfy/email/SMS.
+Model **v0.10.4** (`model/v0.10.4.md`). SMS = fresh imminent street impact;
+ntfy/email = longer-lead watches. Real people receive these alerts.
 
-## LIVE EVENT: nor'easter, Coastal Flood Advisory CF.Y.0021
+## Immediate: independent audit HOLD on v0.10.5
 
-- Advisory 2026-09-23 16:00 EDT -> 2026-09-26 02:00 EDT; NE gusts to 50.
-  NWS Sandy Hook (CFW 08:28Z; Minor 6.7): Wed PM 6.9, Thu PM 7.2, Fri AM
-  7.2, Fri PM 7.5 (worst, 19:40 EDT).
-- **Parser first real event.** Runs 09-22 21Z .. 09-23 10Z were DEGRADED
-  ("No Sandy Hook section") on persistence 0.3-0.6 ft under NWS: the
-  alerts API drops the tide table after `&&`. Fixed 8e8e5cfcd: parser
-  reads the raw KPHI CFW product; block ends at the next gauge header.
-- Confidence rule deliberately caps NWS-product tides at MEDIUM until
-  the first real event is scored (BACKLOG collector c: NWS projections
-  vs observed peaks for the 09-23 PM .. 09-25 PM tides).
-- Per PLAYBOOK live-support: log John's reports immediately; verify the
-  nowcast is publishing; capture radar for the event README.
-- **Quiet-hours exemption fixed (2026-09-23 ~09:00 EDT):** since the GMT
-  migration the pre-07:00-tide exemption never fired (strptime on an
-  offset stamp, swallowed). Now uses parse_station_local_time; 5 tests.
+Codex reviewed `ece4c2314`, all 11 Claude commits in the 24-hour window
+ending 2026-09-23 12:51:57 EDT, and broader production contracts.
+Report: `audits/2026-09-23-a1/01-repository-and-v0.10.5-candidate-codex.md`.
+Reproductions and verification record are beside it. No production fixes
+or promotion in the audit commit. Claude owes round-02 reply.
 
-## 7-DAY OUTLOOK ARC (opened 2026-09-23; BACKLOG top loop)
+- R1: optional outlook fetches can starve the 5-minute alert job; isolate.
+- R2: shadow READY counts forecast rows, not independent tides.
+- R3–R5: missing rain becomes zero inside the tank; horizon gaps; expired
+  percentile data still drives scenarios; rain boundary accounting is wrong.
+- R6–R8: map future/time/pathway semantics; landing/email still tide-first;
+  CFW-first cards and NWPS-first continuous guidance need reconciliation.
+- R9: default suite 238 OK / 3 skipped; full GRIB environment FAILS one
+  budget test. CI skips the decoder tests. Both frozen replays + gate PASS.
+- R10–R12 follow-ups: semantic gates/writer parity, mislabeled day/window
+  tables, gauge-specific error-statistics wording. See full acceptance list.
+- Recommendation: fix R1–R9, independently verify candidate, then John's
+  promotion DECISION. This HOLD is not an owner decision or a review PASS.
 
-- John's decisions today: alerts stay <=48 h (Phase 0 filter); the
-  outlook is a NEW field + page, honest astronomy layer plus labeled
-  guidance layer; widget unchanged; email link-only; confidence labels
-  to be phased out for error stats (separate sweep); v0.11 queue is not
-  a blocker; versioning rule for input/ladder changes to be proposed.
-- GREENLIT 09:07: rain amounts = NBM (NOMADS subset) primary, WPC
-  fallback, non-NOAA cross-check as click-to-reveal/column, occurrence
-  first; NWPS gauge forecast in SHADOW with promotion scoring on the
-  page; rule 5 change classes adopted. Phase 0 shipped: ALERT_WINDOW_HOURS
-  = 48. Saturday must be readable on the site by end of day.
-- SHIPPED outlook v1 (~10:00 EDT): forecast.outlook_7d + docs/outlook.html
-  (3 links on the landing page, email link line). Modules outlook_sources /
-  outlook / outlook_page. Ladder: product -> NWPS shadow -> P-ETSS band ->
-  decayed persistence (ASSUMPTION) -> astronomy. Shadow ledger
-  data/outlook_log.csv + readiness verdicts on the page (28 scored tides
-  needed). Production surge, alerts, widget, per-tide pages untouched.
-- v2 (~11:30 EDT): NO TIDAL SUPREMACY (AGENTS rule 6). outlook_7d.series
-  (hourly, 7 d) carries tide+guidance AND the rain pathway through the
-  production tank; day headline = worst pathway; worst.flood_chance.
-  Landing + town maps: slider to +168 h, opens on NOW, buttons Now /
-  Worst tide / Worst flood chance. Widget unchanged.
-- Confidence labels PHASED OUT (~11:15 EDT): surfaces show measured
-  error by lead (forecast.accuracy_by_lead); fields stay in JSON for
-  the ledger enum. Peaks+band chart restored at the outlook's bottom.
-- NBM percentile rain bands SHIPPED (~12:00 EDT): p10/p50/p90 + chance
-  of 0.25/0.5/1 in per 6 h; p90 scenario = rain band's labeled high end.
-- OWED: v0.10.5 bump after Codex's independent audit of today's work
-  + John's DECISION; confidence JSON removal.
+## Live event: coastal advisory CF.Y.0021
 
-## Audit and attribution state
+Advisory window 2026-09-23 16:00 -> 2026-09-26 02:00 EDT.
+Captured 08:28Z CFW Sandy Hook projections: Sep 23 PM 6.9, Sep 24 PM
+7.2, Sep 25 AM 7.2, Sep 25 PM 7.5 ft MLLW. Score against observed peaks
+as the event passes (BACKLOG collector c); parser success is not skill.
+Raw KPHI CFW repair `8e8e5cfcd` fixes alerts-API table truncation and
+next-gauge leakage. Public 16:14:10Z forecast uses the repaired source.
+Read PLAYBOOK for event support; log John's reports immediately.
+Quiet-hours pre-07:00 tide exemption now uses the station-time helper.
 
-- Audits 09-14-a1, 09-18-a1, 09-20-a1 CLOSED; v0.10.3 ratified 09-18,
-  v0.10.4 promoted 09-20 with DECISION + review. Never re-ask. Rule 12:
-  attribution follows participation; promotions need review + DECISION.
+## 7-day outlook arc: shipped, repairs pending
 
-## Production and evidence
+Owner decisions recorded 2026-09-23: separate outlook field/page; core
+alerts <=48 h; NBM amounts with WPC fallback; non-NOAA cross-check only;
+NWPS in shadow; widget unchanged; email link-only for new 7-day content.
+No tidal supremacy: compare tide, tank and burst pathways; maps open NOW.
 
-- OUTAGE 2026-09-19 04:12Z -> 2026-09-20 21:10Z (42 h) FIXED b66297bbc:
-  gate accepts naive or offset stamps, writer canonicalizes, real-writer
-  -> real-gate test guards it. Daily archives 09-19/09-20 are missing.
-  Codex owes writer/validator parity tests for every ledger writer.
-- Alerts: payload/freshness contracts, per-rail retry/cap, fail-closed
-  dispatch; Mac watchdog awake hours. NOAA transport GMT; offsets stored.
-- Widget v7.29a needs John's re-copy (installed v7.26a, 2026-09-14).
-- v0.10.4: `driveway_central` removed (18 landmarks); driveway = PROXY.
-- CI: pinned linters; strict mypy on two seams; DOM gate. Replays: `history/scripts/reproduce_v0_10_{1,3}.py`.
+Modules outlook_sources / outlook / outlook_page, shadow outlook_log.csv,
+NBM qmd warm job/file, continuous hourly series and map sliders to +168 h,
+measured error-by-lead in place of human confidence labels are on main.
+The inputs/policy shipped stamped v0.10.4; document this honestly at bump.
+Confidence JSON remains for ledger compatibility; final removal is open.
+Class-(b) bump needs Inputs & policy spec, unchanged replay goldens, atomic
+spec/archive/code/docs stamps, independent review and owner DECISION.
+No v0.10.5 promotion approval is implied by the earlier build green lights.
 
-## Residuals and operating rules
+## Prior audits and operational residuals
 
-- Open: storm-path dispatch unverified in production; 24/7 external
-  trigger needs owner credentials; delivery favors duplicate over missed;
-  surge-tendency/expiry contract needs an independent compound event.
-- Read PLAYBOOK for flood work. Use station-time helpers; run `date` before
-  relative-time prose. Preserve provenance and append-only ledgers.
-- Explicit staging only. Commit -> gate -> push; rejection -> fetch/rebase
-  or abort -> gate again -> retry. Ledger conflicts resolve by union.
-- Protect transactional alert state during local generation. Keep model
-  spec/code/log stamps and every affected display/alert arm in lockstep.
+Audits 09-14-a1, 09-18-a1, 09-20-a1 CLOSED. v0.10.3 ratified 09-18;
+v0.10.4 promoted 09-20 with review + DECISION. Do not re-ask.
+42-hour 09-19/20 publishing outage fixed; missing daily archives remain.
+Writer/validator parity and hourly-failure visibility remain open.
+Nowcast storm-path dispatch still needs live validation. Watchdog covers
+Mac-awake hours; external 24/7 trigger awaits owner credentials.
+Delivery favors duplicate over missed until a durable outbox exists.
+Moving-head/surge-tendency work requires an independent compound event.
+Widget source v7.29a needs re-copy (installed v7.26a per 09-14 record).
+Driveway is a PROXY, not a landmark; never restore it to the ladder.
 
-## Immediate next step
+## Operating rules
 
-Watch the first hourly run after this ships: `input_health.nws_coastal_product`
-must read `ok` with the CFW issuance stamp, `surge_source`
-`nws-coastal-flood-product`. Then score the event (collector c). Codex:
-writer/validator parity tests. Owner: widget v7.29a re-copy; external PAT.
+Run `date` before relative-time prose; use station-time helpers. Preserve
+primary provenance, append-only ledgers, and transactional alert state.
+Explicit staging only: commit -> gate -> push; rejected push -> rebase or
+abort -> gate again -> retry. Ledger conflicts resolve by union.
+Review attribution must name actual participation and scope. No audit
+closeout before an independent reply; no model promotion without DECISION.

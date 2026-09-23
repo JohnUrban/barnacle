@@ -8,6 +8,20 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
+- [ ] **Independent repo / v0.10.5 audit — HOLD (2026-09-23).** Codex
+      reviewed candidate `ece4c2314`, all 11 Claude commits in the preceding
+      24-hour window, and wider production contracts. Report:
+      `audits/2026-09-23-a1/01-repository-and-v0.10.5-candidate-codex.md`.
+      Release findings R1–R9: isolate outlook fetches from alert delivery;
+      count unique tides for shadow readiness; propagate missing rain and
+      complete the rolling horizon; reject expired guidance; conserve rain
+      amounts/timing; repair map time/pathway controls; extend worst-pathway
+      semantics to existing headline arms; reconcile central-source ladders;
+      run decoder tests in CI (full-dependency suite currently fails).
+      R10–R12 are explicit follow-ups: semantic gates/writer parity, date-scope
+      labels, and honest gauge-error statistics. Claude owes round-02 reply;
+      repaired-candidate verification + John's promotion DECISION precede bump.
+
 - [ ] **7-DAY OUTLOOK (arc opened 2026-09-23, John).** Extend
       predictions to 7 days as a NEW display-only field + page, never by
       widening `all_tides` (which feeds alerts, per-tide pages, the
@@ -16,8 +30,8 @@ looks stale, trust this file. Ledger lines are append-only:
       rain) with its band and source. Surge ladder by lead: CFW row →
       NWPS gauge forecast (72 h) → P-ETSS percentiles (102 h) →
       decayed persistence → astronomy labeled "no surge guidance".
-      Rain beyond the 72-h NWS QPF grid is occurrence-only until an
-      amounts source is chosen (decision pending). Alerts stay short-
+      Rain beyond the 72-h NWS QPF grid uses NBM amounts, WPC fallback
+      (decision recorded 2026-09-23). Alerts stay short-
       horizon (DECISION alert-horizon-48h). Widget unchanged; email
       link-only. Prereq Phase 0: ALERT_WINDOW_HOURS filter so the
       outlook cannot change alerting. Survey + plan in chat 2026-09-23
@@ -25,9 +39,9 @@ looks stale, trust this file. Ledger lines are append-only:
       page. OPEN: v0.10.5 class-(b) bump (AGENTS rule 5) for the new
       inputs, alert window and shadow policy — needs an independent
       candidate review + owner DECISION before the promoting commit
-      (rule 12); replay goldens must pass unchanged. Then: NBM
-      percentile (qmd) rain bands; confidence-label phase-out sweep;
-      score collector (c).
+      (rule 12); replay goldens must pass unchanged. NBM percentile bands
+      and human confidence-label phase-out shipped; audit repairs above and
+      confidence-JSON removal remain open. Continue score collector (c).
 **Active / near-term**
 - [x] Audit `2026-09-18-a1` CLOSED 2026-09-18 (round 03, b24220653):
       Codex's work verified and stands; trailer erratum + AGENTS rule 12
@@ -428,3 +442,7 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-23 | DONE | nbm-percentile-rain-bands | NOAA's NBM probabilistic (qmd) file, subset at the house through the NOMADS filter (~100 KB per step), gives every 6-h bucket the rain-amount percentiles (5% steps) and the chance of >=0.25 / 0.5 / 1 in; published for the 00/06/12/18Z cycles only, a few hours after the hourly amount files, so the adapter takes the newest synoptic cycle that has them and matches buckets by valid time. Per day: p10/p50/p90 sums (crude), the max 6-h p90, and the max chances; the rain pathway adds an NBM 90th-percentile scenario (analog rate from the p90 6-h amount through the same tank / potential logic) as the rain band's LABELED HIGH END beside its exceedance chance (it does not drive the headline, mirroring the P-ETSS high end); cards show it, the tide table gains an 'NBM P(>=0.5 in/6 h)' column next to the non-NOAA cross-check. Cached NBM data without percentiles is treated as stale so the first run refetches. 2 tests (fixture parse under eccodes; band -> scenario -> page) [VERIFIED: tests + live fetch]
 2026-09-23 | FACT | nbm-qmd-cost | a house-sized NBM qmd subset costs ~54 s with every variable and ~9 s precipitation-only; the qmd file exists for the 00/06/12/18Z cycles only and lags the hourly amount files by 3+ h (12Z qmd absent at 15:40Z). 28 precip-only subsets (~4 min) cannot share the hourly job's 5-minute budget, so the percentiles moved to a warm job: forecast/outlook_warm.py + .github/workflows/nbm_qmd.yml (cron 04:40/10:40/16:40/22:40Z, 14-min timeout, own file data/outlook_nbm_qmd.json, own commit with the rebase-and-regate ritual). The hourly run merges the file by valid time and reports its age as input_health.outlook_nbm_qmd (ok <= 9 h, degraded <= 30 h, else unavailable) [VERIFIED: timed requests]
 2026-09-23 | FACT | nbm-qmd-lag | the 12Z NBM qmd was still unpublished at 16:03Z (lag > 4 h), so the warm cron moved to 05:50/11:50/17:50/23:50Z; the dispatched CI warm run took 9 min and refetched a cycle it already had, so the script now asks NOMADS for the newest cycle first (one request) and exits when it matches the file on disk [VERIFIED: probe + CI run 35884916730]
+
+2026-09-23 | FACT | codex-repo-audit-candidate | Independent review at ece4c2314 covers all 11 Claude-authored commits from 2026-09-22 12:51:57 through 2026-09-23 12:51:57 EDT plus broader production contracts. Default suite 238 OK/3 skipped; installed GRIB environment 238 FAILED/1 error (qmd exhausted-budget test); GitHub CI skips the same 3 decoder tests. Gate and both unchanged numerical replays PASS; all pre-window protected ledger rows retained [VERIFIED: audits/2026-09-23-a1/verification.md]
+2026-09-23 | OPEN | v0.10.5-audit-hold | Codex recommends HOLD promotion pending R1–R9 fixes and independent repaired-candidate verification; R10–R12 are explicit follow-ups. Highest urgency: optional synchronous outlook fetches can exhaust the 5-minute alert job (NBM discovery alone permits 420 seconds). Claude owes round-02 response; John's promotion DECISION remains outstanding. This is a review recommendation, not an owner decision [VERIFIED: audits/2026-09-23-a1/01-repository-and-v0.10.5-candidate-codex.md]
+2026-09-23 | FACT | v0.10.5-cutover-audit | New alert policy and outlook inputs are already published under v0.10.4 (8e686a4f1 / bfd39b533 onward). Future promotion must document that interval honestly, preserve historical rows, and cite the actual repaired-candidate review and owner DECISION; no retrospective claim of predeployment approval [VERIFIED: git history]
