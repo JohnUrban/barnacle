@@ -170,7 +170,7 @@ def validate_csv_semantics(path, relpath, now_utc=None):
 
     elif relpath == "data/predictions_log.csv":
         seen = set()
-        allowed_confidence = {"low", "medium", "high"}
+        allowed_confidence = {"low", "medium", "high", ""}   # labels retired 2026-09-23
         allowed_regimes = {"", "dry", "street", "light", "moderate",
                            "severe", "cold_lockout"}
         for logical_row, row in enumerate(rows, 2):
@@ -206,7 +206,7 @@ def validate_csv_semantics(path, relpath, now_utc=None):
         seen = set()
         allowed_regimes = {"dry", "street", "light", "moderate", "severe",
                            "cold_lockout"}
-        allowed_confidence = {"low", "medium", "high"}
+        allowed_confidence = {"low", "medium", "high", ""}   # labels retired 2026-09-23
         for logical_row, row in enumerate(rows, 2):
             day = row.get("forecast_run_date")
             if day in seen:
@@ -228,11 +228,41 @@ def validate_csv_semantics(path, relpath, now_utc=None):
                 failures.append(f"row {logical_row}: invalid accuracy row: {exc}")
             if row.get("forecast_regime") not in allowed_regimes:
                 failures.append(f"row {logical_row}: invalid forecast_regime")
-            # The first pre-confidence row is immutable legacy history.
-            confidence = row.get("confidence_level")
-            if confidence not in allowed_confidence and not (
-                    logical_row == 2 and confidence == ""):
+            if row.get("confidence_level") not in allowed_confidence:
                 failures.append(f"row {logical_row}: invalid confidence_level")
+
+    elif relpath == "data/outlook_log.csv":
+        allowed_sources = {"nws_product", "nwps", "petss_mid", "persist_decay", "astro"}
+        allowed_prod = {"", "nws-coastal-flood-product", "surge-persistence",
+                        "astronomical-only-degraded"}
+        allowed_rain = {"", "nws_grid", "nbm", "wpc_24h"}
+        for logical_row, row in enumerate(rows, 2):
+            try:
+                made = _aware_time(row.get("generated_utc"))
+                if made > now + FUTURE_TOLERANCE:
+                    failures.append(f"row {logical_row}: generated_utc is future")
+                _station_stamp(row.get("target_tide_time", ""))
+                lead = float(row.get("lead_h", ""))
+                if not math.isfinite(lead) or lead < 0 or lead > 200:
+                    failures.append(f"row {logical_row}: lead_h out of range")
+                for field in ("astro_mllw", "outlook_mllw"):
+                    v = float(row.get(field, ""))
+                    if not math.isfinite(v) or not (-5 < v < 25):
+                        failures.append(f"row {logical_row}: {field} out of range")
+                for field in ("nws_product_mllw", "nwps_mllw", "petss_p10_mllw", "petss_p90_mllw",
+                              "persist_flat_mllw", "persist_decay_mllw", "production_mllw",
+                              "qpf6_in", "pop_pct", "gust_mph", "xcheck_p_half_inch_pct"):
+                    text = row.get(field, "")
+                    if text != "" and not math.isfinite(float(text)):
+                        failures.append(f"row {logical_row}: {field} non-finite")
+            except (TypeError, ValueError) as exc:
+                failures.append(f"row {logical_row}: invalid outlook row: {exc}")
+            if row.get("outlook_source") not in allowed_sources:
+                failures.append(f"row {logical_row}: invalid outlook_source")
+            if row.get("production_source") not in allowed_prod:
+                failures.append(f"row {logical_row}: invalid production_source")
+            if row.get("qpf6_source") not in allowed_rain:
+                failures.append(f"row {logical_row}: invalid qpf6_source")
 
     elif relpath == "data/labeled_events.csv":
         allowed_labels = {"flood", "noflood", "noflood_at_342", "unlabeled"}
@@ -365,6 +395,68 @@ def validate_forecast_metadata(path, expected_model_version=None, now_utc=None):
                 f"degraded_inputs mismatch: expected {sorted(expected)!r}, "
                 f"got {sorted(degraded)!r}"
             )
+    failures.extend(validate_outlook_field(forecast))
+    return failures
+
+
+def validate_outlook_field(forecast):
+    """Scientific-contract checks on `outlook_7d` (audit R10): horizon,
+    model stamp, ordered finite series, seven consecutive day cards, source
+    statuses, and a future worst point."""
+    ol = forecast.get("outlook_7d")
+    if ol is None:
+        return []
+    failures = []
+    if not isinstance(ol, dict):
+        return ["outlook_7d must be an object or null"]
+    if ol.get("horizon_hours") != 168:
+        failures.append("outlook_7d.horizon_hours must be 168")
+    if ol.get("model_version") != forecast.get("model_version"):
+        failures.append("outlook_7d.model_version must match the forecast stamp")
+    series = ol.get("series")
+    if not isinstance(series, list):
+        failures.append("outlook_7d.series must be an array")
+    else:
+        last = None
+        for i, p in enumerate(series):
+            try:
+                t = _station_stamp(p["time"])
+                for k in ("tide_navd88", "water_navd88"):
+                    v = float(p[k])
+                    if not math.isfinite(v) or not (-10 < v < 30):
+                        raise ValueError(f"{k} out of range")
+                if p.get("pluvial_navd88") is not None and not math.isfinite(float(p["pluvial_navd88"])):
+                    raise ValueError("pluvial_navd88 non-finite")
+                if last is not None and t <= last:
+                    raise ValueError("series times not strictly ascending")
+                last = t
+            except (KeyError, TypeError, ValueError) as exc:
+                failures.append(f"outlook_7d.series[{i}]: {exc}")
+                break
+    days = ol.get("days")
+    if not isinstance(days, list) or len(days) != 7:
+        failures.append("outlook_7d.days must hold exactly 7 cards")
+    else:
+        try:
+            dates = [dt.date.fromisoformat(d["date"]) for d in days]
+            if any((b - a).days != 1 for a, b in zip(dates, dates[1:])):
+                failures.append("outlook_7d.days must be consecutive dates")
+        except (KeyError, TypeError, ValueError):
+            failures.append("outlook_7d.days dates unparseable")
+    sources = ol.get("sources")
+    if not isinstance(sources, dict):
+        failures.append("outlook_7d.sources must be an object")
+    else:
+        for name, h in sources.items():
+            if not isinstance(h, dict) or h.get("status") not in ("ok", "degraded", "unavailable"):
+                failures.append(f"outlook_7d.sources.{name} has an invalid status")
+    worst = (ol.get("worst") or {}).get("flood_chance")
+    if worst:
+        try:
+            if _station_stamp(worst["time"]) < _aware_time(forecast.get("generated_utc")) - dt.timedelta(hours=1):
+                failures.append("outlook_7d.worst.flood_chance is in the past")
+        except (KeyError, TypeError, ValueError):
+            failures.append("outlook_7d.worst.flood_chance unparseable")
     return failures
 
 

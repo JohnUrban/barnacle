@@ -215,6 +215,7 @@
   function potFor(p) {
     // per-day burst potential from the outlook; the near-term production
     // potential applies only to production points (audit R6)
+    if (p.burst_potential_navd88 != null) return p.burst_potential_navd88;
     var day = (p.time || "").slice(0, 10);
     if (POTD[day] != null) return POTD[day];
     return p.outlook ? null : POT;

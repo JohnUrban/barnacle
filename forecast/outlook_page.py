@@ -169,13 +169,22 @@ def _rain_line(rp):
                     f"({_e(_regime_word(rp.get('burst_regime')))})")
     elif rp.get("burst_signal"):
         bits.append("burst-capable hours flagged, magnitude below the potential threshold")
+    if rp.get("burst_at_high_tide_navd88") is not None:
+        inch = (rp["burst_at_high_tide_navd88"] - 3.52) * 12.0
+        ht = rp.get("high_tide_navd88")
+        bits.append(f"the same burst on the day's high tide ({(ht + 2.82):.1f} ft MLLW) → "
+                    f"<b>{inch:+.1f}\u2033</b> ({_e(_regime_word(rp.get('burst_at_high_tide_regime')))})")
     if rp.get("nbm_p90_6h_in") is not None:
         chance = rp.get("nbm_p_ge_half_in_6h_pct")
         chance_txt = f"{chance:.0f}% chance of ≥0.5 in in 6 h" if chance is not None else "chance n/a"
         if rp.get("nbm_p90_potential_navd88") is not None:
             inch = (rp["nbm_p90_potential_navd88"] - 3.52) * 12.0
+            hi = ""
+            if rp.get("nbm_p90_at_high_tide_navd88") is not None:
+                hi = (f", on the high tide <b>{(rp['nbm_p90_at_high_tide_navd88'] - 3.52) * 12.0:+.1f}\u2033</b> "
+                      f"({_e(_regime_word(rp.get('nbm_p90_at_high_tide_regime')))})")
             bits.append(f"NBM 90th-pct rain {rp['nbm_p90_6h_in']:.2f} in/6 h → potential <b>{inch:+.1f}\u2033</b> "
-                        f"({_e(_regime_word(rp.get('nbm_p90_regime')))}); {chance_txt}")
+                        f"({_e(_regime_word(rp.get('nbm_p90_regime')))}){hi}; {chance_txt}")
         else:
             bits.append(f"NBM 90th-pct rain {rp['nbm_p90_6h_in']:.2f} in/6 h; {chance_txt}")
     return "Rain pathway: " + "; ".join(bits)

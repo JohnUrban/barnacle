@@ -200,26 +200,48 @@ def _render_day_cards_html(forecast):
         rain_risky = bool(day_alerts) or bool(
             pr.get("level") and (rain.get("thunder")
                                  or (rain.get("peak_in_hr") or 0) >= 0.15))
-        if tide_rank >= 2 or (tide_rank >= 1 and not rain_risky):
+        dw = next((d for d in (forecast.get("day_worst") or []) if d.get("day") == day), None)
+        if dw:
+            # audit R7 / rule 6: the badge and the ribbon read the day-scoped
+            # WORST PATHWAY (tide, tank line, burst scenario, rain watch)
+            if dw.get("rain_watch_label") and dw.get("rank", 0) <= 1 \
+                    and dw.get("pathway") in ("rain (watch)", "tide"):
+                badge = dw["rain_watch_label"]
+                badge_cls = "light" if dw.get("rank", 0) >= 1 else "dry"
+                if dw.get("pathway") == "tide" and dw.get("rank", 0) == 1:
+                    badge = regime_display("street").upper() + " / " + badge
+            else:
+                badge_cls = dw.get("regime") or "dry"
+                badge = regime_display(badge_cls).upper()
+                if str(dw.get("pathway", "")).startswith("rain ("):
+                    badge += " (RAIN)"
+            rank = (dw.get("rank", 0), 1 if dw.get("rain_watch") else 0)
+        elif tide_rank >= 2 or (tide_rank >= 1 and not rain_risky):
             badge_cls = next(k for k, v in SEVERITY_RANK.items()
                              if v == tide_rank)
             badge = regime_display(badge_cls).upper()
+            rank = (tide_rank, 1 if rain_risky else 0)
         elif rain_risky:
             badge = ("RAIN FLOOD RISK" if pr.get("level") == "elevated"
                      else "POSSIBLE RAIN FLOODING")
             badge_cls = "light"
+            rank = (tide_rank, 1)
         else:
             badge_cls = "dry" if tide_rank == 0 else "street"
             badge = regime_display(badge_cls).upper()
+            rank = (tide_rank, 0)
         cards.append({"day": day, "kicker": kickers[day], "badge": badge,
                       "badge_cls": badge_cls, "tide_rows": tide_rows,
-                      "rain_line": rain_line,
-                      "rank": (tide_rank, 1 if rain_risky else 0)})
+                      "rain_line": rain_line, "rank": rank})
     worst = max(cards, key=lambda c: c["rank"])
     html_cards = []
     for c in cards:
         is_today = c["day"] == days[0]
-        ribbon = (' <span class="dc-worst">&#9650; WORST OF 72 H</span>'
+        ribbon = (' <span class="dc-worst">&#9650; WORST OF 72 H'
+                  + ((' &middot; ' + _html_escape(str(next((d.get("pathway") for d in
+                       (forecast.get("day_worst") or []) if d.get("day") == c["day"]), "")))) 
+                     if forecast.get("day_worst") else "")
+                  + '</span>'
                   if c is worst and c["rank"] > (0, 0) else "")
         extra = ""
         if is_today:
@@ -916,7 +938,7 @@ def _render_low_tides_text(forecast):
     lows = forecast.get("low_tides") or []
     if not lows:
         return []
-    lines = ["Low tides in next 24h:"]
+    lines = ["Low tides, next 72 h:"]
     for lt in lows:
         when = format_time_full(lt["time"])
         lines.append(f"  {when}  —  {lt['value_mllw']:.2f} ft MLLW")
@@ -938,7 +960,7 @@ def _render_low_tides_html(forecast):
         )
     return (
         '<section class="low-tides">'
-        '<h2>Low tides in next 24h</h2>'
+        '<h2>Low tides, next 72 h</h2>'
         '<table class="history-table">'
         '<thead><tr><th>Time</th><th>Level (ft MLLW)</th></tr></thead>'
         f'<tbody>{rows}</tbody></table>'
@@ -1169,11 +1191,15 @@ def _landmarks_section_html(forecast, today=None, wrapper="section",
     elif wrapper == "section":
         landmarks_section = (
             '<section class="landmarks" id="landmarks">'
-            '<h2>Landmarks today</h2>' + body + '</section>'
+            '<h2>Landmarks at the worst tide of the 72 h ('
+            + _html_escape(format_time_short(forecast.get("peak_time_local") or ""))
+            + ')</h2>' + body + '</section>'
         )
     else:
         landmarks_section = (
-            '<h3>Landmarks today</h3>'
+            '<h3>Landmarks at the worst tide of the 72 h ('
+            + _html_escape(format_time_short(forecast.get("peak_time_local") or ""))
+            + ')</h3>'
             '<div style="background:white;padding:8px;border-radius:4px">'
             + body + '</div>'
         )
@@ -1213,8 +1239,19 @@ def render_email(forecast):
     if _lb and (_lb.get("rel_grate_in") or 0) > 0:
         _today_head += (f" (so far: {regime_display(_lb.get('regime') or '').upper()}"
                         f" {_lb['rel_grate_in']:+.1f}\")")
+    # audit R7 / rule 6: WORST 72H is the worst PATHWAY across the three days,
+    # not the tide-keyed peak; the tide peak stays as the detail.
+    _dws = forecast.get("day_worst") or []
+    if _dws:
+        _w = max(_dws, key=lambda d: (d.get("rank", 0), d.get("water_navd88") or 0))
+        _wtxt = regime_display(_w.get("regime") or "dry").upper()
+        if str(_w.get("pathway", "")).startswith("rain ("):
+            _wtxt += " (RAIN)"
+        if _w.get("rain_watch_label") and _w.get("rank", 0) <= 1:
+            _wtxt = _w["rain_watch_label"]
+        headline = _wtxt
     subject = (f"[342 Bay] TODAY {_today_head} | WORST 72H {headline}: "
-               f"{peak_ft:.2f} ft at {format_time_short(peak_t)} "
+               f"tide peak {peak_ft:.2f} ft at {format_time_short(peak_t)} "
                f"({subject_short} {subject_above:+.1f}\")")
 
     # Format the list of all high tides in next 24h.
@@ -3118,8 +3155,8 @@ def render_html_page(forecast):
         else:
             # 2026-09-23: measured error at this lead replaces the label
             _acc = accuracy_for_lead(forecast, t.get("hours_from_now"))
-            conf_cell = (f'<td class="note">&plusmn;{_acc["mae_ft"]:.2f} ft '
-                         f'<span class="note">(n={_acc["n"]})</span></td>'
+            conf_cell = (f'<td class="note">{_acc["mae_ft"]:.2f} ft '
+                         f'<span class="note">({_acc["n"]} predictions)</span></td>'
                          if _acc else '<td class="note">no data yet</td>')
         tide_rows += (
             f'<tr{row_class}{data_attr}>'
@@ -3326,7 +3363,7 @@ def render_html_page(forecast):
       <label><input type="radio" name="duration" value="72" checked> 72h</label>
     </div>
     <table class="tide-table">
-      <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th><th>Error so far</th></tr></thead>
+      <thead><tr><th>Time</th><th>Pred (ft)</th><th>Surge</th><th>Peak (ft)</th><th>Highest landmark</th><th>Above</th><th>Rel</th><th>Regime</th><th>Peak MAE at this lead</th></tr></thead>
       <tbody>{tide_rows}</tbody>
     </table>
     <details class="chart-explain">
@@ -3338,10 +3375,11 @@ def render_html_page(forecast):
        chart, full landmark table). <b>Above</b> = inches above the highest
        exceeded landmark (negative if water below the lowest landmark).
        <b>Rel</b> = inches above the lowest landmark (lowest road corner,
-       3.64 NAVD88) — always. <b>Error so far</b> = mean absolute error of
-       past predictions made this far ahead of their tide (last 14 days,
-       from the predictions log scored against NOAA observed peaks) —
-       measured, not a label.
+       3.64 NAVD88) — always. <b>Peak MAE at this lead</b> = mean absolute
+       error of past Sandy Hook tide-PEAK predictions made this far ahead
+       of their tide (last 14 days, predictions log scored against NOAA
+       observed peaks). It is gauge skill, not a flood-depth interval
+       and not rain skill; hourly issuances are correlated.
        Surge persistence is increasingly unreliable
        for tides beyond ~24h out — use the longer windows for planning,
        not for trust. The most recent high tide stays visible (greyed

@@ -26,15 +26,15 @@ class ConfidencePhaseOutTests(unittest.TestCase):
         joined = "\n".join(lines)
         self.assertNotIn("Confidence", joined)
         self.assertNotIn("LOW", joined)
-        self.assertIn("Forecast error so far", joined)
-        self.assertIn("0-3 h ±0.11 ft (n=12)", joined)
+        self.assertIn("Past Sandy Hook tide-peak error", joined)
+        self.assertIn("0-3 h MAE 0.11 ft (12 predictions)", joined)
 
     def test_summary_html_shows_error_not_label(self):
         html = rendering._render_summary_html(_forecast())
         self.assertNotIn("Confidence:", html)
         self.assertNotIn("confidence-low", html)
         self.assertIn("tldr-accuracy", html)
-        self.assertIn("±0.20 ft", html)
+        self.assertIn("MAE 0.20 ft", html)
 
     def test_no_data_is_stated_plainly(self):
         line = ff.format_accuracy_line(_forecast(with_acc=False))
@@ -70,8 +70,35 @@ class ConfidencePhaseOutTests(unittest.TestCase):
                 mock.patch.object(ff, "plain_language_summary", return_value="x"), \
                 mock.patch.object(ff, "_compute_regime_band", return_value=None):
             ff._attach_summary_and_confidence(fc)
-        self.assertIn(fc["confidence_level"], ("low", "medium", "high"))
+        # 2026-09-23: the fields are gone from the forecast dict (and so the JSON)
+        for key in ("confidence_level", "confidence_reason", "confidence_uncertainty_ft",
+                    "confidence_regime_band"):
+            self.assertNotIn(key, fc)
         self.assertEqual(fc["accuracy_by_lead"]["buckets"], [])
+
+    def test_ledger_gates_accept_the_retired_empty_label(self):
+        from forecast import check_artifacts
+        import tempfile, os, csv
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "predictions_log.csv")
+            fields = check_artifacts.CSV_SCHEMAS["data/predictions_log.csv"]
+            with open(path, "w", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=fields); w.writeheader()
+                w.writerow({"prediction_made_at": "2026-09-23T10:00:00Z", "target_tide_time": "2026-09-23 18:19-04:00",
+                            "hours_until_peak": "12.32", "predicted_mllw_astronomical": "5.1", "surge_ft_predicted": "1.8",
+                            "surge_source": "nws-coastal-flood-product", "sh_peak_mllw_predicted": "6.9",
+                            "peak_rain_in_hr_predicted": "", "water_navd88_predicted": "4.08", "regime_predicted": "street",
+                            "cold_lockout": "false", "confidence_level": "", "model_version": "v0.10.4"})
+            self.assertEqual([x for x in check_artifacts.validate_csv_semantics(
+                path, "data/predictions_log.csv", now_utc=__import__("datetime").datetime(2026, 9, 23, 11, tzinfo=__import__("datetime").timezone.utc))
+                if "confidence" in x], [])
+
+    def test_error_line_is_named_as_gauge_skill(self):
+        line = ff.format_accuracy_line(_forecast())
+        self.assertIn("Past Sandy Hook tide-peak error", line)
+        self.assertIn("gauge skill", line)
+        self.assertNotIn("\u00b1", line)
+        self.assertIn("MAE 0.11 ft (12 predictions)", line)
 
 
 if __name__ == "__main__":

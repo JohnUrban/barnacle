@@ -544,17 +544,32 @@ def add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn):
         if burst_est > 0.1 and potential_fn:
             pots = [v for v in potential_fn(burst_est, BURST_LOW_TIDE_BAY_NAVD88) if v is not None]
             potential = max(pots) if pots else None
+
+        def _pot_at(rate, bay):
+            if rate is None or rate <= 0.1 or not potential_fn or bay is None:
+                return None
+            vals = [v for v in potential_fn(rate, max(bay, BURST_LOW_TIDE_BAY_NAVD88)) if v is not None]
+            return max(vals) if vals else None
+        # COMPOUND (John 2026-09-23): the burst evaluated at each burst-capable
+        # hour's OWN tide level (the tank sits on the bay), and at the day's
+        # highest tide. The low-tide figure above stays as the rain-alone view.
+        high_tide = max((p["tide_navd88"] for p in pts if p.get("tide_navd88") is not None), default=None)
+        compound = _pot_at(burst_est, high_tide) if burst_signal else None
+        for p in pts:
+            if p.get("burst_risk") and burst_est > 0.1:
+                p["burst_potential_navd88"] = _r(_pot_at(burst_est, p.get("tide_navd88")), 3)
         # NBM 90th-percentile scenario (NOAA probabilistic rain): the rain
         # band's HIGH END, labeled, shown beside its exceedance chance. It
         # does not drive the headline (the P-ETSS high end does not either).
         band = d.get("nbm_band") or {}
         p90_6h = band.get("p90_6h_max_in")
-        p90_est = p90_pot = None
+        p90_est = p90_pot = p90_compound = None
         if p90_6h:
             p90_est = min(1.7 * (p90_6h / 0.55), BURST_ANALOG_MAX_IN_HR)
             if p90_est > 0.1 and potential_fn:
                 pots = [v for v in potential_fn(p90_est, BURST_LOW_TIDE_BAY_NAVD88) if v is not None]
                 p90_pot = max(pots) if pots else None
+                p90_compound = _pot_at(p90_est, high_tide)
         # R3: with no rain forecast for the day the rain regimes are UNKNOWN,
         # never "dry"; with partial coverage they are labeled partial.
         if coverage == 0.0:
@@ -564,9 +579,11 @@ def add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn):
             burst_regime = classify_fn(potential) if potential is not None else "dry"
         p90_regime = classify_fn(p90_pot) if p90_pot is not None else None
         tidal_regime = d.get("regime_max") or "dry"
+        compound_regime = classify_fn(compound) if compound is not None else "dry"
         candidates = [(REGIME_RANK.get(tidal_regime, 0), tidal_regime, "tide"),
                       (REGIME_RANK.get(rain_regime, 0), rain_regime, "rain (tank line)"),
-                      (REGIME_RANK.get(burst_regime, 0), burst_regime, "rain (burst scenario)")]
+                      (REGIME_RANK.get(burst_regime, 0), burst_regime, "rain (burst scenario)"),
+                      (REGIME_RANK.get(compound_regime, 0), compound_regime, "rain burst on the high tide")]
         rank, regime, pathway = max(candidates)
         d.update({
             "rain_pathway": {
@@ -577,6 +594,11 @@ def add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn):
                 "burst_potential_navd88": _r(potential, 2), "burst_regime": burst_regime,
                 "nbm_p90_6h_in": _r(p90_6h, 2), "nbm_p90_est_in_hr": _r(p90_est, 2),
                 "nbm_p90_potential_navd88": _r(p90_pot, 2), "nbm_p90_regime": p90_regime,
+                "high_tide_navd88": _r(high_tide, 2),
+                "burst_at_high_tide_navd88": _r(compound, 2),
+                "burst_at_high_tide_regime": classify_fn(compound) if compound is not None else None,
+                "nbm_p90_at_high_tide_navd88": _r(p90_compound, 2),
+                "nbm_p90_at_high_tide_regime": classify_fn(p90_compound) if p90_compound is not None else None,
                 "nbm_p_ge_half_in_6h_pct": band.get("p_ge_half_in_6h_max_pct"),
                 "nbm_p_ge_1in_6h_pct": band.get("p_ge_1in_6h_max_pct"),
                 "rain_available": coverage > 0.0,
@@ -604,7 +626,9 @@ def worst_points(series, days):
     for p in future:
         lvl, path = p["water_navd88"], ("rain (tank line)" if p.get("pluvial_navd88") is not None
                                         and p["pluvial_navd88"] >= p["tide_navd88"] else "tide")
-        pot = pot_by_day.get(p["time"][:10])
+        pot = p.get("burst_potential_navd88")
+        if pot is None:
+            pot = pot_by_day.get(p["time"][:10])
         if p.get("burst_risk") and pot is not None and pot > lvl:
             lvl, path = pot, "rain (burst scenario)"
         if best is None or lvl > best[0]:

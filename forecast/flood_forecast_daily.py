@@ -1063,7 +1063,7 @@ def update_forecast_accuracy():
             "actual_peak_observed_mllw":    actual_peak,
             "actual_peak_observed_time":    actual_time or "",
             "mllw_error_ft":                pred_peak - actual_peak,
-            "confidence_level":             fc.get("confidence_level", ""),
+            "confidence_level":             "",   # labels retired 2026-09-23
         })
 
     if new_rows:
@@ -1116,7 +1116,7 @@ def append_predictions_log(forecast):
     now_utc = dt.datetime.now(dt.timezone.utc)
     now_iso = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
     cold = bool(forecast.get("cold_lockout", False))
-    confidence_level = forecast.get("confidence_level", "") or ""
+    confidence_level = ""            # labels retired 2026-09-23 (column kept)
 
     rows_to_write = []
     for t in forecast.get("all_tides", []) or []:
@@ -2569,6 +2569,15 @@ def build_forecast():
     today_rel_grate_sw_in = (round((today_peak_water - GRATE_SW) * 12, 1)
                              if today_peak_water is not None else None)
 
+    # DAY-SCOPED WORST PATHWAY (audit R7 / rule 6): the single result the
+    # landing cards, today's headline and the email subject consume.
+    try:
+        day_worst = compute_day_worst(all_tides, water_series, pluvial_risk,
+                                      rain_outlook, _do_days)
+    except Exception as e:
+        print(f"WARNING: day_worst failed: {e}", flush=True)
+        day_worst = []
+
     # 7-DAY OUTLOOK (2026-09-23): a NEW display-only field built from its
     # own adapters; a failure here degrades only the outlook entries.
     outlook_7d = None
@@ -2589,6 +2598,7 @@ def build_forecast():
     return {
         "generated_utc": generated_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "outlook_7d": outlook_7d,
+        "day_worst": day_worst,
         "forecast_schema_version": FORECAST_SCHEMA_VERSION,
         "model_version": CURRENT_MODEL_VERSION,
         "input_health": input_health,
@@ -2850,11 +2860,12 @@ def format_accuracy_line(forecast):
     acc = forecast.get("accuracy_by_lead") or {}
     buckets = acc.get("buckets") or []
     if not buckets:
-        return "Forecast error so far: no scored tides in the last 14 days yet."
-    bits = [f"{b['label'].replace(' before peak', '')} \u00b1{b['mae_ft']:.2f} ft (n={b['n']})"
+        return "Past Sandy Hook tide-peak error: no scored tides in the last 14 days yet."
+    bits = [f"{b['label'].replace(' before peak', '')} MAE {b['mae_ft']:.2f} ft ({b['n']} predictions)"
             for b in buckets]
-    return (f"Forecast error so far (mean |error| of past predictions, last "
-            f"{acc.get('window_days', 14)} days, {acc.get('n_tides', 0)} tides): "
+    return (f"Past Sandy Hook tide-peak error (mean |error| by lead, last "
+            f"{acc.get('window_days', 14)} days, {acc.get('n_total', 0)} predictions on "
+            f"{acc.get('n_tides', 0)} tides; gauge skill, not street depth or rain skill): "
             + " \u00b7 ".join(bits))
 
 
@@ -2865,13 +2876,13 @@ def _attach_summary_and_confidence(forecast):
     confidence_level column and its gate enum depend on them) but no human
     surface shows them any more (John, 2026-09-23: the labels were never
     useful once; error statistics replace them)."""
-    level, reason = assess_confidence(forecast)
-    forecast["confidence_level"] = level
-    forecast["confidence_reason"] = reason
-    forecast["confidence_uncertainty_ft"] = _confidence_uncertainty_ft(level)
-    forecast["confidence_regime_band"] = _compute_regime_band(
-        forecast, forecast["confidence_uncertainty_ft"]
-    )
+    # 2026-09-23 (owner decision): the confidence labels are gone from the
+    # JSON too. assess_confidence() remains an internal diagnostic; the
+    # ledgers' confidence_level column is written empty from now on and the
+    # gates accept "" (historical rows keep their labels).
+    for key in ("confidence_level", "confidence_reason",
+                "confidence_uncertainty_ft", "confidence_regime_band"):
+        forecast.pop(key, None)
     forecast["accuracy_by_lead"] = _accuracy_by_lead_summary()
     forecast["plain_language_summary"] = plain_language_summary(forecast)
     # Unusual-forecast flag (HANDOFF 16e): where does today's peak sit in
@@ -3585,6 +3596,12 @@ def headline_for(forecast, regime, scope="today"):
     the detail. CSS class shifts to 'light' (amber) so the banner
     color matches the message."""
     _pr_h = forecast.get("pluvial_risk") or {}
+    # audit R7 / rule 6: the day-scoped worst pathway outranks a tide-only
+    # regime whenever the rain pathway (tank line or burst) is higher.
+    dw = (forecast.get("day_worst") or [None])[0] if scope == "today" else None
+    if dw and dw.get("pathway", "").startswith("rain (") and dw.get("pathway") != "rain (watch)" \
+            and dw.get("rank", 0) > _PATHWAY_RANK.get(regime, 0):
+        return (regime_display(dw["regime"]).upper() + " (RAIN)", dw["regime"])
     if scope == "today" and _pr_h.get("risk_today") is False:
         # risk window opens tomorrow — TODAY's headline must not
         # claim it (2026-07-20 scope fix); the 72-h strip carries it.
@@ -4553,6 +4570,75 @@ def _alert_window_tides(forecast):
         hfn = t.get("hours_from_now")
         if hfn is None or hfn <= ALERT_WINDOW_HOURS:
             out.append(t)
+    return out
+
+
+_PATHWAY_RANK = {"dry": 0, "cold_lockout": 0, "street": 1, "light": 2,
+                 "moderate": 3, "severe": 4}
+
+
+def compute_day_worst(all_tides, water_series, pluvial_risk, rain_outlook, days):
+    """PRODUCTION, day-scoped, cross-pathway worst result (audit
+    2026-09-23-a1 R7; AGENTS rule 6 "no tidal supremacy"). One value per
+    calendar day that every headline arm consumes:
+
+      tide   the worst tidal regime among that day's high tides
+      tank   the regime of the day's highest continuous water (tide plus
+             the rain tank line) inside the 30-h series
+      burst  the burst-potential level on the day's burst-capable hours
+      watch  the categorical rain watch (alerts / convective wording),
+             rank 1 when no numeric pathway is higher
+
+    Returns [{day, regime, rank, pathway, water_navd88, rain_watch,
+    rain_watch_label}] in `days` order."""
+    pr = pluvial_risk or {}
+    pots = [v for v in (pr.get("potential_low_tide_navd88"),
+                        pr.get("potential_low_tide_navd88_tanh")) if v is not None]
+    pot = max(pots) if pots else None
+    ro_by_day = {d.get("day"): d for d in (rain_outlook or [])}
+    alerts = pr.get("nws_flood_alerts") or []
+
+    def alert_covers(day):
+        for a in alerts:
+            on = (a.get("onset") or "")[:10]
+            en = (a.get("ends") or "")[:10]
+            if (not on or on <= day) and (not en or en >= day):
+                return True
+        return False
+    out = []
+    for day in days:
+        cands = []
+        t_rank, t_reg = 0, "dry"
+        for t in (all_tides or []):
+            if not (t.get("time") or "").startswith(day):
+                continue
+            r = ((t.get("depths_in") or {}).get("regime")) or "dry"
+            if _PATHWAY_RANK.get(r, 0) > t_rank:
+                t_rank, t_reg = _PATHWAY_RANK.get(r, 0), r
+        cands.append((t_rank, t_reg, "tide", None))
+        pts = [p for p in (water_series or []) if (p.get("time") or "").startswith(day)]
+        wmax = max((p["water_navd88"] for p in pts if p.get("water_navd88") is not None), default=None)
+        tmax = max((p["tide_navd88"] for p in pts if p.get("tide_navd88") is not None), default=None)
+        if wmax is not None:
+            reg = classify_regime_from_water(wmax)
+            path = "rain (tank line)" if (tmax is None or wmax > tmax + 0.02) else "tide"
+            cands.append((_PATHWAY_RANK.get(reg, 0), reg, path, round(wmax, 3)))
+        if pot is not None and any(p.get("burst_risk") for p in pts):
+            reg = classify_regime_from_water(pot)
+            cands.append((_PATHWAY_RANK.get(reg, 0), reg, "rain (burst scenario)", round(pot, 3)))
+        ro = ro_by_day.get(day) or {}
+        watch = alert_covers(day) or bool(
+            pr.get("level") and (ro.get("thunder") or (ro.get("peak_in_hr") or 0) >= 0.15))
+        rank, reg, path, lvl = max(cands, key=lambda c: (c[0], c[3] or 0))
+        watch_label = ""
+        if watch and rank <= 1:
+            watch_label = ("RAIN FLOOD RISK" if pr.get("level") == "elevated"
+                           else "POSSIBLE RAIN FLOODING")
+            if rank == 0:
+                rank, reg, path = 1, "light", "rain (watch)"
+        out.append({"day": day, "regime": reg, "rank": rank, "pathway": path,
+                    "water_navd88": lvl, "rain_watch": bool(watch),
+                    "rain_watch_label": watch_label})
     return out
 
 
@@ -6338,8 +6424,10 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           var pt = MS.series[i];
           var lvl = pt.w;
           var burst = false;
-          var potHere = (MS.pot_by_day && MS.pot_by_day[pt.t.slice(0, 10)] != null)
-            ? MS.pot_by_day[pt.t.slice(0, 10)] : (pt.o ? null : MS.potential);
+          // per-hour scenario at that hour's own tide level when present
+          var potHere = (pt.pot != null) ? pt.pot
+            : (MS.pot_by_day && MS.pot_by_day[pt.t.slice(0, 10)] != null)
+              ? MS.pot_by_day[pt.t.slice(0, 10)] : (pt.o ? null : MS.potential);
           if (bToggle && bToggle.checked && pt.b && potHere != null) {{
             lvl = Math.max(lvl, potHere);
             burst = true;
@@ -7465,7 +7553,7 @@ def _map_time_series(forecast):
             continue
         pts.append({"t": pt["time"], "w": pt["water_navd88"],
                     "tide": pt.get("tide_navd88"), "b": bool(pt.get("burst_risk")),
-                    "o": True})
+                    "pot": pt.get("burst_potential_navd88"), "o": True})
     # "worst" buttons search the FUTURE only (audit R6): history stays on the
     # slider for context but can never win "next 7 days"
     try:
@@ -7488,7 +7576,9 @@ def _map_time_series(forecast):
         if best_t is None or tide > best_t:
             best_t, worst["tide"] = tide, i
         lvl = q["w"]
-        pot = pot_by_day.get(q["t"][:10], prod_pot if not q["o"] else None)
+        pot = q.get("pot")
+        if pot is None:
+            pot = pot_by_day.get(q["t"][:10], prod_pot if not q["o"] else None)
         if q["b"] and pot is not None and pot > lvl:
             lvl = pot
         if best_f is None or lvl > best_f:

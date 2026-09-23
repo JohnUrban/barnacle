@@ -39,8 +39,10 @@ or promotion in the audit commit. Claude owes round-02 reply.
   unknown != dry. R9: budget semantics fixed; CI installs the decoder and
   forbids skips. SHIP B: R5 prorated/[start,end) rain, R6 future-only
   worst + offset-aware browser now + toggles follow the selection, R8
-  CFW anchors the hourly line, R2 per-tide scoring. Ship C (R7/R11/R12,
-  JSON confidence removal, burst-at-high-tide line), then the reply.
+  CFW anchors the hourly line, R2 per-tide scoring. SHIP C: R7 day_worst
+  feeds cards/ribbon/headline/email, R11 scope labels, R12 wording, R10
+  outlook gate, confidence fields removed from JSON, burst-at-high-tide
+  compound scenario. Round-02 reply next (audits/2026-09-23-a1/02).
 
 ## Live event: coastal advisory CF.Y.0021
 

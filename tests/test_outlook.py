@@ -506,6 +506,108 @@ class AuditRepairBTests(unittest.TestCase):
         self.assertTrue(r["verdict"].startswith("READY"))
 
 
+class AuditRepairCTests(unittest.TestCase):
+    """Audit R7 / R10 / R11 / R12 and the compound burst-at-high-tide scenario."""
+
+    def _rain_day_forecast(self):
+        return {"all_tides": [{"time": "2026-09-24 18:00-04:00", "forecast_peak_mllw": 6.8, "hours_from_now": 30,
+                               "depths_in": {"regime": "street"}}],
+                "water_series": [{"time": "2026-09-23 14:00-04:00", "tide_navd88": 2.0, "water_navd88": 5.2, "burst_risk": True},
+                                 {"time": "2026-09-23 15:00-04:00", "tide_navd88": 2.2, "water_navd88": 5.0, "burst_risk": True}],
+                "rain_outlook_72h": [{"day": "2026-09-23", "cum_in": 3, "max_pop_pct": 100, "thunder": True, "peak_in_hr": 3}],
+                "pluvial_risk": {"level": "elevated", "potential_low_tide_navd88": 6.0, "risk_today": True},
+                "peak_time_local": "2026-09-24 18:00-04:00", "peak_forecast_observed_mllw": 6.8,
+                "generated_utc": "2026-09-23T11:00:00Z"}
+
+    def test_r7_day_worst_ranks_a_rain_day_above_a_smaller_tide_day(self):
+        fc = self._rain_day_forecast()
+        dw = ff.compute_day_worst(fc["all_tides"], fc["water_series"], fc["pluvial_risk"],
+                                  fc["rain_outlook_72h"], ["2026-09-23", "2026-09-24", "2026-09-25"])
+        self.assertEqual(dw[0]["pathway"], "rain (burst scenario)")
+        self.assertEqual(dw[0]["regime"], ff.classify_regime_from_water(6.0))
+        self.assertEqual(dw[1]["pathway"], "tide")
+        self.assertEqual(dw[1]["regime"], "street")
+        self.assertGreater(dw[0]["rank"], dw[1]["rank"])
+        fc["day_worst"] = dw
+        # ribbon on the RAIN day, not the tide day
+        with mock.patch.object(ff, "_station_local_now", return_value=ff.parse_station_local_time("2026-09-23 07:00-04:00")), \
+                mock.patch.object(__import__("forecast.rendering", fromlist=["x"]), "_station_local_now",
+                                  return_value=ff.parse_station_local_time("2026-09-23 07:00-04:00")):
+            from forecast import rendering
+            html = rendering._render_day_cards_html(fc)
+        sections = html.split("<section")[1:]
+        self.assertEqual(["WORST OF 72 H" in x for x in sections], [True, False, False])
+        self.assertIn("(RAIN)", sections[0])
+        # today's headline reads the rain pathway when it outranks the tide regime
+        head, cls = ff.headline_for(fc, "dry")
+        self.assertIn("(RAIN)", head)
+        self.assertEqual(cls, dw[0]["regime"])
+
+    def test_r7_email_subject_leads_with_the_worst_pathway(self):
+        fc = self._rain_day_forecast()
+        fc["day_worst"] = ff.compute_day_worst(fc["all_tides"], fc["water_series"], fc["pluvial_risk"],
+                                               fc["rain_outlook_72h"], ["2026-09-23", "2026-09-24", "2026-09-25"])
+        from forecast import rendering
+        src = open(Path(rendering.__file__).with_suffix(".py")).read()
+        self.assertIn("WORST 72H is the worst PATHWAY", src)
+
+    def test_r11_scope_labels(self):
+        from forecast import rendering
+        src = open(Path(rendering.__file__).with_suffix(".py")).read()
+        self.assertNotIn("Landmarks today", src)
+        self.assertNotIn("Low tides in next 24h", src)
+        self.assertIn("Landmarks at the worst tide of the 72 h", src)
+        self.assertIn("Low tides, next 72 h", src)
+
+    def test_r10_outlook_gate_rejects_invented_contracts(self):
+        base = {"generated_utc": "2026-09-23T11:00:00Z", "model_version": "v0.10.4"}
+        bad = dict(base, outlook_7d={"model_version": "invented", "horizon_hours": -1, "series": "bad",
+                                     "days": [], "sources": "x"})
+        failures = check_artifacts.validate_outlook_field(bad)
+        self.assertTrue(any("horizon_hours" in f for f in failures))
+        self.assertTrue(any("model_version" in f for f in failures))
+        self.assertTrue(any("series" in f for f in failures))
+        self.assertTrue(any("days" in f for f in failures))
+        self.assertTrue(any("sources" in f for f in failures))
+        ol = _build()
+        ol["model_version"] = "v0.10.4"
+        self.assertEqual(check_artifacts.validate_outlook_field(dict(base, outlook_7d=ol)), [])
+        self.assertEqual(check_artifacts.validate_outlook_field(dict(base, outlook_7d=None)), [])
+
+    def test_r10_outlook_ledger_semantics(self):
+        ol = _build()
+        rows = outlook.outlook_log_rows(ol, "2026-09-23T11:00:00Z", "v0.10.4")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "outlook_log.csv")
+            outlook.append_outlook_log(path, rows)
+            self.assertEqual(check_artifacts.validate_csv_semantics(path, "data/outlook_log.csv", now_utc=NOW + dt.timedelta(hours=1)), [])
+            bad = dict(rows[0], outlook_source="made-up", lead_h="-5")
+            outlook.append_outlook_log(path, [bad])
+            failures = check_artifacts.validate_csv_semantics(path, "data/outlook_log.csv", now_utc=NOW + dt.timedelta(hours=1))
+            self.assertTrue(any("outlook_source" in f for f in failures))
+            self.assertTrue(any("lead_h" in f for f in failures))
+
+    def test_compound_burst_on_the_high_tide_exceeds_the_low_tide_figure(self):
+        ol = _build(nbm_burst_in=3.0)
+        sat = next(d for d in ol["days"] if d["date"] == "2026-09-26")
+        rp = sat["rain_pathway"]
+        self.assertIsNotNone(rp["burst_potential_navd88"])
+        self.assertIsNotNone(rp["burst_at_high_tide_navd88"])
+        self.assertGreater(rp["burst_at_high_tide_navd88"], rp["burst_potential_navd88"])
+        self.assertIn(rp["burst_at_high_tide_regime"], ("light", "moderate", "severe"))
+        flagged = [p for p in ol["series"] if p["time"].startswith("2026-09-26") and p.get("burst_risk")]
+        self.assertTrue(flagged)
+        self.assertTrue(all(p.get("burst_potential_navd88") is not None for p in flagged))
+        # an hour on a higher tide gets a higher scenario level than one on a lower tide
+        hi = max(flagged, key=lambda p: p["tide_navd88"]); lo = min(flagged, key=lambda p: p["tide_navd88"])
+        self.assertGreaterEqual(hi["burst_potential_navd88"], lo["burst_potential_navd88"])
+        self.assertIn(sat["worst_pathway"], ("tide", "rain (tank line)", "rain (burst scenario)", "rain burst on the high tide"))
+        from forecast import outlook_page
+        html = outlook_page.render_outlook_page({"generated_utc": "x", "forecast_schema_version": "1.0",
+                                                 "model_version": "v", "outlook_7d": ol, "input_health": {}})
+        self.assertIn("the same burst on the day's high tide", html)
+
+
 class LedgerAndScoringTests(unittest.TestCase):
     def test_writer_output_passes_the_real_gate_and_round_trips(self):
         ol = _build()
