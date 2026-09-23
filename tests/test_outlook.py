@@ -313,7 +313,7 @@ class RainPathwayTests(unittest.TestCase):
             self.assertIsNotNone(p["tide_navd88"])
             self.assertIsNotNone(p["water_navd88"])
             self.assertIn(p["surge_source"], ("nwps", "nws_product", "petss_mid", "persist_decay", "astro"))
-        self.assertEqual({p["surge_source"] for p in S if 0 <= p["lead_h"] <= 60}, {"nwps"})
+        self.assertTrue({p["surge_source"] for p in S if 0 <= p["lead_h"] <= 60} <= {"nwps", "nws_product"})
         self.assertIn("nbm", {p["rain_source"] for p in S if p["lead_h"] > 80})
 
     def test_low_tide_burst_makes_rain_the_worst_pathway(self):
@@ -415,6 +415,97 @@ class MapSeriesTests(unittest.TestCase):
         self.assertIn("2026-09-26", pot_by_day)
 
 
+class AuditRepairBTests(unittest.TestCase):
+    """Audit 2026-09-23-a1 R5 / R6 / R8 / R2 regression checks."""
+
+    def test_r5_one_bucket_across_local_midnight_is_prorated(self):
+        # 00-06Z = 20:00-02:00 EDT: 4 h in 09-23, 2 h in 09-24
+        grid = {"series": {"qpf_in": [{"start": "2026-09-24T00:00:00Z", "hours": 6, "value": 0.6}]},
+                "reach": {"qpf_in": "2026-09-30T12:00:00Z"}}
+        days = outlook.build_days(NOW, [], {"grid": grid})
+        self.assertAlmostEqual(days[0]["qpf_in"], 0.4, places=2)
+        self.assertAlmostEqual(days[1]["qpf_in"], 0.2, places=2)
+        self.assertAlmostEqual(sum(d["qpf_in"] for d in days[:2]), 0.6, places=2)
+        # NBM buckets prorate the same way (uniform rate)
+        # contiguous 6-h NBM buckets from 06Z on 09-23; only the one ending 06Z on
+        # 09-24 (= 20:00-02:00 EDT, across local midnight) carries rain
+        nbm = []
+        for i in range(0, 32):
+            end = dt.datetime(2026, 9, 23, 12, tzinfo=UTC) + dt.timedelta(hours=6 * i)
+            nbm.append({"end_utc": end.strftime("%Y-%m-%dT%H:%M:%SZ"), "hours": 6,
+                        "qpf_in": 0.6 if end == dt.datetime(2026, 9, 24, 6, tzinfo=UTC) else 0.0,
+                        "pop_pct": 0.0})
+        grid2 = {"series": {"qpf_in": []}, "reach": {}}
+        days2 = outlook.build_days(NOW, [], {"grid": grid2, "nbm": {"buckets": nbm}})
+        self.assertAlmostEqual(days2[0]["qpf_in"], 0.4, places=2)
+        self.assertAlmostEqual(days2[1]["qpf_in"], 0.2, places=2)
+
+    def test_r5_bucket_edges_are_start_inclusive_end_exclusive(self):
+        at = outlook._hourly_rain_lookup([], [{"end_utc": "2026-09-24T06:00:00Z", "hours": 6, "qpf_in": 6.0}], [])
+        t = lambda h: dt.datetime.fromisoformat(f"2026-09-24T{h}:00+00:00")
+        self.assertEqual(at(t("00:00"))[0], 1.0)      # start belongs to the bucket
+        self.assertEqual(at(t("05:00"))[0], 1.0)
+        self.assertIsNone(at(t("06:00"))[0])          # end belongs to the next bucket
+
+    def test_r6_worst_points_ignore_history(self):
+        series = [{"time": "2026-09-23 05:00-04:00", "lead_h": -2, "tide_navd88": 8, "water_navd88": 8, "burst_risk": False},
+                  {"time": "2026-09-23 08:00-04:00", "lead_h": 1, "tide_navd88": 3, "water_navd88": 3, "burst_risk": False}]
+        w = outlook.worst_points(series, [])
+        self.assertEqual(w["tide"]["time"], "2026-09-23 08:00-04:00")
+        self.assertEqual(w["flood_chance"]["time"], "2026-09-23 08:00-04:00")
+
+    def test_r6_map_series_splices_by_instant_and_searches_the_future_only(self):
+        prod = [{"time": "2026-09-23 05:00-04:00", "water_navd88": 8.0, "tide_navd88": 8.0, "burst_risk": False},
+                {"time": "2026-09-23 08:00-04:00", "water_navd88": 3.0, "tide_navd88": 3.0, "burst_risk": False}]
+        ol = {"series": [{"time": "2026-09-23 09:00-04:00", "water_navd88": 4.0, "tide_navd88": 4.0, "burst_risk": False, "lead_h": 2}],
+              "worst": {"burst_potential_by_day": {}}}
+        fc = {"water_series": prod, "outlook_7d": ol, "pluvial_risk": {}, "generated_utc": "2026-09-23T11:00:00Z"}
+        pts, prod_len, _pot, worst = ff._map_time_series(fc)
+        self.assertEqual(prod_len, 2)
+        self.assertEqual(worst["tide"], 2)          # 09:00 (future), not the 05:00 crest
+        self.assertEqual(worst["flood"], 2)
+
+    def test_r6_browser_now_parsers_keep_the_offset(self):
+        html = ff._client_map_section_html if hasattr(ff, "_client_map_section_html") else None
+        landing = open(Path(__file__).resolve().parents[1] / "forecast" / "flood_forecast_daily.py").read()
+        town = open(Path(__file__).resolve().parents[1] / "docs" / "highlands.html").read()
+        for src in (landing, town):
+            self.assertIn("replace(' ', 'T')" if src is landing else 'replace(" ", "T")', src)
+            self.assertIn("instMs(", src)
+        self.assertNotIn("new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) >= now", town)
+
+    def test_r8_product_rows_anchor_the_continuous_line(self):
+        data = _fixture_data()
+        for p in data["nwps"]["series"]:
+            p["ft"] = 4.0                                   # conflicting hourly guidance
+        ol = _build(data=data, hourly_periods=[])
+        tide = next(t for t in ol["tides"] if t["time"] == "2026-09-23 18:19-04:00")
+        pt = next(p for p in ol["series"] if p["time"] == "2026-09-23 18:00-04:00")
+        self.assertEqual(tide["outlook_source"], "nws_product")
+        self.assertAlmostEqual(pt["tide_navd88"] - ff.MLLW_TO_NAVD88_OFFSET, 6.9, delta=0.15)
+        self.assertEqual(pt["surge_source"], "nws_product")
+        far = next(p for p in ol["series"] if p["time"] == "2026-09-23 10:00-04:00")   # > 6 h from any anchor
+        self.assertAlmostEqual(far["tide_navd88"] - ff.MLLW_TO_NAVD88_OFFSET, 4.0, delta=0.15)
+
+    def test_r2_one_tide_many_issuances_is_one_observation(self):
+        target = "2026-09-24 06:47-04:00"
+        rows = [dict(target_tide_time=target, lead_h=str(40 - i), nwps_mllw="6.5",
+                     persist_flat_mllw="7.5", outlook_mllw="6.5", generated_utc=f"run-{i}") for i in range(28)]
+        sc = outlook.score_shadow(rows, {target: 6.5})
+        r = sc["readiness"]["nwps_vs_persistence_le72h"]
+        self.assertEqual(r["n"], 1)
+        self.assertEqual(r["n_forecasts"], 56)
+        self.assertTrue(r["verdict"].startswith("NOT YET (1/28"))
+        self.assertEqual(sc["scored_tides"], 1)
+        # 28 distinct tides, one issuance each, candidate better -> READY
+        rows = [dict(target_tide_time=f"2026-10-{1 + i // 2:02d} {6 + 12 * (i % 2):02d}:00-04:00", lead_h="30",
+                     nwps_mllw="6.5", persist_flat_mllw="7.5", outlook_mllw="6.5") for i in range(28)]
+        obs = {r["target_tide_time"]: 6.5 for r in rows}
+        r = outlook.score_shadow(rows, obs)["readiness"]["nwps_vs_persistence_le72h"]
+        self.assertEqual(r["n"], 28)
+        self.assertTrue(r["verdict"].startswith("READY"))
+
+
 class LedgerAndScoringTests(unittest.TestCase):
     def test_writer_output_passes_the_real_gate_and_round_trips(self):
         ol = _build()
@@ -448,13 +539,13 @@ class LedgerAndScoringTests(unittest.TestCase):
         r = sc["readiness"]["nwps_vs_persistence_le72h"]
         self.assertTrue(r["verdict"].startswith("NOT YET"))
         self.assertLess(r["mae_candidate"], r["mae_baseline"])
+        # duplicating rows must NOT unlock READY (audit R2): still the same few tides
         big = rows * 10
         sc = outlook.score_shadow(big, observed)
-        self.assertTrue(sc["readiness"]["nwps_vs_persistence_le72h"]["verdict"].startswith("READY"))
-        worse = {k: v + 3.0 for k, v in observed.items()}   # everything far off: persistence flat wins? both err; make nwps lose
+        self.assertTrue(sc["readiness"]["nwps_vs_persistence_le72h"]["verdict"].startswith("NOT YET"))
         worse = {r["target_tide_time"]: float(r["persist_flat_mllw"]) for r in rows if r["persist_flat_mllw"]}
-        sc = outlook.score_shadow(big, worse)
-        self.assertTrue(sc["readiness"]["nwps_vs_persistence_le72h"]["verdict"].startswith("NOT BETTER"))
+        r = outlook.score_shadow(big, worse)["readiness"]["nwps_vs_persistence_le72h"]
+        self.assertGreater(r["mae_candidate"], r["mae_baseline"])
 
     def test_scoring_ignores_unobserved_and_unbucketed_rows(self):
         sc = outlook.score_shadow([{"target_tide_time": "x", "lead_h": "5", "outlook_mllw": "6"}], {})

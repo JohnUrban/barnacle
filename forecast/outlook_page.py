@@ -440,7 +440,8 @@ def _shadow(ol):
     for key, label in names.items():
         r = rd.get(key) or {}
         mae = ("" if r.get("mae_candidate") is None
-               else f" — MAE {r['mae_candidate']:.2f} vs {r['mae_baseline']:.2f} ft, n={r.get('n')}")
+               else f" — MAE {r['mae_candidate']:.2f} vs {r['mae_baseline']:.2f} ft on {r.get('n')} tides "
+                    f"({r.get('n_forecasts')} forecasts)")
         lis.append(f"<li><b>{_e(label)}:</b> {_e(r.get('verdict', 'NO DATA YET'))}{_e(mae)}</li>")
     buckets = sh.get("buckets") or []
     cols = ["astro", "nws_product", "nwps", "petss_p10", "petss_p90", "persist_flat",
@@ -452,19 +453,20 @@ def _shadow(ol):
         for c in cols:
             s = (b.get("sources") or {}).get(c)
             cells += ("<td>—</td>" if not s else
-                      f"<td>{s['mae']:.2f}<br><span class=\"note\">{s['bias']:+.2f}, n={s['n']}</span></td>")
+                      f"<td>{s['mae']:.2f}<br><span class=\"note\">{s['bias']:+.2f}, {s['n']} tides / {s.get('n_forecasts', '?')} fc</span></td>")
         body += f"<tr><td>{_e(b['label'])}</td>{cells}</tr>"
     return f"""
   <section>
     <h2>Shadow scoreboard: should guidance be promoted?</h2>
     <p class="note">Every run logs each source's value for each tide (data/outlook_log.csv, append-only).
-    Once a tide's observed peak is known, every source is scored against it. The verdicts compare
-    candidate and baseline on the SAME tides, and need {sh.get('min_n', 28) if False else 28} scored tides before
-    they can say READY. Scored rows so far: {sh.get('scored_rows', 0)}.</p>
+    Once a tide's observed peak is known, every source is scored against it. Sampling rule: within each
+    lead bucket every observed TIDE counts once (its issuances are averaged first), then error is taken
+    across tides; candidate and baseline are paired on the same tides, and READY needs 28 distinct scored
+    tides. Scored so far: {sh.get('scored_tides', 0)} tides from {sh.get('scored_rows', 0)} forecast rows.</p>
     <ul class="more-info-list">{"".join(lis)}</ul>
     <div class="table-wrap"><table class="tide-table">
       <thead><tr><th>Lead</th>{head}</tr></thead><tbody>{body}</tbody></table></div>
-    <p class="note">Cells: mean absolute error in ft, then bias and count.</p>
+    <p class="note">Cells: mean absolute error in ft of the Sandy Hook tide PEAK (gauge skill, not street depth), then bias, distinct tides and forecast rows.</p>
   </section>"""
 
 

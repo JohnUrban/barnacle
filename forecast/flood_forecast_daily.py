@@ -6313,6 +6313,16 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             }} catch (e) {{}}
           }});
         }}
+        function instMs(t) {{
+          // "2026-09-23 13:00-04:00" -> true instant (offset kept); a legacy
+          // naive stamp falls back to the browser's local reading
+          var d = new Date(String(t).replace(' ', 'T'));
+          if (isNaN(d.getTime())) {{
+            var m = String(t).match(/(\\d+)-(\\d+)-(\\d+) (\\d+):(\\d+)/);
+            d = m ? new Date(+m[1], m[2]-1, +m[3], +m[4], +m[5]) : new Date(NaN);
+          }}
+          return d.getTime();
+        }}
         function fmtT(t) {{
           var m = t.match(/(\\d{{4}})-(\\d{{2}})-(\\d{{2}}) (\\d{{2}}):(\\d{{2}})/);
           if (!m) return t;
@@ -6412,10 +6422,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           // ball travels, so "now" is always visible for orientation
           var nowMs2 = Date.now(), nowI = 0;
           for (var ni = 0; ni < TS.length; ni++) {{
-            var nm = TS[ni].t.match(/(\\d+)-(\\d+)-(\\d+) (\\d+):(\\d+)/);
-            if (nm && new Date(+nm[1], nm[2]-1, +nm[3], +nm[4], +nm[5]).getTime() >= nowMs2) {{
-              nowI = ni; break;
-            }}
+            if (instMs(TS[ni].t) >= nowMs2) {{ nowI = ni; break; }}
           }}
           c.strokeStyle = '#222222'; c.lineWidth = 1.2;
           c.beginPath(); c.moveTo(X(nowI), P); c.lineTo(X(nowI), H - P);
@@ -6463,10 +6470,9 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           var nowMs = Date.now();
           startI = 0;
           for (var i = 0; i < MS.series.length; i++) {{
-            var mm = MS.series[i].t.match(/(\\d{{4}})-(\\d{{2}})-(\\d{{2}}) (\\d{{2}}):(\\d{{2}})/);
-            if (mm && new Date(+mm[1], mm[2]-1, +mm[3], +mm[4], +mm[5]).getTime() >= nowMs) {{
-              startI = i; break;
-            }}
+            // offset-aware (audit R6): the stamp carries its UTC offset, so
+            // Date parses the true instant in any browser time zone
+            if (instMs(MS.series[i].t) >= nowMs) {{ startI = i; break; }}
           }}
           tSlider.value = String(startI);
           tSlider.addEventListener('input', scrubThrottled);
@@ -6479,7 +6485,14 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
           var bWF = document.getElementById('time-worst-flood');
           if (bNow) bNow.addEventListener('click', function() {{ jumpTo(startI); }});
           if (bWT) bWT.addEventListener('click', function() {{ jumpTo(MS.worst && MS.worst.tide); }});
-          if (bWF) bWF.addEventListener('click', function() {{ jumpTo(MS.worst && MS.worst.flood); }});
+          if (bWF) bWF.addEventListener('click', function() {{
+            // the selection includes burst potential; show it (audit R6)
+            if (bToggle && !bToggle.checked) {{
+              bToggle.checked = true;
+              try {{ localStorage.setItem('barnacle-burst-view', '1'); }} catch (e) {{}}
+            }}
+            jumpTo(MS.worst && MS.worst.flood);
+          }});
           scrub();
         }}
         applyThumb();
@@ -7430,21 +7443,35 @@ def _map_time_series(forecast):
     and worst = {"tide": index, "flood": index}: the highest bay water,
     and the highest of water / tank line / burst scenario."""
     pts = []
+
+    def _inst(stamp):
+        try:
+            return parse_station_local_time(stamp)
+        except (TypeError, ValueError):
+            return None
     for pt in (forecast.get("water_series") or []):
-        if pt.get("water_navd88") is None:
+        if pt.get("water_navd88") is None or _inst(pt.get("time")) is None:
             continue
         pts.append({"t": pt["time"], "w": pt["water_navd88"],
                     "tide": pt.get("tide_navd88"), "b": bool(pt.get("burst_risk")),
                     "o": False})
     prod_len = len(pts)
-    last = pts[-1]["t"] if pts else ""
+    # splice by INSTANT, never by string (audit R6: fall-back hour ordering)
+    last = _inst(pts[-1]["t"]) if pts else None
     ol = forecast.get("outlook_7d") or {}
     for pt in (ol.get("series") or []):
-        if pt.get("water_navd88") is None or pt["time"] <= last:
+        inst = _inst(pt.get("time"))
+        if pt.get("water_navd88") is None or inst is None or (last is not None and inst <= last):
             continue
         pts.append({"t": pt["time"], "w": pt["water_navd88"],
                     "tide": pt.get("tide_navd88"), "b": bool(pt.get("burst_risk")),
                     "o": True})
+    # "worst" buttons search the FUTURE only (audit R6): history stays on the
+    # slider for context but can never win "next 7 days"
+    try:
+        gen = parse_station_local_time(forecast.get("generated_utc")) if forecast.get("generated_utc") else None
+    except (TypeError, ValueError):
+        gen = None
     pot_by_day = {k: v for k, v in (((ol.get("worst") or {}).get("burst_potential_by_day")) or {}).items()
                   if v is not None}
     pr = forecast.get("pluvial_risk") or {}
@@ -7455,6 +7482,8 @@ def _map_time_series(forecast):
     worst = {"tide": None, "flood": None}
     best_t = best_f = None
     for i, q in enumerate(pts):
+        if gen is not None and _inst(q["t"]) is not None and _inst(q["t"]) < gen:
+            continue
         tide = q.get("tide") if q.get("tide") is not None else q["w"]
         if best_t is None or tide > best_t:
             best_t, worst["tide"] = tide, i

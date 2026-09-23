@@ -37,8 +37,10 @@ or promotion in the audit commit. Claude owes round-02 reply.
   admitted by cycle age. R4 validated (NWPS issuance/units, expiry before
   merge). R3 part: coverage to now+168 h, series ends with day 7, rain
   unknown != dry. R9: budget semantics fixed; CI installs the decoder and
-  forbids skips. Ships B (R5/R6/R8/R2) and C (R7/R11/R12, JSON confidence
-  removal, burst-at-high-tide line) follow, then the round-02 reply.
+  forbids skips. SHIP B: R5 prorated/[start,end) rain, R6 future-only
+  worst + offset-aware browser now + toggles follow the selection, R8
+  CFW anchors the hourly line, R2 per-tide scoring. Ship C (R7/R11/R12,
+  JSON confidence removal, burst-at-high-tide line), then the reply.
 
 ## Live event: coastal advisory CF.Y.0021
 

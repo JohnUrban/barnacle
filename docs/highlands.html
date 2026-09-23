@@ -204,6 +204,21 @@
   var thumbC = document.getElementById("town-thumb");
   var slider = document.getElementById("town-level");
   var POTD = {}, WORST = null;
+  function instMs(t) {
+    var d = new Date(String(t).replace(" ", "T"));
+    if (isNaN(d.getTime())) {
+      var m = String(t).match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/);
+      d = m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) : new Date(NaN);
+    }
+    return d.getTime();
+  }
+  function potFor(p) {
+    // per-day burst potential from the outlook; the near-term production
+    // potential applies only to production points (audit R6)
+    var day = (p.time || "").slice(0, 10);
+    if (POTD[day] != null) return POTD[day];
+    return p.outlook ? null : POT;
+  }
   var label = document.getElementById("town-level-label");
   var readout = document.getElementById("town-readout");
   var tSlider = document.getElementById("town-time");
@@ -781,8 +796,7 @@
       ? p.water_navd88 : p.tide_navd88;
     var extra = "";
     if (rainBox.checked) {
-      var potHere = (POTD[(p.time || "").slice(0, 10)] != null)
-        ? POTD[(p.time || "").slice(0, 10)] : POT;
+      var potHere = potFor(p);
       if (p.burst_risk && potHere != null && potHere > lvl) {
         lvl = potHere;
         extra = " — burst-capable hour: showing burst potential" +
@@ -801,8 +815,10 @@
   }
   function jumpTo(pred) {
     if (!SERIES || !SERIES.length) return;
+    var nowMs = Date.now();
     var best = -1, bestV = -Infinity;
     for (var i = 0; i < SERIES.length; i++) {
+      if (instMs(SERIES[i].time) < nowMs) continue;   // future only (audit R6)
       var v = pred(SERIES[i]);
       if (v != null && v > bestV) { bestV = v; best = i; }
     }
@@ -814,13 +830,20 @@
   document.getElementById("town-worst-tide").addEventListener("click",
     function() { jumpTo(function(p) { return p.tide_navd88; }); });
   document.getElementById("town-worst-flood").addEventListener("click",
-    function() { jumpTo(function(p) {
-      var v = (p.water_navd88 != null) ? p.water_navd88 : p.tide_navd88;
-      var potHere = (POTD[(p.time || "").slice(0, 10)] != null)
-        ? POTD[(p.time || "").slice(0, 10)] : POT;
-      if (p.burst_risk && potHere != null && potHere > v) v = potHere;
-      return v;
-    }); });
+    function() {
+      // the selection is rain-inclusive: show it that way (audit R6)
+      if (!rainBox.checked) {
+        rainBox.checked = true;
+        try { localStorage.setItem("barnacle-town-rain", "1"); } catch (e) {}
+        buildLegend();
+      }
+      jumpTo(function(p) {
+        var v = (p.water_navd88 != null) ? p.water_navd88 : p.tide_navd88;
+        var potHere = potFor(p);
+        if (p.burst_risk && potHere != null && potHere > v) v = potHere;
+        return v;
+      });
+    });
   tSlider.addEventListener("input", function() {
     syncScrub();
     requestRender();
@@ -886,23 +909,20 @@
         return p.tide_navd88 != null;
       });
       var ol = f.outlook_7d || {};
-      var last = prod.length ? prod[prod.length - 1].time : "";
+      var lastMs = prod.length ? instMs(prod[prod.length - 1].time) : -Infinity;
       var ext = (ol.series || []).filter(function(p) {
-        return p.tide_navd88 != null && p.time > last;
+        return p.tide_navd88 != null && instMs(p.time) > lastMs;
       }).map(function(p) { p.outlook = true; return p; });
       SERIES = prod.concat(ext);
       POTD = (ol.worst && ol.worst.burst_potential_by_day) || {};
       WORST = ol.worst || null;
       if (SERIES.length) {
         tSlider.max = SERIES.length - 1;
-        var now = new Date();
+        var now = Date.now();
         startI = 0;
         for (var i = 0; i < SERIES.length; i++) {
-          var m = (SERIES[i].time || "")
-            .match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/);
-          if (m && new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) >= now) {
-            startI = i; break;
-          }
+          // offset-aware (audit R6): stamps carry their UTC offset
+          if (instMs(SERIES[i].time) >= now) { startI = i; break; }
         }
         tSlider.value = startI;
         syncScrub();
