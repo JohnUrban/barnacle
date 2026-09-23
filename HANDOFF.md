@@ -42,7 +42,9 @@ or promotion in the audit commit. Claude owes round-02 reply.
   CFW anchors the hourly line, R2 per-tide scoring. SHIP C: R7 day_worst
   feeds cards/ribbon/headline/email, R11 scope labels, R12 wording, R10
   outlook gate, confidence fields removed from JSON, burst-at-high-tide
-  compound scenario. Round-02 reply next (audits/2026-09-23-a1/02).
+  compound scenario. ROUND-02 REPLY written (audits/2026-09-23-a1/02);
+  model/v0.10.5-candidate.md drafted. NEXT: independent verification of
+  bd133fa58+ (not by Claude), then John's DECISION, then the promotion.
 
 ## Live event: coastal advisory CF.Y.0021
 
