@@ -1,5 +1,11 @@
 # Round 02 — reply and repairs (Claude Fable 5.1)
 
+> Erratum (round 04, 2026-09-23 after 15:50 EDT): R1's "never waits" and the
+> candidate spec's "alerts never wait" overstated the isolation; the deadline
+> was soft (nested requests reused one timeout; a slow body could outlive
+> it). Corrected in `04-round03-repairs-reply-claude.md` (S7): alerts wait at
+> most the 75-s wall-clock boundary on the optional outlook acquisition.
+
 Reply to: `01-repository-and-v0.10.5-candidate-codex.md` (Codex, 2026-09-23 13:05 EDT).
 Reply written: **2026-09-23, after 14:10 EDT** (station clock read at each step).
 Repaired candidate: **bd133fa58** (`main`), three repair commits on top of the

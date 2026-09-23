@@ -2573,7 +2573,7 @@ def build_forecast():
     # landing cards, today's headline and the email subject consume.
     try:
         day_worst = compute_day_worst(all_tides, water_series, pluvial_risk,
-                                      rain_outlook, _do_days)
+                                      rain_outlook, _do_days, now_utc=generated_utc)
     except Exception as e:
         print(f"WARNING: day_worst failed: {e}", flush=True)
         day_worst = []
@@ -4577,7 +4577,7 @@ _PATHWAY_RANK = {"dry": 0, "cold_lockout": 0, "street": 1, "light": 2,
                  "moderate": 3, "severe": 4}
 
 
-def compute_day_worst(all_tides, water_series, pluvial_risk, rain_outlook, days):
+def compute_day_worst(all_tides, water_series, pluvial_risk, rain_outlook, days, now_utc=None):
     """PRODUCTION, day-scoped, cross-pathway worst result (audit
     2026-09-23-a1 R7; AGENTS rule 6 "no tidal supremacy"). One value per
     calendar day that every headline arm consumes:
@@ -4596,6 +4596,16 @@ def compute_day_worst(all_tides, water_series, pluvial_risk, rain_outlook, days)
                         pr.get("potential_low_tide_navd88_tanh")) if v is not None]
     pot = max(pots) if pots else None
     ro_by_day = {d.get("day"): d for d in (rain_outlook or [])}
+
+    def _future(stamp):
+        """Forward outlook only (round 03 S4): points and tides at or after
+        the reference instant; past water belongs to the labeled lookback."""
+        if now_utc is None:
+            return True
+        try:
+            return parse_station_local_time(stamp) >= now_utc
+        except (TypeError, ValueError):
+            return False
     alerts = pr.get("nws_flood_alerts") or []
 
     def alert_covers(day):
@@ -4610,13 +4620,14 @@ def compute_day_worst(all_tides, water_series, pluvial_risk, rain_outlook, days)
         cands = []
         t_rank, t_reg = 0, "dry"
         for t in (all_tides or []):
-            if not (t.get("time") or "").startswith(day):
+            if not (t.get("time") or "").startswith(day) or not _future(t.get("time")):
                 continue
             r = ((t.get("depths_in") or {}).get("regime")) or "dry"
             if _PATHWAY_RANK.get(r, 0) > t_rank:
                 t_rank, t_reg = _PATHWAY_RANK.get(r, 0), r
         cands.append((t_rank, t_reg, "tide", None))
-        pts = [p for p in (water_series or []) if (p.get("time") or "").startswith(day)]
+        pts = [p for p in (water_series or [])
+               if (p.get("time") or "").startswith(day) and _future(p.get("time"))]
         wmax = max((p["water_navd88"] for p in pts if p.get("water_navd88") is not None), default=None)
         tmax = max((p["tide_navd88"] for p in pts if p.get("tide_navd88") is not None), default=None)
         if wmax is not None:
@@ -6438,6 +6449,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             + (i === startI ? ' \u2014 now' : '')
             + (burst ? ' \u2014 BURST POTENTIAL' : '')
             + (pt.b && !burst ? ' (rain-risk hour)' : '')
+            + (pt.u ? ' \u2014 RAIN FORECAST UNAVAILABLE: tide-only, not a flood forecast' : '')
             + (pt.o ? ' (7-day outlook guidance)' : '');
           rerender();
         }}
@@ -7553,7 +7565,8 @@ def _map_time_series(forecast):
             continue
         pts.append({"t": pt["time"], "w": pt["water_navd88"],
                     "tide": pt.get("tide_navd88"), "b": bool(pt.get("burst_risk")),
-                    "pot": pt.get("burst_potential_navd88"), "o": True})
+                    "pot": pt.get("burst_potential_navd88"), "o": True,
+                    "u": bool(pt.get("rain_unknown"))})    # rain forecast unavailable: tide-only
     # "worst" buttons search the FUTURE only (audit R6): history stays on the
     # slider for context but can never win "next 7 days"
     try:

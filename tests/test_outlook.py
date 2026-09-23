@@ -6,6 +6,7 @@ surface contract, and none of it touches alerts."""
 import csv
 import datetime as dt
 import json
+import re
 import os
 import tempfile
 import unittest
@@ -256,6 +257,8 @@ class LadderTests(unittest.TestCase):
             self.assertIsNotNone(t["outlook_mllw"])
             self.assertIn(t["outlook_source"], outlook.LADDER + ("astro",))
         for d in ol["days"]:
+            if d.get("partial") and not d["tides"]:      # a partial last card may hold no high tide in scope
+                continue
             self.assertIsNotNone(d["astro_max_mllw"])
             self.assertIsNotNone(d["outlook_max_mllw"])
 
@@ -396,7 +399,7 @@ class RainPathwayTests(unittest.TestCase):
         sat = next(d for d in ol["days"] if d["date"] == "2026-09-26")
         self.assertLess(sat["rain_pathway"]["rain_coverage"], 1.0)
         self.assertGreater(sat["rain_pathway"]["rain_coverage"], 0.0)
-        # the series never runs into an eighth calendar date
+        # rolling 168 h: the series and the cards share the same last date (a partial card)
         self.assertEqual(max(p["time"][:10] for p in ol["series"]), ol["days"][-1]["date"])
 
 
@@ -494,7 +497,7 @@ class AuditRepairBTests(unittest.TestCase):
         sc = outlook.score_shadow(rows, {target: 6.5})
         r = sc["readiness"]["nwps_vs_persistence_le72h"]
         self.assertEqual(r["n"], 1)
-        self.assertEqual(r["n_forecasts"], 56)
+        self.assertEqual(r["n_forecasts"], 28)        # round 03 S1: paired rows, each counted once
         self.assertTrue(r["verdict"].startswith("NOT YET (1/28"))
         self.assertEqual(sc["scored_tides"], 1)
         # 28 distinct tides, one issuance each, candidate better -> READY
@@ -608,6 +611,144 @@ class AuditRepairCTests(unittest.TestCase):
         self.assertIn("the same burst on the day's high tide", html)
 
 
+class AuditRound03Tests(unittest.TestCase):
+    """Codex round 03 S1-S7 regression checks (the probes inverted)."""
+
+    def test_s1_absolute_before_average_and_same_issuance_pairing(self):
+        rows, observed = [], {}
+        for i in range(28):
+            t = (dt.datetime(2026, 8, 1, 12, tzinfo=UTC) + dt.timedelta(hours=12 * i)).isoformat()
+            observed[t] = 5.0
+            for pred in (4.0, 6.0):
+                rows.append(dict(target_tide_time=t, lead_h="12", nwps_mllw=str(pred), persist_flat_mllw="5.2"))
+        r = outlook.score_shadow(rows, observed)["readiness"]["nwps_vs_persistence_le72h"]
+        self.assertEqual(r["mae_candidate"], 1.0)
+        self.assertAlmostEqual(r["mae_baseline"], 0.2, places=6)
+        self.assertTrue(r["verdict"].startswith("NOT BETTER"))
+        self.assertEqual(r["n"], 28)
+        self.assertEqual(r["n_forecasts"], 56)              # paired rows, counted once
+        disjoint = [dict(target_tide_time="t", lead_h="1", nwps_mllw="5"),
+                    dict(target_tide_time="t", lead_h="23", persist_flat_mllw="6")]
+        r = outlook.score_shadow(disjoint, {"t": 5})["readiness"]["nwps_vs_persistence_le72h"]
+        self.assertEqual(r["n"], 0)
+        self.assertEqual(r["verdict"], "NO DATA YET")
+
+    def test_s2_unknown_rain_reaches_the_map_payload_and_null_grid_is_not_zero(self):
+        data = _fixture_data(); data["nbm"] = None; data["wpc"] = None
+        ol = _build(data=data)
+        fc = {"generated_utc": NOW.isoformat(), "outlook_7d": ol, "water_series": [], "pluvial_risk": {}}
+        pts, *_ = ff._map_time_series(fc)
+        unknown = next(p for p in ol["series"] if p["rain_unknown"] and p["lead_h"] > 80)
+        mappt = next(p for p in pts if p["t"] == unknown["time"])
+        self.assertTrue(mappt["u"])
+        html = ff._client_map_section_html if False else None
+        grid = {"series": {"qpf_in": [{"start": "2026-09-24T04:00:00Z", "hours": 24, "value": None}]},
+                "reach": {"qpf_in": "2026-09-30T12:00:00Z"}}
+        days = outlook.build_days(NOW, [], {"grid": grid})
+        d = days[1]
+        self.assertEqual(d["qpf_in"], 0.0)
+        self.assertTrue(d["qpf_partial"])
+        self.assertLess(d["qpf_covered_h"], 1.0)
+        self.assertGreaterEqual(d["qpf_null_h"], 23.0)
+
+    def test_s3_declared_horizon_equals_series_reach(self):
+        ol = _build()
+        last = max(p["lead_h"] for p in ol["series"])
+        self.assertGreaterEqual(last, 160.0)
+        self.assertLessEqual(last, 168.0)
+        self.assertIn(len(ol["days"]), (7, 8))
+        self.assertTrue(ol["days"][-1]["partial"] or ol["days"][0]["partial"])
+        table_last = max(t["lead_h"] for t in ol["tides"])
+        self.assertLessEqual(table_last, 168.0)
+
+    def test_s4_html_and_subject_share_the_worst_headline_and_past_water_is_not_forward(self):
+        from forecast import rendering
+        fc = {"all_tides": [{"time": "2026-09-24 18:00-04:00", "hours_from_now": 30, "forecast_peak_mllw": 6.0,
+                             "depths_in": {"regime": "dry"}}],
+              "water_series": [{"time": "2026-09-24 14:00-04:00", "tide_navd88": 2.0, "water_navd88": 6.0, "burst_risk": True}],
+              "rain_outlook_72h": [], "pluvial_risk": {"level": "elevated", "potential_low_tide_navd88": 6.0},
+              "peak_time_local": "2026-09-24 18:00-04:00", "peak_forecast_observed_mllw": 6.0}
+        days = ["2026-09-23", "2026-09-24", "2026-09-25"]
+        fc["day_worst"] = ff.compute_day_worst(fc["all_tides"], fc["water_series"], fc["pluvial_risk"], [], days,
+                                               now_utc=dt.datetime(2026, 9, 23, 11, tzinfo=UTC))
+        self.assertEqual(rendering.worst_72h_headline(fc, "NO FLOODING"), "SEVERE (RAIN)")
+        src = open(Path(rendering.__file__).with_suffix(".py")).read()
+        self.assertIn("worst_72h_headline(forecast, headline_for(forecast, regime)[0])", src)   # HTML panel
+        # a severe 06:00 point on 09-23 reviewed at 15:26 is NOT forward outlook
+        past = [{"time": "2026-09-23 06:00-04:00", "tide_navd88": 2.0, "water_navd88": 6.0, "burst_risk": False},
+                {"time": "2026-09-23 16:00-04:00", "tide_navd88": 2.0, "water_navd88": 2.0, "burst_risk": False}]
+        dw = ff.compute_day_worst([], past, {}, [], ["2026-09-23"],
+                                  now_utc=ff.parse_station_local_time("2026-09-23 15:26-04:00"))
+        self.assertEqual(dw[0]["regime"], "dry")
+
+    def test_s5_chart_uses_the_point_level_scenario(self):
+        ol = _build(nbm_burst_in=3.0)
+        from forecast import outlook_page
+        html = outlook_page.render_outlook_page({"generated_utc": "x", "forecast_schema_version": "1.0",
+                                                 "model_version": "v", "outlook_7d": ol, "input_health": {}})
+        m = re.search(r"var D = (\{.*?\});\n", html, re.S)
+        D = json.loads(m.group(1))
+        flagged = [p for p in ol["series"] if p.get("burst_risk") and p.get("burst_potential_navd88")]
+        self.assertTrue(flagged)
+        for p in flagged[:3]:
+            i = ol["series"].index(p)
+            self.assertAlmostEqual(D["burst"][i], round((max(p["burst_potential_navd88"], p["tide_navd88"]) - 3.52) * 12, 1), places=1)
+        self.assertIn("Rain forecast unavailable (tide-only hours)", html)
+
+    def test_s6_malformed_warm_buckets_are_dropped_before_any_consumer(self):
+        g = {"nbm": {"cycle": "2026-09-23T06:00:00Z", "summary": "nbm", "buckets": [
+                {"end_utc": "2026-09-23T18:00:00Z", "qpf_in": 0.2},                         # no hours
+                {"end_utc": "2026-09-24T00:00:00Z", "hours": 6, "qpf_in": 0.1, "pop_pct": 40.0}]},
+             "petss": {"cycle": "2026-09-23T06:00:00Z", "summary": "p",
+                       "p10": [{"utc": "2026-09-23T12:00:00Z", "surge_ft": 2.0}, {"utc": "bad", "surge_ft": 1.0}],
+                       "p90": [{"utc": "2026-09-23T12:00:00Z", "surge_ft": 1.0}]}}      # p10 > p90 at 12Z
+        d, h = srcs.admit_guidance(g, "nbm", NOW)
+        self.assertEqual(len(d["buckets"]), 1)
+        self.assertIn("1 malformed dropped", h["detail"])
+        self.assertEqual(h["status"], "degraded")                # a dropped row is never silent
+        self.assertIsNotNone(outlook._bucket_containing(d["buckets"], dt.datetime(2026, 9, 23, 20, tzinfo=UTC)))
+        d, h = srcs.admit_guidance(g, "petss", NOW)
+        self.assertIsNone(d)                                     # nothing valid survives
+        nbm = {"buckets": [{"end_utc": "2026-09-26T12:00:00Z", "hours": 6, "qpf_in": 0.1}]}
+        qmd = {"qmd_cycle": "2026-09-23T06:00:00Z", "buckets": {"2026-09-26T12:00:00Z": {"p10_in": 0.9, "p50_in": 0.5, "p90_in": 0.1}}}
+        h = srcs.merge_nbm_qmd(nbm, qmd, NOW)
+        self.assertNotIn("p90_in", nbm["buckets"][0])            # disordered percentiles skipped
+        self.assertEqual(h["status"], "degraded")
+
+    def test_s7_nested_requests_recompute_the_timeout_and_the_wall_clock_bounds_gather(self):
+        clock = {"t": 0.0}
+        seen = []
+
+        def slow_request(url, timeout=30):
+            seen.append(timeout)
+            clock["t"] += 9.0
+            return b'{"properties": {"forecastGridData": "http://x/grid"}}' if "points" in url else b'{"properties": {}}'
+        dl = srcs.Deadline(10.0, clock=lambda: clock["t"])
+        with mock.patch.object(srcs, "_request", side_effect=slow_request):
+            try:
+                srcs.fetch_nws_grid(deadline=dl)
+            except TimeoutError:
+                pass
+        self.assertEqual(len(seen), 1)                            # the second request never started
+        # wall clock: a fetch that sleeps past the boundary is abandoned, not awaited
+        import time as _time
+
+        def hang(url, timeout=30):
+            _time.sleep(0.6)
+            raise OSError("late")
+        with mock.patch.object(srcs, "_request", side_effect=hang), \
+                mock.patch.object(srcs, "load_guidance", return_value={}):
+            t0 = _time.monotonic()
+            # budget 3 s (so the deadline itself would NOT skip), wall clock 0.3 s
+            data, health = srcs.gather(NOW, guidance_path="/nonexistent",
+                                       deadline=srcs.Deadline(3.0), wall_clock_s=0.3)
+            elapsed = _time.monotonic() - t0
+            _time.sleep(3.2)          # let the abandoned worker drain inside the patch (no network)
+        self.assertLess(elapsed, 0.55)
+        self.assertTrue(all(health[k]["status"] == "unavailable" for k in ("astro", "grid", "nwps", "xcheck")))
+        self.assertIn("wall-clock", health["astro"]["detail"])
+
+
 class LedgerAndScoringTests(unittest.TestCase):
     def test_writer_output_passes_the_real_gate_and_round_trips(self):
         ol = _build()
@@ -667,12 +808,12 @@ class PageTests(unittest.TestCase):
             p.write_text(html, encoding="utf-8")
             self.assertEqual(html_contract.validate_surface(p), [])
         self.assertIn('<meta name="barnacle-generated-utc" content="2026-09-23T11:00:00Z">', html)
-        self.assertIn("Seven days at the corner", html)
+        self.assertIn("The next 168 hours at the corner", html)
         self.assertIn("Model cross-check", html)
         self.assertIn("Shadow scoreboard", html)
         self.assertIn("astronomical tide only", html.lower())
         self.assertIn("Two pathways, every day", html)
-        self.assertIn("Worst flood chance in the next 7 days", html)
+        self.assertIn("Worst flood chance in the next 168 hours", html)
         self.assertIn("Rain pathway:", html)
 
     def test_page_degrades_honestly_without_outlook(self):

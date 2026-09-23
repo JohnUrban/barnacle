@@ -262,10 +262,24 @@ def parse_nws_grid(props):
                         + last.get("gust_mph", "?")[:13] + "Z")}
 
 
-def fetch_nws_grid(lat=HOUSE_LAT, lon=HOUSE_LON, timeout=30):
-    pts = _get_json(NWS_POINTS_URL.format(lat=lat, lon=lon), timeout)
+def _next_timeout(deadline, fallback):
+    """Timeout for the NEXT request: recomputed from the deadline each time
+    (round 03 S7); None means the budget is spent."""
+    if deadline is None:
+        return fallback
+    return deadline.timeout()
+
+
+def fetch_nws_grid(lat=HOUSE_LAT, lon=HOUSE_LON, timeout=30, deadline=None):
+    t = _next_timeout(deadline, timeout)
+    if t is None:
+        raise TimeoutError("outlook budget spent before the NWS points request")
+    pts = _get_json(NWS_POINTS_URL.format(lat=lat, lon=lon), t)
     grid_url = pts["properties"]["forecastGridData"]
-    return parse_nws_grid(_get_json(grid_url, timeout)["properties"])
+    t = _next_timeout(deadline, timeout)
+    if t is None:
+        raise TimeoutError("outlook budget spent before the NWS grid request")
+    return parse_nws_grid(_get_json(grid_url, t)["properties"])
 
 
 def grid_value_at(series, when_utc):
@@ -639,9 +653,17 @@ def merge_nbm_qmd(nbm, qmd, now_utc):
     n = 0
     for b in buckets:
         q = (qmd.get("buckets") or {}).get(b["end_utc"])
-        if q and _finite(q.get("p90_in")):
-            b.update({k: v for k, v in q.items() if k in NBM_QMD_FIELDS})
-            n += 1
+        if not q:
+            continue
+        p10, p50, p90 = q.get("p10_in"), q.get("p50_in"), q.get("p90_in")
+        if not _finite(p90) or p90 < 0:
+            continue
+        if (_finite(p10) and p10 > p90 + 1e-6) or (_finite(p50) and _finite(p10) and p50 < p10 - 1e-6) \
+                or (_finite(p50) and p50 > p90 + 1e-6):
+            continue                                     # disordered percentiles: skip the bucket
+        clean = {k: v for k, v in q.items() if k in NBM_QMD_FIELDS and (v is None or _finite(v))}
+        b.update(clean)
+        n += 1
     if n == 0:
         status = "degraded"
     elif age_h > ok_h:
@@ -737,19 +759,25 @@ def parse_openmeteo(models_doc, ens_doc):
     return out
 
 
-def fetch_openmeteo(lat=HOUSE_LAT, lon=HOUSE_LON, days=8, timeout=30):
+def fetch_openmeteo(lat=HOUSE_LAT, lon=HOUSE_LON, days=8, timeout=30, deadline=None):
     common = {"latitude": f"{lat:.4f}", "longitude": f"{lon:.4f}", "forecast_days": days,
               "timezone": "America/New_York", "wind_speed_unit": "mph",
               "precipitation_unit": "inch"}
+    t = _next_timeout(deadline, timeout)
+    if t is None:
+        raise TimeoutError("outlook budget spent before the cross-check request")
     models = _get_json(OPEN_METEO_URL + "?" + urlencode({
         **common, "daily": "precipitation_sum,wind_gusts_10m_max",
-        "models": ",".join(m for m, _ in XCHECK_MODELS)}), timeout)
-    try:
-        ens = _get_json(OPEN_METEO_ENS_URL + "?" + urlencode({
-            **common, "daily": "precipitation_sum,wind_gusts_10m_max",
-            "models": "gfs_seamless"}), timeout)
-    except Exception:
-        ens = {}
+        "models": ",".join(m for m, _ in XCHECK_MODELS)}), t)
+    ens = {}
+    t = _next_timeout(deadline, timeout)
+    if t is not None:
+        try:
+            ens = _get_json(OPEN_METEO_ENS_URL + "?" + urlencode({
+                **common, "daily": "precipitation_sum,wind_gusts_10m_max",
+                "models": "gfs_seamless"}), t)
+        except Exception:
+            ens = {}
     return parse_openmeteo(models, ens)
 
 
@@ -828,45 +856,100 @@ def admit_guidance(guidance, key, now_utc):
                                  else f"{age_h:.1f} h old, expired")),
                       "issued": stamp, "age_h": round(age_h, 2) if age_h is not None else None}
     buckets = data.get("buckets")
+    dropped = 0
     if key in ("nbm", "wpc"):
-        good = [b for b in (buckets or []) if isinstance(b, dict) and _parse_iso(b.get("end_utc"))
-                and _finite(b.get("qpf_in")) and b["qpf_in"] >= 0]
+        good = []
+        for b in (buckets or []):
+            ok = (isinstance(b, dict) and _parse_iso(b.get("end_utc")) is not None
+                  and _finite(b.get("hours")) and 0 < b["hours"] <= 48
+                  and _finite(b.get("qpf_in")) and b["qpf_in"] >= 0
+                  and (b.get("pop_pct") is None or (_finite(b["pop_pct"]) and 0 <= b["pop_pct"] <= 100)))
+            if ok:
+                good.append(b)
+            else:
+                dropped += 1
+        good.sort(key=lambda b: _parse_iso(b["end_utc"]))
         if not good:
-            return None, {"status": "unavailable", "detail": f"{key}: no valid buckets",
+            return None, {"status": "unavailable", "detail": f"{key}: no valid buckets ({dropped} malformed dropped)",
                           "issued": stamp, "age_h": round(age_h, 2)}
         data = dict(data, buckets=good)
         future = sum(1 for b in good if _parse_iso(b["end_utc"]) > now_utc)
-        coverage = f"{future} future buckets"
-    else:  # petss
-        if not (data.get("p10") and data.get("p90")):
-            return None, {"status": "unavailable", "detail": "petss: missing percentile series",
+        coverage = f"{future} future buckets" + (f", {dropped} malformed dropped" if dropped else "")
+    else:  # petss: every point parseable, finite, and p10 <= p90 where both exist
+        p10, p90 = [], []
+        for name, dst in (("p10", p10), ("p90", p90)):
+            for pt in (data.get(name) or []):
+                if isinstance(pt, dict) and _parse_iso(pt.get("utc")) is not None \
+                        and _finite(pt.get("surge_ft")) and -10 < pt["surge_ft"] < 30:
+                    dst.append(pt)
+                else:
+                    dropped += 1
+        lo_by = {q["utc"]: q["surge_ft"] for q in p10}
+        p90 = [q for q in p90 if lo_by.get(q["utc"], -99) <= q["surge_ft"] + 0.05]
+        if not (p10 and p90):
+            return None, {"status": "unavailable", "detail": f"petss: no valid percentile series ({dropped} malformed dropped)",
                           "issued": stamp, "age_h": round(age_h, 2)}
-        future = sum(1 for p in data["p90"] if _parse_iso(p["utc"]) > now_utc)
-        coverage = f"{future} future hours"
-    status = "ok" if age_h <= ok_h else "degraded"
+        data = dict(data, p10=sorted(p10, key=lambda q: q["utc"]), p90=sorted(p90, key=lambda q: q["utc"]))
+        future = sum(1 for q in data["p90"] if _parse_iso(q["utc"]) > now_utc)
+        coverage = f"{future} future hours" + (f", {dropped} malformed dropped" if dropped else "")
+    status = "ok" if (age_h <= ok_h and not dropped) else "degraded"   # any dropped row is visible (round 03 S6)
     return data, {"status": status,
                   "detail": f"{data.get('summary', key)}; cycle {age_h:.1f} h old; {coverage}",
                   "issued": stamp, "age_h": round(age_h, 2)}
 
 
-def gather(now_utc, guidance_path=None, deadline=None):
-    """Hourly run: five quick requests under one deadline, plus admission of
-    the warm file's sources. Never raises; every source carries health."""
-    dl = deadline or Deadline(OUTLOOK_FETCH_BUDGET_S)
-    data, health, scratch = {}, {}, {}
-    quick = (
+def _quick_sources(now_utc, dl):
+    return (
         ("astro", lambda t: fetch_astro_highs(now_utc, timeout=t)),
         ("astro_hourly", lambda t: fetch_astro_hourly(now_utc, timeout=t)),
-        ("grid", lambda t: fetch_nws_grid(timeout=t)),
+        ("grid", lambda t: fetch_nws_grid(timeout=t, deadline=dl)),
         ("nwps", lambda t: fetch_nwps_forecast(now_utc, timeout=t)),
-        ("xcheck", lambda t: fetch_openmeteo(timeout=t)),
+        ("xcheck", lambda t: fetch_openmeteo(timeout=t, deadline=dl)),
     )
-    for key, fn in quick:
-        data[key], health[key] = refresh(scratch, key, fn, now_utc, deadline=dl)
+
+
+def gather(now_utc, guidance_path=None, deadline=None, wall_clock_s=None):
+    """Hourly run: quick requests under one deadline INSIDE a wall-clock
+    isolation boundary (round 03 S7), plus admission of the warm file's
+    sources. Never raises; every source carries health.
+
+    The quick fetches run in a daemon worker thread; the caller waits at
+    most `wall_clock_s` (default: the deadline's budget plus one request
+    cap). Whatever has not completed by then is reported "unavailable:
+    wall-clock budget" and the worker is abandoned, so a slowly progressing
+    response body cannot hold the alert path beyond the boundary.
+    """
+    import threading
+    dl = deadline or Deadline(OUTLOOK_FETCH_BUDGET_S)
+    wall = wall_clock_s if wall_clock_s is not None else dl.seconds + PER_REQUEST_CAP_S
+    data, health, scratch = {}, {}, {}
+    done = {}
+    lock = threading.Lock()
+
+    def work():
+        for key, fn in _quick_sources(now_utc, dl):
+            d, h = refresh(scratch, key, fn, now_utc, deadline=dl)
+            with lock:
+                done[key] = (d, h)
+    worker = threading.Thread(target=work, name="outlook-quick-sources", daemon=True)
+    worker.start()
+    worker.join(max(0.0, wall))
+    with lock:
+        finished = dict(done)
+    for key, _fn in _quick_sources(now_utc, dl):
+        if key in finished:
+            data[key], health[key] = finished[key]
+        else:
+            data[key], health[key] = None, {"status": "unavailable",
+                                            "detail": f"skipped: outlook wall-clock budget ({wall:.1f} s) exhausted",
+                                            "fetched_at": None, "age_h": None}
     g = load_guidance(guidance_path or GUIDANCE_PATH_DEFAULT)
     for key in ("nbm", "petss", "wpc"):
         data[key], health[key] = admit_guidance(g, key, now_utc)
     data["nbm_qmd"] = g.get("nbm_qmd")
     health["nbm_qmd"] = merge_nbm_qmd(data.get("nbm"), data["nbm_qmd"], now_utc)
-    health["_budget"] = {"status": "ok", "detail": f"{dl.seconds - max(0.0, dl.remaining()):.1f} s of {dl.seconds:.0f} s used"}
+    used = dl.seconds - max(0.0, dl.remaining())
+    health["_budget"] = {"status": "ok" if worker.is_alive() is False else "degraded",
+                         "detail": (f"{used:.1f} s of {dl.seconds:.0f} s used"
+                                    + ("" if not worker.is_alive() else "; worker abandoned at the wall-clock boundary"))}
     return data, health

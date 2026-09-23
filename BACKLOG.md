@@ -8,19 +8,51 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **Independent repo / v0.10.5 audit — HOLD, round 03 (2026-09-23).**
-      Claude's round-02 repairs independently reviewed by Codex at `bf2e601b4`.
-      Report: `audits/2026-09-23-a1/03-repaired-candidate-verification-codex.md`.
-      Full decoder suite 252 OK / no skips, gate, frozen replays, and repaired
-      map-control probe PASS. Remaining: S1 signed-error cancellation gives
-      false READY; S2 unknown rain lost in consumers/null grid counted dry;
-      S3 168-hour metadata vs shorter series/table; S4 email HTML divergence
-      and past points in forward headlines; S5 compound chart/map mismatch;
-      S6 incomplete warm-bucket validation; S7 soft acquisition deadline.
-      Distinct-tide counting, expiry-before-merge, rain boundaries/proration,
-      map controls, CFW anchoring, and decoder CI have verified improvements.
-      Claude's next numbered response + independent candidate PASS + John's
-      promotion DECISION precede bump. Round 03 is a review, not approval.
+- [ ] **UNVALIDATED ELEMENTS INTRODUCED 2026-09-23 (John: keep this list so we
+      can return to it).** Each is labeled on its surface and none drives an
+      alert; none is scored yet. (1) The compound burst scenario evaluated at
+      the actual tide level: one event fits (2025-10-30), one over-predicts by
+      3-4 in at moderate rain on submerged grates (2026-09-13 round 2).
+      (2) The NBM 90th-percentile rain scenario: a probabilistic 6-h amount
+      pushed through a burst analog calibrated on one July event. (3) The
+      surge guidance ladder beyond the NWS product: NWPS gauge forecast (shadow,
+      unscored at Sandy Hook), the P-ETSS 10-90 % band (never scored here),
+      persistence decay tau = 48 h (assumption). The shadow scoreboard exists to
+      catch all three and has no scored tides yet. (4) Rain beyond 72 h is a
+      6-h total spread evenly over hours (understates bursts by construction,
+      like the 72-h QPF). (5) Warm-file freshness bars are judgment calls
+      (P-ETSS read degraded at 2 PM only because of one). (6) Inherited and
+      now more visible: the 30-h production series applies the worst tide's
+      surge to every hour (`series-constant-surge-residual`). (7) The three
+      repair ships of the afternoon were reviewed by Codex round 03 (HOLD,
+      S1-S7); ship E repaired all seven (round 04 reply) and awaits an
+      independent pass. Retire items here only with a scored comparison or
+      an owner decision.
+- [ ] **DEGRADED-INPUTS SPLIT (proposal stored 2026-09-23 at John's request;
+      not started).** The outlook's source-health entries (`outlook_*`) share
+      `forecast.degraded_inputs` with the production inputs, so the widget's
+      degraded line can show e.g. `outlook_petss` when a guidance cycle ages
+      out, which says nothing about the forecast the widget displays. Proposal:
+      keep `degraded_inputs` production-only, add `outlook_degraded_inputs`
+      (same rule-7 visibility, on the outlook page and JSON), no widget change.
+      Site vs widget differences that remain by design: the site's cards,
+      today's headline and the email subject read the cross-pathway
+      `day_worst` while the widget's TODAY reads the production series regime
+      and its 72H block lists tidal and rain days separately; beyond 30 h the
+      site's maps use per-hour burst potentials at the actual tide while the
+      widget's chart uses the fixed low-tide potential; the widget stops at
+      72 h. Owner decision pending on whether the widget should ever change.
+- [ ] **Independent repo / v0.10.5 audit — HOLD; round 04 repairs shipped
+      (2026-09-23), independent pass owed.** Codex round 03 reviewed
+      `bf2e601b4` (S1-S7, HOLD). Ship E repaired all seven plus the 6-h-window
+      follow-up; reply `audits/2026-09-23-a1/04-round03-repairs-reply-claude.md`
+      with probe `verify_round04_claude.py` (inverts every round-03 assertion,
+      exit 0) and its output. S3 taken the preferred way: rolling 168 h with
+      partial first/last cards. Wording corrected: alerts wait at most 75 s on
+      the optional outlook fetch (wall-clock boundary), not "never". Next:
+      Codex verifies this exact candidate (round 05); then John's promotion
+      DECISION line; only then the atomic class-(b) promoting commit. No
+      round so far is approval.
 
 - [ ] **7-DAY OUTLOOK (arc opened 2026-09-23, John).** Extend
       predictions to 7 days as a NEW display-only field + page, never by
@@ -457,3 +489,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-23 | FACT | rain-flood-retrospective-round-1 | first pass of the low-tide-assumption retrospective (John 15:25), forcing = the radar box-mean rate in each event README, potentials from the production estimate_pluvial_water_models. Bay at peak (NAVD88, = SH-2.82): 10-30 4.81 [compound, pre-Barnacle, peak back-fit from photos], 07-06 2.77, 07-09 ~3.2 [gauge failed, despiked estimate], 07-18 ~2.2 [no usable radar rate], 08-03 ~2.6, 08-07 0.77, 09-01 ~0.0, 09-13 round 1 ~1.5, round 2 3.95. The tank's steady state is FLAT in bay level up to 3.0 ft NAVD88 and rises only above ~3.5 (2.0 in/hr: +15.5 in at bay 0..3.0, +16.4 at 4.0, +21.2 at 4.8), i.e. the code already holds John's plug level at 3.0-3.5 ft NAVD88 (5.8-6.3 MLLW). Consequences on the record: for the six low-bay rain floods the fixed-2.5 potential and the actual-bay potential are identical, and their errors (obs minus potential: +0.4, 0.0, -3.7, -5.1, -1.6, -4.5 in) show no tide dependence; the over-predictions belong to short bursts that never reached steady state (the time-integrating nowcast tank was within ~0.4-1.5 in on 09-01/09-13/08-03) and the two exact hits (07-06, 07-09) are the calibration anchors. Above the plug: 10-30 at bay 4.81 with 1.45 in/hr gives +13.9 in at the fixed bay but +20.1 in at the actual bay vs +20.8 observed (n=1, supports 'the tide adds above the plug'); 09-13 round 2 at bay 3.95 with ~0.6 in/hr [INFERRED rate] gives +10.0 / +11.8 vs +7.4 observed (n=1, compound over-predicts at moderate rain on submerged grates). Pre-event FORECAST potentials (QPF-driven burst_est) erred separately: 07-06 dry vs +15; 07-09 +11..15 vs +18.7; 07-18 +16.3 vs +19.9; 08-03 +15.6 vs +13.8; 08-07 none vs +15.4; 09-01 +11.8..17.9 vs +13.9; 09-13 +16.4..17.9 vs +13.7 — forecast-rain error, not tide. No retune; the compound scenario at the actual bay (shipped bd133fa58) is the right evaluation above the plug and costs nothing below it [VERIFIED: labeled_observations rows, event READMEs, docs/archive/<date>.json, production function replay]
 
 2026-09-23 | FACT | audit-a1-round03-independent-verification | Codex reviewed repairs through bf2e601b4; 252 decoder-enabled tests pass without skips, gate and frozen replays pass, map-control probe passes. HOLD remains: S1 score cancellation/pairing, S2 missing-rain propagation, S3 horizon consistency, S4 HTML email/time scope, S5 compound consumer parity, S6 warm bucket validation, S7 soft deadline. Evidence: audits/2026-09-23-a1/03-repaired-candidate-verification-codex.md and runnable offline probe/output. This qualifies repair claims in round02 without rewriting that record; no promotion approval or model change [VERIFIED]
+2026-09-23 | FACT | audit-2026-09-23-a1-round03 | Codex independently verified the repaired candidate bf2e601b4: 252 tests OK with no skips, gate, both replays and Claude's map probe PASS; verdict HOLD remains with seven new findings, all confirmed by Claude: S1 (High) per-tide averaging of SIGNED errors cancels (+/-1 ft candidate scores MAE 0.0 -> false READY) and disjoint issuances are paired; S2 (High) rain_unknown is dropped from the map payload and the chart, and an explicit null grid interval becomes 0 in with full coverage; S3 (Medium) horizon_hours 168 vs a series cut at the 7th date (151.8 h) vs a tide table to +168 h; S4 (High) the HTML email's WORST 72 H panel still uses the tide-keyed headline while the subject uses day_worst, and compute_day_worst has no reference instant so past severity leaks into the forward outlook; S5 (Medium) the chart's burst band uses the low-bay daily potential while the maps use the per-point compound value; S6 (Medium) a warm bucket without `hours` passes admission and crashes the consumer; S7 (Medium) the 60-s deadline is soft (nested requests reuse one timeout; slow bodies outlive it) so 'alerts never wait' was overstated. Repairs = ship E, reply = round 04 [VERIFIED: audits/2026-09-23-a1/03 + round03-reproduction-output.json]
+2026-09-23 | DONE | audit-a1-ship-E-round03-repairs | S1 score_shadow: unit = one issued forecast of one tide, absolute errors averaged within a tide then across tides, bias separately, candidate/baseline paired on the SAME ledger row (PAIRINGS), n_forecasts = paired rows; Codex's +/-1 ft case now MAE 1.0 vs 0.2 NOT BETTER, disjoint case n=0. S2 rain_unknown carried as `u` in the map payload and labeled at the instant on both maps, gray "rain forecast unavailable" line on the 7-day chart, explicit-null grid intervals count as null hours (qpf_null_h, qpf_partial) never zero. S3 rolling 168 h: series_end_utc = now+168 h, a card for every calendar date touched (8) with hours_in_scope/partial, gate accepts 7-8 cards, page heading and worst line say 168 hours. S4 worst_72h_headline() feeds subject, text and the HTML WORST 72 H panel; compute_day_worst(now_utc) considers only tides/points at or after generated_utc. S5 chart burst band uses per-point burst_potential_navd88 (maps' number); scenarios named (rain-alone low bay / time-local compound / hypothetical high tide, the last never the timed selection). S6 admit_guidance validates end, hours (0,48], qpf>=0, pop 0-100, sorted; P-ETSS points finite/plausible with per-hour p10<=p90; dropped rows counted and downgrade to degraded; merge_nbm_qmd skips disordered percentiles. S7 nested requests recompute the timeout from the deadline (grid, cross-check); gather() runs quick fetches in a daemon worker joined for at most 75 s (budget + one cap) and reports unfinished sources unavailable "wall-clock budget"; spec/reply wording corrected to "at most 75 s"; erratum atop round 02. Follow-up: max 6-h rain over timestamped windows with max_6h_window_complete. Tests: AuditRound03Tests (7) + updated R2/R3 assertions; both suites green on exit status; local no-send run: gate clean, subject/text/HTML consistent, series to 167.2 h, 8 cards. Round-04 reply + candidate spec corrected. NOT promotion; independent pass + owner DECISION still owed [VERIFIED: audits/2026-09-23-a1/04 + round04-reproduction-output.json]

@@ -40,6 +40,8 @@ LEAD_BUCKETS = ((0, 24, "0-24 h"), (24, 48, "24-48 h"), (48, 72, "48-72 h"),
 REGIME_RANK = {"dry": 0, "cold_lockout": 0, "unknown": 0, "street": 1, "light": 2,
                "moderate": 3, "severe": 4}
 READINESS_MIN_N = 28               # distinct observed tides (~two weeks at two per day)
+PAIRINGS = (("nwps_mllw", "persist_flat_mllw"), ("nws_product_mllw", "persist_flat_mllw"),
+            ("persist_decay_mllw", "persist_flat_mllw"), ("outlook_mllw", "production_mllw"))
 LADDER = ("nws_product", "nwps", "petss_mid", "persist_decay")
 
 OUTLOOK_LOG_FIELDS = [
@@ -93,25 +95,24 @@ def _overlap_h(s, e, lo, hi):
 
 
 def _prorated_day_total(buckets, day_s, day_e, start_key=None):
-    """(inches, covered hours) for a local day from accumulation buckets,
+    """(inches, valid covered hours, explicit-null hours) for a local day from accumulation buckets,
     prorating each bucket by its overlap with the day under the uniform-
     rate assumption (audit R5: mass is conserved across midnight)."""
-    total, covered = 0.0, 0.0
+    total, covered, null_h = 0.0, 0.0, 0.0
     for b in buckets or []:
-        if b.get("qpf_in") is None and b.get("value") is None:
-            continue
         if start_key:                       # grid rows: {"start", "hours", "value"}
-            s = _utc(b["start"]); e = s + dt.timedelta(hours=b["hours"]); v = b["value"]
+            s = _utc(b["start"]); e = s + dt.timedelta(hours=b["hours"]); v = b.get("value")
         else:                               # NBM/WPC: {"end_utc", "hours", "qpf_in"}
-            e = _utc(b["end_utc"]); s = e - dt.timedelta(hours=b["hours"]); v = b["qpf_in"]
-        if v is None:
-            continue
+            e = _utc(b["end_utc"]); s = e - dt.timedelta(hours=b["hours"]); v = b.get("qpf_in")
         ov = _overlap_h(s, e, day_s, day_e)
         if ov <= 0:
             continue
+        if v is None:                       # explicit null: unknown hours, never zero rain (round 03 S2)
+            null_h += ov
+            continue
         total += float(v) * ov / ((e - s).total_seconds() / 3600.0)
         covered += ov
-    return round(total, 3), covered
+    return round(total, 3), covered, null_h
 
 
 def _wind_at(grid, t_utc):
@@ -240,32 +241,38 @@ def build_days(now_utc, tides, data):
     grid_reach = _utc((data.get("grid") or {}).get("reach", {}).get("qpf_in")) \
         if (data.get("grid") or {}).get("reach", {}).get("qpf_in") else None
     local_now = utc_to_station_local(now_utc)
+    horizon_end = series_end_utc(now_utc)
+    local_end = utc_to_station_local(horizon_end)
     days = []
-    for i in range(7):
+    n_days = (local_end.date() - local_now.date()).days + 1     # every calendar date the horizon touches
+    for i in range(n_days):
         d = (local_now + dt.timedelta(days=i)).date()
         start_local = dt.datetime(d.year, d.month, d.day, tzinfo=local_now.tzinfo)
         end_local = start_local + dt.timedelta(days=1)
         s_utc, e_utc = start_local.astimezone(dt.timezone.utc), end_local.astimezone(dt.timezone.utc)
+        # hours of this calendar date inside [now, now+168 h): first/last cards are partial
+        in_scope_h = _overlap_h(s_utc, e_utc, now_utc, horizon_end)
         day_tides = [t for t in tides if t["time"][:10] == d.isoformat() and t["lead_h"] >= -2]
         worst = max(day_tides, key=lambda t: (REGIME_RANK.get(t["regime"], 0), t["outlook_mllw"]), default=None)
         # rain amount for the local day, PRORATED by each bucket's overlap with
         # the day (audit R5): NWS grid when it covers the whole day, else NBM,
         # else WPC; the covered hours are reported with the source.
         day_h = (e_utc - s_utc).total_seconds() / 3600.0
-        qpf, qsrc, qcov = None, None, 0.0
+        qpf, qsrc, qcov, qnull = None, None, 0.0, 0.0
         if grid_reach is not None and e_utc <= grid_reach:
             # the NWS grid lists only intervals with rain: inside its reach,
-            # uncovered hours are dry, so partial coverage is a complete day
-            tot, cov = _prorated_day_total(grid.get("qpf_in"), s_utc, e_utc, start_key="start")
-            qpf, qsrc, qcov = round(tot, 2), "nws_grid", day_h
+            # ABSENT hours are dry; an interval carrying an explicit null is
+            # unknown and reduces the covered hours (round 03 S2)
+            tot, cov, nul = _prorated_day_total(grid.get("qpf_in"), s_utc, e_utc, start_key="start")
+            qpf, qsrc, qcov, qnull = round(tot, 2), "nws_grid", day_h - nul, nul
         if qpf is None:
-            tot, cov = _prorated_day_total(nbm, s_utc, e_utc)
+            tot, cov, nul = _prorated_day_total(nbm, s_utc, e_utc)
             if cov >= 12.0:
-                qpf, qsrc, qcov = round(tot, 2), "nbm", cov
+                qpf, qsrc, qcov, qnull = round(tot, 2), "nbm", cov, nul
         if qpf is None:
-            tot, cov = _prorated_day_total(wpc, s_utc, e_utc)
+            tot, cov, nul = _prorated_day_total(wpc, s_utc, e_utc)
             if cov >= 12.0:
-                qpf, qsrc, qcov = round(tot, 2), "wpc_24h", cov
+                qpf, qsrc, qcov, qnull = round(tot, 2), "wpc_24h", cov, nul
         pops = [v for _, _, v in _grid_rows_in_day(grid.get("pop_pct"), s_utc, e_utc)]
         gusts = _grid_rows_in_day(grid.get("gust_mph"), s_utc, e_utc)
         gust_max = max((v for _, _, v in gusts), default=None)
@@ -297,6 +304,7 @@ def build_days(now_utc, tides, data):
             }
         days.append({
             "date": d.isoformat(), "label": _day_label(i, d),
+            "hours_in_scope": round(in_scope_h, 1), "partial": in_scope_h < 23.0,
             "tides": [{"time": t["time"][11:16], "outlook_mllw": t["outlook_mllw"],
                        "astro_mllw": t["astro_mllw"], "regime": t["regime"],
                        "source": t["outlook_source"]} for t in day_tides],
@@ -309,6 +317,7 @@ def build_days(now_utc, tides, data):
             "regime_hi_max": max((t["regime_hi"] for t in day_tides if t["regime_hi"]),
                                  key=lambda r: REGIME_RANK.get(r, 0), default=None),
             "qpf_in": qpf, "qpf_source": qsrc, "qpf_covered_h": round(qcov, 1),
+            "qpf_null_h": round(qnull, 1), "qpf_partial": (qpf is not None and qcov < day_h - 0.5),
             "pop_max_pct": max(pops, default=None),
             "nbm_pop_max_pct": max(nbm_pops, default=None),
             "gust_max_mph": _r(gust_max, 0), "gust_dir": gust_dir,
@@ -449,10 +458,9 @@ def _burst_hours(nws_hourly, qpf_hourly, nbm):
 
 
 def series_end_utc(now_utc):
-    """End of the seventh station-local calendar day (exclusive)."""
-    local_now = utc_to_station_local(now_utc)
-    d = (local_now + dt.timedelta(days=7)).date()
-    return dt.datetime(d.year, d.month, d.day, tzinfo=local_now.tzinfo).astimezone(dt.timezone.utc)
+    """Rolling horizon: now + HORIZON_HOURS (audit round 03 S3: the declared
+    168 h, the series, the tide table and the slider share one scope)."""
+    return now_utc + dt.timedelta(hours=HORIZON_HOURS)
 
 
 def build_series(now_utc, data, tides, nws_hourly, qpf_hourly, simulate_fn,
@@ -473,10 +481,9 @@ def build_series(now_utc, data, tides, nws_hourly, qpf_hourly, simulate_fn,
     rain_at = _hourly_rain_lookup(qpf_hourly, nbm, wpc)
     burst_hours, _conv = _burst_hours(nws_hourly, qpf_hourly, nbm)
     lo = now_utc - dt.timedelta(hours=6)
-    # The series ends with the seventh calendar day (station-local), the
-    # same scope as the day cards (audit R3: no eighth-date tail without a
-    # card or a burst potential).
-    hi = min(now_utc + dt.timedelta(hours=HORIZON_HOURS), series_end_utc(now_utc))
+    # The series runs the full rolling horizon (round 03 S3); every calendar
+    # date it touches gets a card (audit R3: no tail without a card).
+    hi = series_end_utc(now_utc)
     times, tide_w, rates, pts = [], [], [], []
     for p in hourly:
         t = _utc(p["utc"])
@@ -524,11 +531,17 @@ def add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn):
         pts = [p for p in series if p["time"][:10] == d["date"]]
         known = [p for p in pts if not p.get("rain_unknown")]
         coverage = (len(known) / len(pts)) if pts else 0.0
-        rates = [p["rain_in_hr"] for p in known if p.get("rain_in_hr") is not None]
+        rated = [(_utc(p["utc"]), p["rain_in_hr"]) for p in known if p.get("rain_in_hr") is not None]
+        rates = [r for _, r in rated]
         peak_rate = max(rates, default=0.0)
-        max_6h = 0.0
-        for i in range(len(rates)):
-            max_6h = max(max_6h, sum(rates[i:i + 6]))
+        # max 6-h accumulation over TIMESTAMPED windows (a gap can never make
+        # six samples span more than six hours); incomplete windows are flagged
+        max_6h, window_complete = 0.0, True
+        for t0, _r0 in rated:
+            win = [r for t, r in rated if t0 <= t < t0 + dt.timedelta(hours=6)]
+            acc = sum(win)
+            if acc > max_6h:
+                max_6h, window_complete = acc, len(win) >= 6
         pluv_vals = [p["pluvial_navd88"] for p in pts if p.get("pluvial_navd88") is not None]
         pluv_peak = max(pluv_vals, default=None)
         pluv_peak_time = None
@@ -588,6 +601,7 @@ def add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn):
         d.update({
             "rain_pathway": {
                 "peak_rate_in_hr": _r(peak_rate, 2), "max_6h_in": _r(max_6h, 2),
+                "max_6h_window_complete": window_complete,
                 "tank_peak_navd88": _r(pluv_peak, 2), "tank_peak_time": pluv_peak_time,
                 "tank_regime": rain_regime,
                 "burst_signal": burst_signal, "burst_est_in_hr": _r(burst_est, 2),
@@ -765,14 +779,16 @@ def _lead_bucket(lead):
 def score_shadow(rows, observed_by_time):
     """MAE / bias per source per lead bucket, plus promotion readiness.
 
-    Sampling rule (audit R2, predeclared): within each lead bucket, every
-    OBSERVED TIDE counts once. All issuances of a tide inside the bucket are
-    averaged first (equal weight per tide), then MAE and bias are taken
-    across tides. Candidate and baseline are compared PAIRWISE on tides
-    where both have a value. `n` is distinct tides; `n_forecasts` is rows.
-    READY needs at least READINESS_MIN_N distinct tides.
+    Scoring unit (round 03 S1, predeclared): one ISSUED FORECAST of one
+    tide. Absolute errors are averaged within each tide FIRST (a +1/-1 pair
+    scores 1.0, never 0), then across tides with equal weight; signed errors
+    are averaged the same way for bias. Candidate and baseline are paired
+    only on the SAME ROW (same issuance, same target), so disjoint
+    opportunities are never compared. `n` = distinct tides; `n_obs` =
+    tide-bucket pairs; `n_forecasts` = paired rows. READY needs
+    READINESS_MIN_N distinct tides and a lower MAE.
     """
-    per = {}       # (bucket, col) -> {tide: [errors]}
+    abs_by, sgn_by, pair_by = {}, {}, {}
     for r in rows:
         obs = observed_by_time.get(r.get("target_tide_time"))
         if obs is None:
@@ -784,63 +800,71 @@ def score_shadow(rows, observed_by_time):
         b = _lead_bucket(lead)
         if b is None:
             continue
+        tide = r["target_tide_time"]
+        errs = {}
         for col in SCORED_COLUMNS:
             v = r.get(col)
             if v in (None, ""):
                 continue
             try:
-                per.setdefault((b, col), {}).setdefault(r["target_tide_time"], []).append(float(v) - obs)
+                errs[col] = float(v) - obs
             except ValueError:
                 continue
+        for col, e in errs.items():
+            abs_by.setdefault((b, col), {}).setdefault(tide, []).append(abs(e))
+            sgn_by.setdefault((b, col), {}).setdefault(tide, []).append(e)
+        for a, c in PAIRINGS:
+            if a in errs and c in errs:                       # same issuance only
+                pair_by.setdefault((b, a, c), {}).setdefault(tide, []).append((abs(errs[a]), abs(errs[c])))
 
-    def tide_errors(b, col):
-        return {tide: sum(e) / len(e) for tide, e in (per.get((b, col)) or {}).items()}
+    def _mean(v):
+        return sum(v) / len(v)
 
     buckets = []
     for lo, hi, label in LEAD_BUCKETS:
         srcs_out = {}
         for col in SCORED_COLUMNS:
-            te = tide_errors(label, col)
-            if te:
-                errs = list(te.values())
-                srcs_out[col.replace("_mllw", "")] = {
-                    "n": len(errs), "n_forecasts": sum(len(v) for v in per[(label, col)].values()),
-                    "mae": round(sum(abs(x) for x in errs) / len(errs), 3),
-                    "bias": round(sum(errs) / len(errs), 3)}
+            per_tide = abs_by.get((label, col)) or {}
+            if not per_tide:
+                continue
+            tide_mae = [_mean(v) for v in per_tide.values()]
+            tide_bias = [_mean(v) for v in sgn_by[(label, col)].values()]
+            srcs_out[col.replace("_mllw", "")] = {
+                "n": len(tide_mae), "n_forecasts": sum(len(v) for v in per_tide.values()),
+                "mae": round(_mean(tide_mae), 3), "bias": round(_mean(tide_bias), 3)}
         buckets.append({"label": label, "sources": srcs_out})
 
     def pairwise(a, c, max_lead):
-        pairs, tides = [], set()
+        tides, per_tide_pairs, n_rows = set(), [], 0
         for lo, _hi, label in LEAD_BUCKETS:
             if lo >= max_lead:
                 continue
-            ea, ec = tide_errors(label, a), tide_errors(label, c)
-            for tide in ea.keys() & ec.keys():
-                pairs.append((ea[tide], ec[tide]))
+            for tide, pairs in (pair_by.get((label, a, c)) or {}).items():
                 tides.add(tide)
-        n_rows = sum(len(v) for (lab, col), d in per.items() if col in (a, c) for v in d.values())
-        if not pairs:
+                n_rows += len(pairs)
+                per_tide_pairs.append((_mean([x for x, _ in pairs]), _mean([y for _, y in pairs])))
+        if not per_tide_pairs:
             return {"n": 0, "n_obs": 0, "n_forecasts": 0, "verdict": "NO DATA YET",
                     "mae_candidate": None, "mae_baseline": None}
-        ma = sum(abs(x) for x, _ in pairs) / len(pairs)
-        mb = sum(abs(y) for _, y in pairs) / len(pairs)
-        n_tides = len(tides)                       # the gate counts DISTINCT tides
+        ma = _mean([x for x, _ in per_tide_pairs])
+        mb = _mean([y for _, y in per_tide_pairs])
+        n_tides = len(tides)
         if n_tides < READINESS_MIN_N:
             verdict = f"NOT YET ({n_tides}/{READINESS_MIN_N} scored tides)"
         elif ma < mb:
             verdict = "READY: candidate beats baseline"
         else:
             verdict = "NOT BETTER: baseline wins so far"
-        return {"n": n_tides, "n_obs": len(pairs), "n_forecasts": n_rows,
+        return {"n": n_tides, "n_obs": len(per_tide_pairs), "n_forecasts": n_rows,
                 "mae_candidate": round(ma, 3), "mae_baseline": round(mb, 3), "verdict": verdict}
 
-    scored_tides = len({tide for (b, col), d in per.items() if col == "outlook_mllw" for tide in d})
-    scored_rows = sum(len(v) for (b, col), d in per.items() if col == "outlook_mllw" for v in d.values())
+    scored_tides = len({tide for (b, col), d in abs_by.items() if col == "outlook_mllw" for tide in d})
+    scored_rows = sum(len(v) for (b, col), d in abs_by.items() if col == "outlook_mllw" for v in d.values())
     return {
         "scored_rows": scored_rows,
         "scored_tides": scored_tides,
-        "sampling": ("one observation per tide per lead bucket: issuances averaged per tide, "
-                     "then MAE across tides; candidate and baseline paired on the same tides"),
+        "sampling": ("unit = one issued forecast of one tide; absolute errors averaged within a tide, "
+                     "then across tides; candidate and baseline paired on the same issuance row"),
         "buckets": buckets,
         "readiness": {
             "nwps_vs_persistence_le72h": pairwise("nwps_mllw", "persist_flat_mllw", 72),

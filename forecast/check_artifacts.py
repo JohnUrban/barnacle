@@ -434,8 +434,8 @@ def validate_outlook_field(forecast):
                 failures.append(f"outlook_7d.series[{i}]: {exc}")
                 break
     days = ol.get("days")
-    if not isinstance(days, list) or len(days) != 7:
-        failures.append("outlook_7d.days must hold exactly 7 cards")
+    if not isinstance(days, list) or len(days) not in (7, 8):
+        failures.append("outlook_7d.days must hold the 7 or 8 calendar dates the 168-h horizon touches")
     else:
         try:
             dates = [dt.date.fromisoformat(d["date"]) for d in days]

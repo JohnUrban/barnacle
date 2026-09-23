@@ -78,6 +78,21 @@ except ImportError:                      # run as a script from forecast/
         regime_display)
 
 
+def worst_72h_headline(forecast, fallback):
+    """ONE worst-72-h headline for subject, text and HTML (round 03 S4):
+    the worst PATHWAY across day_worst, else the tide-keyed fallback."""
+    dws = forecast.get("day_worst") or []
+    if not dws:
+        return fallback
+    w = max(dws, key=lambda d: (d.get("rank", 0), d.get("water_navd88") or 0))
+    txt = regime_display(w.get("regime") or "dry").upper()
+    if str(w.get("pathway", "")).startswith("rain ("):
+        txt += " (RAIN)"
+    if w.get("rain_watch_label") and w.get("rank", 0) <= 1:
+        txt = w["rain_watch_label"]
+    return txt
+
+
 def _render_summary_text(forecast):
     """One-line plain-language summary, plus confidence + unusual-forecast
     note (when applicable) on their own lines."""
@@ -1241,15 +1256,7 @@ def render_email(forecast):
                         f" {_lb['rel_grate_in']:+.1f}\")")
     # audit R7 / rule 6: WORST 72H is the worst PATHWAY across the three days,
     # not the tide-keyed peak; the tide peak stays as the detail.
-    _dws = forecast.get("day_worst") or []
-    if _dws:
-        _w = max(_dws, key=lambda d: (d.get("rank", 0), d.get("water_navd88") or 0))
-        _wtxt = regime_display(_w.get("regime") or "dry").upper()
-        if str(_w.get("pathway", "")).startswith("rain ("):
-            _wtxt += " (RAIN)"
-        if _w.get("rain_watch_label") and _w.get("rank", 0) <= 1:
-            _wtxt = _w["rain_watch_label"]
-        headline = _wtxt
+    headline = worst_72h_headline(forecast, headline)
     subject = (f"[342 Bay] TODAY {_today_head} | WORST 72H {headline}: "
                f"tide peak {peak_ft:.2f} ft at {format_time_short(peak_t)} "
                f"({subject_short} {subject_above:+.1f}\")")
@@ -1445,7 +1452,7 @@ Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = ta
         f'<div style="background:#f4f6f8;padding:8px 18px;border-radius:8px;'
         f'margin:-4px 0 14px 0;border:1px solid rgba(0,0,0,0.08)">'
         f'<div style="font-size:11px;color:#777;letter-spacing:1px">WORST 72 H</div>'
-        f'<div style="font-size:14px"><b>{headline_for(forecast, regime)[0]}</b> — '
+        f'<div style="font-size:14px"><b>{worst_72h_headline(forecast, headline_for(forecast, regime)[0])}</b> — '
         f'worst-case tide peak {peak_ft:.2f} ft MLLW at '
         f'{format_time_full(peak_t)}.</div></div>')
 

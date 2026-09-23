@@ -812,6 +812,7 @@
     }
     slider.value = (lvl + MLLW_OFF).toFixed(2);
     tLabel.textContent = p.time + extra
+      + (p.rain_unknown ? " — RAIN FORECAST UNAVAILABLE: tide-only, not a flood forecast" : "")
       + (p.outlook ? " (7-day outlook guidance)" : "");
   }
   function jumpTo(pred) {

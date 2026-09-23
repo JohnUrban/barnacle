@@ -197,8 +197,10 @@ def _worst_line(ol):
         return ""
     def inch(v):
         return f"{(v - 3.52) * 12.0:+.1f}\u2033"
-    return (f'<p><b>Worst flood chance in the next 7 days:</b> {inch(f["navd88"])} vs the SW grate '
-            f'at {_e(_short_time(f["time"]))} via <b>{_e(f.get("pathway"))}</b>. '
+    return (f'<p><b>Worst flood chance in the next 168 hours (timed):</b> {inch(f["navd88"])} vs the SW grate '
+            f'at {_e(_short_time(f["time"]))} via <b>{_e(f.get("pathway"))}</b>. This is the highest TIMED '
+            f'scenario (tide, tank line, or a burst at that hour\'s tide); the cards\' "burst on the day\'s high '
+            f'tide" is a hypothetical with no clock and is not selected here. '
             f'Worst tide: {inch(t["navd88"])} at {_e(_short_time(t["time"]))}. '
             f'The two are not the same question: rain can flood this corner at low tide.</p>')
 
@@ -220,7 +222,8 @@ def _day_cards(ol):
                     f'({_e(_regime_word(d.get("regime_hi_max")))}) at the P-ETSS 90th percentile</p>')
         rain = "Rain: —"
         if d.get("qpf_in") is not None:
-            rain = (f"Rain: <b>{d['qpf_in']:.2f} in</b> ({_e(RAIN_SOURCE.get(d.get('qpf_source'), d.get('qpf_source')))})")
+            rain = (f"Rain: <b>{d['qpf_in']:.2f} in</b> ({_e(RAIN_SOURCE.get(d.get('qpf_source'), d.get('qpf_source')))}"
+                    + (f", {d.get('qpf_covered_h')} of 24 h known" if d.get("qpf_partial") else "") + ")")
         pop = f" · chance {d['pop_max_pct']:.0f}%" if d.get("pop_max_pct") is not None else ""
         wind = "Wind: —"
         if d.get("gust_max_mph") is not None:
@@ -228,7 +231,7 @@ def _day_cards(ol):
         cls = "day-card day-card-today" if i == 0 else "day-card"
         cards.append(f"""
     <div class="{cls} regime-{_e(regime)}">
-      <h3>{_e(_day_title(d))}</h3>
+      <h3>{_e(_day_title(d))}{(" <span class=\"note\">(partial: %s h in scope)</span>" % d.get("hours_in_scope")) if d.get("partial") else ""}</h3>
       <p class="dc-line"><b>{_e(_regime_word(regime).upper())}</b> <span class="note">— worst pathway: {_e(pathway)}</span></p>
       <p class="dc-line">Tide: astronomy <b>{_ft(d.get('astro_max_mllw'))}</b>, with guidance <b>{_ft(d.get('outlook_max_mllw'))}</b>
          → {_e(_regime_word(tidal_regime))} <span class="note">({_e(src)})</span></p>
@@ -239,7 +242,7 @@ def _day_cards(ol):
       <p class="dc-line">{wind}</p>
       {_xcheck_block(d)}
     </div>""")
-    return (f'<section><h2>Seven days at the corner</h2>{_worst_line(ol)}'
+    return (f'<section><h2>The next 168 hours at the corner, by calendar day</h2>{_worst_line(ol)}'
             f'<div class="day-cards">{"".join(cards)}</div></section>')
 
 
@@ -258,12 +261,17 @@ def _chart(ol):
     pluv = [inch_navd(p.get("pluvial_navd88")) for p in series]
     burst = []
     for p in series:
-        pot = pot_by_day.get(p["time"][:10])
+        # the same point-level scenario the maps use (round 03 S5): the burst
+        # at THIS hour's tide level; the day's low-bay figure only as fallback
+        pot = p.get("burst_potential_navd88")
+        if pot is None:
+            pot = pot_by_day.get(p["time"][:10])
         burst.append(inch_navd(max(pot, p["tide_navd88"])) if (p.get("burst_risk") and pot is not None) else None)
+    unknown = [inch_navd(p.get("tide_navd88")) if p.get("rain_unknown") else None for p in series]
     src = [p.get("surge_source") for p in series]
     now_i = next((i for i, p in enumerate(series) if (p.get("lead_h") or 0) >= 0), 0)
     data = {"labels": labels, "tide": tide, "astro": astro, "pluv": pluv, "burst": burst,
-            "src": src, "now_i": now_i,
+            "unknown": unknown, "src": src, "now_i": now_i,
             "landmarks": [{"label": n, "y": y, "color": c, "solid": solid}
                           for n, y, c, solid in LANDMARK_LINES]}
     all_vals = [v for k in ("tide", "astro", "pluv", "burst") for v in data[k] if v is not None] + \
@@ -281,8 +289,10 @@ def _chart(ol):
   var el = document.getElementById('outlook-series-chart');
   if (!el || typeof Chart === 'undefined') { return; }
   var datasets = [
-    { label: 'Burst scenario (rain, no clock)', data: D.burst, borderWidth: 0,
-      backgroundColor: 'rgba(11,61,107,0.30)', pointRadius: 0, fill: { target: 2 }, spanGaps: false },
+    { label: 'Burst scenario at this hour\'s tide (burst-capable hours)', data: D.burst, borderWidth: 0,
+      backgroundColor: 'rgba(11,61,107,0.30)', pointRadius: 0, fill: { target: 3 }, spanGaps: false },
+    { label: 'Rain forecast unavailable (tide-only hours)', data: D.unknown, borderColor: '#999999',
+      backgroundColor: '#999999', borderWidth: 6, pointRadius: 0, spanGaps: false },
     { label: 'Rain street-water (tank line)', data: D.pluv, borderColor: '#d97706',
       backgroundColor: '#d97706', borderWidth: 2, pointRadius: 0, tension: 0.2, spanGaps: false },
     { label: 'Tide + guidance surge (bay water)', data: D.tide, borderColor: '#1a5fa8',
@@ -311,8 +321,10 @@ def _chart(ol):
             f'<p class="note">Same grammar as the landing chart: blue is bay water (astronomical tide plus '
             f'guidance surge: NWS gauge forecast inside 72 h, then P-ETSS, then decayed persistence); '
             f'amber is rain street-water from the production tank model driven by the forecast rain '
-            f'(NWS grid, then NBM); the navy band is the burst scenario on burst-capable hours, drawn as a '
-            f'level because a burst has no knowable clock. Dashed light blue is astronomy alone. The frame '
+            f'(NWS grid, then NBM); the navy band is the burst scenario at each burst-capable hour\'s own tide '
+            f'level, the same numbers the maps use (the cards also quote the rain-alone low-bay figure and the '
+            f'hypothetical burst on the day\'s high tide, which has no clock and is not on this chart). Thick '
+            f'gray marks hours with NO rain forecast: tide-only, not a flood forecast. Dashed light blue is astronomy alone. The frame '
             f'is the landing chart\'s standard \u221260 to +36 inches; the vertical line is now.</p>'
             f'<div style="position:relative;height:380px"><canvas id="outlook-series-chart" role="img" '
             f'aria-label="{_e(aria)}"></canvas></div>{CHART_TAGS}'
