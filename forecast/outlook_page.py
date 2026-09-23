@@ -18,7 +18,19 @@ except ImportError:                      # run as a script from forecast/
     from station_time import parse_station_local_time
 
 GRATE_SW_MLLW = 6.34
-LANDMARK_LINES = (("SW grate", 6.34), ("curb top", 6.98), ("lawn step", 7.48))
+# Landmark reference lines: the SAME five, colors, dash and labels as the
+# landing-page water chart (shared palette; legend datasets learned by
+# color). Inches vs the SW grate.
+LANDMARK_LINES = (
+    ("SW grate 0″ (ground)", 0.0, "#222222", True),
+    ("gutter +3.1″ (move the car)", 3.1, "#2f8f5f", False),
+    ("curb +7.7″ (flood onset)", 7.7, "#c0392b", False),
+    ("lawn step +13.7″", 13.7, "#7c4dbc", False),
+    ("1st porch step top +22.7″", 22.7, "#6d4c2f", False),
+)
+# Standard frame of the landing chart: [-60, +36] inches, expanded only
+# when data or a reference line would be clipped.
+Y_FRAME = (-60, 36)
 SOURCE_LABELS = {
     "nws_product": "NWS coastal flood product",
     "nwps": "NWS gauge forecast (shadow)",
@@ -176,8 +188,13 @@ def _chart(ol):
         "hi": series("band_hi_mllw"),
         "production": series("production_mllw"),
         "sources": [t.get("outlook_source") for t in tides],
-        "landmarks": [{"label": n, "y": _inch(v)} for n, v in LANDMARK_LINES],
+        "landmarks": [{"label": n, "y": y, "color": c, "solid": solid}
+                      for n, y, c, solid in LANDMARK_LINES],
     }
+    all_vals = [v for k in ("astro", "outlook", "lo", "hi", "production")
+                for v in data[k] if v is not None] + [y for _n, y, _c, _s in LANDMARK_LINES]
+    data["y_min"] = min(Y_FRAME[0], (min(all_vals) - 3) if all_vals else Y_FRAME[0])
+    data["y_max"] = max(Y_FRAME[1], (max(all_vals) + 3) if all_vals else Y_FRAME[1])
     aria = ("Seven-day high-tide outlook at Sandy Hook in inches relative to the SW grate: "
             + "; ".join(f"{l} {o:+.0f} in" for l, o in zip(labels, data["outlook"]) if o is not None))
     payload = json.dumps(data)
@@ -201,21 +218,24 @@ def _chart(ol):
   ];
   D.landmarks.forEach(function (lm) {
     datasets.push({ label: lm.label, data: D.labels.map(function () { return lm.y; }),
-      borderColor: '#999999', borderDash: lm.label === 'SW grate' ? [] : [4, 4], borderWidth: 1,
-      pointRadius: 0 });
+      borderColor: lm.color, borderWidth: lm.solid ? 1.5 : 1.2,
+      borderDash: lm.solid ? [] : [6, 5], fill: false, pointRadius: 0 });
   });
   new Chart(el, { type: 'line', data: { labels: D.labels, datasets: datasets },
     options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      scales: { y: { title: { display: true, text: 'inches vs SW grate' }, suggestedMin: -30, suggestedMax: 24 },
-                x: { ticks: { maxRotation: 60, autoSkip: true } } },
-      plugins: { legend: { labels: { filter: function (i) { return i.text !== 'band low'; } } } } } });
+      scales: { y: { title: { display: true, text: 'inches vs SW grate (\u00b1 = above/below)' },
+                     min: D.y_min, max: D.y_max },
+                x: { ticks: { maxRotation: 60, autoSkip: true, font: { size: 10 } } } },
+      plugins: { legend: { display: true, labels: { boxWidth: 22, boxHeight: 2, font: { size: 10 },
+                 filter: function (i) { return i.text !== 'band low'; } } } } } });
 })();
 </script>"""
     return (f'<section><h2>High tides, next 7 days</h2>'
             f'<p class="note">Blue line: outlook with guidance (circle = NWS/P-ETSS guidance, triangle = '
             f'decayed persistence, cross = astronomy only). Dashed light blue: astronomy alone. Shaded: '
             f'P-ETSS 10th to 90th percentile surge band. Gray diamonds: the production forecast for the '
-            f'same tides. Gray lines: SW grate (0), curb top, lawn step.</p>'
+            f'same tides. Landmark lines are the same five as the landing chart, in the same colors. '
+            f'The frame is the landing chart\'s standard \u221260 to +36 inches and only widens if a line would be clipped.</p>'
             f'<div style="position:relative;height:360px"><canvas id="outlook-peaks-chart" role="img" '
             f'aria-label="{_e(aria)}"></canvas></div>{CHART_TAGS}'
             + script.replace("__DATA__", payload) + "</section>")
