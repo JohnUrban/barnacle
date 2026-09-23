@@ -8,6 +8,7 @@ from unittest import mock
 from forecast import check_artifacts
 from forecast import flood_forecast_daily as ff
 from forecast import nowcast
+from forecast import nws_surge_parser
 
 
 class InputHealthTests(unittest.TestCase):
@@ -76,10 +77,14 @@ class InputHealthTests(unittest.TestCase):
             mock.patch.object(ff, "build_water_series", return_value=[]),
             mock.patch.object(ff, "build_seasonal_context", return_value={}),
             mock.patch.object(ff, "_today_lookback", return_value=None),
+            mock.patch.object(
+                nws_surge_parser, "get_surge_forecast",
+                return_value=(False, [], None, "No active Coastal Flood event"),
+            ),
         ]
         with patches[0], patches[1], patches[2], patches[3], patches[4], \
                 patches[5], patches[6], patches[7], patches[8], patches[9], \
-                patches[10], patches[11], patches[12]:
+                patches[10], patches[11], patches[12], patches[13]:
             forecast = ff.build_forecast()
 
         self.assertRegex(forecast["generated_utc"], r"Z$")
@@ -93,6 +98,91 @@ class InputHealthTests(unittest.TestCase):
         )
         self.assertIn("nws_qpf", forecast["degraded_inputs"])
         self.assertIn("surge_observation", forecast["degraded_inputs"])
+
+    def test_active_nws_product_sets_source_and_status_together(self):
+        # 2026-09-23: on the parser's first real event the success path
+        # left nws_status at "not active" next to surge_source
+        # "nws-coastal-flood-product". Both must describe the same input.
+        tide_dt = ff._station_local_now() + dt.timedelta(hours=6)
+        tide_time = tide_dt.strftime("%Y-%m-%d %H:%M")
+        projection = {
+            "when": tide_dt.replace(tzinfo=None, second=0, microsecond=0),
+            "total_mllw_ft": 6.9, "total_mhhw_ft": 1.7,
+            "departure_ft": 1.8, "cat": "Minor", "raw": "23/06 PM",
+        }
+        patches = [
+            mock.patch.object(ff, "fetch_tides_24h", return_value={
+                "high": [(tide_time, 5.1)], "low": [],
+            }),
+            mock.patch.object(ff, "fetch_temperature_72h_mean", return_value=60.0),
+            mock.patch.object(ff, "fetch_nws_hourly_forecast", return_value=[]),
+            mock.patch.object(ff, "fetch_nws_qpf", return_value=[]),
+            mock.patch.object(ff, "fetch_current_surge", return_value=1.48),
+            mock.patch.object(ff, "fetch_nws_flood_alerts", return_value=[]),
+            mock.patch.object(ff, "fetch_surge_swing_6h", return_value=None),
+            mock.patch.object(ff, "fetch_recent_history", return_value=[]),
+            mock.patch.object(ff, "fetch_high_tides_lookahead", return_value=[]),
+            mock.patch.object(ff, "fetch_observed_recent", return_value=[]),
+            mock.patch.object(ff, "build_water_series", return_value=[]),
+            mock.patch.object(ff, "build_seasonal_context", return_value={}),
+            mock.patch.object(ff, "_today_lookback", return_value=None),
+            mock.patch.object(
+                nws_surge_parser, "get_surge_forecast",
+                return_value=(True, [projection], "product text",
+                              "1 Sandy Hook rows from CFW KPHI issued X"),
+            ),
+        ]
+        with patches[0], patches[1], patches[2], patches[3], patches[4], \
+                patches[5], patches[6], patches[7], patches[8], patches[9], \
+                patches[10], patches[11], patches[12], patches[13]:
+            forecast = ff.build_forecast()
+
+        self.assertEqual(forecast["surge_source"], "nws-coastal-flood-product")
+        self.assertEqual(forecast["nws_status"],
+                         "NWS event active: 1 Sandy Hook rows from CFW KPHI issued X")
+        self.assertEqual(forecast["input_health"]["nws_coastal_product"],
+                         {"status": "ok", "detail": forecast["nws_status"]})
+        self.assertNotIn("nws_coastal_product", forecast["degraded_inputs"])
+        self.assertAlmostEqual(forecast["all_tides"][0]["forecast_peak_mllw"], 6.9, places=2)
+        self.assertAlmostEqual(forecast["all_tides"][0]["surge_ft"], 1.8, places=2)
+
+    def test_parser_failure_on_active_event_is_degraded(self):
+        tide_time = (ff._station_local_now() + dt.timedelta(hours=6)).strftime(
+            "%Y-%m-%d %H:%M"
+        )
+        patches = [
+            mock.patch.object(ff, "fetch_tides_24h", return_value={
+                "high": [(tide_time, 5.1)], "low": [],
+            }),
+            mock.patch.object(ff, "fetch_temperature_72h_mean", return_value=60.0),
+            mock.patch.object(ff, "fetch_nws_hourly_forecast", return_value=[]),
+            mock.patch.object(ff, "fetch_nws_qpf", return_value=[]),
+            mock.patch.object(ff, "fetch_current_surge", return_value=1.48),
+            mock.patch.object(ff, "fetch_nws_flood_alerts", return_value=[]),
+            mock.patch.object(ff, "fetch_surge_swing_6h", return_value=None),
+            mock.patch.object(ff, "fetch_recent_history", return_value=[]),
+            mock.patch.object(ff, "fetch_high_tides_lookahead", return_value=[]),
+            mock.patch.object(ff, "fetch_observed_recent", return_value=[]),
+            mock.patch.object(ff, "build_water_series", return_value=[]),
+            mock.patch.object(ff, "build_seasonal_context", return_value={}),
+            mock.patch.object(ff, "_today_lookback", return_value=None),
+            mock.patch.object(
+                nws_surge_parser, "get_surge_forecast",
+                return_value=(True, [], "narrative",
+                              "alert text: No Sandy Hook section in product text"),
+            ),
+        ]
+        with patches[0], patches[1], patches[2], patches[3], patches[4], \
+                patches[5], patches[6], patches[7], patches[8], patches[9], \
+                patches[10], patches[11], patches[12], patches[13]:
+            forecast = ff.build_forecast()
+
+        self.assertEqual(forecast["surge_source"], "surge-persistence")
+        self.assertEqual(forecast["input_health"]["nws_coastal_product"]["status"],
+                         "degraded")
+        self.assertIn("nws_coastal_product", forecast["degraded_inputs"])
+        self.assertIn("parser failed: alert text: No Sandy Hook section",
+                      forecast["nws_status"])
 
     def test_health_banner_says_missing_is_not_zero(self):
         forecast = {

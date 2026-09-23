@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-20 20:30 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 07:32 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. The attic is archival.
 
 ## System
@@ -11,92 +11,82 @@ NWS + MRMS produce depth at 18 landmarks, hourly site/JSON, best-effort
 Model **v0.10.4** (`model/v0.10.4.md`). SMS carries imminent street impact;
 ntfy/email carry longer-lead watches. Real people receive these alerts.
 
+## LIVE EVENT: nor'easter, Coastal Flood Advisory CF.Y.0021
+
+- Advisory 2026-09-23 16:00 EDT -> 2026-09-26 02:00 EDT (Eastern
+  Monmouth), Wind Advisory NE 25-35 mph gusts 50, High Surf 6-12 ft.
+- NWS Sandy Hook projections (CFW KPHI issued 2026-09-23 08:28Z; Minor
+  at 6.7 ft MLLW): Wed PM 6.9 (+1.8), Thu AM 6.4, Thu PM 7.2 (+1.9),
+  Fri AM 7.2 (+2.1), Fri PM 7.5 (+2.2). Worst tide Fri 19:40 EDT.
+- **Parser first real event.** Every hourly run 2026-09-22 21:00Z ..
+  2026-09-23 10:00Z published `nws_coastal_product` DEGRADED ("No Sandy
+  Hook section") and used surge persistence (+1.48 ft), 0.3-0.6 ft
+  under NWS. Cause: the alerts API `description` carries only the
+  bulleted narrative; the tide table sits after the segment's `&&`,
+  which the API drops. Fix: parser reads the raw KPHI CFW product
+  (alert's own issuance first, newest-first, <=24 h). Block ends at
+  the next gauge header (Watson Creek shares the `&&` block). Success
+  path now sets `nws_status`. Fixture + 17 tests; 187 tests, gate
+  clean; live no-write build_forecast sources all six tides from NWS.
+- Confidence rule deliberately caps NWS-product tides at MEDIUM until
+  the first real event is scored (BACKLOG collector c: NWS projections
+  vs observed peaks for the 09-23 PM .. 09-25 PM tides).
+- Per PLAYBOOK live-support: log John's reports immediately; verify the
+  nowcast is publishing; capture radar for the event README.
+
 ## Audit and attribution state
 
-- Audit `2026-09-14-a1` remains CLOSED.
-- Audit `2026-09-18-a1` is CLOSED (three rounds, 2026-09-18): Codex's
-  eleven post-close-out commits verified clean and STAND (v0.10.3, GMT
-  migration, CI gates, offline assessment); the process breaches —
-  fixed `Reviewed-by` trailers on 27 commits since July, and a model
-  promotion without checkpoint — are corrected by ledger erratum and
-  AGENTS rule 12 (attribution follows participation; promotions need
-  independent review + owner DECISION first). v0.10.3 ratified by John,
-  retrospectively and labeled so. No new residuals.
-- John explicitly ratified v0.10.3 on 2026-09-18. BACKLOG records this as a
-  retrospective DECISION; round 01 supplies independent technical review.
-- BACKLOG names the twelve false review trailers in an append-only erratum.
-  Earlier chat requested credit for Claude's audit/planning help; Codex
-  incorrectly generalized that into implementation review on later commits.
-- Rule 12 now requires cited evidence and scope for reviewer attribution.
-  No fixed reviewer/model identity is carried across sessions. Planning
-  advice is credited as planning. Model promotion requires independent
-  candidate review and an owner decision recorded before the commit.
-- Round 02 adds a legacy spring-forward gap regression and documents its
-  pre-transition-offset interpretation; rounds the correction golden to
-  0.09. Production formulas and time conversion are unchanged.
-- Round 03 closed the driveway-overlay residual on source evidence: the
-  map loader drops point keys before rendering, so no browser check applies.
+- Audits `2026-09-14-a1`, `2026-09-18-a1`, `2026-09-20-a1` are CLOSED.
+- v0.10.3 ratified by John 2026-09-18 (retrospective, labeled so);
+  v0.10.4 promoted 2026-09-20 with owner DECISION + independent
+  candidate review recorded first. Do not ask John to re-approve either.
+- AGENTS rule 12: attribution follows actual participation; `Reviewed-by`
+  only for a cited completed review; model promotions need independent
+  review + owner DECISION before the commit.
 
 ## Production and evidence
 
-- **OUTAGE 2026-09-19 04:12Z → 2026-09-20 21:10Z (42 h), FIXED 17:21 EDT
-  (b66297bbc); the 22:00Z hourly run self-published again.** Every hourly
-  forecast run failed the publish gate on a mixed naive/offset accuracy
-  row introduced by the 09-18 GMT migration — a writer/validator contract
-  gap invisible to CI. Gate accepts both stamp forms, writer canonicalizes,
-  a real-writer→real-gate test guards it. The 21:10Z delivered alert was
-  acknowledged by reconstruction (no re-send at 22:00Z). Watchdog paged
-  once at 15:25Z (Mac slept the weekend). Daily archives 09-19/09-20 are
-  missing. Codex owes writer-parity tests for every ledger writer.
-- Alerts have real-payload/freshness contracts, age-bounded NOAA fallbacks,
-  per-rail retry/cap accounting, and one fail-closed post-publish dispatch.
-- Local scheduler has stale-lock recovery, explicit outcomes/heartbeats,
-  quiet publication coalescing, and an armed Mac watchdog (awake hours).
-- NOAA transport uses GMT; storage preserves station offsets, including
-  both fall-back hours. Legacy naive timestamps use fold=0.
+- OUTAGE 2026-09-19 04:12Z -> 2026-09-20 21:10Z (42 h) FIXED b66297bbc:
+  gate accepts naive or offset stamps, writer canonicalizes, real-writer
+  -> real-gate test guards it. Daily archives 09-19/09-20 are missing.
+  Codex owes writer/validator parity tests for every ledger writer.
+- Alerts have real-payload/freshness contracts, age-bounded NOAA
+  fallbacks, per-rail retry/cap accounting, one fail-closed dispatch.
+- Local scheduler has stale-lock recovery, heartbeats, quiet coalescing,
+  and an armed Mac watchdog (awake hours only).
+- NOAA transport uses GMT; storage preserves station offsets. Legacy
+  naive timestamps use fold=0.
 - Widget source v7.29a (driveway rung removed) needs John to re-copy into
-  Scriptable; installed
-  v7.26a was last confirmed 2026-09-14.
-- **v0.10.4 (2026-09-20, owner decision + independent candidate review):**
-  `driveway_central` REMOVED from the ladder (18 landmarks) — a PROXY, not
-  a landmark (PLAYBOOK "PROXIES vs LANDMARKS"); numerically identical to
-  v0.10.3. `driveway_road_central` (4.11 ft) is a map-topography point only.
-- CI has checksum-pinned actionlint/ShellCheck; strict mypy covers
-  `station_time` and `html_contract`. Static DOM/accessibility checks gate
-  current HTML surfaces; full browser runtime accessibility remains open.
-- v0.10.3 corrects only sub-bin stage-storage inversion: sampled correction
-  <=0.090 inch, compound peaks +0.014/+0.063 inch, no peak clock changes.
-  Constants, landmarks, forcing, lag, and alert policy are unchanged.
-- Event #9's 07:01:23 EDT lawn-step crest on 2026-09-13 was 10–13 minutes
-  earlier than the fixed-lag hindcast. Its overnight forecast warned ahead,
-  but QPF put the first flood ~3.5h late; the later compound window hit.
-  Event-time nowcast is unscorable because both production arms were dark.
-- Offline assessment rejects a single replacement lag, universal point/max
-  forcing, standalone persistence, and tide-bias retuning. Moving astronomy
-  plus constant surge helps Oct 30 but not Dec 19: candidate HELD.
-- Legacy reproduction: `history/scripts/reproduce_v0_10_1.py`.
-  Production reproduction: `history/scripts/reproduce_v0_10_3.py`.
+  Scriptable; installed v7.26a last confirmed 2026-09-14.
+- v0.10.4: `driveway_central` REMOVED from the ladder (18 landmarks); the
+  driveway is a documented PROXY; numerically identical to v0.10.3.
+- CI: checksum-pinned actionlint/ShellCheck; strict mypy on `station_time`
+  and `html_contract`; static DOM/accessibility gate on current surfaces.
+- Event #9 (2026-09-13) crest was 10-13 min earlier than the fixed-lag
+  hindcast; offline assessment rejects a single replacement lag, universal
+  point/max forcing, standalone persistence, and tide-bias retuning.
+- Reproductions: `history/scripts/reproduce_v0_10_1.py` (legacy),
+  `history/scripts/reproduce_v0_10_3.py` (production).
 
 ## Residuals and operating rules
 
 - Next real radar trigger must verify storm-path dispatch in production.
 - External 24/7 triggering and secret-bearing local alert redundancy need
-  owner credentials/security choices; sleeping-Mac coverage remains open.
-- Exactly-once delivery requires provider idempotency or a durable service;
-  current crash policy favors duplicate over missed alerts.
+  owner credentials; sleeping-Mac coverage remains open.
+- Exactly-once delivery needs provider idempotency; current crash policy
+  favors duplicate over missed alerts.
 - Model research needs a predeclared surge-tendency/expiry contract and an
-  independent compound event. Event 9 round-2 radar was not archived.
-- Field map clicks, browser-runtime tests, and typing beyond the two seams
-  remain queued; see BACKLOG for the full list.
+  independent compound event.
 - Read PLAYBOOK for flood work. Use station-time helpers; run `date` before
   relative-time prose. Preserve provenance and append-only ledgers.
-- Explicit staging only. Commit → gate → push; rejection → fetch/rebase
-  or abort → gate again → retry. Ledger conflicts resolve by union.
+- Explicit staging only. Commit -> gate -> push; rejection -> fetch/rebase
+  or abort -> gate again -> retry. Ledger conflicts resolve by union.
 - Protect transactional alert state during local generation. Keep model
   spec/code/log stamps and every affected display/alert arm in lockstep.
 
 ## Immediate next step
 
-Nothing urgent. Codex: writer/validator parity round-trip tests for every
-ledger writer (BACKLOG). Owner: widget v7.29a re-copy; external trigger PAT.
-Do not ask John to re-approve v0.10.3 or v0.10.4 — both decisions are recorded.
+Watch the first hourly run after this ships: `input_health.nws_coastal_product`
+must read `ok` with the CFW issuance stamp, `surge_source`
+`nws-coastal-flood-product`. Then score the event (collector c). Codex:
+writer/validator parity tests. Owner: widget v7.29a re-copy; external PAT.

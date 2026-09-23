@@ -2044,7 +2044,10 @@ def build_forecast():
     nws_status = "not active"
     nws_projections = []
     try:
-        import nws_surge_parser
+        try:
+            from forecast import nws_surge_parser
+        except ImportError:                  # run as a script from forecast/
+            import nws_surge_parser
         nws_active, nws_projections, _, msg = nws_surge_parser.get_surge_forecast()
         if not nws_active:
             nws_status = "not active"
@@ -2053,6 +2056,10 @@ def build_forecast():
             nws_status = f"NWS event active but parser failed: {msg}"
             coastal_status = "degraded"
         else:
+            # 2026-09-23: the success path used to leave nws_status at
+            # "not active", so the surfaces' "(...)" note would have
+            # contradicted surge_source on the parser's first real event.
+            nws_status = f"NWS event active: {msg}"
             coastal_status = "ok"
     except ImportError:
         nws_status = "parser module not found"

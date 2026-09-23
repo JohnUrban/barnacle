@@ -120,6 +120,9 @@ in order; every step has been needed at least once:**
   peak minutes after the rain-rate break at full drain head).
 - Residue evidence (mud/wrack) is OPTIONAL detective work under
   the step-3 conditions above — never expected, never primary.
-- COASTAL-FLOOD events only: capture the NWS coastal product and
-  validate nws_surge_parser.py against it — live in production,
-  never yet seen a real product (BACKLOG passive collector c).
+- COASTAL-FLOOD events only: nws_surge_parser.py reads the raw KPHI
+  CFW product (the alerts API drops the tide table — first real
+  product 2026-09-23, fixture tests/fixtures/cfw_phi_20260923_0828z.txt).
+  Check input_health.nws_coastal_product is `ok` and log NWS Sandy Hook
+  projections vs observed peaks for the scoring loop (BACKLOG
+  passive collector c).
