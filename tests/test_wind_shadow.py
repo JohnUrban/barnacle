@@ -464,24 +464,75 @@ class EvaluatorTests(unittest.TestCase):
 
     def test_observation_qc_R2(self):
         ev = _ev()
-        wl = {"data": [{"t": "2026-10-01 00:00", "v": "5.0", "f": "0,0,0,0"},
-                       {"t": "2026-10-01 01:00", "v": "5.0"},
-                       {"t": "2026-10-01 02:00", "v": "5.0", "f": "0,x,0,0"},
-                       {"t": "2026-10-01 03:00", "v": "NaN", "f": "0,0,0,0"},
-                       {"t": "2026-10-01 04:00", "v": "5.0", "f": "0,0,1,0"},
-                       {"t": "2026-10-01 06:00", "v": "5.0", "f": "2,0,0,0"}]}
+        rows = [("5.0", "0,0,0,0", "p"), ("5.0", None, "p"), ("5.0", "0,x,0,0", "p"), ("NaN", "0,0,0,0", "p"),
+                ("5.0", "0,0,1,0", "p"), ("5.0", "2,0,0,0", "p")]
+        wl = {"data": [dict({"t": f"2026-10-01 0{h}:00", "v": v, "q": q}, **({"f": f} if f else {}))
+                       for h, (v, f, q) in enumerate(rows)]}
         pr = {"predictions": [{"t": f"2026-10-01 0{h}:00", "v": "4.0"} for h in range(7)]}
         o = ev.parse_observations(wl, pr)
         valid = [t.hour for t, r in sorted(o.items()) if r["valid"]]
-        self.assertEqual(valid, [0, 6])                    # O is an outlier-sample COUNT, not a failure
-        self.assertEqual(o[dt.datetime(2026, 10, 1, 6, tzinfo=UTC)]["outlier_samples"], 2)
+        self.assertEqual(valid, [0, 5])                    # preliminary O is an outlier-sample COUNT
+        self.assertEqual(o[dt.datetime(2026, 10, 1, 5, tzinfo=UTC)]["outlier_samples"], 2)
+        self.assertEqual(o[dt.datetime(2026, 10, 1, 5, tzinfo=UTC)]["q"], "p")
         self.assertIn("tolerance flag", o[dt.datetime(2026, 10, 1, 4, tzinfo=UTC)]["reason"])
-        self.assertEqual(o[dt.datetime(2026, 10, 1, 5, tzinfo=UTC)]["reason"], "no observation")
+        self.assertEqual(o[dt.datetime(2026, 10, 1, 6, tzinfo=UTC)]["reason"], "no observation")
+
+    def test_flags_are_read_by_quality_status_R5_Q1(self):
+        """Round 05: the same tuple 1,0,0,0 is an outlier count when preliminary but
+        an INFERRED value when verified; missing/unknown q is never assumed."""
+        ev = _ev()
+        c = lambda **k: ev.classify_water_level(dict({"v": "5.0", "f": "1,0,0,0"}, **k))
+        self.assertEqual(c(q="p")[:2], (True, None)); self.assertEqual(c(q="p")[2]["outlier_samples"], 1)
+        ok, why, info = c(q="v")
+        self.assertFalse(ok); self.assertIn("inferred", why); self.assertTrue(info["inferred"])
+        self.assertNotIn("outlier_samples", info)
+        self.assertEqual(c(q="v", f="0,0,0,0")[:2], (True, None))
+        for f in ("0,1,0,0", "0,0,1,0", "0,0,0,1"):
+            self.assertIn("tolerance", c(q="v", f=f)[1]); self.assertIn("tolerance", c(q="p", f=f)[1])
+        self.assertTrue(c(q="v", f="1,0,1,0")[2]["inferred"])           # inferred AND a tolerance failure
+        for q in (None, "", "x", "P"):
+            self.assertIn("missing or unsupported", c(q=q)[1])
+        self.assertIn("missing or unsupported", ev.classify_water_level({"v": "5.0", "f": "0,0,0,0"})[1])
+        for bad in ("1,0,0", "1,0,0,0,0", "a,0,0,0", "", None):
+            self.assertFalse(c(q="p", f=bad)[0])
+        self.assertIn("non-finite", c(q="v", v="nan", f="0,0,0,0")[1])
+        # an inferred hour breaks the consecutive-hour storm rules like any invalid hour
+        wl = {"data": [{"t": (dt.datetime(2026, 10, 1, tzinfo=UTC) + dt.timedelta(hours=i)).strftime("%Y-%m-%d %H:%M"),
+                        "v": "6.0", "f": "1,0,0,0" if i == 3 else "0,0,0,0", "q": "v"} for i in range(8)]}
+        pr = {"predictions": [{"t": r["t"], "v": "4.0"} for r in wl["data"]]}
+        o = ev.parse_observations(wl, pr)
+        self.assertEqual(o[dt.datetime(2026, 10, 1, 3, tzinfo=UTC)]["inferred_obs"], 6.0)
+        self.assertEqual(ev.episodes(o, min(o), max(o)), [])            # 3 + gap + 4 < 6 consecutive
+        counts = defaultdict(int)
+        t0 = dt.datetime(2026, 10, 1, 2, tzinfo=UTC)
+        ev.pairs_for({t0: _rec(t0, 2.0, 2.0)}, o, dt.datetime(2026, 10, 10, tzinfo=UTC), 1, counts)
+        self.assertEqual((counts["outcome_invalid"], counts["outcome_inferred_verified"]), (1, 1))
+
+    def test_retained_verified_inferred_rows_are_excluded_R5_Q1(self):
+        path = ROOT / "history/data/forecast_test/water_level_flags.parquet"
+        if not path.exists():
+            self.skipTest("local training re-pull not present (git-ignored)")
+        try:
+            import pandas as pd
+        except ImportError:
+            self.skipTest("pandas not installed")
+        ev = _ev()
+        wf = pd.read_parquet(path)
+        cls = [ev.classify_water_level({"v": v, "f": f, "q": q}) for v, f, q in zip(wf.v, wf.f, wf.q)]
+        admitted = [t for t, (ok, _w, info), f, q in zip(wf.timestamp, cls, wf.f, wf.q)
+                    if ok and q == "v" and str(f).startswith("1,")]
+        self.assertEqual(admitted, [])                                   # Codex's six rows now excluded
+        six = {"2026-04-05 02:00", "2026-04-25 23:00", "2026-06-15 04:00", "2026-07-06 22:00",
+               "2026-07-21 22:00", "2026-08-20 22:00"}
+        got = {t.strftime("%Y-%m-%d %H:%M") for t, (ok, w, info) in zip(wf.timestamp, cls) if info.get("inferred") and "inferred" in (w or "")}
+        self.assertEqual(got, six)
+        m = json.loads((ROOT / "models/wind_shadow/manifest.json").read_text())
+        self.assertEqual(m["water_level_qc_repull"]["verified_inferred_excluded"], 12)
 
     def test_raw_outcome_bodies_are_replayed_and_verified_R5(self):
         ev = _ev()
         d = tempfile.mkdtemp(); os.makedirs(os.path.join(d, "raw"))
-        wl = json.dumps({"data": [{"t": "2026-10-01 00:00", "v": "5.0", "f": "0,0,0,0"}]}).encode()
+        wl = json.dumps({"data": [{"t": "2026-10-01 00:00", "v": "5.0", "f": "0,0,0,0", "q": "p"}]}).encode()
         pr = json.dumps({"predictions": [{"t": "2026-10-01 00:00", "v": "4.0"}]}).encode()
         resp = []
         for product, body in (("water_level", wl), ("predictions", pr)):

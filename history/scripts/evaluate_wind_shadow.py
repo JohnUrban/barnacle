@@ -27,12 +27,14 @@ Opportunities: one per UTC hour slot from the trial start; per slot the
   (baseline kept) | error (no baseline) | not_evaluable (only disabled or
   unbound records) | missing.
 Observations: CO-OPS 6-min water_level on the hour minus hourly predictions,
-  UTC. VALID iff the value is finite, the flag field parses to exactly four
-  integers [O,F,R,L], and the tolerance flags F, R, L are all 0; otherwise
-  invalid with the reason retained. O is NOT a pass/fail flag: CO-OPS defines
-  it as the count of 1-s samples outside a 3-sigma band; it is kept per hour
-  (outlier_samples). Requiring O = 0 would drop elevated-surge hours
-  preferentially (a3 reply 04: 7.9 % of 1.0-1.5 ft hours vs 1.8 % below 0.5 ft). With --save-obs
+  UTC, classified by the row's quality status q (classify_water_level):
+  preliminary (q=p) flags [O,F,R,L] -> VALID iff F=R=L=0 (O is a count of 1-s
+  outlier samples, kept as outlier_samples; requiring O=0 would drop
+  elevated-surge hours preferentially); verified (q=v) flags [I,F,R,T] ->
+  VALID iff all four are 0 (I=1 = inferred, not an observation; its level is
+  kept as inferred_obs and counted, never scored); missing/unknown q, a
+  non-finite value or malformed flags -> invalid with the reason. q and the
+  raw flags are kept per hour. With --save-obs
   DIR every raw response body is saved under its SHA-256; --obs-json replays a
   saved bundle offline, re-parsing the raw bodies after verifying their hashes.
   A report without retained raw bodies says so (outcome_provenance).
@@ -189,13 +191,53 @@ def load_records(directory, candidate_id, bundle_sha, manifest_sha, runtime_sha)
 
 
 # ------------------------------------------------------------------ observations
+def classify_water_level(row):
+    """(valid, reason, info) for one CO-OPS water_level row, by its quality
+    status q (NOAA Data API Response Help):
+      q = "p" preliminary, flags [O,F,R,L]: O counts 1-s samples outside a
+        3-sigma band (informational); VALID iff F = R = L = 0.
+      q = "v" verified, flags [I,F,R,T]: I = value INFERRED; VALID (observed
+        cohort) iff I = F = R = T = 0; an inferred value is not an observation.
+      missing or unknown q: invalid (unsupported), never assumed preliminary.
+    The value must be finite and the flags exactly four integers."""
+    q = row.get("q")
+    fs = row.get("f")
+    info = {"q": q, "f": fs}
+    try:
+        v = float(row["v"])
+    except (KeyError, TypeError, ValueError):
+        v = float("nan")
+    if not math.isfinite(v):
+        return False, "non-finite value", info
+    flags = str(fs).split(",") if fs is not None else []
+    if len(flags) != 4 or not all(x.strip().isdigit() for x in flags):
+        return False, f"malformed flags {fs!r}", info
+    fl = [int(x) for x in flags]
+    if q == "p":
+        if any(fl[1:]):
+            return False, f"preliminary tolerance flag set {fs}", info
+        info["outlier_samples"] = fl[0]
+        return True, None, info
+    if q == "v":
+        if fl[0]:
+            info["inferred"] = True
+        if any(fl[1:]):
+            return False, f"verified tolerance flag set {fs}", info
+        if fl[0]:
+            return False, "verified value inferred (I=1): not an observation", info
+        return True, None, info
+    return False, f"quality status {q!r} missing or unsupported", info
+
+
 def parse_observations(water_level_js, predictions_js):
-    """{hour: {surge, obs, pred, valid, reason}} with the declared QC."""
+    """{hour: {surge, obs, pred, valid, reason, q, f, ...}} with the declared QC.
+    An inferred verified value keeps its level as inferred_obs (sensitivity
+    only); it is never valid."""
     wl = {}
     for r in water_level_js.get("data") or []:
         try:
             wl[_utc(r["t"].replace(" ", "T") + "Z")] = r
-        except (KeyError, ValueError):
+        except (KeyError, ValueError, AttributeError):
             continue
     out = {}
     for r in predictions_js.get("predictions") or []:
@@ -210,20 +252,15 @@ def parse_observations(water_level_js, predictions_js):
         if w is None:
             rec["reason"] = "no observation"
         else:
-            try:
+            ok, why, info = classify_water_level(w)
+            rec.update(info)
+            if ok:
                 v = float(w["v"])
-            except (KeyError, TypeError, ValueError):
-                v = float("nan")
-            fs = str(w.get("f", ""))
-            flags = fs.split(",") if fs else []
-            if not math.isfinite(v):
-                rec["reason"] = "non-finite value"
-            elif len(flags) != 4 or not all(x.strip().isdigit() for x in flags):
-                rec["reason"] = f"malformed flags {fs!r}"
-            elif any(int(x) for x in flags[1:]):
-                rec["reason"] = f"tolerance flag set {fs}"
+                rec.update(obs=v, surge=v - p, valid=True)
             else:
-                rec.update(obs=v, surge=v - p, valid=True, outlier_samples=int(flags[0]))
+                rec["reason"] = why
+                if info.get("inferred"):
+                    rec["inferred_obs"] = float(w["v"])
         out[t] = rec
     return out
 
@@ -355,6 +392,7 @@ def pairs_for(slots, obs, now, lead, counts):
             continue
         if not o["valid"]:
             counts["outcome_invalid"] += 1
+            counts["outcome_inferred_verified"] += bool(o.get("inferred"))
             continue
         b, c = r["baseline_surge_ft"][lead - 1], r["candidate_surge_ft"][lead - 1]
         prod = None

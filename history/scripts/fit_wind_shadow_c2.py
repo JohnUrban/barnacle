@@ -8,9 +8,10 @@ history); observed pressure uses the hourly product WITH quality flags (all 0
 required), the window [t0 - 30 d, t0) and >= 480 of its 720 hours; dataset
 identities (SHA-256) are bound into the manifest; nominal targets t0 + h from
 the issuance hour t0; the reading is the 6-min value at t0.
-Round 03 (a3 R5): the training OUTCOME (target) must pass the evaluator's
-water-level QC (finite, four integer flags [O,F,R,L] with F=R=L=0; O is a
-count of 1-s outlier samples, not a failure), from a re-pull of the
+Round 03/05 (a3 R5, R5-Q1): the training OUTCOME (target) must pass the
+evaluator's own water-level classifier (classify_water_level, imported):
+preliminary [O,F,R,L] valid iff F=R=L=0 (O is a count); verified [I,F,R,T]
+valid iff all 0 (I = inferred); missing/unknown q invalid. From a re-pull of the
 6-min water_level WITH flags (history/data/forecast_test/water_level_flags.parquet).
 The READING mirrors production, which applies no flag QC (it despikes); the
 mean replays production's policy, which also applies no flag QC.
@@ -101,19 +102,20 @@ if not WF.exists():
 wf = pd.read_parquet(WF).set_index("timestamp").sort_index()
 
 
-def _wl_ok(v, f):
-    try:
-        fl = str(f).split(",")
-        return len(fl) == 4 and all(x.strip().isdigit() for x in fl) and not any(int(x) for x in fl[1:]) \
-            and math.isfinite(float(v))
-    except (TypeError, ValueError):
-        return False
-_ok_rows = pd.Series([_wl_ok(v, f) for v, f in zip(wf.v, wf.f)], index=wf.index)
+# outcome QC = the evaluator's own classifier (one rule for training and scoring)
+import importlib.util as _ilu  # noqa: E402
+_spec = _ilu.spec_from_file_location("evaluate_wind_shadow", ROOT / "history/scripts/evaluate_wind_shadow.py")
+_evm = _ilu.module_from_spec(_spec); _spec.loader.exec_module(_evm)
+_cls = [_evm.classify_water_level({"v": v, "f": f, "q": q}) for v, f, q in zip(wf.v, wf.f, wf.q)]
+_ok_rows = pd.Series([c[0] for c in _cls], index=wf.index)
 wl_ok = _ok_rows.reindex(sv.index).fillna(False).astype(bool)
 wl_v = pd.to_numeric(wf.v, errors="coerce").reindex(sv.index)
 _both = wl_v.notna() & sv.observed_mllw.notna()
-wl_qc = {"rows_repulled": int(len(wf)), "rows_failing_qc": int((~_ok_rows).sum()),
-         "rows_with_outlier_count_only": int(sum(str(f).split(",")[0] not in ("0", "") and _wl_ok(v, f) for v, f in zip(wf.v, wf.f))),
+_reasons = pd.Series([c[1] or "valid" for c in _cls]).str.replace(r" \d+,\d+,\d+,\d+$", "", regex=True)
+wl_qc = {"rows_repulled": int(len(wf)), "rows_valid": int(_ok_rows.sum()),
+         "invalid_by_reason": {str(k): int(v) for k, v in _reasons[_reasons != "valid"].value_counts().items()},
+         "preliminary_valid_with_outlier_count": int(sum(bool(c[0] and c[2].get("outlier_samples")) for c in _cls)),
+         "verified_inferred_excluded": int(sum(bool(c[2].get("inferred")) for c in _cls)),
          "value_mismatch_vs_table_gt_0p001ft": int(((wl_v - sv.observed_mllw).abs() > 0.001)[_both].sum()),
          "rows_compared": int(_both.sum()),
          "quality_codes": {str(k): int(v) for k, v in wf["q"].value_counts(dropna=False).items()}}
@@ -249,7 +251,7 @@ manifest = {
                         "labeled); anomaly = value minus the mean of QC-passing hourly values in [t0 - 30 d, t0), "
                         f">= {MIN_PRESSURE_HOURS} of 720 required; QC = all three flags 0 and finite"),
     "targets": "nominal UTC hours t0 + h, t0 = the issuance hour; reading = 6-min value at t0 (live: <= 60 min old)",
-    "water_level_qc": ("training outcome must pass the evaluator's QC (finite, four integer flags, F=R=L=0; O is a count) from a flagged "
+    "water_level_qc": ("training outcome must pass the evaluator's classify_water_level (q-aware: preliminary O is a count, verified I=1 is inferred and excluded) from a flagged "
                        "re-pull; the reading mirrors production (no flag QC; production despikes); the mean replays "
                        "production (no flag QC)"),
     "water_level_qc_repull": wl_qc,

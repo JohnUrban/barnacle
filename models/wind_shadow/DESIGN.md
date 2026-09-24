@@ -143,3 +143,16 @@ Supersedes the two bullets above where they differ.
   preferentially (fit span: 7.9 % of 1.0-1.5 ft hours vs 1.8 % below 0.5 ft).
   The fit's OUTCOMES pass this QC from a flagged re-pull (values identical to
   the training table); the reading and the mean mirror production (no flag QC).
+
+## Round-05 correction (audit 2026-09-24-a3 R5-Q1; appended before any official record)
+Supersedes the round-03 "Water-level QC" bullet. CO-OPS flags depend on the
+row's quality status q. Preliminary (q=p) flags are [O,F,R,L]: O counts
+1-s samples outside a 3-sigma band; VALID iff F = R = L = 0. Verified
+(q=v) flags are [I,F,R,T]: I = 1 means the value was INFERRED; VALID
+(observed cohort) iff I = F = R = T = 0. A missing or unknown q is invalid,
+never assumed preliminary. q and the raw flags are kept per outcome hour; an
+inferred level is kept as inferred_obs and counted, never scored; an inferred
+or otherwise invalid hour breaks the consecutive-hour storm rules. The fit
+imports the evaluator's classify_water_level, so training and scoring share
+one rule. Fit re-pull: 12 verified inferred rows excluded (6 of them also
+carried R), 107 preliminary rows admitted with an outlier count.

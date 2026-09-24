@@ -208,3 +208,6 @@ rules live in the evaluator docstring and models/wind_shadow/DESIGN.md.
   production's as-issued tank inputs from its series start, and the evaluator
   runs a frozen copy of the tank (models/wind_shadow/rain_ref.py) and scores
   every flood-window landmark.
+- Round-05 correction: water-level flags are read by quality status —
+  preliminary [O,F,R,L] valid iff F = R = L = 0; verified [I,F,R,T] valid iff
+  all 0 (I = inferred, excluded); missing/unknown status invalid.
