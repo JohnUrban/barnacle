@@ -104,7 +104,7 @@ looks stale, trust this file. Ledger lines are append-only:
       guidance, low-tide/plug/underprediction and rain checks. Production stays
       v0.10.6; no displayed or alert wind term, no automatic promotion. Any live
       adoption needs separate version/replays/review and John DECISION.
-- [ ] **Social offline rehearsal — doc 21 review and broader map scope.**
+- [ ] **Social offline rehearsal — docs 21–22 repairs and owner copy direction.**
       Local social review `bf6a54273` checks Tern `26145cf03`: 408 tests,
       72 practice cases and 14 delivery scenarios reproduce; aligned map/curve,
       common selected level and production isolation verified. OPEN R1–R3:
@@ -116,10 +116,16 @@ looks stale, trust this file. Ledger lines are append-only:
       retains official NJ borough boundary, source receipt and coverage sketch;
       approximate town tags do not define municipal/address coverage. Codex
       recommends bay-/river-facing primary plus whole-borough comparison.
-      Existing eligibility accepted; wording and expiry still undecided.
+      Owner doc 22 settles principles: retain warning-first and active/fresh
+      LIVE radar; clarify above/below references; omit public EDT and house
+      references; prototype MLLW/local-grate dual axes. Map depth stays local
+      ground-relative. Targeted edits, not a general rewrite. Tern implements
+      docs 21–22 together; Codex review then owner copy/visual feedback.
+      Existing eligibility accepted; final strings and expiry remain open.
       Offline/local-only: no provider, accounts, posting or production changes.
       Brief: sibling social branch history/plans/2026-09-24-social-broadcast/
-      `21-independent-review-and-broader-map-codex.md`.
+      `21-independent-review-and-broader-map-codex.md` and
+      `22-owner-wording-and-public-references.md`.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -680,3 +686,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | DONE | as-issued-validation-a4-round02 | Heron confirmed and repaired audit 2026-09-24-a4 R1-R5 and the smaller items on research/as-issued-validation (repairs 00875267d; r2 outputs/report 9e3f833a3; protocol Amendment 2 stated as post-review and post-scoring; r1 outputs and report kept): EXACT gated on control replay; anchors rebuilt and corrections reconstructed with phase coverage; observation manifest with bounds/tolerances/time windows/supersession/conflicts verified by row hash; declared threshold rule with UNKNOWN brackets; peak brackets and narrative corrected. Verdicts unchanged (NOT YET EVALUABLE); dry-tidal point comparison now one event. Logging isolated on logging/replay-provenance 224c14dcd. Reply audits/2026-09-24-a4/02-repairs-reply-heron.md; Codex recheck owed before any merge [VERIFIED: branch commits, tests]
 2026-09-24 | DECISION | social-broader-highlands-map | John permits all Highlands streets/addresses or bay-facing Route 36 scope if clearer, including riverfront beyond the prior right edge; fit the chosen area tightly. Replaces earlier Shore Drive crop restriction; no property shading, address labeling, model/eligibility change, final wording or expiry approval [STATED: owner session; sibling social doc 21]
 2026-09-24 | FACT | social-codex-doc21-review | Codex reviewed Tern 26145cf03 and committed local review bf6a54273. 408 tests, gate, 72 cases and 14 delivery scenarios reproduce; accepts Tern L1–L4 corrections of Codex wording. OPEN R1–R3 cover incomplete town legend (51 cases), unavailable surface gray claim (synthetic), and incomplete two-image correction plan/demo; phone key/legend still tiny. Recorded expanded owner geography, retained official NJ boundary/source and coverage sketch. Tern reply/repair then independent recheck; social branch remains local-only, no live forecast/alert change [VERIFIED: sibling social doc 21 and probes]
+
+2026-09-24 | DECISION | social-owner-wording-round22 | John clarified targeted copy repairs, preserving Barnacle flood alert/FLOOD ALERT, concise all-caps impact leads and LIVE radar for active accelerated nowcast. Explicit above/below landmark references; no public 342/residence framing or EDT/EST suffix; AM/PM/date context retained and internal timestamps unchanged. Standard MLLW plus intersection-grate chart scales for offline review; maps show ground-relative depth, not grate-relative town depth. Codex doc 22 (local social commit f987e5597) supersedes conflicting earlier proposals and combines implementation with doc 21 repairs. Final strings/expiry and production adoption remain open; no live changes [STATED: owner session; sibling social doc 22]

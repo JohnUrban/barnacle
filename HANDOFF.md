@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 15:56 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 16:41 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -67,9 +67,13 @@ John broadened map scope to all Highlands or bay-facing Route 36 if clearer,
 including riverfront beyond old east edge; fit tightly. Doc 21 retains official
 NJ boundary and coverage sketch; approximate town tags cannot define coverage.
 Codex recommends bay-/river-facing primary and whole-borough comparison.
-Tern replies/repairs, improves tiny phone key/legend and orientation, regenerates
-for Codex/owner review. Existing eligibility accepted; final copy and expiry
-not approved. Offline → Facebook only → optional later expansion. No live copy,
+Doc 22 (`f987e5597`) records owner agreement: targeted fixes, preserve warning-first
+and active/fresh LIVE radar, explicit above/below references, no public house
+references or EDT/EST. Prototype MLLW/local-grate chart scales; maps keep local
+ground-relative depths. Tern implements docs 21–22 together, including phone
+key/legend and orientation, then Codex reviews and John evaluates copy/visuals.
+Existing eligibility accepted; final strings and expiry remain open.
+Offline → Facebook only → optional later expansion. No live copy,
 accounts or posts; social branch stays local-only. Never overwrite newer main
 living docs with that branch's snapshots. Heron work stays separate.
 
