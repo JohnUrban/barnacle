@@ -195,3 +195,18 @@ files; the original scripts and reports are unchanged and still reproduce.
   (`history/reports/2026-09-24-surge-decay-views-utc.txt`): tau 36 h toward
   the trailing mean remains best or near-best in every view (24 h all hours
   0.342 vs constant 0.398); the release is unaffected.
+
+## Verification and approved next step — 2026-09-24 (Codex)
+
+[audit round03](../../audits/2026-09-24-a2/03-close-out-codex.md) independently
+verifies the corrected studies and closes R1-R5 as exploratory-research
+corrections. The original reports and replies above remain historical records.
+Clarifications: converting legacy local clock labels to UTC adds five hours
+in January/four in July (round02's "-5/-4" wording is the reverse direction).
+The day2 nominal age range is 47–18 h for a 30-h window, 47–0 h for 48 h.
+The unsuccessful transferred GFS fit shows transfer cannot be assumed; it does
+not establish that no pair of feeds could ever share validated coefficients.
+John approved [the Open-Meteo shadow plan](2026-09-24-wind-term-candidate-plan.md),
+including the NDFD archive feasibility check. No displayed forecast or alert
+change is authorized by this shadow decision. Implementation/collection have
+not begun; the frozen prospective evaluation remains ahead.

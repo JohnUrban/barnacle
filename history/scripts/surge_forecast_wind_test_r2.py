@@ -8,7 +8,8 @@
       refit and the transfer fit.
   R4  wording: previous_day1/2 values are chosen by VALID time; for a 24-h
       window starting at issuance t their nominal ages at t run from ~23 h to
-      ~0 h (day1), for 24-48 h windows ~47 h to ~18 h (day2); cached values do
+      ~0 h (day1); a 30-h window uses ages ~47 to ~18 h (day2), and a 48-h
+      window ~47 to ~0 h. Cached values do
       not prove publication/retrieval availability at t. "M3-obs" is an ORACLE
       benchmark (observed future forcing), not an upper bound on forecast skill.
 Scored period = ISSUANCES 2025-05-01 up to (not including) 2026-09-21; targets

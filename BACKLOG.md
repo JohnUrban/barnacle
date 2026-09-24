@@ -61,16 +61,25 @@ looks stale, trust this file. Ledger lines are append-only:
       constant lift and subsequent constant-persistence interim were superseded
       by v0.10.6; neither is pending production repair. Experimental outlook
       scenarios do not drive core alerts; the production decay does.
-- [ ] **Wind/pressure research review — audit 2026-09-24-a2 OPEN.**
-      Codex reproduced both reports and independently recomputed round2.
-      Round1 mixes local water timestamps with UTC weather (also affecting
-      transferred coefficients). Corrected target-time views and purged training
-      still support a research
-      candidate at 24-30 h; claims of gains at every lead and guaranteed live
-      improvement need revision. See `audits/2026-09-24-a2/01-wind-research-review-codex.md`.
-      Claude's finding-by-finding reply, corrected study, issuance-time source
-      validation and a separately reviewed/versioned candidate remain ahead.
-      No wind/pressure term has been added to production.
+- [x] **Wind research corrections — audit 2026-09-24-a2 CLOSED (2026-09-24).**
+      Claude reply02 confirmed R1-R5 and repaired the studies in `142907573`.
+      Codex round03 reproduces all three revised reports, verifies canonical
+      UTC history, and matches 50 refit/view scores to independent calculations.
+      Original reports remain intact. Exploratory gains survive; no production
+      wind term or live-skill approval. Report `audits/2026-09-24-a2/03-close-out-codex.md`.
+- [ ] **Open-Meteo wind/pressure SHADOW candidate — APPROVED (John, 2026-09-24).**
+      DECISION `wind-shadow-open-meteo`: develop and log the `gfs_seamless`
+      candidate hourly without changing any displayed forecast or alert.
+      Plan `history/plans/2026-09-24-wind-term-candidate-plan.md` includes exact
+      live/training construction, raw issuance/retrieval provenance, production
+      mean policy, frozen coefficients/evaluator, bounded failure handling and
+      v0.10.6 fallback. Freeze the implementation manifest BEFORE collection.
+      Minimum 60 days AND five storm episodes; compare target high/low/plug
+      views, storm/large-underprediction errors, rain-tank effects and NWS/P-ETSS.
+      Run a bounded NDFD archive feasibility probe and preserve NWS inputs;
+      no assumption that NWS wind requires months of new logging. No shadow
+      code or first evaluation record yet. Promotion needs its own review,
+      model version/replays and separate John DECISION; no automatic cutover.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -581,3 +590,7 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | OPEN | wind-research-independent-review | Audit 2026-09-24-a2 round01: original reports reproduce, but round1 joins local water to UTC met, round2 scores high/plug masks at issuance instead of target, and fitting labels cross the split. Corrected 24-h GFS refit MAE all 0.2892->0.2369 ft, storm 0.4771->0.3549; target low/plug improve too. Research promising, needs revision before production. Forecast-age/bound claims and predeclared timestamps require correction; original reports retained, plan gains erratum pointer. Claude reply and a separately reviewed/versioned candidate remain ahead [VERIFIED: audit scripts/output/hashes]
 2026-09-24 | FACT | wind-research-corrected | audit 2026-09-24-a2 (Codex) R1-R5 confirmed; reply audits/2026-09-24-a2/02-reply-claude.md. Canonical UTC water history pulled with time_zone=gmt (history/scripts/pull_sandy_hook_history_utc.py; identical to the independent UTC pull; legacy table is -5 h winter / -4 h summer). Corrected (exploratory, periods now inspected): round 1, 24 h, future observed wind+pressure 0.277 all / 0.347 storm starts; PAST wind+pressure helps storm starts 0.527 -> 0.492 but loses slightly near the plug band (supersedes surge-forcing-research-round-1's "past adds nothing"); round 2, 24 h, decay 0.289 / 0.477 -> GFS refit 0.237 / 0.355, ECMWF 0.235 / 0.355, target-hour views improve at 24-30 h; ECMWF 6-h plug band loses 0.188 vs 0.186 (supersedes "every view every lead"); GFS transfer still worse than decay after alignment (fit on the exact feed). v0.10.6 tau 36 h reconfirmed on UTC data. Withdrawn: "24-48 h old", "live gain at least this large", "observed wind = upper bound"; predeclaration timing unverified [VERIFIED: history/reports/2026-09-24-surge-*-r2-results.txt, surge-decay-views-utc.txt]
 2026-09-24 | OPEN | surge-wind-term-feed-decision | before any wind-term code: John chooses the live feed, (a) Open-Meteo gfs_seamless (tested; third-party production dependency), (b) NOAA GFS direct (NOAA-hosted, heavier, untested feed), (c) NWS grid wind (no archive; long shadow first). Claude recommends (a) for a SHADOW candidate. Plan with predeclared prospective evaluation: history/plans/2026-09-24-wind-term-candidate-plan.md [STATED]
+
+2026-09-24 | DECISION | wind-shadow-open-meteo | John: "I like your recommendation ... expands on it in ways I like" and "Update whatever needs updating with my approval ... and plans on moving forward," adopting Codex's Open-Meteo first-candidate recommendation and Claude's hourly SHADOW-only proposal. Authorizes development and prospective logging with production/display/alerts unchanged; exact-source validation, bounded fallback, raw archives, 60 days AND >=5 episodes, production/NWS comparisons, rain/low-tide checks and bounded NDFD archive feasibility work. No production promotion or paid subscription authorized; separate promotion DECISION remains required [STATED: John in session]
+2026-09-24 | DONE | wind-research-a2-CLOSED | Codex independently verified Claude 142907573: all three corrected report bodies reproduce; canonical UTC water has 187368 unique hourly rows, 186257 valid surge values, 29592 overlapping astronomical predictions exactly equal the independent UTC pull; 50 revised refit/view scores match independent calculations within 1.2e-16 ft. R1-R5 resolved for exploratory research, bounds/chronology corrected, originals preserved. Round03 closes correction audit; live-feed availability/QC and production skill remain candidate gates [VERIFIED: audits/2026-09-24-a2/03-close-out-codex.md and round03-verification.json]
+2026-09-24 | DONE | wind-shadow-plan-approved | Recorded selected Open-Meteo shadow scope and expanded precollection freeze, clock/source/pressure matching, baseline horizons/cohorts, comparison denominators, storm/endpoint rules, fallback/isolation, rain evidence and NDFD archive probe. Corrected two research docstrings and v0.10.6's stale "past wind did not help" evidence wording; no formula/model bump, numerical forecast, ledger, alert or widget change. Implementation and evaluation have not started [VERIFIED]

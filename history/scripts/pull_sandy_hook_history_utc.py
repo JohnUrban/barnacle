@@ -7,7 +7,7 @@ requests `time_zone=gmt` for verified `hourly_height` (with its quality flags)
 and hourly `predictions`, and writes an explicitly UTC, tz-aware table:
   history/data/sandy_hook_hourly_utc.parquet
   columns: timestamp_utc (tz-aware UTC), observed_mllw, predicted_mllw,
-           surge_ft, obs_sigma, obs_flags   (+ parquet metadata time_zone=UTC)
+           surge_ft, obs_sigma, obs_flags   (UTC timezone in the Parquet timestamp schema)
 31-day chunks under history/data/raw_chunks_utc/{product}/, resumable.
 Run: python3 history/scripts/pull_sandy_hook_history_utc.py [--begin 2005-01-01 --end 2026-05-17]
 """
