@@ -67,19 +67,21 @@ looks stale, trust this file. Ledger lines are append-only:
       UTC history, and matches 50 refit/view scores to independent calculations.
       Original reports remain intact. Exploratory gains survive; no production
       wind term or live-skill approval. Report `audits/2026-09-24-a2/03-close-out-codex.md`.
-- [ ] **Open-Meteo wind/pressure SHADOW candidate — APPROVED (John, 2026-09-24).**
-      DECISION `wind-shadow-open-meteo`: develop and log the `gfs_seamless`
-      candidate hourly without changing any displayed forecast or alert.
-      Plan `history/plans/2026-09-24-wind-term-candidate-plan.md` includes exact
-      live/training construction, raw issuance/retrieval provenance, production
-      mean policy, frozen coefficients/evaluator, bounded failure handling and
-      v0.10.6 fallback. Freeze the implementation manifest BEFORE collection.
-      Minimum 60 days AND five storm episodes; compare target high/low/plug
-      views, storm/large-underprediction errors, rain-tank effects and NWS/P-ETSS.
-      Run a bounded NDFD archive feasibility probe and preserve NWS inputs;
-      no assumption that NWS wind requires months of new logging. No shadow
-      code or first evaluation record yet. Promotion needs its own review,
-      model version/replays and separate John DECISION; no automatic cutover.
+- [ ] **Open-Meteo wind/pressure SHADOW candidate — HOLD before merge (2026-09-24).**
+      John approved development and shadow collection (`wind-shadow-open-meteo`);
+      feed choice is settled. Claude built `wind-shadow` at `d82a82970`.
+      Independent audit `audits/2026-09-24-a3/01-wind-shadow-candidate-review-codex.md`
+      is OPEN: R1–R8 need reply/repair and re-review before the first official
+      record. Fit/route/raw hashes reproduce and 310 tests pass, but episode/end
+      rules, insufficient-evidence PASS, timeout/QC accounting, missing required
+      comparators/rain evaluation, mean construction/provenance, frozen identity,
+      publish-gate isolation and offline collection boundaries need correction.
+      The approved plan also misstated the production mean window; correct it
+      with the fit, not only the implementation. No trial record or merge by
+      Codex. Before collection update the freeze; afterward changes need a new
+      candidate identity/period. Keep >=60 days AND >=5 eligible completed storms,
+      paired production/NWS/P-ETSS and rain checks, no production forecast/alert
+      effects. Separate model promotion/version/replays/John DECISION still required.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -597,3 +599,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | DONE | wind-shadow-c1-built | branch wind-shadow (f66c077d5 design + route rule committed first; d82a82970 build; not merged): Open-Meteo Single Runs gfs_seamless (resolves to ncep_gfs013), run = latest cycle <= issuance - 6 h confirmed by meta.json; 698 runs 2026-04-02..09-24 archived raw with SHA-256; predeclared equivalence test failed (W_12 r 0.943, W_30 r 0.857) -> route A: fitted on single runs only (4,098 h, spring/summer only: no winter storms, stated), leads 1..48, production mean policy replayed, cap 3 ft; manifest frozen (models/wind_shadow/FREEZE.md). Shadow runs after all production outputs and alerts, in a 25-s daemon thread, one append-only record per run (data/wind_shadow/), fallback reasons, gate-validated; evaluator frozen with all rules. Live no-send check: candidate record, alert_state unchanged; during the 09-24 nor'easter the candidate held surge nearer the NWS guidance (30 h: decay +1.13, candidate +1.70, NWS +2.02 ft) - one hour, not evidence. NDFD probe: archive 2020+ usable, no pressure element, house coastal cell does not map to the API (inland cell exact); not substituted [VERIFIED: branch commits, history/reports/2026-09-24-ndfd-feasibility.txt]
 2026-09-24 | OPEN | wind-shadow-c1-review-then-merge | independent review of branch wind-shadow (harness isolation, construction parity, frozen manifest/evaluator vs the plan) BEFORE merging; the merge starts the prospective period (first record). Review changes before the merge only update FREEZE.md; after the first record any change needs a new candidate id [STATED]
 2026-09-24 | FACT | doc-error-phi-61-102 | "NWS gridpoint (PHI 61,102)" in the v0.10.5/v0.10.6 specs (and a test-fixture name) was a documentation error by Claude; production uses the cell the points endpoint returns for the house, PHI 87,105 (verified 2026-09-24). v0.10.6 spec corrected in place with a note; archived v0.10.5 got an appended erratum. No behaviour change [VERIFIED: api.weather.gov/points/40.4055,-73.9952]
+
+2026-09-24 | OPEN | wind-shadow-c1-review-a3 | Codex independent review of d82a82970: HOLD before merge/collection. All 48 coefficient vectors reproduce within rounding, 698 raw run hashes and 42,578 extracted rows verify, all 5 freeze hashes match, 310 decoder-required tests and gate pass. R1-R8 demonstrate incorrect gap/endpoint rules and insufficient-evidence FINAL PASS, timeout/QC/denominator gaps, missing approved comparator/rain evaluation, baseline/training/provenance mismatches (including an inaccurate prior plan description), missing freeze enforcement, shared publish-gate coupling and offline writes. Candidate untouched; no official record written. Report audits/2026-09-24-a3/01-wind-shadow-candidate-review-codex.md; independent Claude reply required [VERIFIED]

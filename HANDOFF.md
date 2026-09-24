@@ -1,71 +1,83 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 09:32 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 10:19 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Current production — v0.10.6 live and CLOSED
+## Immediate obligation — wind-shadow audit OPEN, HOLD before merge
 
-Spec `model/v0.10.6.md`; promotion `75a9933ff`, candidate `1053eb436`, prior
-John DECISION `b999ea1d0`. Audit `2026-09-24-a1` CLOSED at round06: 298
-required-decoder tests, three replays, gate, CI, Pages and deployed charts
-verified. Raw replay-input collection is active. Scoreboard cohort explanation
-shipped `2e609b47f`. No runtime/data/page change in the present research review;
-only the model spec's research-evidence wording is clarified, with no bump.
+Candidate `wind-shadow` at `d82a82970`, design rule `f66c077d5`, is built but
+not merged. Codex independently reviewed it in audit `2026-09-24-a3`:
+`audits/2026-09-24-a3/01-wind-shadow-candidate-review-codex.md`.
+Next: Claude replies in round02, fixes R1–R8, refreshes pretrial FREEZE,
+then Codex verifies the corrected candidate. No new feed-choice decision needed.
 
-## Wind research CLOSED; shadow development APPROVED
+Verified: all 48 coefficient vectors/counts/MAEs and route-A equivalence decision
+reproduce; 698 raw-run hashes and 42,578 extracted rows match; all 5 freeze hashes
+match; 310 required-decoder tests and candidate artifact gate PASS. Production
+core AST unchanged except holder export; numerical display/alert code unchanged.
 
-Audit `2026-09-24-a2` CLOSED at Codex round03, independently verifying Claude
-`142907573`/reply02. R1-R5 resolved: canonical UTC water, target-time masks,
-purged fitting, withdrawn bounds and honest exploratory chronology.
-All three report bodies reproduce; 50 refit/view MAEs agree with independent
-calculations within 1.2e-16 ft; 29,592 overlapping astronomical predictions
-match the separate UTC pull exactly. Originals remain intact. Retained flags
-are not a quality-filtered evaluation; actual historical availability remains
-unverified. Corrected signal supports research, not live or street-flood skill.
+HOLD reasons: gaps count toward consecutive storm rules; cutoff can be backdated;
+FINAL PASS possible from one scored storm with most opportunities missing;
+timeouts drop usable baseline pairs and QC/accounting has gaps; production/NWS,
+rain-tank, continuity and equal-episode comparisons absent; training mean does
+not reproduce production (the prior plan wording was inaccurate too); pressure
+provenance/availability, frozen identity, publish isolation and offline collection
+boundaries need repair. See reproducible evidence and remedies in audit round01.
+No candidate code or official trial record was changed/written by Codex.
+Do not assume merge is the only way a record can currently be written: the
+candidate's default-enabled hook also runs for --no-send/--dry-run JSON generation.
+BACKLOG already reports a live no-send candidate smoke record; Claude must retain
+and identify it and settle its test/trial status before claiming a pre-record freeze.
 
-John approved Open-Meteo `gfs_seamless` wind AND pressure for a SHADOW-only
-candidate (BACKLOG DECISION `wind-shadow-open-meteo`). Read the updated plan
-`history/plans/2026-09-24-wind-term-candidate-plan.md`. No repeated feed-choice
-approval needed.
-BUILT (Claude, 2026-09-24) on branch `wind-shadow` (d82a82970; CI green; NOT
-merged, no evaluation record yet): design + route rule committed first
-(f66c077d5); 698 single runs archived with hashes; equivalence failed ->
-route A (fit on single runs only, spring/summer: no winter storms); frozen
-manifest/evaluator (`models/wind_shadow/FREEZE.md`); shadow runs after all
-production outputs and alerts, 25-s bounded, append-only `data/wind_shadow/`.
-NDFD probe done (`history/reports/2026-09-24-ndfd-feasibility.txt`): no
-pressure element; house coastal cell does not map to the API.
-Next: independent review of the branch, then merge = first record = trial
-start. Review changes before the merge only update FREEZE.md.
-Nothing changes displayed forecasts, rain predictions, maps, widget or alerts.
-Minimum evaluation: 60 days AND five completed storms, target high/low/plug,
-underprediction and rain-tank checks, production and NWS/P-ETSS comparators.
-Fallback is v0.10.6 with an explicit shadow reason; missing/slow candidate
-inputs cannot damage or unboundedly delay production. No test-set refitting.
-A live term still needs a new version, replays, independent candidate review
-and separate John DECISION. No subscription purchase or automatic cutover.
+## Approved wind scope and prior research
 
-## Accepted limitations and operations
+John approved Open-Meteo gfs_seamless wind AND pressure for shadow only:
+BACKLOG DECISION `wind-shadow-open-meteo`, plan
+`history/plans/2026-09-24-wind-term-candidate-plan.md`.
+No displayed curve, map, widget, rain headline or alert changes. at least 60 days AND
+five eligible completed storms; fixed endpoint, paired baseline/guidance,
+high/low/plug, large-underprediction and rain checks; no outcome-driven refit.
+Before first official record, review corrections update the freeze. Afterward,
+changes require a new identity/period. No automatic production promotion.
 
-v0.10.6 surge decays toward the trailing mean with tau36 from the reading's
-own time; UTC historical rerun supports keeping this policy. Missing-input
-ladder: fresh/stale-download/stale-state/typical offset. Seven-day outlook uses
-hourly P-ETSS and a labeled assumed guidance tail; between-high-tide advisory
-corrections remain experimental with prospective input logging.
-Five observed-reference rain events tie; Oct30 reconstructed peak is outside
-aggregates, Sep13 partial QPF is sensitivity only. As-issued rain skill and
-advisory-correction calibration remain accepted research limitations.
+Research audit `2026-09-24-a2` is CLOSED: Claude `142907573` + Codex round03;
+UTC alignment, target-time masks, purged fitting and honest exploratory claims.
+Historical skill supports research, not demonstrated live/street-flood gains.
+Candidate route A uses spring/summer single runs; no winter training. NDFD probe
+reports archive availability but unresolved coastal mapping; no feed substitution.
+The candidate audit did not independently rerun that mapping experiment.
 
-Production: 18 landmarks, hourly site/JSON, ~10-min radar nowcast, maps,
-per-tide pages, widget, ntfy/email/SMS. SMS is imminent impact; ntfy/email
-longer lead; alert tide horizon <=48 h. Seven-day guidance is experimental.
-CF.Y.0021 Sep23 16:00 to Sep26 02:00 EDT: PLAYBOOK and current inputs.
-Source/compound/p90 skill, lag/hysteresis, antecedent wetness, writer/gate
-parity, failure visibility, durable outbox and external watchdog remain open.
-John plans widget v7.29a re-copy (references v7.28a); completion unconfirmed.
-Only widget change: remove driveway proxy from landmark ladder. Curve updates
-arrive via forecast JSON with either version.
+## Production — v0.10.6 live and CLOSED
 
-Log primary observations with provenance. Date before relative-time prose;
-station-time helpers only. Explicit staging; commit -> gate -> push; rejected
-push -> rebase or abort -> gate again -> retry. Ledger conflicts union.
+Spec model/v0.10.6.md; promotion `75a9933ff`, reviewed candidate `1053eb436`,
+prior owner decision `b999ea1d0`. Audit 2026-09-24-a1 closed after 298 tests,
+three replays, gate/CI/Pages and 18 public artifacts/chart rendering verified.
+Replay-input archive is active. Scoreboard cohort explanation `2e609b47f`.
+Current audit changes documentation/evidence only; no production model bump.
+
+Decay uses tau 36 h from observation time with cached verified mean and fallback
+ladder. Seven-day hourly P-ETSS/guidance tails and advisory corrections remain
+experimental. As-issued rain skill is not established: five observed-reference
+rain events tie; Oct 30 reconstruction is not observed validation; Sep 13 partial
+QPF is sensitivity only. Keep those limitations alongside scientific claims.
+
+## Separate social planning
+
+John approved local practice posts → Facebook only → optional later expansion.
+Branch plan/social-broadcast, sibling barnacle-social-plan, local commit `be0365541`.
+Tern's review reply/reconciled plan remains next; docs 06/07 record findings/scope.
+Practice output stays local, outside deployment; wording clarity includes evidence
+type, timing, depth reference and conditional scenarios across relevant arms.
+No provider selected, public posting or account setup done by Codex. Keep separate.
+
+## Operations
+
+18 landmarks; hourly site/JSON; ~10-min radar nowcast; widget v7.29a re-copy
+planned by John, completion unconfirmed. Only change since 7.28a removes driveway
+proxy; curve updates arrive from JSON. SMS imminent impact; ntfy/email longer lead;
+alert tide horizon 48 h, seven-day guidance experimental. Read PLAYBOOK and current
+inputs for flood operations; don't infer live conditions from this snapshot.
+
+Log observations with primary provenance. Date before relative-time prose.
+Explicit staging; commit → gate → push; rejection → rebase or abort → gate →
+retry. Union ledgers; never replace newer main files with an older worktree copy.

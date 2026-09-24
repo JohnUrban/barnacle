@@ -1,0 +1,31 @@
+{
+  "reviewed_commit": "d82a82970",
+  "production_at_review": "01881501b",
+  "candidate_edits": false,
+  "tests": {
+    "total": 310,
+    "result": "PASS",
+    "required_grib_decoder": true,
+    "python": "3.14",
+    "note": "First run set BARNACLE_WIND_SHADOW=0 and invalidated one mock-based test expectation; normal-environment rerun with BARNACLE_REQUIRE_GRIB=1 passed."
+  },
+  "candidate_gate": "PASS",
+  "freeze_hashes": "5/5 match",
+  "core_ast": "identical except holder export and entry-point wrapper",
+  "scope_limits": [
+    "No production deployment or real shadow collection",
+    "No historical per-cycle publication-time archive verified",
+    "NDFD numeric mapping probe not independently rerun; retained as feasibility note",
+    "No prospective skill claim"
+  ],
+  "lead_reran_all_four_evidence_scripts": true,
+  "training_input_hashes": {
+    "history/data/gfs_single_runs/runs.parquet": "13ffc06c2a00f21d574361bb97006002847099f78afcc6f03e84f58bec1c8041",
+    "history/data/gfs_single_runs/runs_index.csv": "9b5e4a0f93d05a68375e0e5b52ff174ce3f514292943c8c30960c5bebaa1c441",
+    "history/data/forecast_test/surge_hourly.parquet": "a0b260fa1994998ad18ef31872bf15bbbb5ab390fb6672081236d1e9e7441528",
+    "history/data/forecast_test/met_obs.parquet": "671ab679c76f0a2923ec3f486ddbf64e0e4f65089d3c27629b09049a790ed24c",
+    "history/data/forecast_test/fcst_gfs_seamless.parquet": "19b6aae0303f0a41d480b6d29814a6f4f373baaf9d4287b8376affc7ce402ba2"
+  },
+  "trial_records_written_by_this_review": false,
+  "earlier_author_smoke_record": "BACKLOG documents a live --no-send candidate record; original file/path/freeze vintage not inspected. Author must establish test/trial classification honestly."
+}

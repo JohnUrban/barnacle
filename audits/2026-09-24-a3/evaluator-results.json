@@ -1,0 +1,93 @@
+{
+  "discontinuous_six_hour_episode": {
+    "expected_episode_count": 0,
+    "actual": [
+      {
+        "start": "2026-10-01 00:00:00+00:00",
+        "end": "2026-10-01 06:00:00+00:00",
+        "completed": true
+      }
+    ]
+  },
+  "discontinuous_quiet_tail": {
+    "expected_completed": false,
+    "actual": [
+      {
+        "start": "2026-10-01 00:00:00+00:00",
+        "end": "2026-10-01 05:00:00+00:00",
+        "completed": true
+      }
+    ]
+  },
+  "backdated_endpoint": {
+    "expected_endpoint": "2026-12-17T00:00:00+00:00",
+    "actual_endpoint": "2026-12-08T00:00:00+00:00",
+    "completed": 5
+  },
+  "negative_missing_count": {
+    "opportunities": 3,
+    "records": 4,
+    "missing_or_error": -1
+  },
+  "invalid_qc_accepted": {
+    "2026-10-01T00:00:00+00:00": {
+      "valid": true,
+      "surge_finite": true
+    },
+    "2026-10-01T01:00:00+00:00": {
+      "valid": true,
+      "surge_finite": true
+    },
+    "2026-10-01T02:00:00+00:00": {
+      "valid": true,
+      "surge_finite": false
+    },
+    "2026-10-01T03:00:00+00:00": {
+      "valid": true,
+      "surge_finite": true
+    }
+  },
+  "mixed_manifest_hashes": {
+    "loaded_count": 2
+  },
+  "insufficient_scored_episode_pass": {
+    "status": "FINAL",
+    "verdict": "PASS",
+    "opportunities": 1464,
+    "records": 30,
+    "missing_or_error": 1434,
+    "episodes_completed": 5,
+    "scored_episodes_24h": {
+      "n": 1,
+      "candidate_wins": 1
+    }
+  },
+  "report_omits_comparators": {
+    "24h_report_keys": [
+      "primary",
+      "healthy"
+    ],
+    "view_keys": [
+      "all",
+      "high_tide_target",
+      "low_tide_target",
+      "plug_band_target",
+      "storm_start_issuance",
+      "episodes"
+    ],
+    "top_keys": [
+      "first_opportunity",
+      "endpoint",
+      "status",
+      "opportunities",
+      "records",
+      "missing_or_error",
+      "fallback_records",
+      "episodes_completed",
+      "episodes_open",
+      "leads",
+      "checks",
+      "verdict"
+    ]
+  }
+}

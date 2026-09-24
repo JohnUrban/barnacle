@@ -1,0 +1,622 @@
+{
+  "version": 1,
+  "artifact": {
+    "identity": "wind-shadow",
+    "revision": "d82a82970",
+    "view": "fit, live harness, frozen evaluator, production integration"
+  },
+  "categories": [
+    {
+      "id": "usefulness",
+      "label": "Plan completeness",
+      "applicable": true,
+      "assessment": "Production isolation, live/training agreement and complete trial evaluation each need repair."
+    },
+    {
+      "id": "clarity",
+      "label": "Analytical clarity",
+      "applicable": true,
+      "assessment": "In-sample fit limits are honest; exact-construction and trial-start claims require correction."
+    },
+    {
+      "id": "visual",
+      "label": "Visual/interaction consistency",
+      "applicable": false,
+      "assessment": "No public display or interactive artifact changed.",
+      "reason": "No public display or interactive artifact changed."
+    },
+    {
+      "id": "source",
+      "label": "Source authority/confidence",
+      "applicable": true,
+      "assessment": "Forecast raw data verifies; pressure/outcome provenance and historical availability remain incomplete."
+    },
+    {
+      "id": "value",
+      "label": "Calculation accuracy",
+      "applicable": true,
+      "assessment": "Fit and route reproduce; baseline construction, episode and eligibility rules have demonstrated errors."
+    },
+    {
+      "id": "chart",
+      "label": "Within-chart agreement",
+      "applicable": false,
+      "assessment": "No charts in this candidate.",
+      "reason": "No charts in this candidate."
+    },
+    {
+      "id": "details",
+      "label": "Complete source-detail surfaces",
+      "applicable": false,
+      "assessment": "No dashboard source-detail surfaces; provenance is reviewed under source authority.",
+      "reason": "No dashboard source-detail surfaces; provenance is reviewed under source authority."
+    },
+    {
+      "id": "consistency",
+      "label": "Cross-artifact consistency",
+      "applicable": true,
+      "assessment": "Approved plan, manifest/runtime baseline, and evaluator diverge."
+    },
+    {
+      "id": "quality",
+      "label": "Data-quality controls",
+      "applicable": true,
+      "assessment": "Reproduced missingness, QC, frozen-identity and collection-boundary defects."
+    },
+    {
+      "id": "conclusions",
+      "label": "Conclusion support",
+      "applicable": true,
+      "assessment": "Historical fit numbers reproduce; prospective PASS can be issued on insufficient evidence."
+    }
+  ],
+  "units": [
+    {
+      "id": "raw",
+      "label": "Raw forecast archive",
+      "kind": "claim",
+      "revision": "d82a82970",
+      "categories": {
+        "source": {
+          "checks": [
+            {
+              "id": "raw-source",
+              "state": "passed",
+              "evidence": [
+                "fit-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": []
+        }
+      }
+    },
+    {
+      "id": "fit",
+      "label": "Coefficient fit and route",
+      "kind": "claim",
+      "revision": "d82a82970",
+      "categories": {
+        "value": {
+          "checks": [
+            {
+              "id": "fit-value",
+              "state": "passed",
+              "evidence": [
+                "fit-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": []
+        },
+        "conclusions": {
+          "checks": [
+            {
+              "id": "fit-conclusions",
+              "state": "passed",
+              "evidence": [
+                "fit-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": []
+        },
+        "clarity": {
+          "checks": [
+            {
+              "id": "fit-clarity",
+              "state": "passed",
+              "evidence": [
+                "fit-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": []
+        }
+      }
+    },
+    {
+      "id": "provenance",
+      "label": "Pressure/outcome provenance and availability",
+      "kind": "component",
+      "revision": "d82a82970",
+      "categories": {
+        "source": {
+          "checks": [
+            {
+              "id": "provenance-source",
+              "state": "failed",
+              "evidence": [
+                "01-wind-shadow-candidate-review-codex.md#r5--p1-availability-and-pressure-provenance-are-incomplete"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "provenance",
+              "status": "open",
+              "checkIds": [
+                "provenance-source"
+              ]
+            }
+          ]
+        },
+        "quality": {
+          "checks": [
+            {
+              "id": "provenance-quality",
+              "state": "failed",
+              "evidence": [
+                "01-wind-shadow-candidate-review-codex.md#r5--p1-availability-and-pressure-provenance-are-incomplete"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "provenance",
+              "status": "open",
+              "checkIds": [
+                "provenance-quality"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "construction",
+      "label": "Training/live baseline construction",
+      "kind": "comparison",
+      "revision": "d82a82970",
+      "categories": {
+        "value": {
+          "checks": [
+            {
+              "id": "construction-value",
+              "state": "failed",
+              "evidence": [
+                "fit-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "construction",
+              "status": "open",
+              "checkIds": [
+                "construction-value"
+              ]
+            }
+          ]
+        },
+        "consistency": {
+          "checks": [
+            {
+              "id": "construction-consistency",
+              "state": "failed",
+              "evidence": [
+                "fit-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "construction",
+              "status": "open",
+              "checkIds": [
+                "construction-consistency"
+              ]
+            }
+          ]
+        },
+        "clarity": {
+          "checks": [
+            {
+              "id": "construction-clarity",
+              "state": "failed",
+              "evidence": [
+                "fit-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "construction",
+              "status": "open",
+              "checkIds": [
+                "construction-clarity"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "episodes",
+      "label": "Episode qualification and stopping boundary",
+      "kind": "component",
+      "revision": "d82a82970",
+      "categories": {
+        "value": {
+          "checks": [
+            {
+              "id": "episodes-value",
+              "state": "failed",
+              "evidence": [
+                "evaluator-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "episodes",
+              "status": "open",
+              "checkIds": [
+                "episodes-value"
+              ]
+            }
+          ]
+        },
+        "quality": {
+          "checks": [
+            {
+              "id": "episodes-quality",
+              "state": "failed",
+              "evidence": [
+                "evaluator-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "episodes",
+              "status": "open",
+              "checkIds": [
+                "episodes-quality"
+              ]
+            }
+          ]
+        },
+        "consistency": {
+          "checks": [
+            {
+              "id": "episodes-consistency",
+              "state": "failed",
+              "evidence": [
+                "evaluator-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "episodes",
+              "status": "open",
+              "checkIds": [
+                "episodes-consistency"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "scoring",
+      "label": "Opportunity/QC/fallback scoring and verdict",
+      "kind": "component",
+      "revision": "d82a82970",
+      "categories": {
+        "value": {
+          "checks": [
+            {
+              "id": "scoring-value",
+              "state": "failed",
+              "evidence": [
+                "evaluator-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "scoring",
+              "status": "open",
+              "checkIds": [
+                "scoring-value"
+              ]
+            }
+          ]
+        },
+        "quality": {
+          "checks": [
+            {
+              "id": "scoring-quality",
+              "state": "failed",
+              "evidence": [
+                "evaluator-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "scoring",
+              "status": "open",
+              "checkIds": [
+                "scoring-quality"
+              ]
+            }
+          ]
+        },
+        "conclusions": {
+          "checks": [
+            {
+              "id": "scoring-conclusions",
+              "state": "failed",
+              "evidence": [
+                "evaluator-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "scoring",
+              "status": "open",
+              "checkIds": [
+                "scoring-conclusions"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "comparators",
+      "label": "Required comparator and rain outputs",
+      "kind": "question",
+      "revision": "d82a82970",
+      "categories": {
+        "consistency": {
+          "checks": [
+            {
+              "id": "comparators-consistency",
+              "state": "failed",
+              "evidence": [
+                "01-wind-shadow-candidate-review-codex.md#r3--p1-the-frozen-evaluator-omits-required-comparisons-and-rain-checks"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "comparators",
+              "status": "open",
+              "checkIds": [
+                "comparators-consistency"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "identity",
+      "label": "Frozen baseline and bundle identity",
+      "kind": "control",
+      "revision": "d82a82970",
+      "categories": {
+        "consistency": {
+          "checks": [
+            {
+              "id": "identity-consistency",
+              "state": "failed",
+              "evidence": [
+                "evaluator-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "identity",
+              "status": "open",
+              "checkIds": [
+                "identity-consistency"
+              ]
+            }
+          ]
+        },
+        "quality": {
+          "checks": [
+            {
+              "id": "identity-quality",
+              "state": "failed",
+              "evidence": [
+                "evaluator-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "identity",
+              "status": "open",
+              "checkIds": [
+                "identity-quality"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "activation",
+      "label": "Official collection boundary",
+      "kind": "control",
+      "revision": "d82a82970",
+      "categories": {
+        "quality": {
+          "checks": [
+            {
+              "id": "activation-quality",
+              "state": "failed",
+              "evidence": [
+                "dry-run-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "activation",
+              "status": "open",
+              "checkIds": [
+                "activation-quality"
+              ]
+            }
+          ]
+        },
+        "clarity": {
+          "checks": [
+            {
+              "id": "activation-clarity",
+              "state": "failed",
+              "evidence": [
+                "dry-run-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "activation",
+              "status": "open",
+              "checkIds": [
+                "activation-clarity"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "isolation",
+      "label": "Production-isolation question",
+      "kind": "question",
+      "revision": "d82a82970",
+      "categories": {
+        "usefulness": {
+          "checks": [
+            {
+              "id": "isolation-usefulness",
+              "state": "failed",
+              "evidence": [
+                "isolation-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "isolation",
+              "status": "open",
+              "checkIds": [
+                "isolation-usefulness"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "live_match",
+      "label": "Live/training-agreement question",
+      "kind": "question",
+      "revision": "d82a82970",
+      "categories": {
+        "usefulness": {
+          "checks": [
+            {
+              "id": "live_match-usefulness",
+              "state": "failed",
+              "evidence": [
+                "01-wind-shadow-candidate-review-codex.md#r4--p1-exact-production-mean-replay-is-incorrect"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "live_match",
+              "status": "open",
+              "checkIds": [
+                "live_match-usefulness"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "trial_complete",
+      "label": "Frozen evaluator completion question",
+      "kind": "question",
+      "revision": "d82a82970",
+      "categories": {
+        "usefulness": {
+          "checks": [
+            {
+              "id": "trial_complete-usefulness",
+              "state": "failed",
+              "evidence": [
+                "evaluator-results.json"
+              ],
+              "revision": "d82a82970"
+            }
+          ],
+          "findings": [
+            {
+              "id": "trial_complete",
+              "status": "open",
+              "checkIds": [
+                "trial_complete-usefulness"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

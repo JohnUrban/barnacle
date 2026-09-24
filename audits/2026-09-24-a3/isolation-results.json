@@ -1,0 +1,58 @@
+{
+  "timeout_status": "wind shadow: error (wall-clock limit 0 s exceeded)",
+  "timeout_record": {
+    "status": "error",
+    "candidate_id": "test-c",
+    "fallback_reason": "wall-clock limit 0 s exceeded",
+    "baseline_surge_ft": null,
+    "candidate_surge_ft": null,
+    "leads": null
+  },
+  "timeout_primary_pairs": 0,
+  "timeout_record_validator": [],
+  "stale_fresh_label_status": "candidate",
+  "meta_lag": {
+    "meta_init": "2026-09-22T10:30:00+00:00",
+    "selected_init": "2026-09-23T18:00:00+00:00",
+    "selected_after_known_available": true,
+    "note": "latency rule; that cycle not yet available per meta, previous cycle used"
+  },
+  "gate_before_bad_shadow": [],
+  "gate_after_bad_shadow": [
+    [
+      "SCRATCH/data/wind_shadow/2026-09.jsonl",
+      "line 1: missing ['candidate_id', 'issuance_utc', 'production_model_version', 'status', 'fallback_reason', 'leads', 'baseline_surge_ft', 'candidate_surge_ft']"
+    ],
+    [
+      "SCRATCH/data/wind_shadow/2026-09.jsonl",
+      "line 1: bad status None"
+    ],
+    [
+      "SCRATCH/data/wind_shadow/2026-09.jsonl",
+      "line 1: non-candidate record without a reason"
+    ]
+  ],
+  "freeze_hashes": {
+    "models/wind_shadow/manifest.json": {
+      "matches": true,
+      "sha256": "b000aa71f93bf7b5562b217617e3b092cb05e17f8791e0a41e2710c82a6987a1"
+    },
+    "models/wind_shadow/DESIGN.md": {
+      "matches": true,
+      "sha256": "6db8ae26aea03987b3636cb954fc1ff57f3c3802f2e52ad7ff3c5b92403c3b98"
+    },
+    "forecast/wind_shadow.py": {
+      "matches": true,
+      "sha256": "813a27f94c571567cf5e7d6a316f6c2b70b202bb4643765aa1b137f4a7a59fed"
+    },
+    "history/scripts/evaluate_wind_shadow.py": {
+      "matches": true,
+      "sha256": "753fec2c8933551b913e1fe62d033027c88f7711a4bc47bf9182723e0f9ddff6"
+    },
+    "history/scripts/fit_wind_shadow_c1.py": {
+      "matches": true,
+      "sha256": "b58976285f033bad8301ea3e4f0c20eb58fb99ef849363d754b08950b4247403"
+    }
+  },
+  "production_core_ast_equal_except_holder": true
+}
