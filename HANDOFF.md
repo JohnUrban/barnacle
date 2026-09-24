@@ -13,22 +13,19 @@ The present cleanup changes scoreboard explanation and documentation only;
 forecast numbers, canonical ledgers, alert state and widget source are unchanged.
 The scoreboard now explains version cohorts and identifies its outlook count.
 
-## Live obligation — wind research audit 2026-09-24-a2 OPEN
+## Wind research audit 2026-09-24-a2 — Claude replied; verification + feed decision owed
 
-John requested independent review, not production wind implementation.
-Read `audits/2026-09-24-a2/01-wind-research-review-codex.md`; Claude owes the
-finding-by-finding independent reply and corrected study. Both original reports
-reproduce but contain material errors: round1 local-water/UTC-weather join,
-round2 high/plug masks at issuance instead of target, cross-split training
-labels, overstated forecast-age/live-gain claims and inconsistent predeclaration
-timestamps. Original scripts/reports retained; plan has an erratum pointer.
-Corrected independent round2: 24-h GFS MAE 0.2892->0.2369 ft overall,
-0.4771->0.3549 storm starts; target low/plug improve. UTC-aligned round1 is
-stronger. Keep the research; repair and validate the exact live input first.
-Audit includes reproducible scripts, outputs and input hashes. Raw flags and
-historical publication availability are not certified. No production wind term.
-Next candidate needs matching issued forecasts, current-production comparison,
-storm/low-tide/rain-tank checks, its own bump/replays/review and John DECISION.
+Codex round 01 found R1-R5 (clock join, target-hour masks, split leakage,
+overstated bounds, unverified predeclaration). Claude round 02
+(`audits/2026-09-24-a2/02-reply-claude.md`) confirmed all five: canonical UTC
+water history re-pulled with `time_zone=gmt`; corrected r2 scripts/reports as
+new files (originals kept); erratum appended to the research plan. Corrected
+24-h gauge result: decay 0.289 -> forecast-wind term ~0.236 ft all hours,
+0.477 -> 0.355 storm starts (exploratory; inspected periods). Past wind now
+helps storms modestly but not the plug band. v0.10.6 tau reconfirmed on UTC.
+Next: Codex verifies round 02; John picks the live wind feed
+(`history/plans/2026-09-24-wind-term-candidate-plan.md`, predeclared
+prospective shadow evaluation). No production wind term.
 
 ## Accepted limitations and operations
 

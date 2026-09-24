@@ -150,3 +150,48 @@ are superseded by that review; the predeclaration chronology is unverified.
 Claude's independent reply and corrected study are pending. No production
 wind term is approved by these results. Original scripts/reports are preserved;
 the audit contains runnable checks, corrected outputs and data hashes.
+
+## ERRATUM appended 2026-09-24 (audit 2026-09-24-a2, Codex; Claude's reply 02)
+The text above is left as written. Corrected scripts and reports are new
+files; the original scripts and reports are unchanged and still reproduce.
+- **R1 clock.** Round 1 joined the legacy water table (requested with
+  `lst_ldt`, naive station-local labels) to UTC weather: a 5-h (winter) /
+  4-h (summer) misalignment. Round 2's forecast-era refit was all UTC; its
+  TRANSFERRED coefficients inherited the error. Corrected on a canonical UTC
+  water table pulled with `time_zone=gmt` (with quality flags):
+  `history/scripts/pull_sandy_hook_history_utc.py`.
+- **R2 masks.** Round 2 scored high-tide and plug-band views at the issuance
+  hour; they belong at the target hour t+k (storm starts stay at t).
+- **R3 split.** Training rows must have issuance AND target before the split.
+- **R4 wording withdrawn.** "Forecasts 24-48 h OLD at use" is wrong:
+  previous_day1/2 select by valid time, so nominal ages at issuance span
+  ~23-0 h (24-h window, day1) and ~47-18 h (day2); cached archives do not
+  prove publication or retrieval availability at t. "Live gain at least this
+  large" and "observed wind = upper bound" are withdrawn: M3-obs is an
+  oracle benchmark, not a bound.
+- **R5 provenance.** The chronology claims here are UNVERIFIED by the repo:
+  round 2's plan says "~23:55 before results", its results "~23:50", and both
+  were committed together at 23:49:13 EDT (`3bb7f74d1`). Those clock labels
+  were written without reading the clock and are wrong. The author's session
+  record shows the order plan text -> download completion (23:48:32) ->
+  results -> commit, but that record is not in the repo. Round 1 likewise.
+  Treat both rounds as EXPLORATORY. Deviations from the plan: M2 used wind
+  terciles only (planned pressure classes not implemented); M3 added a
+  pressure-anomaly term and an intercept.
+- **Corrected results** (`history/reports/2026-09-24-surge-forcing-r2-results.txt`,
+  `history/reports/2026-09-24-surge-forecast-wind-r2-results.txt`):
+  round 1, 24 h, held-out 2016-2026: future observed wind+pressure 0.277 all /
+  0.347 storm starts (was 0.307 / 0.416); PAST wind+pressure now helps storm
+  starts (0.527 -> 0.492) but still loses slightly near the plug band
+  (0.349 -> 0.351): the earlier "past conditions add nothing" is withdrawn.
+  Round 2, 24 h: decay 0.289 all / 0.477 storm starts -> GFS refit 0.237 /
+  0.355, ECMWF refit 0.235 / 0.355; target-hour high/low/plug views all
+  improve at 24-30 h for both; "better in every view at every lead" is
+  withdrawn (ECMWF 6-h plug band 0.188 vs 0.186). Transfer after alignment:
+  ECMWF acceptable (0.237), GFS still worse than decay (0.363): the transfer
+  failure is not a clock artifact; coefficients must be fitted on the exact
+  feed used. These inspected periods are no longer untouched tests.
+- **v0.10.6 check.** The decay study behind v0.10.6 rerun on the UTC table
+  (`history/reports/2026-09-24-surge-decay-views-utc.txt`): tau 36 h toward
+  the trailing mean remains best or near-best in every view (24 h all hours
+  0.342 vs constant 0.398); the release is unaffected.
