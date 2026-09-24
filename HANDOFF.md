@@ -1,9 +1,9 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 12:05 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 12:09 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Wind-shadow c2 audit CLOSED — ready to enable collection
+## Wind-shadow c2 audit CLOSED — merged; first official record pending
 
 Codex round07 independently verified Claude `83919dbdf`; all R1–R8 resolved.
 Quality-aware QC excludes verified inferred outcomes; 48 refits reproduce,
@@ -12,8 +12,9 @@ research-data test passes separately). Candidate GitHub CI and gate pass.
 Report: `audits/2026-09-24-a3/07-close-out-codex.md`.
 Frozen bundle: `82d156a63089573e837ae2e122336ec62f24fc80548aa8080105e3160aed5029`.
 
-Next: merge under existing John shadow-only approval, verify merged hashes/gate,
-and confirm the first durable official record. Merge enables collection; that
+Merged as `8d5f6535e` under existing John shadow-only approval; all 25 paths
+byte-match the reviewed candidate and merged hashes/gate pass. Confirm the
+first durable official record on the hourly workflow. Merge enables collection; that
 first record starts the period, even if disabled/fallback. Frozen changes after
 start need a new identity/period. No production forecast/alert wind correction.
 

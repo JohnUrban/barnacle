@@ -89,3 +89,11 @@ frozen-file change is needed. The original reply remains intact.
 
 Merge verification and the first-record observation belong to the operational
 ledger; they must not be described as completed before they occur.
+
+## Integration verification
+
+The reviewed candidate was subsequently merged as `8d5f6535e`. All 25
+integrated files match the candidate bytes; existing docs/data/model are
+unchanged, frozen bundle matches, and the merged artifact gate passes. See
+[integration evidence](round07-integration-verification.json). First official
+record remains pending at this check; no trial start is asserted.

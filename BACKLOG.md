@@ -74,8 +74,8 @@ looks stale, trust this file. Ledger lines are append-only:
       passes with Parquet. R1–R8 resolved; bundle 82d156a63089… approved for
       shadow collection under existing `wind-shadow-open-meteo` DECISION.
       Report: `audits/2026-09-24-a3/07-close-out-codex.md`.
-- [ ] **Wind-shadow prospective trial — enable and verify first record.**
-      Merge reviewed 83919dbdf; confirm the first durable official c2 record's
+- [ ] **Wind-shadow prospective trial — verify first record, then monitor.**
+      Reviewed 83919dbdf merged as 8d5f6535e; confirm the first durable official c2 record's
       bundle 82d156a63089…, time and status. Merge enables, first record starts
       the period; do not reset for disabled/fallback outcomes. After start,
       frozen changes require a new identity/period. At least 60 days AND five
@@ -629,3 +629,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | DONE | wind-shadow-a3-round06 | Claude confirmed R5-Q1 (own error: read only NOAA's preliminary flag section) and repaired on branch wind-shadow 83919dbdf (not merged; still c2, pretrial bundle 82d156a6): evaluator classify_water_level reads flags by quality q (preliminary [O,F,R,L] valid iff F=R=L=0; verified [I,F,R,T] valid iff all 0, inferred kept as inferred_obs and counted, never scored; missing/unknown q invalid); fit imports the same classifier; 12 verified inferred rows excluded (Codex's 6 + 6 also carrying R); 107 preliminary rows admitted with O>0 (corrects the round-04 "113"). Refit n 4087 -> 4081, max coef change 0.00043; Codex's round-05 fit script with only the QC line made q-aware reproduces the manifest (max diff 4.96e-9, all counts and MAEs match). 333 tests. Reply audits/2026-09-24-a3/06-q-aware-qc-reply-claude.md; independent verification owed before merge [VERIFIED: branch commit, round06-fit-qaware-results.json]
 
 2026-09-24 | DONE | wind-shadow-a3-CLOSED | Codex round07 independently verifies 83919dbdf and closes R5-Q1/a3: 4393 QC rows match independent q-aware rule (4375 valid, 12 verified inferred excluded, 107 preliminary outliers admitted); all 48 fits/counts/rounded MAEs reproduce within 4.956e-9, six dataset hashes match, 333 required-decoder tests OK with expected no-log/local-research-data skips and research test separately passing. Frozen bundle 82d156a63089573e837ae2e122336ec62f24fc80548aa8080105e3160aed5029 approved for shadow collection under prior owner DECISION. No prospective skill or live wind promotion claimed; first official record still pending at review. Source: audits/2026-09-24-a3/07-close-out-codex.md and evidence [VERIFIED]
+
+2026-09-24 | DONE | wind-shadow-c2-merged | Reviewed candidate 83919dbdf merged to main in 8d5f6535e under prior wind-shadow-open-meteo owner DECISION and Codex a3 round07 close-out (9d87f55d5). All 25 integrated paths byte-match candidate; bundle 82d156a63089573e837ae2e122336ec62f24fc80548aa8080105e3160aed5029 and gate pass. Existing docs/data/model untouched by merge; no page regeneration needed. Hourly workflow opt-in enabled; first durable official record still pending, so no trial start asserted. Primary evidence: audits/2026-09-24-a3/round07-integration-verification.json [VERIFIED: local merged tree]
