@@ -739,23 +739,41 @@ def check_artifacts(root=ROOT):
     return bad
 
 
-def shadow_log_report(root=ROOT):
-    """Non-fatal: problems in the SHADOW-ONLY wind trial log (audit 2026-09-24-a3 R7)."""
-    try:
-        from . import wind_shadow as _wsh
-    except ImportError:
-        import wind_shadow as _wsh
-    out = []
+def shadow_log_report(root=None):
+    """Non-fatal problems in the SHADOW-ONLY wind trial log (audit 2026-09-24-a3
+    R7; round 03). The WHOLE diagnostic path is contained: import, directory
+    listing, reads and validator exceptions become report items, never a gate
+    failure. The evidence is left in place; CI (tests/test_wind_shadow.py)
+    enforces the log's validity separately."""
+    root = ROOT if root is None else root
     wdir = os.path.join(root, "data", "wind_shadow")
-    if os.path.isdir(wdir):
+    out = []
+    try:
+        try:
+            from . import wind_shadow as _wsh
+        except ImportError:
+            import wind_shadow as _wsh
+        if not os.path.isdir(wdir):
+            return out
         for fn in sorted(os.listdir(wdir)):
-            if fn.endswith(".jsonl"):
-                out += [(os.path.join(wdir, fn), why) for why in _wsh.validate_file(os.path.join(wdir, fn))]
+            if not fn.endswith(".jsonl"):
+                continue
+            path = os.path.join(wdir, fn)
+            try:
+                out += [(path, why) for why in _wsh.validate_file(path)]
+            except Exception as e:  # noqa: BLE001
+                out.append((path, f"shadow validator failed ({type(e).__name__}: {e})"))
+    except Exception as e:  # noqa: BLE001
+        out.append((wdir, f"shadow report failed ({type(e).__name__}: {e})"))
     return out
 
 
 def main():
-    for path, why in shadow_log_report():
+    try:
+        shadow = shadow_log_report(ROOT)
+    except Exception as e:  # noqa: BLE001 — belt and braces: never fatal
+        shadow = [(os.path.join(ROOT, "data", "wind_shadow"), f"shadow report failed ({type(e).__name__})")]
+    for path, why in shadow:
         print(f"SHADOW LOG WARNING (non-fatal): {path} — {why}")
     bad = check_artifacts()
     for path, why in bad:

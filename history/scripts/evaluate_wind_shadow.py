@@ -3,19 +3,39 @@
 the first official record; hash in models/wind_shadow/FREEZE.md). Plan:
 history/plans/2026-09-24-wind-term-candidate-plan.md; repairs per audit
 2026-09-24-a3 (R1 episodes/endpoint, R2 missingness/QC, R3 comparators,
-R5 outcome provenance, R6 identity binding).
+R5 outcome provenance, R6 identity binding; round 03: bundle enforcement,
+trial start, rain initial condition, raw guidance comparators).
 
 DECLARED RULES
-Identity: a record is EVALUABLE only if collection == "official", candidate_id,
-  manifest_sha256 and runtime_sha256 equal the FREEZE table; every other record
-  is excluded and counted by reason. Identities are never pooled.
-Opportunities: one per UTC hour slot from the first evaluable record's nominal
-  issuance hour; per slot the EARLIEST-written evaluable record. Slot states:
-  candidate | fallback (baseline kept) | error (no baseline) | missing.
+Bundle: before scoring, every FREEZE-listed file (this evaluator included) is
+  hashed and must match FREEZE.md, and the FIRST official record of the trial
+  log must carry the same bundle identity (bundle_sha256). Otherwise nothing is
+  scored (exit 3); --unfrozen scores anyway but labels the report NON-OFFICIAL.
+  Editing a file and its FREEZE entry after the trial start therefore cannot
+  pass: the first record's bundle is fixed in the append-only log.
+Trial start: the nominal issuance hour of the FIRST official record of this
+  candidate_id in the log, whatever its status or binding (merge only enables
+  the workflow; setup failures and disabled records stay visible as missed
+  opportunities instead of moving the start to a later valid record).
+Identity: a record is EVALUABLE only if collection == "official", its
+  candidate_id, bundle_sha256, manifest_sha256 and runtime_sha256 equal the
+  frozen bundle, and its status is candidate, fallback or error. Every other
+  official record of this id is a non-evaluable attempt, counted by reason and
+  by slot. Identities are never pooled.
+Opportunities: one per UTC hour slot from the trial start; per slot the
+  EARLIEST-written evaluable record. Slot states: candidate | fallback
+  (baseline kept) | error (no baseline) | not_evaluable (only disabled or
+  unbound records) | missing.
 Observations: CO-OPS 6-min water_level on the hour minus hourly predictions,
-  UTC. VALID iff the value is finite and the flag field parses to exactly four
-  integers, all 0; otherwise invalid with the reason retained. Raw responses are
-  saved with SHA-256 (--save-obs DIR) and can be replayed offline (--obs-json).
+  UTC. VALID iff the value is finite, the flag field parses to exactly four
+  integers [O,F,R,L], and the tolerance flags F, R, L are all 0; otherwise
+  invalid with the reason retained. O is NOT a pass/fail flag: CO-OPS defines
+  it as the count of 1-s samples outside a 3-sigma band; it is kept per hour
+  (outlier_samples). Requiring O = 0 would drop elevated-surge hours
+  preferentially (a3 reply 04: 7.9 % of 1.0-1.5 ft hours vs 1.8 % below 0.5 ft). With --save-obs
+  DIR every raw response body is saved under its SHA-256; --obs-json replays a
+  saved bundle offline, re-parsing the raw bodies after verifying their hashes.
+  A report without retained raw bodies says so (outcome_provenance).
 Maturity: a target is scored only when >= 48 h old at evaluation time.
 Episodes: >= 6 CONSECUTIVE valid hours with surge >= +1.0 ft (an invalid or
   missing hour resets the count); the episode ends with 48 CONSECUTIVE valid
@@ -32,7 +52,12 @@ Coverage: evaluable (candidate or fallback) slots / opportunities in the window
 Comparisons (matched pairs, same issuance and target, same denominator):
   candidate vs FROZEN baseline (primary); candidate and frozen baseline vs the
   ACTUAL production curve (<= its ~30-h reach; cohorts by production version);
-  candidate vs NWS/P-ETSS outlook guidance (by source). Leads > 30 h compare with
+  vs RAW NWPS (gauge forecast minus astronomy, no advisory correction) and vs
+  the P-ETSS hourly mid, each eligible only where that guidance covered the
+  target at issuance, availability reported per scored pair and per
+  opportunity; Barnacle's final outlook (a blend of advisory-adjusted NWPS,
+  P-ETSS, guidance decay, observed decay and the typical offset) is a separate
+  comparator by source and is NOT external guidance. Leads > 30 h compare with
   the OFFLINE 48-h extension of the frozen baseline, not a published core curve.
 Views: all; high/low tide and plug band (observed bay 2.5..3.8 ft NAVD88) at
   TARGET; storm start (observed surge >= +1.0 ft) at ISSUANCE.
@@ -41,11 +66,16 @@ Metrics for every method: n, MAE, bias, rate |err| > 1 ft, rate err < -1 ft;
   along each issued curve) and revisions (same target, consecutive slots);
   status transitions; 7-day moving-block bootstrap 90 % interval (1000, seed
   20260924) for MAE differences.
-Rain-tank sensitivity (descriptive): join the replay archive by issuance; with
-  the identical as-issued hourly QPF, run the production tank on baseline vs
-  candidate bay (astronomy + surge) over the QPF's coverage; wet = max rate >=
-  0.25 in/h within 30 h; wet slots within 12 h form one wet event; fewer than 3
-  wet events -> descriptive only, never a rain-skill pass/fail.
+Rain-tank sensitivity (descriptive): from each record's as-issued tank inputs,
+  run the FROZEN tank (models/wind_shadow/rain_ref.py) from production's series
+  start (storage empty there, as production; the pre-issuance rain and bay are
+  the shared history) with identical QPF; after issuance each variant's bay is
+  production's bay plus (variant surge - production surge). The frozen tank on
+  production's own bay is checked against production's pluvial line. Scored
+  after issuance to the series end: peak depth (in) and hours above each
+  flood-window landmark, baseline vs candidate; wet = max QPF rate >= 0.25 in/h
+  anywhere in the series; wet slots within 12 h form one wet event; fewer than
+  3 wet events -> descriptive only, never a rain-skill pass/fail.
 PASS requires ALL (else FAIL; any required input empty -> INCONCLUSIVE):
   lower MAE than frozen baseline at 24 AND 30 h in all hours AND storm starts;
   plug-band MAE loss <= 0.01 ft at every lead; large-under-prediction rate not
@@ -55,9 +85,12 @@ PASS requires ALL (else FAIL; any required input empty -> INCONCLUSIVE):
 from __future__ import annotations
 
 import argparse, datetime as dt, glob, hashlib, json, math, os, random, re, sys, urllib.parse, urllib.request
+import base64, gzip, importlib.util
 from collections import defaultdict
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, ROOT)
+from forecast import wind_shadow as ws  # noqa: E402  (frozen runtime: bundle check, time grid)
 LEADS = (6, 12, 24, 30, 48)
 MATURITY_H = 48
 CORE_REACH_H = 30
@@ -76,38 +109,83 @@ def hour(t):
 
 
 def freeze_table(path=os.path.join(ROOT, "models", "wind_shadow", "FREEZE.md")):
-    out = {}
-    with open(path, encoding="utf-8") as fh:
-        lines = fh.readlines()
-    for line in lines:
-        m = re.match(r"\|\s*`([^`]+)`\s*\|\s*`([0-9a-f]{64})`\s*\|", line)
-        if m:
-            out[m.group(1)] = m.group(2)
-    return out
+    return ws.read_freeze(path)[1]
+
+
+def rain_ref():
+    spec = importlib.util.spec_from_file_location("wind_shadow_rain_ref",
+                                                  os.path.join(ROOT, "models", "wind_shadow", "rain_ref.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 # ------------------------------------------------------------------ records
-def load_records(directory, candidate_id, manifest_sha, runtime_sha):
-    evaluable, excluded = [], defaultdict(int)
+def read_log(directory):
+    """All parsable object records, in file order (months sorted)."""
+    out, unreadable = [], 0
     for path in sorted(glob.glob(os.path.join(directory, "*.jsonl"))):
         with open(path, encoding="utf-8") as fh:
             lines = fh.readlines()
         for line in lines:
-            r = json.loads(line)
-            if r.get("collection") != "official":
-                excluded["not official collection"] += 1
-            elif r.get("candidate_id") != candidate_id:
-                excluded["other candidate_id"] += 1
-            elif r.get("manifest_sha256") != manifest_sha:
-                excluded["manifest hash mismatch" if r.get("manifest_sha256") else "missing manifest identity"] += 1
-            elif r.get("runtime_sha256") != runtime_sha:
-                excluded["runtime hash mismatch"] += 1
+            try:
+                r = json.loads(line)
+            except ValueError:
+                unreadable += 1
+                continue
+            if isinstance(r, dict):
+                out.append(r)
             else:
-                evaluable.append(r)
+                unreadable += 1
+    return out, unreadable
+
+
+def _slot(r):
+    try:
+        return hour(_utc(r.get("nominal_issuance_hour_utc") or r["issuance_utc"]))
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def load_records(directory, candidate_id, bundle_sha, manifest_sha, runtime_sha):
+    """(slots, attempts, excluded, trial) — slots: evaluable records by hour;
+    attempts: hour -> reasons for non-evaluable official records of this id;
+    trial: {start, first_record_bundle_sha256}."""
+    records, unreadable = read_log(directory)
+    excluded, attempts, evaluable = defaultdict(int), defaultdict(list), []
+    if unreadable:
+        excluded["unparsable line"] += unreadable
+    official = [r for r in records if r.get("collection") == "official" and r.get("candidate_id") == candidate_id]
+    for r in records:
+        if r.get("collection") != "official":
+            excluded["not official collection"] += 1
+        elif r.get("candidate_id") != candidate_id:
+            excluded["other candidate_id"] += 1
+    for r in official:
+        why = None
+        if r.get("status") == "disabled":
+            why = "disabled (bundle check failed at collection)"
+        elif r.get("bundle_sha256") != bundle_sha:
+            why = "bundle mismatch"
+        elif r.get("manifest_sha256") != manifest_sha:
+            why = "manifest hash mismatch" if r.get("manifest_sha256") else "missing manifest identity"
+        elif r.get("runtime_sha256") != runtime_sha:
+            why = "runtime hash mismatch"
+        elif r.get("status") not in ("candidate", "fallback", "error"):
+            why = f"status {r.get('status')!r}"
+        if why:
+            excluded[why] += 1
+            if _slot(r) is not None:
+                attempts[_slot(r)].append(why)
+        else:
+            evaluable.append(r)
     slots = {}
-    for r in sorted(evaluable, key=lambda r: (r.get("nominal_issuance_hour_utc") or r["issuance_utc"], r.get("written_utc", ""))):
-        slots.setdefault(hour(_utc(r.get("nominal_issuance_hour_utc") or r["issuance_utc"])), r)
-    return slots, dict(excluded)
+    for r in sorted(evaluable, key=lambda r: (_slot(r), r.get("written_utc", ""))):
+        slots.setdefault(_slot(r), r)
+    starts = [t for t in (_slot(r) for r in official) if t is not None]
+    trial = {"start": min(starts) if starts else None,
+             "first_record_bundle_sha256": official[0].get("bundle_sha256") if official else None}
+    return slots, dict(attempts), dict(excluded), trial
 
 
 # ------------------------------------------------------------------ observations
@@ -142,37 +220,78 @@ def parse_observations(water_level_js, predictions_js):
                 rec["reason"] = "non-finite value"
             elif len(flags) != 4 or not all(x.strip().isdigit() for x in flags):
                 rec["reason"] = f"malformed flags {fs!r}"
-            elif any(int(x) for x in flags):
-                rec["reason"] = f"quality flag set {fs}"
+            elif any(int(x) for x in flags[1:]):
+                rec["reason"] = f"tolerance flag set {fs}"
             else:
-                rec.update(obs=v, surge=v - p, valid=True)
+                rec.update(obs=v, surge=v - p, valid=True, outlier_samples=int(flags[0]))
         out[t] = rec
     return out
 
 
+def _merge_raw(parts):
+    """[(product, body bytes)] -> the merged water_level / predictions JSON."""
+    wl_all, pr_all = {"data": []}, {"predictions": []}
+    for product, body in parts:
+        js = json.loads(body)
+        if product == "water_level":
+            wl_all["data"] += js.get("data") or []
+        else:
+            pr_all["predictions"] += js.get("predictions") or []
+    return wl_all, pr_all
+
+
 def fetch_observations(t0, t1, save_dir=None):
-    wl_all, pr_all, raw = {"data": []}, {"predictions": []}, []
+    parts, raw = [], []
     a = t0
     while a < t1:
         b = min(a + dt.timedelta(days=30), t1)
-        for product, extra, key, acc in (("water_level", {}, "data", wl_all), ("predictions", {"interval": "h"}, "predictions", pr_all)):
+        for product, extra in (("water_level", {}), ("predictions", {"interval": "h"})):
             q = {"product": product, "station": "8531680", "begin_date": a.strftime("%Y%m%d %H:%M"),
                  "end_date": b.strftime("%Y%m%d %H:%M"), "datum": "MLLW", "time_zone": "gmt", "units": "english",
                  "format": "json", "application": "barnacle-wind-shadow-eval", **extra}
             req = urllib.request.Request("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?" + urllib.parse.urlencode(q),
                                          headers={"User-Agent": "barnacle-wind-shadow-eval"})
             body = urllib.request.urlopen(req, timeout=60).read()
-            acc[key] += json.loads(body).get(key) or []
-            raw.append({"product": product, "begin": q["begin_date"], "end": q["end_date"],
-                        "retrieved_utc": dt.datetime.now(UTC).isoformat(), "sha256": hashlib.sha256(body).hexdigest()})
+            sha = hashlib.sha256(body).hexdigest()
+            entry = {"product": product, "begin": q["begin_date"], "end": q["end_date"],
+                     "retrieved_utc": dt.datetime.now(UTC).isoformat(), "sha256": sha}
+            if save_dir:
+                os.makedirs(os.path.join(save_dir, "raw"), exist_ok=True)
+                with open(os.path.join(save_dir, "raw", f"{sha}.json"), "wb") as f:
+                    f.write(body)                                  # the original response bytes
+                entry["file"] = f"raw/{sha}.json"
+            parts.append((product, body)); raw.append(entry)
         a = b
+    wl_all, pr_all = _merge_raw(parts)
     bundle = {"water_level": wl_all, "predictions": pr_all, "responses": raw}
     if save_dir:
-        os.makedirs(save_dir, exist_ok=True)
         path = os.path.join(save_dir, f"observations-{t0:%Y%m%dT%H}-{t1:%Y%m%dT%H}.json")
         with open(path, "w") as f:
             json.dump(bundle, f)
         bundle["saved_to"] = path
+    return bundle
+
+
+def load_observation_bundle(path):
+    """Offline replay. If every response's raw body was retained, re-parse the
+    raw bodies after verifying each SHA-256 (a mismatch is an error); otherwise
+    use the merged rows and report that raw bodies were not retained."""
+    with open(path) as f:
+        bundle = json.load(f)
+    base = os.path.dirname(os.path.abspath(path))
+    resp = bundle.get("responses") or []
+    if resp and all(r.get("file") for r in resp):
+        parts = []
+        for r in resp:
+            with open(os.path.join(base, r["file"]), "rb") as f:
+                body = f.read()
+            if hashlib.sha256(body).hexdigest() != r["sha256"]:
+                raise ValueError(f"raw observation body {r['file']} does not match its SHA-256")
+            parts.append((r["product"], body))
+        bundle["water_level"], bundle["predictions"] = _merge_raw(parts)
+        bundle["outcome_provenance"] = "raw response bodies retained; hashes verified; re-parsed from raw"
+    else:
+        bundle["outcome_provenance"] = "merged rows only: raw response bodies NOT retained"
     return bundle
 
 
@@ -242,10 +361,13 @@ def pairs_for(slots, obs, now, lead, counts):
         pc = (r.get("production_curve_tide_navd88") or [None] * 48)[lead - 1]
         if pc is not None:
             prod = pc - NAVD - ENH - o["pred"]
-        nw = (r.get("nws_outlook_surge") or [None] * 48)[lead - 1]
+        ol = (r.get("barnacle_outlook_surge") or [None] * 48)[lead - 1]
+        g = r.get("guidance") or {}
         out.append({"issuance": t_slot, "target": tgt, "cand": c, "base": b, "prod": prod,
                     "prod_version": r.get("production_model_version"),
-                    "nws": nw[0] if nw else None, "nws_source": nw[1] if nw else None,
+                    "nwps": ((g.get("nwps_raw") or {}).get("surge_ft") or [None] * 48)[lead - 1],
+                    "petss": ((g.get("petss_mid") or {}).get("surge_ft") or [None] * 48)[lead - 1],
+                    "outlook": ol[0] if ol else None, "outlook_source": ol[1] if ol else None,
                     "obs": o["surge"], "status": r["status"]})
         counts["scored"] += 1
         counts["scored_fallback"] += r["status"] == "fallback"
@@ -299,80 +421,86 @@ def continuity_and_revisions(slots):
 
 
 # ------------------------------------------------------------------ rain-tank sensitivity
-def load_replay(directory=os.path.join(ROOT, "data", "replay_inputs")):
-    out = {}
-    for path in sorted(glob.glob(os.path.join(directory, "*.jsonl"))):
-        with open(path, encoding="utf-8") as fh:
-            lines = fh.readlines()
-        for line in lines:
-            try:
-                r = json.loads(line)
-                out[r["generated_utc"]] = r
-            except (ValueError, KeyError):
-                continue
-    return out
-
-
-def rain_tank_sensitivity(slots, replay):
-    sys.path.insert(0, ROOT)
-    from forecast import flood_forecast_daily as ff
-    from forecast import replay_archive as ra
-    rows, missing = [], defaultdict(int)
+def rain_tank_sensitivity(slots, rr=None):
+    rr = rr or rain_ref()
+    marks = rr.LANDMARKS_NAVD88
+    rows, missing, check = [], defaultdict(int), []
     for t, r in sorted(slots.items()):
-        if not r.get("baseline_surge_ft"):
+        ri = r.get("rain_inputs") or {}
+        if "production_tide_navd88" not in ri:
+            missing[ri.get("reason") or "no as-issued tank inputs in the record"] += 1
             continue
-        rp = replay.get(r["issuance_utc"])
-        if rp is None:
-            missing["no replay record for the issuance"] += 1
+        if ri.get("qpf_in_hr") is None:
+            missing[ri.get("qpf_reason") or "QPF unavailable at issuance"] += 1
             continue
-        if not rp.get("qpf_hourly") or not rp.get("outlook_hourly"):
-            missing["as-issued QPF or astronomy unavailable"] += 1
+        if not ri.get("baseline_surge_ft") or not ri.get("candidate_surge_ft"):
+            missing["variant surges unavailable"] += 1
             continue
-        qpf = {tt: v["in_hr"] for tt, v in ra.expand(rp["qpf_hourly"])}
-        astro = {tt: v["astro_mllw"] for tt, v in ra.expand(rp["outlook_hourly"])}
-        start = _utc(r["leads"]["start"])
-        times, bb, bc, rates = [], [], [], []
-        for h in range(48):
-            tt = start + dt.timedelta(hours=h)
-            if tt not in qpf or tt not in astro or qpf[tt] is None or astro[tt] is None:
-                break
-            times.append(tt); rates.append(qpf[tt])
-            bb.append(astro[tt] + r["baseline_surge_ft"][h] + ENH + NAVD)
-            bc.append(astro[tt] + r["candidate_surge_ft"][h] + ENH + NAVD)
-        if len(times) < 6:
-            missing["QPF/astronomy cover < 6 h"] += 1
+        times, rates = ws.rain_times(ri), ri["qpf_in_hr"]
+        prod, sp = ri["production_tide_navd88"], ri["production_surge_ft"]
+        if any(x is None for x in prod) or len(times) < 2:
+            missing["incomplete production bay series"] += 1
             continue
-        wet = max(rates[:CORE_REACH_H]) >= 0.25
-        pb, pc = ff.simulate_pluvial_series(times, bb, rates), ff.simulate_pluvial_series(times, bc, rates)
+        bb = [pt if b is None else pt - s0 + b for pt, s0, b in zip(prod, sp, ri["baseline_surge_ft"])]
+        bc = [pt if c is None else pt - s0 + c for pt, s0, c in zip(prod, sp, ri["candidate_surge_ft"])]
+        pp = rr.simulate_pluvial_series(times, prod, rates)
+        diffs = [abs(x - y) for x, y in zip(pp, ri["production_pluvial_navd88"]) if x is not None and y is not None]
+        mism = sum((x is None) != (y is None) for x, y in zip(pp, ri["production_pluvial_navd88"]))
+        check.append((max(diffs) if diffs else 0.0, mism))
+        pb, pc = rr.simulate_pluvial_series(times, bb, rates), rr.simulate_pluvial_series(times, bc, rates)
         wb = [max(x, y) if y is not None else x for x, y in zip(bb, pb)]
         wc = [max(x, y) if y is not None else x for x, y in zip(bc, pc)]
-        curb = 4.16
-        rows.append({"issuance": t, "wet": wet, "hours": len(times),
-                     "peak_in_baseline": round((max(wb) - 3.52) * 12, 1), "peak_in_candidate": round((max(wc) - 3.52) * 12, 1),
-                     "hours_above_curb_baseline": sum(x >= curb for x in wb), "hours_above_curb_candidate": sum(x >= curb for x in wc)})
+        after = [i for i, tt in enumerate(times) if tt > _utc(ri["issuance_utc"])]
+        if not after:
+            missing["no points after issuance"] += 1
+            continue
+        step_h = ((times[-1] - times[0]).total_seconds() / 3600.0) / (len(times) - 1)
+        lm = {}
+        for k, e in marks.items():
+            db = max(max(wb[i] - e, 0.0) for i in after) * 12
+            dc = max(max(wc[i] - e, 0.0) for i in after) * 12
+            hb = sum(wb[i] > e for i in after) * step_h
+            hc = sum(wc[i] > e for i in after) * step_h
+            lm[k] = (round(db, 2), round(dc, 2), hb, hc)
+        rows.append({"issuance": t, "wet": max(rates) >= 0.25, "landmarks": lm})
+
+    def summarize(sub):
+        out = {}
+        for k in marks:
+            d = [x["landmarks"][k][1] - x["landmarks"][k][0] for x in sub]
+            dh = [x["landmarks"][k][3] - x["landmarks"][k][2] for x in sub]
+            reached_b = sum(x["landmarks"][k][0] > 0 for x in sub)
+            reached_c = sum(x["landmarks"][k][1] > 0 for x in sub)
+            out[k] = {"issuances_reached_baseline": reached_b, "issuances_reached_candidate": reached_c,
+                      "peak_depth_change_in_mean": round(sum(d) / len(d), 3) if d else None,
+                      "peak_depth_change_in_range": [round(min(d), 2), round(max(d), 2)] if d else None,
+                      "hours_above_change_total": round(sum(dh), 1)}
+        return out
     wet_rows = [x for x in rows if x["wet"]]
     events, last = 0, None
     for x in wet_rows:
         if last is None or (x["issuance"] - last) > dt.timedelta(hours=12):
             events += 1
         last = x["issuance"]
-    d = [x["peak_in_candidate"] - x["peak_in_baseline"] for x in wet_rows]
     return {"issuances_with_inputs": len(rows), "wet_issuances": len(wet_rows), "wet_events": events,
             "treatment": "descriptive only (< 3 wet events)" if events < 3 else "paired evidence for independent review",
-            "wet_peak_change_in_mean": (sum(d) / len(d)) if d else None,
-            "wet_peak_change_in_range": [min(d), max(d)] if d else None,
-            "wet_hours_above_curb_change": sum(x["hours_above_curb_candidate"] - x["hours_above_curb_baseline"] for x in wet_rows),
+            "landmarks_wet": summarize(wet_rows), "landmarks_all_issuances": summarize(rows),
+            "frozen_tank_vs_production_pluvial": {
+                "issuances": len(check), "max_abs_diff_ft": max((c[0] for c in check), default=None),
+                "presence_mismatches": sum(c[1] for c in check)},
             "missing_inputs": dict(missing),
-            "note": "leads > 30 h use the offline 48-h extension of the frozen baseline, not a published core curve"}
+            "note": ("scenario sensitivity (same rain, two bays), not observed street-depth skill; "
+                     "from production's series start with its empty-storage initial condition")}
 
 
 # ------------------------------------------------------------------ evaluation
-def evaluate(slots, obs, now, replay=None, excluded=None):
+def evaluate(slots, obs, now, rain=True, excluded=None, attempts=None, trial_start=None):
     rep = {"excluded_records": excluded or {}}
+    attempts = attempts or {}
     if not slots:
-        rep.update(verdict="INCONCLUSIVE", reason="no evaluable records")
+        rep.update(verdict="INCONCLUSIVE", reason="no evaluable records", trial_start=trial_start and trial_start.isoformat())
         return rep
-    first = min(slots)
+    first = min([min(slots)] + ([trial_start] if trial_start else []) + list(attempts))
     eps = episodes(obs, first, now)
     completed = [e for e in eps if e["completed"]]
     endpoint = None
@@ -387,9 +515,10 @@ def evaluate(slots, obs, now, replay=None, excluded=None):
     states = defaultdict(int)
     for t, r in window.items():
         states[r.get("status")] += 1
-    states["missing"] = n_opp - len(window)
+    states["not_evaluable"] = sum(1 for t in attempts if first <= t <= last_slot and t not in window)
+    states["missing"] = n_opp - len(window) - states["not_evaluable"]
     coverage = (states["candidate"] + states["fallback"]) / n_opp if n_opp else 0.0
-    rep.update(first_opportunity=first.isoformat(), endpoint=endpoint.isoformat() if endpoint else None,
+    rep.update(trial_start=first.isoformat(), first_opportunity=first.isoformat(), endpoint=endpoint.isoformat() if endpoint else None,
                status="FINAL" if final else "INTERIM (descriptive only)", opportunities=n_opp,
                slot_states=dict(states), coverage=round(coverage, 4),
                episodes=[{k: (v.isoformat() if isinstance(v, dt.datetime) else v) for k, v in e.items()} for e in eps],
@@ -418,13 +547,31 @@ def evaluate(slots, obs, now, replay=None, excluded=None):
                                                  "baseline_frozen": stats(ps, "base")} for v, ps in cohorts.items()}
         row["vs_actual_production_curve_note"] = ("within the published core reach" if lead <= CORE_REACH_H
                                                   else "beyond the ~30-h core curve: no production comparator")
+        def avail_per_opp(field, key):
+            n = 0
+            for r in window.values():
+                g = ((r.get("guidance") or {}).get(field) or {}).get("surge_ft") if field else r.get(key)
+                n += bool(g and g[lead - 1] is not None)
+            return round(n / n_opp, 4) if n_opp else None
+        guid = {}
+        for name, key, field in (("nwps_raw", "nwps", "nwps_raw"), ("petss_mid", "petss", "petss_mid")):
+            sub = [p for p in P if p[key] is not None]
+            guid[name] = {"available_in_scored_pairs": round(len(sub) / len(P), 4) if P else None,
+                          "available_per_opportunity": avail_per_opp(field, None),
+                          "candidate": stats(sub, "cand"), "baseline_frozen": stats(sub, "base"),
+                          name: stats(sub, key)}
+        row["vs_external_guidance"] = guid
         by_src = defaultdict(list)
         for p in P:
-            if p["nws"] is not None:
-                by_src[p["nws_source"]].append(p)
-        row["vs_nws_petss_guidance"] = {src: {"candidate": stats(ps, "cand"), "nws_petss": stats(ps, "nws")}
-                                        for src, ps in by_src.items()}
-        row["nws_petss_coverage"] = round(sum(len(v) for v in by_src.values()) / len(P), 4) if P else None
+            if p["outlook"] is not None:
+                by_src[p["outlook_source"]].append(p)
+        row["vs_barnacle_outlook"] = {
+            "note": ("Barnacle's final outlook, NOT external guidance: a blend of advisory-adjusted NWPS, "
+                     "P-ETSS, guidance decay, observed decay and the typical offset"),
+            "available_in_scored_pairs": round(sum(len(v) for v in by_src.values()) / len(P), 4) if P else None,
+            "available_per_opportunity": avail_per_opp(None, "barnacle_outlook_surge"),
+            "by_source": {src: {"candidate": stats(ps, "cand"), "barnacle_outlook": stats(ps, "outlook")}
+                          for src, ps in by_src.items()}}
         ep_rows = []
         for e in eps:
             span_valid = [t for t, o in obs.items() if e["start"] <= t <= e["end"] and o["valid"]]
@@ -456,7 +603,7 @@ def evaluate(slots, obs, now, replay=None, excluded=None):
         al = v["all"]
         checks.append((f"large under {lead}h", None if not al["candidate"]["n"]
                        else al["candidate"]["large_under_rate"] <= al["baseline_frozen"]["large_under_rate"]))
-    rep["rain_tank_sensitivity"] = rain_tank_sensitivity(window, replay or {}) if replay is not None else "not requested"
+    rep["rain_tank_sensitivity"] = rain_tank_sensitivity(window) if rain else "not requested"
     rep["checks"] = [{"check": c, "pass": ok} for c, ok in checks]
     if inconclusive or any(ok is None for _c, ok in checks):
         verdict = "INCONCLUSIVE"
@@ -473,24 +620,42 @@ def main():
     ap.add_argument("--now", default=None)
     ap.add_argument("--obs-json", default=None, help="replay a saved observation bundle offline")
     ap.add_argument("--save-obs", default=None, help="directory to save the fetched raw observations")
+    ap.add_argument("--unfrozen", action="store_true",
+                    help="score despite a bundle mismatch; the report is labeled NON-OFFICIAL")
     a = ap.parse_args()
-    fr = freeze_table()
+    bundle = ws.check_bundle(ROOT)
+    table = bundle["table"]
     m = json.load(open(os.path.join(ROOT, "models", "wind_shadow", "manifest.json")))
-    slots, excluded = load_records(a.dir, m["candidate_id"], fr["models/wind_shadow/manifest.json"],
-                                   fr["forecast/wind_shadow.py"])
+    slots, attempts, excluded, trial = load_records(a.dir, m["candidate_id"], bundle["bundle_sha256"],
+                                                    table.get(ws.MANIFEST_REL), table.get(ws.RUNTIME_REL))
+    problems = list(bundle["problems"])
+    if trial["start"] is not None and trial["first_record_bundle_sha256"] != bundle["bundle_sha256"]:
+        problems.append(f"trial log's first record binds bundle {str(trial['first_record_bundle_sha256'])[:12]}; "
+                        f"FREEZE.md now gives {str(bundle['bundle_sha256'])[:12]}")
     now = _utc(a.now) if a.now else dt.datetime.now(UTC)
     header = {"evaluator_sha256": hashlib.sha256(open(os.path.abspath(__file__), "rb").read()).hexdigest(),
-              "freeze_evaluator_sha256": fr.get("history/scripts/evaluate_wind_shadow.py"), "now": now.isoformat()}
+              "bundle_sha256": bundle["bundle_sha256"], "bundle_problems": problems, "now": now.isoformat(),
+              "trial_start": trial["start"].isoformat() if trial["start"] else None}
+    if problems and not a.unfrozen:
+        print(json.dumps({**header, "verdict": "NOT SCORED: frozen bundle mismatch", "excluded": excluded}, indent=1))
+        return 3
     if not slots:
         print(json.dumps({**header, "verdict": "INCONCLUSIVE", "reason": "no evaluable records", "excluded": excluded}))
         return 0
     if a.obs_json:
-        bundle = json.load(open(a.obs_json))
+        obs_bundle = load_observation_bundle(a.obs_json)
     else:
-        bundle = fetch_observations(min(slots) - dt.timedelta(days=1), now, a.save_obs)
-    obs = parse_observations(bundle["water_level"], bundle["predictions"])
-    rep = evaluate(slots, obs, now, replay=load_replay(), excluded=excluded)
-    rep.update(header, observation_responses=bundle.get("responses"), observation_bundle=bundle.get("saved_to") or a.obs_json)
+        start = min([min(slots)] + ([trial["start"]] if trial["start"] else []))
+        obs_bundle = fetch_observations(start - dt.timedelta(days=1), now, a.save_obs)
+        obs_bundle["outcome_provenance"] = ("raw response bodies retained under --save-obs" if a.save_obs
+                                            else "raw response bodies NOT retained (no --save-obs)")
+    obs = parse_observations(obs_bundle["water_level"], obs_bundle["predictions"])
+    rep = evaluate(slots, obs, now, excluded=excluded, attempts=attempts, trial_start=trial["start"])
+    if problems:
+        rep["verdict"] = "NON-OFFICIAL (bundle mismatch; --unfrozen): " + str(rep.get("verdict"))
+    rep.update(header, observation_responses=obs_bundle.get("responses"),
+               observation_bundle=obs_bundle.get("saved_to") or a.obs_json,
+               outcome_provenance=obs_bundle.get("outcome_provenance"))
     print(json.dumps(rep, indent=1, default=str))
     return 0
 

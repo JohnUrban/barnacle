@@ -101,3 +101,45 @@ The construction rule and route outcome above are unchanged (route A). Changes:
 - The trial starts at the first official record of the frozen c2 bundle after
   the branch is merged. Before that, review changes update FREEZE.md; after it,
   any change to a frozen file needs a new candidate id and a new period.
+
+## Round-03 repairs (audit 2026-09-24-a3 round 03; appended before any official record)
+Supersedes the two bullets above where they differ.
+- Trial start (R8, R6): merging only ENABLES the production workflow. The
+  trial starts at the nominal hour of the FIRST durable (committed) official
+  record of wind-shadow-c2, whatever its status. Disabled or unbound records
+  after that count as missed opportunities; they never move the start.
+- Bundle enforcement (R6): before an official record the runtime hashes every
+  FREEZE-listed file, the manifest it actually loaded and itself; any mismatch
+  writes a `disabled` record (reason, hashes; no fetch, no values). Every
+  record carries `bundle_sha256` (the canonical FREEZE id/table hash). The
+  evaluator refuses to score (exit 3) unless every bundle file matches AND the
+  trial log's first official record binds the same bundle; `--unfrozen`
+  scores but labels the report NON-OFFICIAL. CI checks the same first-record
+  binding, so editing a file and its FREEZE entry after the start fails.
+- Execution mode (R8): the opt-in makes a record official only when the parsed
+  mode is known and is neither --no-send nor --dry-run.
+- Rain (R3): each record stores production's AS-ISSUED tank inputs: the 30-min
+  series from its start (storage empty there, as production), its bay, the
+  surge it used per point, the QPF rate per point (production's hour lookup)
+  and its pluvial line. The evaluator runs the FROZEN tank
+  (models/wind_shadow/rain_ref.py + stage_storage_curve.csv copy, equal to
+  production at freeze) from that start. Before and at issuance both variants
+  share production's bay; after it, bay = production bay + (variant surge -
+  production surge), the candidate correction linear between whole-hour leads.
+  Scored: peak depth and hours above every flood-window landmark.
+- Guidance (R3): raw NWPS (gauge forecast minus hourly astronomy, no advisory
+  correction) and the P-ETSS hourly mid are stored per target with issue and
+  retrieval provenance, apart from Barnacle's final outlook (renamed
+  `barnacle_outlook_surge`, its own comparator by source).
+- Run availability (R5): the selected run is accepted only if metadata shows it
+  (or a newer run: in-order publication assumed) available by issuance.
+- Pressure (R5): returned current values must satisfy 0 <= issuance - t <=
+  60 min; the anomaly counts distinct hourly timestamps; the 31-day hourly
+  response is kept losslessly (gzip + base64) with its SHA-256 and the
+  rejected rows.
+- Water-level QC (R5): VALID = finite, four integer flags [O,F,R,L], F = R =
+  L = 0. O is CO-OPS's count of 1-s samples outside a 3-sigma band, not a
+  tolerance failure; requiring O = 0 would drop elevated-surge hours
+  preferentially (fit span: 7.9 % of 1.0-1.5 ft hours vs 1.8 % below 0.5 ft).
+  The fit's OUTCOMES pass this QC from a flagged re-pull (values identical to
+  the training table); the reading and the mean mirror production (no flag QC).

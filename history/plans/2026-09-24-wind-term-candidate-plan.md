@@ -191,3 +191,20 @@ docstring) and supersede any looser reading of this plan:
   astronomy; descriptive with fewer than 3 wet events.
 - Observation QC: finite value and exactly four zero flags; raw responses
   saved with hashes; offline replay via --obs-json.
+
+## Round-03 update (appended 2026-09-24 after audit 2026-09-24-a3 round 03)
+Supersedes the reconciliation bullets above where they differ; the frozen
+rules live in the evaluator docstring and models/wind_shadow/DESIGN.md.
+- Merge enables the workflow; the trial STARTS at the first durable official
+  c2 record, whatever its status. --no-send/--dry-run are never official.
+- Every official record is gated on the frozen bundle (disabled record on any
+  mismatch) and carries its bundle identity; the evaluator scores only when all
+  bundle files match and the log's first record binds the same bundle.
+- Observation QC: finite, four integer flags, tolerance flags F = R = L = 0;
+  O (a count of 1-s outlier samples) is kept but does not invalidate an hour.
+- Guidance comparators: RAW NWPS and the P-ETSS hourly mid, stored per record
+  with provenance; Barnacle's final outlook is a separate comparator.
+- Rain-tank sensitivity no longer joins the replay archive: each record stores
+  production's as-issued tank inputs from its series start, and the evaluator
+  runs a frozen copy of the tank (models/wind_shadow/rain_ref.py) and scores
+  every flood-window landmark.

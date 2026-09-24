@@ -8,6 +8,12 @@ history); observed pressure uses the hourly product WITH quality flags (all 0
 required), the window [t0 - 30 d, t0) and >= 480 of its 720 hours; dataset
 identities (SHA-256) are bound into the manifest; nominal targets t0 + h from
 the issuance hour t0; the reading is the 6-min value at t0.
+Round 03 (a3 R5): the training OUTCOME (target) must pass the evaluator's
+water-level QC (finite, four integer flags [O,F,R,L] with F=R=L=0; O is a
+count of 1-s outlier samples, not a failure), from a re-pull of the
+6-min water_level WITH flags (history/data/forecast_test/water_level_flags.parquet).
+The READING mirrors production, which applies no flag QC (it despikes); the
+mean replays production's policy, which also applies no flag QC.
 Construction and the coefficient-route rule: models/wind_shadow/DESIGN.md
 (committed before this comparison). Features are built with the SAME code the
 live shadow uses (forecast/wind_shadow.py: select_run, features), so training
@@ -17,7 +23,7 @@ equivalence test passes.
 Inputs (git-ignored, regeneratable): history/data/gfs_single_runs/runs.parquet
 (pull_gfs_single_runs.py), history/data/forecast_test/{surge_hourly,met_obs,
 fcst_gfs_seamless}.parquet (pull_surge_forecast_test_data.py).
-Run: python3 history/scripts/fit_wind_shadow_c1.py
+Run: python3 history/scripts/fit_wind_shadow_c2.py
 """
 import datetime as dt, hashlib, json, math, sys, time, urllib.parse, urllib.request
 from pathlib import Path
@@ -74,6 +80,44 @@ if not PF.exists():
         a = b; time.sleep(0.3)
     pd.DataFrame(rows).drop_duplicates("timestamp").to_parquet(PF, index=False)
 pf = pd.read_parquet(PF).set_index("timestamp").sort_index()
+
+# ---- 6-min water level on the hour WITH flags (outcome QC), cached
+WF = FT / "water_level_flags.parquet"
+if not WF.exists():
+    rows = []
+    a = dt.datetime(2026, 3, 25, tzinfo=UTC)
+    while a < dt.datetime(2026, 9, 24, tzinfo=UTC):
+        b = min(a + dt.timedelta(days=30), dt.datetime(2026, 9, 24, tzinfo=UTC))
+        q = {"product": "water_level", "station": "8531680", "begin_date": a.strftime("%Y%m%d %H:%M"),
+             "end_date": b.strftime("%Y%m%d %H:%M"), "datum": "MLLW", "time_zone": "gmt", "units": "english",
+             "format": "json", "application": "barnacle-research"}
+        req = urllib.request.Request("https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?" + urllib.parse.urlencode(q),
+                                     headers={"User-Agent": "barnacle-research (dr.john.urban@gmail.com)"})
+        for r in json.load(urllib.request.urlopen(req, timeout=90)).get("data") or []:
+            if r["t"].endswith(":00"):
+                rows.append({"timestamp": pd.Timestamp(r["t"], tz="UTC"), "v": r.get("v"), "f": r.get("f"), "q": r.get("q")})
+        a = b; time.sleep(0.3)
+    pd.DataFrame(rows).drop_duplicates("timestamp").to_parquet(WF, index=False)
+wf = pd.read_parquet(WF).set_index("timestamp").sort_index()
+
+
+def _wl_ok(v, f):
+    try:
+        fl = str(f).split(",")
+        return len(fl) == 4 and all(x.strip().isdigit() for x in fl) and not any(int(x) for x in fl[1:]) \
+            and math.isfinite(float(v))
+    except (TypeError, ValueError):
+        return False
+_ok_rows = pd.Series([_wl_ok(v, f) for v, f in zip(wf.v, wf.f)], index=wf.index)
+wl_ok = _ok_rows.reindex(sv.index).fillna(False).astype(bool)
+wl_v = pd.to_numeric(wf.v, errors="coerce").reindex(sv.index)
+_both = wl_v.notna() & sv.observed_mllw.notna()
+wl_qc = {"rows_repulled": int(len(wf)), "rows_failing_qc": int((~_ok_rows).sum()),
+         "rows_with_outlier_count_only": int(sum(str(f).split(",")[0] not in ("0", "") and _wl_ok(v, f) for v, f in zip(wf.v, wf.f))),
+         "value_mismatch_vs_table_gt_0p001ft": int(((wl_v - sv.observed_mllw).abs() > 0.001)[_both].sum()),
+         "rows_compared": int(_both.sum()),
+         "quality_codes": {str(k): int(v) for k, v in wf["q"].value_counts(dropna=False).items()}}
+print("water-level QC re-pull:", json.dumps(wl_qc))
 
 
 def _ok(v, f):
@@ -160,12 +204,15 @@ d_mp = [abs(m_prod_cache[t] - float(old_mp.get(t))) for t in issuances
         if m_prod_cache[t] is not None and old_mp.get(t) is not None and math.isfinite(old_mp.get(t))]
 print(f"production-mean replay: n={len(mp_vals)}, range {min(mp_vals):.4f}..{max(mp_vals):.4f} ft; "
       f"vs c1 construction mean |diff| {np.mean(d_mp):.4f}, max {np.max(d_mp):.4f} ft")
-coefs, fitinfo = {}, {}
+coefs, fitinfo, qc_dropped = {}, {}, {}
 for h in range(1, 49):
     X, y, base_err, cand_rows = [], [], [], []
     for t in issuances:
         s0, mp, s1 = s.get(t), m_prod_cache.get(t), s.get(t + dt.timedelta(hours=h))
         if s0 is None or mp is None or s1 is None or not all(map(math.isfinite, (s0, mp, s1))):
+            continue
+        if not bool(wl_ok.get(t + dt.timedelta(hours=h), False)):      # outcome QC (evaluator's rule)
+            qc_dropped[h] = qc_dropped.get(h, 0) + 1
             continue
         f = feat_fn(t, h)
         if f is None:
@@ -177,7 +224,7 @@ for h in range(1, 49):
     beta = np.linalg.lstsq(Xd, y, rcond=None)[0]
     pred = np.clip(Xd @ beta, -CAP, CAP)
     coefs[str(h)] = [round(float(b), 8) for b in beta]
-    fitinfo[str(h)] = {"n": int(len(y)), "in_sample_mae_baseline_ft": round(float(np.abs(y).mean()), 4),
+    fitinfo[str(h)] = {"n": int(len(y)), "outcomes_dropped_by_qc": int(qc_dropped.get(h, 0)), "in_sample_mae_baseline_ft": round(float(np.abs(y).mean()), 4),
                        "in_sample_mae_candidate_ft": round(float(np.abs(y - pred).mean()), 4)}
     if h in (6, 12, 24, 30, 48):
         print(f"lead {h:2d} h: n={len(y)} in-sample MAE baseline {np.abs(y).mean():.3f} -> candidate {np.abs(y - pred).mean():.3f} ft; coef {coefs[str(h)]}")
@@ -202,6 +249,10 @@ manifest = {
                         "labeled); anomaly = value minus the mean of QC-passing hourly values in [t0 - 30 d, t0), "
                         f">= {MIN_PRESSURE_HOURS} of 720 required; QC = all three flags 0 and finite"),
     "targets": "nominal UTC hours t0 + h, t0 = the issuance hour; reading = 6-min value at t0 (live: <= 60 min old)",
+    "water_level_qc": ("training outcome must pass the evaluator's QC (finite, four integer flags, F=R=L=0; O is a count) from a flagged "
+                       "re-pull; the reading mirrors production (no flag QC; production despikes); the mean replays "
+                       "production (no flag QC)"),
+    "water_level_qc_repull": wl_qc,
     "historical_availability": ("training assumes every cycle was available 6 h after init (one metadata observation: "
                                 "5.6 h); live requires confirmation by provider metadata, else fallback"),
     "dataset_sha256": {k: hashlib.sha256((ROOT / v).read_bytes()).hexdigest() for k, v in {
@@ -209,6 +260,7 @@ manifest = {
         "surge_6min_on_hour": "history/data/forecast_test/surge_hourly.parquet",
         "verified_hourly_utc": "history/data/sandy_hook_hourly_utc.parquet",
         "pressure_hourly_flags": "history/data/forecast_test/pressure_hourly_flags.parquet",
+        "water_level_flags": "history/data/forecast_test/water_level_flags.parquet",
         "previous_runs_gfs": "history/data/forecast_test/fcst_gfs_seamless.parquet"}.items()},
     "navd88_offset_ft": -2.82, "local_enhancement_ft": 0.0,
     "coefficient_order": ["b1 wind stress (kn^2)", "b2 dP (hPa)", "b3 P_anom (hPa)", "a intercept (ft)"],
