@@ -243,6 +243,7 @@ def _v106(reading=1.5, mean=0.5, rain=None, with_replay=True, pluvial=None):
         for q, v in zip(f["water_series"], pl):
             if v is not None:
                 q["pluvial_navd88"] = round(v, 3)
+                q["water_navd88"] = max(q["tide_navd88"], q["pluvial_navd88"])      # a4 round 03: combined line too
     replay = {}
     if with_replay:
         from forecast import replay_archive as ra
@@ -312,6 +313,63 @@ class StreetArmTests(unittest.TestCase):
         hrs = [START.replace(minute=0) + dt.timedelta(hours=k) for k in range(1, 40)]
         rec["qpf_hourly"] = ra.columnar(hrs, in_hr=[0.0] * len(hrs))
         self.assertEqual(S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])[0]["class"], "NEAR")
+
+    def test_combined_line_must_match_its_control_R1_round03(self):
+        """Round 03 probe: +5 ft on the published combined line only was admitted as EXACT."""
+        o = _entry("2026-09-24T08:00", "curb", "POINT", point=4.24)
+        f, replay, p30 = _v106()
+        for q in f["water_series"]:
+            q["water_navd88"] += 5.0
+        pr = S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])[0]
+        self.assertEqual(pr["class"], "EXCLUDED"); self.assertIn("combined output mismatch", pr["class_note"])
+        f, replay, p30 = _v106(rain=[1.0] * 40, pluvial="consistent")        # the repaired positive fixture
+        self.assertEqual(S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])[0]["class"], "EXACT")
+
+    def test_constant_rule_uses_the_same_bay_tolerance_R1_round03(self):
+        """Round 03 probe: a v0.10.5 constant-reading curve shifted 0.002 ft was admitted as NEAR."""
+        from forecast import replay_archive as ra
+        p30 = _p30(START - dt.timedelta(hours=2), START + dt.timedelta(hours=40))
+        obs_t = GEN - dt.timedelta(minutes=8)
+        for shift, expect in ((0.0, "NEAR"), (0.002, "EXCLUDED")):
+            tide = lambda t: p30[t] - 2.82 + 1.5 + shift
+            f = {"generated_utc": GEN.strftime("%Y-%m-%dT%H:%M:%SZ"), "model_version": "v0.10.5",
+                 "water_series": _series(START, 73, tide),
+                 "water_series_input": {"surge_ft": 1.5, "observation_time": (obs_t - dt.timedelta(hours=4)).strftime("%Y-%m-%d %H:%M") + "-04:00"}}
+            hrs = [START.replace(minute=0) + dt.timedelta(hours=k) for k in range(40)]
+            replay = {f["generated_utc"]: {"qpf_hourly": ra.columnar(hrs, in_hr=[0.0] * 40), "unavailable": {}}}
+            pr = S.build_pairs(FakeCtx({"b1": f}, replay, p30), [_entry("2026-09-24T08:00", "curb", "POINT", point=4.24)])[0]
+            self.assertEqual(pr["class"], expect, pr["class_note"])
+            if expect == "EXCLUDED":
+                self.assertRegex(pr["class_note"], "control bay replay mismatch|astronomy not reproduced")
+
+    def test_invalid_numbers_are_reasoned_exclusions_not_crashes_R1_round03(self):
+        from forecast import replay_archive as ra
+        o = _entry("2026-09-24T08:00", "curb", "POINT", point=4.24)
+        hrs = [START.replace(minute=0) + dt.timedelta(hours=k) for k in range(40)]
+        for rates, why in (([-1.0] * 40, "invalid archived rain"), ([float("nan")] * 40, "invalid archived rain"),
+                           ([None] * 40, "antecedent")):
+            f, replay, p30 = _v106()
+            replay[f["generated_utc"]]["qpf_hourly"] = ra.columnar(hrs, in_hr=rates)
+            pr = S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])[0]      # must not raise
+            self.assertEqual(pr["class"], "EXCLUDED", rates[0]); self.assertIn(why, pr["class_note"])
+        for field in ("pluvial_navd88", "water_navd88", "tide_navd88"):
+            f, replay, p30 = _v106()
+            f["water_series"][10][field] = float("nan")
+            pr = S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])
+            self.assertTrue(pr and all(p["class"] == "EXCLUDED" for p in pr), field)
+        f, replay, p30 = _v106()
+        f["water_series_input"]["decay"]["mean_ft"] = float("nan")
+        self.assertEqual(S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])[0]["class"], "EXCLUDED")
+
+    def test_invalid_inputs_cannot_reach_a_verdict_R1_round03(self):
+        from forecast import replay_archive as ra
+        f, replay, p30 = _v106()
+        hrs = [START.replace(minute=0) + dt.timedelta(hours=k) for k in range(40)]
+        replay[f["generated_utc"]]["qpf_hourly"] = ra.columnar(hrs, in_hr=[-1.0] * 40)
+        obs = [dict(_entry("2026-09-24T08:00", "curb", "POINT", point=4.24), row=i) for i in range(2, 9)]
+        rep, pairs = S.evaluate(FakeCtx({"b1": f}, replay, p30), obs)
+        self.assertEqual(set(rep["class_counts"]), {"EXCLUDED"})
+        self.assertEqual(rep["verdicts"]["B1 decay vs persisted (EXACT only)"], "NOT YET EVALUABLE")
 
     def test_inconsistent_records_cannot_produce_a_verdict_R1(self):
         rain = [1.0] * 40
@@ -460,6 +518,29 @@ class AdvisoryTests(unittest.TestCase):
         pairs, skipped = AD.build_pairs(rows, fc.get, hilo)
         self.assertTrue(any("reconstructed correction" in k for k in skipped))
         self.assertFalse(any(p["source"] == "nws_product" for p in pairs))
+
+    def test_invalid_advisory_numbers_are_excluded_R1_round03(self):
+        """Round 03 probe: NaN published outlook levels admitted 48 pairs."""
+        rows, fc, levels, hilo = _advisory_fixture(0.3, 1, "corrected")
+        g = rows[0][0]["generated_utc"]
+        for q in fc[g]["outlook_7d"]["series"]:
+            q["tide_navd88"] = float("nan")
+        pairs, skipped = AD.build_pairs(rows, fc.get, hilo)
+        self.assertEqual(pairs, []); self.assertGreater(skipped["invalid or missing published outlook level"], 0)
+        rows, fc, levels, hilo = _advisory_fixture(0.3, 1, "corrected")
+        rows[0][0]["advisory_corrections"][0]["ft"] = float("nan")
+        pairs, skipped = AD.build_pairs(rows, fc.get, hilo)
+        self.assertEqual(pairs, []); self.assertEqual(skipped["record with a missing or invalid recorded anchor"], 1)
+        from forecast import replay_archive as ra
+        rows, fc, levels, hilo = _advisory_fixture(0.3, 1, "corrected")
+        nw = rows[0][0]["nwps"]["hourly"]; nw["ft"][5] = float("nan")
+        pairs, skipped = AD.build_pairs(rows, fc.get, hilo)
+        self.assertEqual(pairs, []); self.assertEqual(skipped["record with invalid raw NWPS values"], 1)
+        rows, fc, levels, hilo = _advisory_fixture(0.3, 1, "corrected")
+        pairs, _s = AD.build_pairs(rows, fc.get, hilo)
+        levels = {k: dict(v, v=float("nan")) for k, v in levels.items()}
+        AD.attach_outcomes(pairs, levels, dt.datetime(2026, 12, 1, tzinfo=UTC))
+        self.assertEqual(AD.evaluate(pairs, {})["matured_valid"], 0)
 
     def test_missing_astronomy_is_unavailable_not_mid_R2(self):
         t = dt.datetime(2026, 9, 24, 13, tzinfo=UTC)

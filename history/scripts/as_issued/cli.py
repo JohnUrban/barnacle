@@ -49,7 +49,14 @@ def advisory():
     rows = A.replay_records()
     pairs, skipped = AD.build_pairs(rows, lambda g: A.load_forecast(by_gen[g]["blob"]) if g in by_gen else None, hilo)
     levels, man = {}, None
-    if pairs:
+    reuse = next((a.split("=", 1)[1] for a in sys.argv[2:] if a.startswith("--reuse=")), None)
+    if reuse:
+        # offline reproduction: the saved raw outcome responses (hash-verified) and their evaluation time
+        man = os.path.join(A.ROOT, reuse)
+        with open(man) as f:
+            now = dt.datetime.fromisoformat(json.load(f)["evaluated_utc"])
+        levels = noaa.water_levels(noaa.load_bodies(man))
+    elif pairs:
         d = os.path.join(A.ROOT, "history", "data", "as_issued", "outcomes_advisory")
         t0 = min(p["target"] for p in pairs) - dt.timedelta(hours=1)
         t1 = min(max(p["target"] for p in pairs) + dt.timedelta(hours=1), now)
@@ -69,7 +76,7 @@ def advisory():
     _write(f"study-a-advisory-{REVISION}.json", {"report": rep, "pairs": pairs})
 
 
-REVISION = "r2"   # audit 2026-09-24-a4 repairs; r1 outputs (no suffix) are preserved unchanged
+REVISION = "r3"   # audit 2026-09-24-a4 round 03 completion; r1 (no suffix) and r2 outputs are preserved unchanged
 
 
 def load_normalized():

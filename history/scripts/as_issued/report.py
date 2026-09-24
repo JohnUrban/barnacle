@@ -53,6 +53,9 @@ def per_event(pairs, event_peaks):
             row["leads"][lb] = {
                 "pairs": len(scs), "point_pairs": len(errs),
                 "level_bias_ft": round(sum(errs) / len(errs), 3) if errs else None,
+                "level_error_range_ft": [round(min(errs), 3), round(max(errs), 3)] if errs else None,
+                "point_rows": sorted({p["obs_row"] for p, sc in scs if "error" in sc}),
+                "rows": sorted({p["obs_row"] for p, _sc in scs}),
                 "level_mae_ft": round(sum(map(abs, errs)) / len(errs), 3) if errs else None,
                 "depth_bias_in": round(sum(dep) / len(dep), 1) if dep else None,
                 "interval_inside": f"{sum(x == 0 for x in iv)}/{len(iv)}" if iv else None,

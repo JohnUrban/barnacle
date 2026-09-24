@@ -13,11 +13,15 @@ fading to zero over 6 h) and (published - raw) must equal it within
 CORR_TOL_FT; the source label must agree (nws_product exactly where a
 correction applies). Phase needs NOAA extrema on both sides of the target
 within 13 h; otherwise the target is UNAVAILABLE (counted, not MID).
+Round 03 (Amendment 3): every required number (raw NWPS, advisory totals,
+recorded anchors, published outlook level, outcome) must be finite before any
+arithmetic; failures are counted exclusions (a NaN can never pass a tolerance).
 """
 from __future__ import annotations
 
 import bisect
 import datetime as dt
+import math
 import random
 import sys
 from collections import Counter, defaultdict
@@ -38,6 +42,10 @@ ZERO_FT = 0.005
 UNDER_FT = -0.25
 MATURITY_H = 48
 MIN_EPISODES = 5
+
+
+def _num(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
 
 
 def phase_of(t, hilo):
@@ -95,6 +103,8 @@ def rebuilt_anchors(rec, raw):
             total = float(row[1])
         except (TypeError, ValueError, IndexError):
             continue
+        if not math.isfinite(total):
+            continue
         key = inst.replace(minute=0, second=0, microsecond=0)
         near = [raw[k] for k in (key, key + dt.timedelta(hours=1)) if k in raw]
         if near:
@@ -115,9 +125,17 @@ def build_pairs(replay_rows, forecast_for, hilo):
         if f is None:
             skipped["published forecast not found for the generation"] += 1
             continue
-        raw = {t: v["ft"] for t, v in ra.expand(rec["nwps"]["hourly"]) if v.get("ft") is not None}
-        recorded = sorted((A.parse_utc(c["utc"]), float(c["ft"])) for c in (rec.get("advisory_corrections") or [])
-                          if c.get("ft") is not None)
+        raw_all = {t: v.get("ft") for t, v in ra.expand(rec["nwps"]["hourly"])}
+        n_bad_raw = sum(1 for v in raw_all.values() if v is not None and not _num(v))
+        if n_bad_raw:
+            skipped["record with invalid raw NWPS values"] += 1
+            continue
+        raw = {t: float(v) for t, v in raw_all.items() if v is not None}
+        corr_rows = rec.get("advisory_corrections") or []
+        if any(not _num(c.get("ft")) for c in corr_rows):
+            skipped["record with a missing or invalid recorded anchor"] += 1
+            continue
+        recorded = sorted((A.parse_utc(c["utc"]), float(c["ft"])) for c in corr_rows)
         rebuilt = rebuilt_anchors(rec, raw)
         anchor_ok = (len(rebuilt) == len(recorded) and all(
             abs((a1 - a2).total_seconds()) <= 60 and abs(c1 - c2) <= CORR_TOL_FT for (a1, c1), (a2, c2) in zip(rebuilt, recorded)))
@@ -130,8 +148,11 @@ def build_pairs(replay_rows, forecast_for, hilo):
             if src not in ("nws_product", "nwps"):
                 skipped[f"source {src} (not a raw-NWPS row)"] += 1
                 continue
-            if t not in raw or p.get("tide_navd88") is None:
+            if t not in raw:
                 skipped["target not covered by raw NWPS"] += 1
+                continue
+            if not _num(p.get("tide_navd88")):
+                skipped["invalid or missing published outlook level"] += 1
                 continue
             lead = (t - gen).total_seconds() / 3600.0
             if lead <= 0:
@@ -174,6 +195,8 @@ def attach_outcomes(pairs, levels, now):
             p["outcome"], p["outcome_reason"] = None, "no observation"
         elif not o["valid"]:
             p["outcome"], p["outcome_reason"] = None, o["reason"]
+        elif not _num(o.get("v")):
+            p["outcome"], p["outcome_reason"] = None, "invalid outcome value"
         else:
             p["outcome"], p["outcome_reason"] = o["v"], None
         p["outcome_q"] = (o or {}).get("q")

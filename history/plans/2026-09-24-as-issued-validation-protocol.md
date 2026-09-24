@@ -279,3 +279,29 @@ finding. The verdict vocabulary and adequacy floors are unchanged.
   three phases; any phase verdict must be read with the others.
 - **A2.7 Times.** Ledger times use the shared station-time helper (offset-bearing
   values kept; legacy ambiguous fall-back hours fold=0).
+
+## Amendment 3 (2026-09-24 ~17:30 EDT) — POST-REVIEW clarification (audit a4 round 03)
+Status: after Codex round 03 (audits/2026-09-24-a4/03-repairs-verification-codex.md)
+and after the r1 and r2 outcome runs; not predeclared. r1 and r2 outputs are
+kept unchanged; revised outputs carry `-r3`. These rules complete what
+Amendment 2 A2.1 already promised (a control replay and finite inputs); no
+threshold was chosen by its effect on results.
+- **A3.1 Combined-output control.** An admitted issuance's published combined
+  line must equal max(published bay, published pluvial) within 0.002 ft at
+  every point (checked for every class that builds counterfactual arms).
+- **A3.2 One bay tolerance for every rule.** The 0.0015-ft control applies to
+  the decay rule, to the v0.10.5 constant (the published reading) and to older
+  constant curves (the published tide surge the curve implies, within
+  0.002 ft); with no replayable rule the issuance is excluded.
+- **A3.3 Numeric admission contract.** Before any arithmetic: published bay
+  and combined values, astronomy, reading and mean must be finite numbers;
+  published pluvial must be finite or absent (absent = no water above the
+  street base, the published contract); archived rain must be finite and
+  >= 0; a null rain hour is UNAVAILABLE (it counts against EXACT; only the
+  declared first-hour NEAR case tolerates one), never zero. Study A requires
+  finite raw NWPS, advisory totals, recorded anchors, published outlook levels
+  and outcomes. Every failure is a counted exclusion with its reason; none can
+  raise, become EXACT/NEAR or reach a verdict.
+- **A3.4 Reporting populations.** Reports state total, primary and
+  sensitivity-only pairs and their class counts separately; lead-bin figures
+  are labeled as means, with the pointwise range beside them.

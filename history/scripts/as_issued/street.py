@@ -18,6 +18,13 @@ mismatch, <= 0.002 ft), a tank implementation whose fingerprint is supported,
 a gap-free half-hour grid and finite inputs; rain must cover every hour from
 the series start through the observation (NEAR: only the first core hour
 missing). Counterfactual arms are never required to equal the published line.
+Round 03 completion (Amendment 3): the published combined line must equal
+max(published bay, published pluvial) within 0.002 ft; the 0.0015-ft bay
+control applies to every rule (decay, v0.10.5 constant reading, older
+constant tide surge); required numbers are validated BEFORE any arithmetic
+(finite bay/combined/astronomy/reading/mean, pluvial finite or absent = dry,
+rain finite and >= 0; a null rain hour is UNAVAILABLE, never zero) and
+failures are reasoned exclusions, never crashes.
 Observations come from the normalization manifest (R3): points, tolerance
 intervals, brackets, bounds, time windows, primary vs sensitivity rows.
 """
@@ -45,6 +52,24 @@ TAU_H = 36.0
 FIXED_LOW_BAY = 2.50
 LEAD_BINS = ((0, 6), (6, 12), (12, 24), (24, 30))
 ARMS = ("P", "K", "D", "T", "L")
+
+
+def _num(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+
+
+def clean_rain(rain):
+    """({hour: rate} of valid rates, n_null, n_invalid). Null = unavailable hour;
+    negative, non-finite or non-numeric = invalid (the issuance is excluded)."""
+    ok, n_null, n_bad = {}, 0, 0
+    for h, v in (rain or {}).items():
+        if v is None:
+            n_null += 1
+        elif _num(v) and v >= 0:
+            ok[h] = float(v)
+        else:
+            n_bad += 1
+    return ok, n_null, n_bad
 
 
 def issuance_time(s):
@@ -126,6 +151,20 @@ def reading_of(f, p30):
     return r["rebuilt_ft"], t, "rebuilt from published gauge levels (unverified)", False
 
 
+def control_constant(f, p30, pts):
+    """The constant surge a constant-rule curve used: the v0.10.5 published
+    reading, else the published tide surge that the curve implies (within
+    0.002 ft); None when neither is established."""
+    wsi = f.get("water_series_input") or {}
+    if _num(wsi.get("surge_ft")):
+        return float(wsi["surge_ft"])
+    implied = [p["tide_navd88"] - (p30[t] + NAVD) for t, p in pts]
+    mid = sorted(implied)[len(implied) // 2]
+    cands = [t.get("surge_ft") for t in (f.get("all_tides") or []) if _num(t.get("surge_ft"))]
+    near = [c for c in cands if abs(c - mid) <= 0.002]
+    return min(near, key=lambda c: abs(c - mid)) if near else None
+
+
 def arms(ctx, s):
     """Half-hourly arm series and the input-class facts for one issuance."""
     if s["blob"] in ctx._arms:
@@ -164,24 +203,50 @@ def arms(ctx, s):
             res["reasons"].append("astronomy not covered")
         ctx._arms[s["blob"]] = res
         return res
-    # ---- a4 R1: control replay of the issuance's own published rule
+    # ---- a4 R1 (+ round 03): validate required numbers, then control replays
     gates = []
     if any((b - a) != dt.timedelta(minutes=30) for a, b in zip(times, times[1:])):
         gates.append("irregular or gapped half-hour grid")
-    pub_bay = [p["tide_navd88"] for _t, p in pts]
-    if not all(isinstance(x, (int, float)) and math.isfinite(x) for x in pub_bay + [val, mean]):
-        gates.append("non-finite input")
-    elif dec:
-        ctrl = [ctx.p30[t] + NAVD + decay(dec["surge_obs_ft"], A.parse_utc(dec["observation_utc"]), dec["mean_ft"], t,
-                                          dec.get("tau_h") or TAU_H) for t in times]
-        d = max(abs(a - b) for a, b in zip(ctrl, pub_bay))
-        res["facts"]["control_bay_max_diff_ft"] = round(d, 5)
+    pub_bay = [p.get("tide_navd88") for _t, p in pts]
+    pub_water = [p.get("water_navd88") for _t, p in pts]
+    pub_pl = res["P_pluvial"]
+    bad = (sum(not _num(x) for x in pub_bay) + sum(not _num(x) for x in pub_water)
+           + sum(x is not None and not _num(x) for x in pub_pl) + sum(not _num(ctx.p30[t]) for t in times)
+           + (not _num(val)) + (not _num(mean)))
+    if bad:
+        gates.append(f"invalid required number ({bad})")
+        res["gates"] = gates
+        ctx._arms[s["blob"]] = res
+        return res
+    comb = max(abs(w - (b if pl is None else max(b, pl))) for w, b, pl in zip(pub_water, pub_bay, pub_pl))
+    res["facts"]["control_combined_max_diff_ft"] = round(comb, 5)
+    if comb > TANK_TOL_FT:
+        gates.append(f"control combined output mismatch ({comb:.4f} ft)")
+    if dec:
+        ctrl_surge = lambda t: decay(dec["surge_obs_ft"], A.parse_utc(dec["observation_utc"]), dec["mean_ft"], t,
+                                     dec.get("tau_h") or TAU_H)
+        rule = "decay (published metadata)"
+    else:
+        const = control_constant(f, ctx.p30, pts)
+        ctrl_surge = (lambda t: const) if const is not None else None
+        rule = "constant (published reading or matched tide surge)"
+    if ctrl_surge is None:
+        gates.append("no published control rule to replay")
+    else:
+        d = max(abs(ctx.p30[t] + NAVD + ctrl_surge(t) - b) for t, b in zip(times, pub_bay))
+        res["facts"].update(control_rule=rule, control_bay_max_diff_ft=round(d, 5))
         if d > BAY_TOL_FT:
             gates.append(f"control bay replay mismatch ({d:.4f} ft)")
     if src:
+        rain, n_null, n_bad = clean_rain(rain)
+        res["facts"].update(rain_null_hours=n_null, rain_invalid_values=n_bad)
+        if n_bad:
+            gates.append(f"invalid archived rain value ({n_bad})")
+            res["gates"] = gates
+            ctx._arms[s["blob"]] = res
+            return res
         rates_c = [rain.get(t.replace(minute=0), 0.0) for t in times]
         tc = ctx.tank.simulate_pluvial_series(times, pub_bay, rates_c)
-        pub_pl = res["P_pluvial"]
         pres = sum((x is None) != (y is None) for x, y in zip(tc, pub_pl))
         diffs = [abs(x - y) for x, y in zip(tc, pub_pl) if x is not None and y is not None]
         res["facts"].update(control_tank_presence_mismatches=pres,
@@ -199,7 +264,7 @@ def arms(ctx, s):
     bay_d = [a + decay(val, t_r, mean, t) for a, t in zip(astro, times)]
     res.update(bay_K=bay_k, bay_D=bay_d, T=list(bay_d))
     if src:
-        rates = [rain.get(t.replace(minute=0), 0.0) for t in times]
+        rates = [rain.get(t.replace(minute=0), 0.0) for t in times]    # cleaned; missing hours gate EXACT below
         res["rates"] = rates
         pk = ctx.tank.simulate_pluvial_series(times, bay_k, rates)
         pd_ = ctx.tank.simulate_pluvial_series(times, bay_d, rates)
@@ -413,7 +478,14 @@ def evaluate(ctx, observations):
     times = sorted({p["obs_time"] for p in pairs})
     ev_idx = dict(zip(times, O.events(times)))
     events_of = {p["obs_row"]: ev_idx[p["obs_time"]] for p in pairs}
-    rep = {"pairs": len(pairs), "class_counts": dict(Counter(p["class"] for p in pairs)),
+    prim = [p for p in pairs if p["primary"]]
+    rep = {"pairs": len(pairs),
+           "populations": {"total_pairs": len(pairs), "primary_pairs": len(prim),
+                           "sensitivity_only_pairs": len(pairs) - len(prim),
+                           "sensitivity_only_rows": sorted({p["obs_row"] for p in pairs if not p["primary"]}),
+                           "primary_class_counts": dict(Counter(p["class"] for p in prim)),
+                           "sensitivity_class_counts": dict(Counter(p["class"] for p in pairs if not p["primary"]))},
+           "class_counts": dict(Counter(p["class"] for p in pairs)),
            "exclusion_reasons": dict(Counter(p["class_note"] for p in pairs if p["class"] == "EXCLUDED")),
            "events_total": len(set(events_of.values()))}
     rep["B0_published_by_version"] = {}

@@ -12,8 +12,8 @@ later replay or skill study needs and what no public archive keeps for us:
     model version.
 Unavailable inputs are written as unavailable (null + a reason), never as zero.
 
-Schema 2 (as-issued validation logging repairs, 2026-09-24; review before
-merge): `nwps.retrieved` is the outlook gather's run time (labeled by
+Schema 2 (as-issued validation logging repairs, 2026-09-24; independently
+reviewed in audits/2026-09-24-a4/03-repairs-verification-codex.md): `nwps.retrieved` is the outlook gather's run time (labeled by
 `retrieved_basis`) and is never replaced by the generation time; the NWS
 advisory's issuance is a dedicated `advisory.issued_utc` (parsed from the
 status, null + reason when absent); `qpf_source` keeps the grid's updateTime,

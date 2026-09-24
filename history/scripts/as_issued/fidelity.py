@@ -171,6 +171,10 @@ def f2_tank(f, commit, replay, tank):
     if src is None:
         return {"status": "not replayable", "reason": rain}
     times = [t for t, _p in pts]
+    bad_rain = [v for v in rain.values() if v is not None and not (isinstance(v, (int, float)) and math.isfinite(v) and v >= 0)]
+    if bad_rain:
+        return {"status": "not replayable", "reason": f"invalid archived rain values ({len(bad_rain)})"}
+    rain = {h: v for h, v in rain.items() if v is not None}          # null = unavailable hour, never zero
     hours = {t.replace(minute=0) for t in times}
     covered = [h for h in hours if h in rain]
     rates = [rain.get(t.replace(minute=0), 0.0) for t in times]
