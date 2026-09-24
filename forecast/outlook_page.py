@@ -290,7 +290,7 @@ def _chart(ol):
   var el = document.getElementById('outlook-series-chart');
   if (!el || typeof Chart === 'undefined') { return; }
   var datasets = [
-    { label: 'Burst scenario at this hour\'s tide (burst-capable hours)', data: D.burst, borderWidth: 0,
+    { label: "Burst scenario at this hour's tide (burst-capable hours)", data: D.burst, borderWidth: 0,
       backgroundColor: 'rgba(11,61,107,0.30)', pointRadius: 0, fill: { target: 3 }, spanGaps: false },
     { label: 'Rain forecast unavailable (tide-only hours)', data: D.unknown, borderColor: '#999999',
       backgroundColor: '#999999', borderWidth: 6, pointRadius: 0, spanGaps: false },
