@@ -61,6 +61,16 @@ looks stale, trust this file. Ledger lines are append-only:
       constant lift and subsequent constant-persistence interim were superseded
       by v0.10.6; neither is pending production repair. Experimental outlook
       scenarios do not drive core alerts; the production decay does.
+- [ ] **As-issued validation of advisory corrections and rain/tide coupling.**
+      John requested resumption on 2026-09-24. Claude handoff:
+      `history/plans/2026-09-24-as-issued-validation-handoff.md`. Build a
+      separate offline evaluator/protocol, prove archive replay fidelity and
+      propose minimal logging repairs if needed; independent review before
+      merge. Initial census: 12 records over 10.454 h, all advisory corrections
+      zero, so correction skill is not yet evaluable. Real street-depth skill
+      requires matched observations and issuance-time inputs; radar hindcasts
+      and partial-input sensitivities remain separate. No production changes
+      or edits to the now-frozen wind trial. Accepted release limits stand.
 - [x] **Wind research corrections — audit 2026-09-24-a2 CLOSED (2026-09-24).**
       Claude reply02 confirmed R1-R5 and repaired the studies in `142907573`.
       Codex round03 reproduces all three revised reports, verifies canonical
@@ -74,10 +84,12 @@ looks stale, trust this file. Ledger lines are append-only:
       passes with Parquet. R1–R8 resolved; bundle 82d156a63089… approved for
       shadow collection under existing `wind-shadow-open-meteo` DECISION.
       Report: `audits/2026-09-24-a3/07-close-out-codex.md`.
-- [ ] **Wind-shadow prospective trial — verify first record, then monitor.**
-      Reviewed 83919dbdf merged as 8d5f6535e; confirm the first durable official c2 record's
-      bundle 82d156a63089…, time and status. Merge enables, first record starts
-      the period; do not reset for disabled/fallback outcomes. After start,
+- [ ] **Wind-shadow prospective trial — collecting; first record verified.**
+      Reviewed 83919dbdf merged as 8d5f6535e. First official c2 record in
+      5d281b19c: issuance 2026-09-24T16:14:12Z, written 16:14:26Z, candidate
+      status, bundle 82d156a63089…; validator and evaluator admission pass.
+      Frozen evaluator starts the trial at its nominal 16:00Z slot.
+      Do not reset for disabled/fallback outcomes. After start,
       frozen changes require a new identity/period. At least 60 days AND five
       eligible scored completed storms, fixed endpoint, paired baseline/raw
       guidance, low-tide/plug/underprediction and rain checks. Production stays
@@ -631,3 +643,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | DONE | wind-shadow-a3-CLOSED | Codex round07 independently verifies 83919dbdf and closes R5-Q1/a3: 4393 QC rows match independent q-aware rule (4375 valid, 12 verified inferred excluded, 107 preliminary outliers admitted); all 48 fits/counts/rounded MAEs reproduce within 4.956e-9, six dataset hashes match, 333 required-decoder tests OK with expected no-log/local-research-data skips and research test separately passing. Frozen bundle 82d156a63089573e837ae2e122336ec62f24fc80548aa8080105e3160aed5029 approved for shadow collection under prior owner DECISION. No prospective skill or live wind promotion claimed; first official record still pending at review. Source: audits/2026-09-24-a3/07-close-out-codex.md and evidence [VERIFIED]
 
 2026-09-24 | DONE | wind-shadow-c2-merged | Reviewed candidate 83919dbdf merged to main in 8d5f6535e under prior wind-shadow-open-meteo owner DECISION and Codex a3 round07 close-out (9d87f55d5). All 25 integrated paths byte-match candidate; bundle 82d156a63089573e837ae2e122336ec62f24fc80548aa8080105e3160aed5029 and gate pass. Existing docs/data/model untouched by merge; no page regeneration needed. Hourly workflow opt-in enabled; first durable official record still pending, so no trial start asserted. Primary evidence: audits/2026-09-24-a3/round07-integration-verification.json [VERIFIED: local merged tree]
+
+2026-09-24 | DONE | wind-shadow-first-official-record | Codex verified hourly bot commit 5d281b19c/run 36025879659: first official wind-shadow-c2 record, issuance 16:14:12Z, written 16:14:26Z, candidate status, frozen bundle 82d156a63089…; file validator, all bundle hashes and evaluator identity admission pass (one slot, no exclusions). Frozen trial start is nominal 16:00Z. No Claude implementation repair remains; collection/monitoring and eventual 60-day plus five-eligible-storm evaluation remain [VERIFIED: data/wind_shadow/2026-09.jsonl line 1; history/reports/2026-09-24-validation-archive-readiness.json]
+2026-09-24 | OPEN | as-issued-validation-handoff | John requested resuming accepted v0.10.6 items 2/5. Codex prepared history/plans/2026-09-24-as-issued-validation-handoff.md and reproducible readiness census: 12 v0.10.6 input records from 05:46:59Z to 16:14:12Z, 10.454 h, no nonzero advisory anchors. Separate offline advisory ablation and street rain/tide evaluation; first prove replay/observation eligibility, commit method before scoring, preserve prior evidence corrections, propose logging repairs if needed. No production change, wind-trial change or skill claim [VERIFIED/STATED: census and owner request]

@@ -1,9 +1,9 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 12:09 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 12:21 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Wind-shadow c2 audit CLOSED — merged; first official record pending
+## Wind-shadow c2 audit CLOSED — official trial collecting
 
 Codex round07 independently verified Claude `83919dbdf`; all R1–R8 resolved.
 Quality-aware QC excludes verified inferred outcomes; 48 refits reproduce,
@@ -13,10 +13,11 @@ Report: `audits/2026-09-24-a3/07-close-out-codex.md`.
 Frozen bundle: `82d156a63089573e837ae2e122336ec62f24fc80548aa8080105e3160aed5029`.
 
 Merged as `8d5f6535e` under existing John shadow-only approval; all 25 paths
-byte-match the reviewed candidate and merged hashes/gate pass. Confirm the
-first durable official record on the hourly workflow. Merge enables collection; that
-first record starts the period, even if disabled/fallback. Frozen changes after
-start need a new identity/period. No production forecast/alert wind correction.
+byte-match the reviewed candidate and merged hashes/gate pass. The
+first durable official record is now verified in bot commit 5d281b19c:
+issuance 2026-09-24T16:14:12Z, written 16:14:26Z, candidate status; bundle and
+evaluator admission pass. Trial starts at nominal 16:00Z. Frozen changes need
+a new identity/period. No production forecast/alert wind correction.
 
 ## Approved wind scope and prior research
 
@@ -44,12 +45,21 @@ tails/advisory corrections remain experimental. As-issued rain skill is not
 established: five observed-reference events tie; Oct30 reconstruction is not
 observed validation; Sep13 partial QPF is sensitivity only.
 
+## Deferred validation — ready for Claude
+
+John resumed items 2/5; task brief:
+`history/plans/2026-09-24-as-issued-validation-handoff.md`. Separate research
+branch, offline protocol/evaluator and archive-fidelity checks first. Census:
+12 records over 10.454 h, all correction anchors zero; no skill claim yet.
+Real street-depth evaluation needs as-issued inputs and primary observations.
+Do not edit frozen wind files or production behavior; Codex review before merge.
+
 ## Separate social planning
 
 John approved local practice posts → Facebook only → optional later expansion.
-Separate `plan/social-broadcast`, sibling barnacle-social-plan, local `e4f59251b`:
-Tern Stage B reviewed in doc 12: six repairs pending, 355 tests/80 gallery cases
-reproduced. Doc 13 records peak heatmap + linked full-curve direction and common
+Separate `plan/social-broadcast`, sibling barnacle-social-plan, local `6955519bb`:
+Tern has replied to doc 12 S1-S6 in doc 14 and built map+curve cards; this new
+reply awaits Codex review. Doc 13 records peak heatmap + linked full curve and common
 existing landmarks with matching map/chart markers; no house-landmark ban.
 Public event prose AM/PM; practice output local. No provider/accounts/posts.
 Merge narrow doc changes when adopting; do not overwrite newer living docs.
