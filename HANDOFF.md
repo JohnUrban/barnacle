@@ -11,44 +11,22 @@ per-tide pages, widget, ntfy/email/SMS. Real people receive alerts.
 Production **v0.10.5** (`model/v0.10.5.md`), promoted `4bb885e02`.
 SMS = imminent impact; ntfy/email = longer-lead; alert tide horizon <=48 h.
 
-## v0.10.6 candidate — round 03 verifies repairs; narrow evidence hold
+## v0.10.6 candidate — code verified; evidence corrections owe a re-check
 
-Branch `v0.10.6-candidate` at `b95b29829` (includes repairs `ce2f898c8`).
-Not merged. Decay toward the trailing mean (tau 36 h), outage ladder,
-hourly P-ETSS, last-guidance decay, source boundaries and advisory markers.
-Audit `audits/2026-09-24-a1/`: round01 Codex findings; round02 Claude reply;
-**round03 Codex independent verification**, with runnable probes/results.
-298 tests with required decoder, artifact gate, all three frozen replays PASS.
-Both candidate charts visually checked. R1-R5 resolved: outage parity,
-assumed-source labels, formula score cohorts, mean timestamp fallback,
-selected-state provenance/health. Keep these runtime repairs.
+Branch `v0.10.6-candidate` at `1053eb436` (not merged; main runs v0.10.5).
+Codex round 03 (01:08 EDT): R1-R5 RESOLVED, keep the code; HOLD only for
+R6 study/spec claims. Claude round 04 (`audits/2026-09-24-a1/04-...-claude.md`)
+corrected them, research/docs only: Sep 13 is a partial-input sensitivity
+experiment (no forecast-miss claim); references labeled by evidence type;
+Oct 30 (reconstruction) out of the aggregates. Corrected result: on five
+observed rain floods the constant and decay rules TIE exactly; Oct 30's
+gauge shows decay under-predicting a building surge by ~0.3 ft.
+John's items 2/5 decision stands (experimental corrections kept; the
+`data/replay_inputs/` archive starts at merge).
 
-R6 remaining is specific evidence cleanup, not a new model investigation:
-- Sep13 unarchived 10Z rain was filled with zero; that does not prove an
-  ~8-inch forecast miss. Partial-input sensitivity only; observed-bay run
-  gives 8.0 in, the other three 5.7/5.2/5.4.
-- Runnable study still labels Oct30's reconstructed +20.8 in as measured.
-  July6 uses +15.0 instead of canonical +15.4 (bracket 15.0-15.8); Aug7's
-  crest is a backcast. Label reference types and cite primary records.
-- Controlled "below 3 ft" group is defined at the burst center, not the
-  whole bay trajectory; peak changes include -2.0 in, not all zero.
-Claude should correct the study/spec, then Codex verifies that focused diff.
-
-John accepted Codex's items-2/5 recommendations (BACKLOG DECISION, 00:31).
-Item2: keep advisory corrections EXPERIMENTAL, collect raw/corrected inputs.
-Item5: bounded comparison + prospective replay archive; only multi-event
-as-issued skill deferred. Do not ask again for those decisions. Archive is
-implemented on the candidate and append/gate behavior verified; first real
-committed hourly archive remains to be checked after promotion.
-
-Oct30 provenance correction on main `fd30bba7f` is append-only; +20.8 in
-is not a measured peak or guaranteed lower bound. Five other events give
-identical simulated peaks between rules, but absolute error depends on
-their chosen reference values. Historical low-tide surge score favors decay.
-
-After evidence corrections: John's promotion DECISION, merge onto updated
-main, preserve ledgers and regenerate pages THERE; gate/replays, CI/Pages,
-deployed charts/stamps, archive persistence, then audit CLOSED. Not closed yet.
+Next: Codex re-checks `1053eb436` (affected comparison + gate); John's
+promotion DECISION; merge onto updated main regenerating pages there; verify
+deployed stamps, both charts and the archive's first record; then CLOSED.
 
 ## v0.10.5 behavior and audit history
 

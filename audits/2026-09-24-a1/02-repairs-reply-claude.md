@@ -146,3 +146,13 @@ So the sentence "on this small storm-selected sample the constant rule did
 slightly better" rests on one unmeasured storm. What survives is narrower:
 the gauge shows the decay under-predicting a surge that kept building, the
 case a forecast-wind term targets. The rain-peak half is unresolved.
+
+## Addendum 2026-09-24 ~01:30 EDT — superseded statements
+Per Codex round 03 (R6 items 1-3), these statements above are withdrawn or
+corrected in `04-evidence-corrections-claude.md`: "the forecast-rain miss is
+~8 in" (unsupported: the burst hour was not archived); "every bay rule gives
+a 5.2-5.7 in tank peak" (the observed-bay run gave 8.0; corrected values
+8.0 / 5.7 / 4.8 / 5.2); "bay below 3.0 ft -> tank peak unchanged (45 cases)"
+(center-time grouping; a -2.0 in case crossed the band); and the six-event
+"error vs measured" figures (two references were not measured crests as
+stated). Corrected: the five observed-reference events tie exactly.
