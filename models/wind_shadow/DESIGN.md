@@ -62,3 +62,42 @@ outcome and numbers are recorded in `manifest.json`.
   30-day anomaly uses the hourly product's values in [t - 30 d, t).
 - A non-fresh reading, any incomplete window, missing pressure, or a feed
   error -> the record carries the baseline and the reason (never zeros).
+
+## c2 (audit 2026-09-24-a3 repairs; c1 retired before any official record)
+The construction rule and route outcome above are unchanged (route A). Changes:
+- Mean policy (R4): replays forecast/surge_mean.py: verified hourly_height
+  minus predictions over the last 364 calendar days, as returned (verified end
+  ~24 d before issuance, measured once: an assumption for history). The c1
+  wording ("364-day window ending ~21 days back", a shifted 364-d window) was
+  wrong, as was the plan's; the difference to c1's construction is 0.0055 ft
+  mean, 0.021 ft max over the fit span.
+- Pressure (R4, R5): QC = finite and all three flags 0; anomaly over the 720
+  hourly values in [t0 - 30 d, t0), >= 480 required (live and training);
+  current value = the issuance-hour value, else the latest 6-min value within
+  60 min, with the basis recorded (a declared live-only substitution). Raw
+  CO-OPS responses, hashes, retrieval times and rejected-row counts are stored
+  per record. Training uses the hourly product with flags (re-pulled).
+- Targets: nominal UTC hours t0 + h from the issuance hour t0; the training
+  reading is the 6-min value at t0, the live reading <= 60 min old (production
+  metadata, recorded). A declared approximation.
+- Run selection (R5): the 6-h-rule cycle is used ONLY if provider metadata
+  confirms it available by the issuance time; otherwise fallback (no older
+  substitute, so live equals training). Historical availability is an
+  assumption (one metadata observation: 5.6 h); the trial checks it.
+- Frozen baseline (R6): the decay uses the manifest's tau, not production's;
+  the actual production curve is recorded separately as a comparator.
+- Records (R2, R6, R7): identity (candidate_id, manifest and runtime SHA-256,
+  collection, GitHub run id) in every record; the baseline is built before any
+  network call so timeouts keep it; complete records are validated before a
+  single O_APPEND write; invalid ones go to data/wind_shadow/quarantine/.
+- Publication (R7): the shadow log is NOT part of the fatal publish gate
+  (check_artifacts prints warnings); CI enforces its validity and binding.
+
+## Trial identity and start (R8)
+- Official records: written only by the production workflow step that sets
+  `BARNACLE_WIND_SHADOW_TRIAL=1`, into `data/wind_shadow/YYYY-MM.jsonl`,
+  `collection: "official"`. Local runs collect nothing unless
+  `BARNACLE_WIND_SHADOW_PREVIEW_DIR` is set (preview records, excluded).
+- The trial starts at the first official record of the frozen c2 bundle after
+  the branch is merged. Before that, review changes update FREEZE.md; after it,
+  any change to a frozen file needs a new candidate id and a new period.

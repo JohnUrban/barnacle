@@ -7864,14 +7864,18 @@ def _render_heatmap(out_path, water_navd88, title):
 
 def main():
     """Production entry point. The wind-shadow candidate (SHADOW ONLY) runs in a
-    `finally` AFTER every production output and alert decision, and only when
-    the forecast JSON was written; it cannot change any published byte."""
+    `finally` AFTER every production output and alert decision, only when the
+    forecast JSON was written, and only with an explicit opt-in environment
+    variable (audit 2026-09-24-a3 R8: BARNACLE_WIND_SHADOW_TRIAL=1 in the
+    production workflow, or BARNACLE_WIND_SHADOW_PREVIEW_DIR for a
+    non-official preview). Local runs collect nothing by default."""
     holder = {}
     try:
         _main_core(holder)
     finally:
-        if holder.get("json_written") and holder.get("forecast") is not None \
-                and os.environ.get("BARNACLE_WIND_SHADOW", "1") != "0":
+        if holder.get("json_written") and holder.get("forecast") is not None and (
+                os.environ.get("BARNACLE_WIND_SHADOW_TRIAL") == "1"
+                or os.environ.get("BARNACLE_WIND_SHADOW_PREVIEW_DIR")):
             try:
                 import copy as _copy
                 try:

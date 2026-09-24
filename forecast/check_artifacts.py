@@ -725,17 +725,9 @@ def check_artifacts(root=ROOT):
             if fn.endswith(".jsonl"):
                 for why in _ra.validate_file(os.path.join(rdir, fn)):
                     bad.append((os.path.join(rdir, fn), why))
-    # wind-shadow log (SHADOW ONLY, append-only JSON lines)
-    try:
-        from . import wind_shadow as _wsh
-    except ImportError:
-        import wind_shadow as _wsh
-    wdir = os.path.join(root, "data", "wind_shadow")
-    if os.path.isdir(wdir):
-        for fn in sorted(os.listdir(wdir)):
-            if fn.endswith(".jsonl"):
-                for why in _wsh.validate_file(os.path.join(wdir, fn)):
-                    bad.append((os.path.join(wdir, fn), why))
+    # (the wind-shadow trial log is NOT part of the publication gate: a shadow
+    # problem must never block production publishing; see shadow_log_report(),
+    # printed as a warning here and enforced by tests/test_wind_shadow.py in CI)
     bad.extend(validate_surface_stamps(root))
     bad.extend(validate_current_surfaces(root))
     for relpath in ("docs/index.html", "docs/details.html", "docs/outlook.html",
@@ -747,7 +739,24 @@ def check_artifacts(root=ROOT):
     return bad
 
 
+def shadow_log_report(root=ROOT):
+    """Non-fatal: problems in the SHADOW-ONLY wind trial log (audit 2026-09-24-a3 R7)."""
+    try:
+        from . import wind_shadow as _wsh
+    except ImportError:
+        import wind_shadow as _wsh
+    out = []
+    wdir = os.path.join(root, "data", "wind_shadow")
+    if os.path.isdir(wdir):
+        for fn in sorted(os.listdir(wdir)):
+            if fn.endswith(".jsonl"):
+                out += [(os.path.join(wdir, fn), why) for why in _wsh.validate_file(os.path.join(wdir, fn))]
+    return out
+
+
 def main():
+    for path, why in shadow_log_report():
+        print(f"SHADOW LOG WARNING (non-fatal): {path} — {why}")
     bad = check_artifacts()
     for path, why in bad:
         print(f"PUBLISH GATE FAIL: {os.path.relpath(path, ROOT)} — {why}")
