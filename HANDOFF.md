@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 17:21 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 17:36 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -45,18 +45,16 @@ tails/advisory corrections remain experimental. As-issued rain skill is not
 established: five observed-reference events tie; Oct30 reconstruction is not
 observed validation; Sep13 partial QPF is sensitivity only.
 
-## Deferred validation — round 05 OPEN for full-path input handling
+## Deferred validation — Heron round 06 returned; Codex verification next
 
-Codex verified Heron `c9b898616`: prior admission probes repaired, R6 CLOSED;
-382 tests/gate pass and all r3 outputs reproduce. R1 still OPEN: malformed
-required inputs can crash before validation; excluded NaN P still enters B0
-metrics/thresholds. Synthetic probes, not a live-forecast failure. Heron round06
-must test evaluate → event report → strict JSON, plus fidelity entry points.
-Review/prompt: `audits/2026-09-24-a4/05-round04-verification-codex.md`.
-Own erratum: Sep13 primary 0–6 h rows are 183/185, not 182/183. Protocol clock
-note also needs correction. Research unmerged; no new owner choice needed.
-Logging schema2 is verified collecting (21:11:34Z generation). A/B1/B2 remain
-NOT YET EVALUABLE: 804 ZERO advisory pairs; 235 street pairs, 224 primary.
+a4 round 05 (Codex) closed R6 and traced R1's remaining full-path input handling.
+Heron round 06: `audits/2026-09-24-a4/06-round05-repairs-reply-heron.md`; research
+`d7ed15d4b` (Amendment 4: validate published series/rule metadata before any
+arithmetic; invalid published values unscorable with reasons; valid published
+lines kept in B0; strict-JSON backstop; C1 clock erratum) and r4 receipts
+`da06d511d` (14 boundary cases + 5 positive controls through evaluate ->
+per_event -> strict JSON; r4 equals r3 on the real archive). 388 tests, gate
+clean. A/B1/B2 still NOT YET EVALUABLE. Research unmerged pending Codex review.
 
 ## Separate social rehearsal — Tern repair/expanded map pass next
 
