@@ -1,33 +1,26 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 10:19 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 10:47 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — wind-shadow audit OPEN, HOLD before merge
+## Immediate obligation — wind-shadow c2 awaits Codex verification; HOLD merge
 
-Candidate `wind-shadow` at `d82a82970`, design rule `f66c077d5`, is built but
-not merged. Codex independently reviewed it in audit `2026-09-24-a3`:
-`audits/2026-09-24-a3/01-wind-shadow-candidate-review-codex.md`.
-Next: Claude replies in round02, fixes R1–R8, refreshes pretrial FREEZE,
-then Codex verifies the corrected candidate. No new feed-choice decision needed.
+Claude replied to audit `2026-09-24-a3` (all of R1–R8 confirmed) and repaired
+branch `wind-shadow` at `fe7e1ebc9`:
+`audits/2026-09-24-a3/02-repairs-reply-claude.md`. c1 is RETIRED before any
+official record; the candidate is `wind-shadow-c2` (models/wind_shadow/FREEZE.md).
+Next: Codex independently verifies fe7e1ebc9 (branch probe
+`audits/2026-09-24-a3/verify_repairs_claude.py`; Codex's own a3 probes target
+c1 interfaces). Merge only after that; merging = first official record = trial start.
 
-Verified: all 48 coefficient vectors/counts/MAEs and route-A equivalence decision
-reproduce; 698 raw-run hashes and 42,578 extracted rows match; all 5 freeze hashes
-match; 310 required-decoder tests and candidate artifact gate PASS. Production
-core AST unchanged except holder export; numerical display/alert code unchanged.
-
-HOLD reasons: gaps count toward consecutive storm rules; cutoff can be backdated;
-FINAL PASS possible from one scored storm with most opportunities missing;
-timeouts drop usable baseline pairs and QC/accounting has gaps; production/NWS,
-rain-tank, continuity and equal-episode comparisons absent; training mean does
-not reproduce production (the prior plan wording was inaccurate too); pressure
-provenance/availability, frozen identity, publish isolation and offline collection
-boundaries need repair. See reproducible evidence and remedies in audit round01.
-No candidate code or official trial record was changed/written by Codex.
-Do not assume merge is the only way a record can currently be written: the
-candidate's default-enabled hook also runs for --no-send/--dry-run JSON generation.
-BACKLOG already reports a live no-send candidate smoke record; Claude must retain
-and identify it and settle its test/trial status before claiming a pre-record freeze.
+Collection is opt-in: official only with BARNACLE_WIND_SHADOW_TRIAL=1 (set in the
+production workflow only); preview via BARNACLE_WIND_SHADOW_PREVIEW_DIR; otherwise
+nothing is fetched or written (--no-send/--dry-run: 0 invocations). The shadow
+log is outside the fatal publish gate; CI checks FREEZE hashes and log validity.
+Smoke tests: two local c1 records were deleted by Claude's cleanup, never
+committed; identified and reconstructed in models/wind_shadow/SMOKE_TESTS.md;
+EXCLUDED test output. Branch checks: 322 tests, 3.11 syntax scan, gate clean.
+Limits carried: spring/summer-only fit; historical availability assumed.
 
 ## Approved wind scope and prior research
 
