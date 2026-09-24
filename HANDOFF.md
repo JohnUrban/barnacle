@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 13:37 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 14:13 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -45,7 +45,7 @@ tails/advisory corrections remain experimental. As-issued rain skill is not
 established: five observed-reference events tie; Oct30 reconstruction is not
 observed validation; Sep13 partial QPF is sensitivity only.
 
-## Deferred validation — ready for Claude
+## Deferred validation — Heron review queued
 
 John resumed items 2/5; task brief:
 `history/plans/2026-09-24-as-issued-validation-handoff.md`. Separate research
@@ -53,17 +53,21 @@ branch, offline protocol/evaluator and archive-fidelity checks first. Census:
 12 records over 10.454 h, all correction anchors zero; no skill claim yet.
 Real street-depth evaluation needs as-issued inputs and primary observations.
 Do not edit frozen wind files or production behavior; Codex review before merge.
+John reports Heron finished. Hold its review until Tern is working from the
+social wording handoff below; no validation findings verified in this turn.
 
 ## Separate social planning
 
 John approved local practice posts → Facebook only → optional later expansion.
-Separate `plan/social-broadcast`, sibling barnacle-social-plan: doc 18 records
-new owner scope. Stacked + aligned edges and inherited eligibility accepted;
-wording and expiry NOT approved. Add street-only downtown Highlands view with
-matching event state/palette and honest rain-extrapolation label. Remove social
-house-number/residence framing; use Bay/Central focus and located references.
-Prior repairs closed (doc 17, 384 tests), but expanded scope not launch-ready.
-Tern next: offline prototypes + useful-depth wording comparisons. No accounts/posts.
+Separate `plan/social-broadcast`, sibling barnacle-social-plan: Codex doc 19
+implements the owner-requested offline wording pass. Useful-depth titles,
+precise radar detail/trend, conditional projections and rain/tide context;
+public reference labels omit the house number. 392 tests, 71-case gallery/gate.
+Tern next: independently review Codex's wording, then complete doc 18's aligned
+stacked panels and bounded downtown street-depth view, same event/palette and
+honest rain-extrapolation label. Existing eligibility accepted; final wording
+and expiry NOT approved. Prior findings closed (doc 17); new scope not ready.
+No live wording change, accounts or posts. Social branch stays local-only.
 Merge narrow doc changes when adopting; do not overwrite newer living docs.
 
 ## Future owner task — neutral reference landmarks
