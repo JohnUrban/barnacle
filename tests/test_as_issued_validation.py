@@ -1,6 +1,7 @@
 """As-issued validation research code (branch research/as-issued-validation).
 Synthetic fixtures establish MECHANICS only, never skill. Protocol:
-history/plans/2026-09-24-as-issued-validation-protocol.md (+ Amendment 1)."""
+history/plans/2026-09-24-as-issued-validation-protocol.md (+ Amendments 1, 2).
+Adversarial regressions for audit 2026-09-24-a4 R1-R5 and the smaller items."""
 import datetime as dt
 import hashlib
 import json
@@ -14,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "history" / "scripts"))
-from as_issued import advisory as AD, fidelity as F, mean as M, noaa, obs as O, street as S  # noqa: E402
+from as_issued import advisory as AD, fidelity as F, mean as M, noaa, normalization as N, obs as O, report as RP, street as S  # noqa: E402
 
 UTC = dt.timezone.utc
 EL = {"grate_SW": 3.52, "grate_NE": 3.80, "curb": 4.16, "lawn_step": 4.66, "sidewalk_under_walkway_lawn_step": 4.33,
@@ -66,11 +67,71 @@ class ObservationRuleTests(unittest.TestCase):
         self.assertEqual(O.local_to_utc("2026-07-13T19:21"), dt.datetime(2026, 7, 13, 23, 21, tzinfo=UTC))
         self.assertEqual(O.local_to_utc("2025-12-19T10:00"), dt.datetime(2025, 12, 19, 15, 0, tzinfo=UTC))
         self.assertEqual(O.local_to_utc("2026-09-13T06:57:02"), dt.datetime(2026, 9, 13, 10, 57, 2, tzinfo=UTC))
+        # shared helper (AGENTS rule 3): offset-bearing kept; legacy ambiguous fall-back hour -> fold=0 (EDT)
+        self.assertEqual(O.local_to_utc("2026-11-01T01:30-05:00"), dt.datetime(2026, 11, 1, 6, 30, tzinfo=UTC))
+        self.assertEqual(O.local_to_utc("2026-11-01T01:30"), dt.datetime(2026, 11, 1, 5, 30, tzinfo=UTC))
 
     def test_event_segmentation(self):
         b = dt.datetime(2026, 8, 10, 22, tzinfo=UTC)
         ts = [b, b + dt.timedelta(hours=1), b + dt.timedelta(hours=13, minutes=1), b + dt.timedelta(hours=25)]
         self.assertEqual(O.events(ts), [0, 0, 1, 1])
+
+
+class NormalizationManifestTests(unittest.TestCase):
+    """a4 R3: bounds, provenance, supersession and conflicts from the primary evidence."""
+    @classmethod
+    def setUpClass(cls):
+        cls.m = N.build()
+        cls.by = {e["row"]: e for e in cls.m["entries"]}
+
+    def test_committed_manifest_matches_the_builder_and_ledger(self):
+        with open(N.OUT) as f:
+            committed = json.load(f)
+        self.assertEqual(committed["entries"], json.loads(json.dumps(self.m["entries"])))
+        hashes, _sha, _n = N.row_hashes()
+        self.assertTrue(all(hashes[e["row"]] == e["row_sha256"] for e in committed["entries"]))
+
+    def test_photo_bounds_and_brackets_are_not_exact_points(self):
+        e = self.by[168]
+        self.assertEqual((e["level_type"], e["lo"], e["hi"]), ("INTERVAL", 3.64, 3.90))
+        self.assertTrue(e["point_is_midpoint"]); self.assertEqual(e["method"], "photo bound")
+        e = self.by[173]
+        self.assertEqual(e["level_type"], "INTERVAL"); self.assertEqual(len(e["time_window_utc"]), 2)
+        self.assertEqual((self.by[167]["level_type"], self.by[167]["lo"]), ("LOWER", 3.91))
+
+    def test_conflicts_are_documented_not_resolved_by_numeric_precedence(self):
+        e = self.by[153]
+        self.assertEqual((e["lo"], e["hi"], e["point"]), (4.66, 4.68, 4.67))
+        self.assertIn("4.638", e["conflict"])
+        self.assertEqual((self.by[164]["level_type"], self.by[164]["hi"]), ("UPPER", 4.33))
+
+    def test_refined_sightings_count_once_and_pending_photos_are_not_photos(self):
+        self.assertEqual((self.by[159]["primary"], self.by[159]["superseded_by"]), (False, 166))
+        self.assertEqual((self.by[178]["primary"], self.by[178]["superseded_by"]), (False, 181))
+        self.assertEqual(self.by[159]["method"], "live report"); self.assertEqual(self.by[178]["method"], "live report")
+        self.assertEqual(self.by[166]["time_utc"], "2026-08-07T22:33:16Z")
+        self.assertFalse(self.by[165]["primary"])                         # 50-60 % second observer
+
+    def test_tape_rows_carry_the_stated_tolerance(self):
+        e = self.by[105]
+        self.assertEqual(e["method"], "tape")
+        self.assertAlmostEqual(e["hi"] - e["lo"], 1.0 / 12, places=9)
+
+    def test_a_changed_ledger_row_is_detected(self):
+        d = tempfile.mkdtemp()
+        src = Path(O.LEDGER).read_text()
+        Path(d, "l.csv").write_text(src.replace("bounds water 3.64-3.9", "bounds water 3.64-3.95"))
+        h2, _s, _n = N.row_hashes(os.path.join(d, "l.csv"))
+        h1, _s, _n = N.row_hashes()
+        self.assertNotEqual(h1[168], h2[168]); self.assertEqual(h1[167], h2[167])
+
+    def test_event_peaks_distinguish_brackets_from_lower_bounds(self):
+        pk = self.m["event_peaks"]
+        self.assertIsNone(pk["2026-08-07"]["hi"])                            # observer missed the crest
+        self.assertIn("INFERRED", pk["2026-08-07"]["basis"])
+        self.assertEqual(RP._vs_peak(4.82, pk["2026-08-07"]), "indeterminate (peak bounded below only)")
+        self.assertEqual(RP._vs_peak(4.70, pk["2026-08-07"]), "below the established peak")
+        self.assertEqual(RP._vs_peak(5.01, pk["2026-09-01"]), "above the established peak")
 
 
 class QualityControlTests(unittest.TestCase):
@@ -136,6 +197,9 @@ class FakeCtx:
     def forecast(self, s):
         return self._blobs[s["blob"]]
 
+    def tank_fingerprint(self, s):
+        return getattr(self, "fp", next(iter(S.SUPPORTED_TANKS)))
+
 
 def _astro(t):
     return 4.0 + 2.5 * math.sin(2 * math.pi * (t - dt.datetime(2026, 9, 24, tzinfo=UTC)).total_seconds() / 44712.0)
@@ -153,7 +217,16 @@ GEN = dt.datetime(2026, 9, 24, 10, 14, tzinfo=UTC)
 START = dt.datetime(2026, 9, 24, 4, 30, tzinfo=UTC)
 
 
-def _v106(reading=1.5, mean=0.5, rain=None, with_replay=True):
+def _entry(t_local, key="curb", level_type="POINT", point=None, lo=None, hi=None, dry=True, primary=True, window=None, row=2):
+    e = {"row": row, "time_utc": O.local_to_utc(t_local).strftime("%Y-%m-%dT%H:%M:%SZ"), "landmark": key,
+         "elevation": EL[key], "level_type": level_type, "point": point, "lo": lo, "hi": hi,
+         "method": "tape", "primary": primary, "dry": dry}
+    if window:
+        e["time_window_utc"] = [O.local_to_utc(x).strftime("%Y-%m-%dT%H:%M:%SZ") for x in window]
+    return e
+
+
+def _v106(reading=1.5, mean=0.5, rain=None, with_replay=True, pluvial=None):
     p30 = _p30(START - dt.timedelta(hours=2), START + dt.timedelta(hours=40))
     obs_t = GEN - dt.timedelta(minutes=8)
     dec = {"rung": "fresh", "surge_obs_ft": reading, "observation_utc": obs_t.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -161,6 +234,15 @@ def _v106(reading=1.5, mean=0.5, rain=None, with_replay=True):
     tide = lambda t: p30[t] - 2.82 + S.decay(reading, obs_t, mean, t)
     f = {"generated_utc": GEN.strftime("%Y-%m-%dT%H:%M:%SZ"), "model_version": "v0.10.6",
          "water_series": _series(START, 73, tide), "water_series_input": {"decay": dec}}
+    if pluvial == "consistent" and rain:
+        tank = F._tank()
+        times = [START + dt.timedelta(minutes=30 * i) for i in range(73)]
+        hr0 = START.replace(minute=0)
+        rates = [rain[int((t.replace(minute=0) - hr0).total_seconds() // 3600)] for t in times]
+        pl = tank.simulate_pluvial_series(times, [q["tide_navd88"] for q in f["water_series"]], rates)
+        for q, v in zip(f["water_series"], pl):
+            if v is not None:
+                q["pluvial_navd88"] = round(v, 3)
     replay = {}
     if with_replay:
         from forecast import replay_archive as ra
@@ -181,45 +263,99 @@ class StreetArmTests(unittest.TestCase):
         self.assertAlmostEqual(max(k), 1.5, places=9); self.assertAlmostEqual(min(k), 1.5, places=9)
 
     def test_pair_classes(self):
-        o = O.classify(_row("2026-09-24T12:00", "curb", "1", weather="clear evening"), EL)
-        o["row"] = 2
-        # EXACT: v0.10.6 with complete archived rain
+        o = _entry("2026-09-24T08:00", "curb", "POINT", point=4.24)
         f, replay, p30 = _v106()
         ctx = FakeCtx({"b1": f}, replay, p30)
         pairs = S.build_pairs(ctx, [o])
         self.assertEqual({p["class"] for p in pairs}, {"EXACT"})
         self.assertEqual(pairs[0]["lead_bin"], "(0,6]")
-        # APPROX-TIDE: no archived rain, dry window, no published pluvial
         f2, _r, p30 = _v106(with_replay=False)
-        ctx = FakeCtx({"b1": f2}, {}, p30)
-        self.assertEqual(S.build_pairs(ctx, [o])[0]["class"], "APPROX-TIDE")
-        # EXCLUDED: no archived rain and a wet window
-        wet = dict(o, dry=False)
-        ctx = FakeCtx({"b1": f2}, {}, p30)
-        self.assertEqual(S.build_pairs(ctx, [wet])[0]["class"], "EXCLUDED")
-        # EXCLUDED: astronomy synthesized during an outage
+        self.assertEqual(S.build_pairs(FakeCtx({"b1": f2}, {}, p30), [o])[0]["class"], "APPROX-TIDE")
+        self.assertEqual(S.build_pairs(FakeCtx({"b1": f2}, {}, p30), [dict(o, dry=False)])[0]["class"], "EXCLUDED")
         f3 = dict(f2, tide_predictions_stale=True)
-        ctx = FakeCtx({"b1": f3}, {}, p30)
-        self.assertIn("astronomy", S.build_pairs(ctx, [o])[0]["class_note"])
+        self.assertIn("astronomy", S.build_pairs(FakeCtx({"b1": f3}, {}, p30), [o])[0]["class_note"])
+
+    def test_exact_requires_a_matching_control_tank_replay_R1(self):
+        """a4 R1 probe: archived rain contradicting a published DRY tank must not be EXACT."""
+        rain = [1.0] * 40
+        o = _entry("2026-09-24T08:00", "curb", "POINT", point=4.24)
+        f, replay, p30 = _v106(rain=rain)                                   # published line has no pluvial
+        pairs = S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])
+        self.assertEqual(pairs[0]["class"], "EXCLUDED"); self.assertIn("control tank replay mismatch", pairs[0]["class_note"])
+        f, replay, p30 = _v106(rain=rain, pluvial="consistent")             # the consistent record is admitted
+        self.assertEqual(S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])[0]["class"], "EXACT")
+
+    def test_exact_requires_bay_control_supported_tank_and_finite_grid_R1(self):
+        o = _entry("2026-09-24T08:00", "curb", "POINT", point=4.24)
+        f, replay, p30 = _v106()
+        for q in f["water_series"][10:12]:
+            q["tide_navd88"] += 0.01                                           # published bay not reproducible
+        pr = S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])[0]
+        self.assertEqual(pr["class"], "EXCLUDED")                              # fails the astronomy/bay control replay
+        self.assertRegex(pr["class_note"], "astronomy not reproduced|control bay replay mismatch")
+        f, replay, p30 = _v106()
+        ctx = FakeCtx({"b1": f}, replay, p30); ctx.fp = "0" * 64
+        self.assertIn("unsupported tank", S.build_pairs(ctx, [o])[0]["class_note"])
+        f, replay, p30 = _v106()
+        del f["water_series"][20:26]                                          # a 3-hour hole in the grid
+        pr = S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])
+        self.assertTrue(all(p["class"] == "EXCLUDED" for p in pr))
+
+    def test_antecedent_rain_gaps_are_not_exact_R1(self):
+        from forecast import replay_archive as ra
+        o = _entry("2026-09-24T08:00", "curb", "POINT", point=4.24)
+        f, replay, p30 = _v106()
+        rec = replay[f["generated_utc"]]
+        hrs = [START.replace(minute=0) + dt.timedelta(hours=k) for k in range(40) if k != 3]
+        rec["qpf_hourly"] = ra.columnar(hrs, in_hr=[0.0] * len(hrs))
+        self.assertIn("antecedent", S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])[0]["class_note"])
+        hrs = [START.replace(minute=0) + dt.timedelta(hours=k) for k in range(1, 40)]
+        rec["qpf_hourly"] = ra.columnar(hrs, in_hr=[0.0] * len(hrs))
+        self.assertEqual(S.build_pairs(FakeCtx({"b1": f}, replay, p30), [o])[0]["class"], "NEAR")
+
+    def test_inconsistent_records_cannot_produce_a_verdict_R1(self):
+        rain = [1.0] * 40
+        f, replay, p30 = _v106(rain=rain)
+        ctx = FakeCtx({"b1": f}, replay, p30)
+        obs = [dict(_entry("2026-09-24T08:00", "curb", "POINT", point=4.24), row=i) for i in range(2, 9)]
+        rep, _pairs = S.evaluate(ctx, obs)
+        self.assertEqual(rep["class_counts"], {"EXCLUDED": len(_pairs)})
+        self.assertEqual(rep["verdicts"]["B1 decay vs persisted (EXACT only)"], "NOT YET EVALUABLE")
 
     def test_tank_uses_antecedent_rain_from_the_series_start(self):
         # rain only BEFORE issuance: the arms still carry the stored water afterwards
         hrs = 40
         rain = [1.0] * 5 + [0.0] * (hrs - 5)            # 04:00-08:59Z
-        f, replay, p30 = _v106(reading=-1.0, mean=0.5, rain=rain)
+        f, replay, p30 = _v106(reading=-1.0, mean=0.5, rain=rain, pluvial="consistent")
         ctx = FakeCtx({"b1": f}, replay, p30)
         res = S.arms(ctx, ctx.issuances[0])
         i = res["times"].index(dt.datetime(2026, 9, 24, 9, 30, tzinfo=UTC))
         self.assertGreater(res["D"][i], res["T"][i])     # tank water above the bay after the rain
         self.assertIsNotNone(res["L"]); self.assertGreaterEqual(res["L"][i], res["T"][i])   # fixed-low-bay tank arm
 
-    def test_scores_and_threshold_cells(self):
-        p = {"elevation": 4.16, "level_type": "POINT", "level": 4.26, "D": 4.36}
+    def test_scores_and_threshold_cells_R3_R4(self):
+        p = {"elevation": 4.16, "level_type": "POINT", "point": 4.26, "lo": 4.2183, "hi": 4.3017, "D": 4.36}
         sc = S.score(p, "D")
-        self.assertAlmostEqual(sc["error"], 0.10); self.assertTrue(sc["observed_wet"]) and self.assertTrue(sc["forecast_wet"])
-        self.assertEqual(S.score(dict(p, level_type="UPPER", level=4.16), "D")["exceedance"], 4.36 - 4.16)
-        self.assertEqual(S.score(dict(p, level_type="LOWER", level=4.16, D=4.0), "D")["deficit"], 4.16 - 4.0)
-        self.assertIsNone(S.score(dict(p, level=4.16), "D")["observed_wet"])      # exactly level: no threshold cell
+        self.assertAlmostEqual(sc["error"], 0.10); self.assertTrue(sc["observed_wet"]); self.assertTrue(sc["forecast_wet"])
+        self.assertAlmostEqual(sc["interval_error"], 4.36 - 4.3017)
+        self.assertAlmostEqual(sc["depth_error_in"], 1.2)
+        # declared rule (protocol 4.6): a point AT the landmark is dry, never dropped (a4 R4)
+        at = S.score(dict(p, point=4.16, lo=None, hi=None), "D")
+        self.assertIs(at["observed_wet"], False); self.assertEqual(S.cell(at), "false alarm")
+        # a photo bracket straddling the landmark is UNKNOWN and still counted
+        iv = S.score({"elevation": 3.80, "level_type": "INTERVAL", "point": 3.77, "lo": 3.64, "hi": 3.90, "D": 3.82}, "D")
+        self.assertIsNone(iv["observed_wet"]); self.assertEqual(iv["interval_error"], 0.0)       # inside: no point penalty
+        self.assertTrue(S.cell(iv).startswith("unknown"))
+        self.assertAlmostEqual(iv["midpoint_error"], 0.05)
+        self.assertEqual(S.score({"elevation": 4.16, "level_type": "UPPER", "hi": 4.16, "D": 4.36}, "D")["exceedance"], 4.36 - 4.16)
+        self.assertEqual(S.score({"elevation": 4.16, "level_type": "LOWER", "lo": 4.16, "D": 4.0}, "D")["deficit"], 4.16 - 4.0)
+
+    def test_time_windows_use_the_forecast_range(self):
+        a = dt.datetime(2026, 9, 24, 10, tzinfo=UTC)
+        ts = [a + dt.timedelta(minutes=30 * i) for i in range(4)]
+        self.assertEqual(S.window_range(ts, [1.0, 2.0, 3.0, 2.5], a + dt.timedelta(minutes=15), a + dt.timedelta(minutes=75)), (1.5, 3.0))
+        p = {"elevation": 3.0, "level_type": "INTERVAL", "point": 3.35, "lo": 3.3, "hi": 3.4, "D": 2.0, "D_range": (1.5, 3.3)}
+        self.assertEqual(S.score(p, "D")["interval_error"], 0.0)                 # reached inside the window
 
     def test_interpolation_between_half_hours(self):
         a = dt.datetime(2026, 9, 24, 10, tzinfo=UTC)
@@ -227,6 +363,8 @@ class StreetArmTests(unittest.TestCase):
         self.assertAlmostEqual(S.interp(ts, [1.0, 2.0], a + dt.timedelta(minutes=12)), 1.4)
         self.assertIsNone(S.interp(ts, [1.0, 2.0], a + dt.timedelta(hours=1)))
         self.assertIsNone(S.interp(ts, [1.0, None], a + dt.timedelta(minutes=12)))
+        gap = [a, a + dt.timedelta(hours=3)]
+        self.assertIsNone(S.interp(gap, [1.0, 2.0], a + dt.timedelta(hours=1)))   # no interpolation across a hole
 
     def test_verdict_rules(self):
         base = {"event_mean_mae_diff_ft": -0.1, "events_won_by_first": 5, "events_won_by_second": 0, "ci90": [-0.2, -0.05]}
@@ -237,46 +375,55 @@ class StreetArmTests(unittest.TestCase):
         self.assertEqual(S.verdict(dict(base, events=5, events_won_by_first=2)), "INCONCLUSIVE")
 
 
-def _advisory_fixture(corr_by_phase, n_episodes, obs_follows):
-    """Synthetic replay records + outlooks: raw NWPS = astronomy + 1.0; the outlook
-    adds corr_by_phase[phase]. obs_follows: 'corrected' or 'raw'."""
+def _advisory_fixture(anchor_ft, n_episodes, obs_follows, corrupt_anchors=False, gap_h=72):
+    """Synthetic replay records built END TO END: raw NWPS hourly, advisory rows
+    whose totals exceed raw NWPS by anchor_ft at each advisory high tide, the
+    recorded anchors, and an outlook line = raw + the spec's hourly correction
+    (labeled nws_product where anchored). obs_follows: 'corrected' or 'raw'."""
     from forecast import replay_archive as ra
     hilo = []
     t = dt.datetime(2026, 9, 1, 3, tzinfo=UTC)
-    while t < dt.datetime(2026, 11, 1, tzinfo=UTC):
+    while t < dt.datetime(2026, 11, 20, tzinfo=UTC):
         hilo.append((t, 6.0, "H")); hilo.append((t + dt.timedelta(hours=6, minutes=12), 1.0, "L"))
         t += dt.timedelta(hours=12, minutes=25)
     rows, forecasts, levels = [], {}, {}
     for e in range(n_episodes):
-        gen = dt.datetime(2026, 9, 2, tzinfo=UTC) + dt.timedelta(days=3 * e)
-        hrs = [gen.replace(minute=0) + dt.timedelta(hours=k) for k in range(1, 25)]
-        raw = [4.0 + 0.1 * (k % 5) for k in range(len(hrs))]
+        gen = dt.datetime(2026, 9, 2, tzinfo=UTC) + dt.timedelta(hours=gap_h * e)
+        hrs = [gen.replace(minute=0) + dt.timedelta(hours=k) for k in range(1, 49)]
+        raw = {h: round(4.0 + 0.1 * (k % 5), 2) for k, h in enumerate(hrs)}
+        highs = [h for h, _v, ty in hilo if ty == "H" and hrs[3] <= h <= hrs[-6]]
+        adv_rows, anchors = [], []
+        for h in highs:
+            key = h.replace(minute=0)
+            base = max(raw[k] for k in (key, key + dt.timedelta(hours=1)) if k in raw)
+            adv_rows.append([(h - dt.timedelta(hours=4)).strftime("%Y-%m-%d %H:%M") + "-04:00", round(base + anchor_ft, 2), 1.5])
+            anchors.append((h, anchor_ft))
         ser = []
-        for h, r in zip(hrs, raw):
-            ph = AD.phase_of(h, hilo)
-            c = corr_by_phase.get(ph, 0.0)
-            ser.append({"utc": h.strftime("%Y-%m-%dT%H:%M:%SZ"), "tide_navd88": round(r + c - 2.82, 3),
-                        "surge_source": "nws_product" if c else "nwps"})
-            levels[h] = {"v": r + c if obs_follows == "corrected" else r, "valid": True, "reason": None, "q": "v"}
+        for h in hrs:
+            c, anchored = AD.correction_at(anchors, h)
+            ser.append({"utc": h.strftime("%Y-%m-%dT%H:%M:%SZ"), "tide_navd88": round(raw[h] + c - 2.82, 3),
+                        "surge_source": "nws_product" if anchored else "nwps"})
+            levels[h] = {"v": raw[h] + c if obs_follows == "corrected" else raw[h], "valid": True, "reason": None, "q": "v"}
         ser.append({"utc": (hrs[-1] + dt.timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ"), "tide_navd88": 1.0,
                     "surge_source": "petss_hourly"})
         g = gen.strftime("%Y-%m-%dT%H:%M:%SZ")
-        rows.append(({"generated_utc": g, "nwps": {"issued": g, "hourly": ra.columnar(hrs, ft=raw)},
-                      "advisory_corrections": [{"utc": g, "ft": max(corr_by_phase.values() or [0.0])}]},
+        rec_anchors = [{"utc": a.strftime("%Y-%m-%dT%H:%M:%SZ"), "ft": 0.0 if corrupt_anchors else round(c, 2)} for a, c in anchors]
+        rows.append(({"generated_utc": g, "nwps": {"issued": g, "hourly": ra.columnar(hrs, ft=[raw[h] for h in hrs])},
+                      "advisory": {"rows": adv_rows}, "advisory_corrections": rec_anchors},
                      {"file": "synthetic", "line": e + 1, "sha256": "0" * 64}))
         forecasts[g] = {"outlook_7d": {"series": ser}}
     return rows, forecasts, levels, hilo
 
 
 class AdvisoryTests(unittest.TestCase):
-    def _run(self, corr, n, follows):
-        rows, fc, levels, hilo = _advisory_fixture(corr, n, follows)
+    def _run(self, anchor_ft, n, follows, **kw):
+        rows, fc, levels, hilo = _advisory_fixture(anchor_ft, n, follows, **kw)
         pairs, skipped = AD.build_pairs(rows, fc.get, hilo)
         AD.attach_outcomes(pairs, levels, dt.datetime(2026, 12, 1, tzinfo=UTC))
         return AD.evaluate(pairs, {"test_mark": 1.35}), pairs, skipped   # NAVD88; raw levels 1.18-1.58
 
     def test_zero_correction_parity_is_a_control(self):
-        rep, pairs, skipped = self._run({}, 6, "raw")
+        rep, pairs, skipped = self._run(0.0, 6, "raw")
         self.assertEqual(rep["cohorts"], {"ZERO": len(pairs)})
         self.assertEqual(rep["nonzero_episodes_total"], 0)
         for ph in ("HIGH", "MID", "LOW"):
@@ -286,23 +433,66 @@ class AdvisoryTests(unittest.TestCase):
             self.assertTrue(rep["phases"][ph]["verdict"].startswith("NOT YET EVALUABLE"))
         self.assertTrue(any("petss_hourly" in k for k in skipped))       # source boundary
 
-    def test_known_nonzero_effects_are_recovered_by_phase(self):
-        rep, _p, _s = self._run({"HIGH": 0.3, "MID": 0.3, "LOW": 0.3}, 6, "corrected")
+    def test_nonzero_anchors_end_to_end_R2(self):
+        rep, pairs, _s = self._run(0.3, 6, "corrected")
+        self.assertTrue(any(p["cohort"] == "NONZERO" for p in pairs))
         for ph in ("HIGH", "MID", "LOW"):
             self.assertEqual(rep["phases"][ph]["verdict"], "IMPROVES", ph)
-        rep, _p, _s = self._run({"HIGH": 0.3, "MID": 0.3, "LOW": 0.3}, 6, "raw")
+        rep, _p, _s = self._run(0.3, 6, "raw")
         for ph in ("HIGH", "MID", "LOW"):
             self.assertEqual(rep["phases"][ph]["verdict"], "HARMS", ph)
-        flips = rep["phases"]["HIGH"]["NONZERO"]["landmark_flips"]["test_mark"]
-        self.assertGreater(flips["flips"], 0); self.assertEqual(flips["observed_above"], 0)   # obs followed raw
+        self.assertGreater(rep["phases"]["HIGH"]["NONZERO"]["landmark_flips"]["test_mark"]["flips"], 0)
+
+    def test_corrupted_recorded_anchors_are_rejected_R2(self):
+        """a4 R2 probe: a +0.3 ft line correction with every recorded anchor zeroed."""
+        rep, pairs, skipped = self._run(0.3, 6, "corrected", corrupt_anchors=True)
+        self.assertEqual(rep["cohorts"].get("NONZERO", 0), 0)
+        self.assertTrue(any("anchors disagree" in k for k in skipped))
+        for ph in ("HIGH", "MID", "LOW"):
+            self.assertTrue(rep["phases"][ph]["verdict"].startswith("NOT YET EVALUABLE"))
+
+    def test_line_that_disagrees_with_its_anchors_is_rejected_R2(self):
+        rows, fc, levels, hilo = _advisory_fixture(0.3, 1, "corrected")
+        g = rows[0][0]["generated_utc"]
+        for q in fc[g]["outlook_7d"]["series"]:
+            if q["surge_source"] == "nws_product":
+                q["tide_navd88"] += 0.05
+        pairs, skipped = AD.build_pairs(rows, fc.get, hilo)
+        self.assertTrue(any("reconstructed correction" in k for k in skipped))
+        self.assertFalse(any(p["source"] == "nws_product" for p in pairs))
+
+    def test_missing_astronomy_is_unavailable_not_mid_R2(self):
+        t = dt.datetime(2026, 9, 24, 13, tzinfo=UTC)
+        self.assertEqual(AD.phase_of(t, []), "UNAVAILABLE")
+        self.assertEqual(AD.phase_of(t, [(t - dt.timedelta(hours=3), 6.0, "H")]), "UNAVAILABLE")
+        rows, fc, levels, _h = _advisory_fixture(0.3, 1, "corrected")
+        pairs, skipped = AD.build_pairs(rows, fc.get, [])
+        self.assertEqual(pairs, []); self.assertTrue(any("phase unavailable" in k for k in skipped))
+
+    def test_correction_matches_production_interpolation(self):
+        import random
+        from forecast import outlook
+        rnd = random.Random(3)
+        base = dt.datetime(2026, 9, 24, tzinfo=UTC)
+        for _ in range(50):
+            anchors = sorted((base + dt.timedelta(hours=rnd.uniform(0, 72)), rnd.uniform(-0.5, 0.5)) for _k in range(rnd.randint(1, 5)))
+            for h in range(-10, 90):
+                t = base + dt.timedelta(hours=h)
+                a, b = AD.correction_at(anchors, t), outlook._anchor_correction(anchors, t)
+                self.assertAlmostEqual(a[0], b[0], places=12); self.assertEqual(a[1], b[1])
 
     def test_too_few_episodes_is_not_yet_evaluable(self):
-        rep, _p, _s = self._run({"HIGH": 0.3, "MID": 0.3, "LOW": 0.3}, 4, "corrected")
+        rep, _p, _s = self._run(0.3, 4, "corrected")
         for ph in ("HIGH", "MID", "LOW"):
             self.assertIn("NOT YET EVALUABLE", rep["phases"][ph]["verdict"])
 
+    def test_episode_gap_boundary_is_strict(self):
+        a = dt.datetime(2026, 9, 24, tzinfo=UTC)
+        ep = AD.episodes([a, a + dt.timedelta(hours=11, minutes=59), a + dt.timedelta(hours=23, minutes=59)])
+        self.assertEqual(sorted(set(ep.values())), [0, 1])                   # exactly 12 h apart -> new episode
+
     def test_immature_and_invalid_outcomes_are_not_scored(self):
-        rows, fc, levels, hilo = _advisory_fixture({"HIGH": 0.3}, 2, "corrected")
+        rows, fc, levels, hilo = _advisory_fixture(0.3, 2, "corrected")
         pairs, _s = AD.build_pairs(rows, fc.get, hilo)
         k = next(iter(levels))
         levels[k] = {"v": 5.0, "valid": False, "reason": "verified value inferred", "q": "v"}
@@ -312,7 +502,8 @@ class AdvisoryTests(unittest.TestCase):
         self.assertIn("immature", rep["unscored"])
 
     def test_phase_boundaries(self):
-        hilo = [(dt.datetime(2026, 9, 24, 12, tzinfo=UTC), 6.0, "H"), (dt.datetime(2026, 9, 24, 18, 12, tzinfo=UTC), 1.0, "L")]
+        hilo = [(dt.datetime(2026, 9, 24, 12, tzinfo=UTC), 6.0, "H"), (dt.datetime(2026, 9, 24, 18, 12, tzinfo=UTC), 1.0, "L"),
+                (dt.datetime(2026, 9, 25, 0, 25, tzinfo=UTC), 6.0, "H")]
         self.assertEqual(AD.phase_of(dt.datetime(2026, 9, 24, 13, 30, tzinfo=UTC), hilo), "HIGH")
         self.assertEqual(AD.phase_of(dt.datetime(2026, 9, 24, 13, 31, tzinfo=UTC), hilo), "MID")
         self.assertEqual(AD.phase_of(dt.datetime(2026, 9, 24, 17, 0, tzinfo=UTC), hilo), "LOW")

@@ -3,12 +3,23 @@ on the seven-day outlook's NWPS-supported hourly line.
 
 Pairs come only from issuances whose raw NWPS hourly levels are archived
 (v0.10.6 replay records), joined to the same generation's published outlook.
+
+Admission (audit 2026-09-24-a4 R2; Amendment 2): the anchors are rebuilt
+INDEPENDENTLY from the record's advisory rows and raw NWPS (advisory total
+minus the larger NWPS value of the advisory hour and the next) and must match
+the recorded anchors; the hourly correction is reconstructed from the recorded
+anchors (linear between anchors, full within 1 h outside the first/last, then
+fading to zero over 6 h) and (published - raw) must equal it within
+CORR_TOL_FT; the source label must agree (nws_product exactly where a
+correction applies). Phase needs NOAA extrema on both sides of the target
+within 13 h; otherwise the target is UNAVAILABLE (counted, not MID).
 """
 from __future__ import annotations
 
 import bisect
 import datetime as dt
 import random
+import sys
 from collections import Counter, defaultdict
 
 from . import archive as A
@@ -18,6 +29,11 @@ UTC = dt.timezone.utc
 NAVD = -2.82
 LEAD_BINS = ((0, 6), (6, 24), (24, 48), (48, 72))
 PHASE_WINDOW_H = 1.5
+PHASE_COVER_H = 13.0         # an extremum on each side within 13 h (semidiurnal spacing ~6.2 h)
+ANCHOR_HOLD_H = 1.0          # model/v0.10.6.md "held 1 h outside the first/last"
+ANCHOR_FADE_H = 6.0          # "... and fade to zero over a further 6 h"
+CORR_TOL_FT = 0.011          # NWPS stored 0.01 (+-0.005), anchors stored 0.01 (+-0.005), outlook 0.001 (+-0.0005)
+EPISODE_GAP_H = 12.0         # protocol 3: one episode while consecutive issuances are < 12 h apart
 ZERO_FT = 0.005
 UNDER_FT = -0.25
 MATURITY_H = 48
@@ -25,9 +41,14 @@ MIN_EPISODES = 5
 
 
 def phase_of(t, hilo):
-    """HIGH / LOW within 1.5 h of an astronomical high / low, else MID."""
+    """HIGH / LOW within 1.5 h of an astronomical high / low, MID between
+    covered extrema, UNAVAILABLE without an extremum on each side (13 h)."""
     times = [h[0] for h in hilo]
     i = bisect.bisect_left(times, t)
+    before = [x for x in times[max(0, i - 2):i + 1] if x <= t and (t - x).total_seconds() <= PHASE_COVER_H * 3600]
+    after = [x for x in times[i:i + 2] if x >= t and (x - t).total_seconds() <= PHASE_COVER_H * 3600]
+    if not before or not after:
+        return "UNAVAILABLE"
     best = None
     for j in (i - 1, i):
         if 0 <= j < len(hilo):
@@ -37,6 +58,48 @@ def phase_of(t, hilo):
     if best is None:
         return "MID"
     return "HIGH" if best[1] in ("H", "HH") else "LOW"
+
+
+def correction_at(anchors, t):
+    """(correction ft, anchored) from [(utc, ft)] anchors, per the v0.10.6 spec;
+    implemented independently of forecast/outlook.py (cross-checked in tests)."""
+    if not anchors:
+        return 0.0, False
+    anchors = sorted(anchors)
+
+    def weight(gap_h):
+        return max(0.0, 1.0 - max(0.0, gap_h - ANCHOR_HOLD_H) / ANCHOR_FADE_H)
+    if t <= anchors[0][0]:
+        w = weight((anchors[0][0] - t).total_seconds() / 3600.0)
+        return anchors[0][1] * w, w > 0
+    if t >= anchors[-1][0]:
+        w = weight((t - anchors[-1][0]).total_seconds() / 3600.0)
+        return anchors[-1][1] * w, w > 0
+    for (t1, c1), (t2, c2) in zip(anchors, anchors[1:]):
+        if t1 <= t <= t2:
+            span = max(1.0, (t2 - t1).total_seconds())
+            return c1 + (c2 - c1) * (t - t1).total_seconds() / span, True
+    return 0.0, False
+
+
+def rebuilt_anchors(rec, raw):
+    """[(utc, ft)] from the record's advisory rows: total minus the larger raw
+    NWPS value of the advisory hour and the next (spec); rows NWPS does not cover
+    are skipped."""
+    sys.path.insert(0, A.ROOT)
+    from forecast.station_time import parse_station_local_time
+    out = []
+    for row in ((rec.get("advisory") or {}).get("rows") or []):
+        try:
+            inst = parse_station_local_time(row[0]).astimezone(UTC)
+            total = float(row[1])
+        except (TypeError, ValueError, IndexError):
+            continue
+        key = inst.replace(minute=0, second=0, microsecond=0)
+        near = [raw[k] for k in (key, key + dt.timedelta(hours=1)) if k in raw]
+        if near:
+            out.append((inst, total - max(near)))
+    return sorted(out)
 
 
 def build_pairs(replay_rows, forecast_for, hilo):
@@ -53,7 +116,14 @@ def build_pairs(replay_rows, forecast_for, hilo):
             skipped["published forecast not found for the generation"] += 1
             continue
         raw = {t: v["ft"] for t, v in ra.expand(rec["nwps"]["hourly"]) if v.get("ft") is not None}
-        recorded = [c.get("ft") for c in (rec.get("advisory_corrections") or [])]
+        recorded = sorted((A.parse_utc(c["utc"]), float(c["ft"])) for c in (rec.get("advisory_corrections") or [])
+                          if c.get("ft") is not None)
+        rebuilt = rebuilt_anchors(rec, raw)
+        anchor_ok = (len(rebuilt) == len(recorded) and all(
+            abs((a1 - a2).total_seconds()) <= 60 and abs(c1 - c2) <= CORR_TOL_FT for (a1, c1), (a2, c2) in zip(rebuilt, recorded)))
+        if not anchor_ok:
+            skipped["recorded anchors disagree with anchors rebuilt from the advisory rows and raw NWPS"] += 1
+            continue
         for p in ((f.get("outlook_7d") or {}).get("series") or []):
             src = p.get("surge_source")
             t = A.parse_utc(p["utc"])
@@ -68,11 +138,23 @@ def build_pairs(replay_rows, forecast_for, hilo):
                 skipped["target not after issuance"] += 1
                 continue
             corrected = p["tide_navd88"] - NAVD
-            corr = corrected - raw[t]
+            corr_expected, anchored = correction_at(recorded, t)
+            corr_seen = corrected - raw[t]
+            if abs(corr_seen - corr_expected) > CORR_TOL_FT:
+                skipped["published minus raw disagrees with the reconstructed correction"] += 1
+                continue
+            if (src == "nws_product") != anchored:
+                skipped["source label disagrees with the reconstructed anchoring"] += 1
+                continue
+            ph = phase_of(t, hilo)
+            if ph == "UNAVAILABLE":
+                skipped["phase unavailable (astronomy coverage)"] += 1
+                continue
             pairs.append({"issuance": gen, "target": t, "lead_h": round(lead, 2), "source": src,
-                          "corrected_mllw": round(corrected, 4), "uncorrected_mllw": raw[t], "correction_ft": round(corr, 4),
-                          "cohort": "ZERO" if abs(corr) < ZERO_FT else "NONZERO", "phase": phase_of(t, hilo),
-                          "replay_line": ident, "recorded_nonzero_corrections": sum(1 for c in recorded if c and abs(c) >= ZERO_FT),
+                          "corrected_mllw": round(corrected, 4), "uncorrected_mllw": raw[t],
+                          "correction_ft": round(corr_expected, 4), "correction_seen_ft": round(corr_seen, 4),
+                          "cohort": "ZERO" if abs(corr_expected) < ZERO_FT else "NONZERO", "phase": ph,
+                          "replay_line": ident, "recorded_anchors": len(recorded),
                           "nwps_issued": rec["nwps"].get("issued"), "nwps_retrieved_basis": "run time (outlook gather start)"})
     return pairs, dict(skipped)
 
@@ -98,10 +180,12 @@ def attach_outcomes(pairs, levels, now):
     return pairs
 
 
-def episodes(issuances, gap_h=12):
+def episodes(issuances, gap_h=EPISODE_GAP_H):
+    """One episode while consecutive issuances are < gap_h apart (a gap of
+    exactly gap_h starts a new episode; protocol 3)."""
     out, idx, last = {}, -1, None
     for t in sorted(issuances):
-        if last is None or (t - last) > dt.timedelta(hours=gap_h):
+        if last is None or (t - last) >= dt.timedelta(hours=gap_h):
             idx += 1
         out[t] = idx
         last = t

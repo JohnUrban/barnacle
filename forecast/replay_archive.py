@@ -17,7 +17,10 @@ merge): `nwps.retrieved` is the outlook gather's run time (labeled by
 `retrieved_basis`) and is never replaced by the generation time; the NWS
 advisory's issuance is a dedicated `advisory.issued_utc` (parsed from the
 status, null + reason when absent); `qpf_source` keeps the grid's updateTime,
-retrieval time and raw (validTime, mm) intervals. Schema-1 rows stay valid.
+retrieval time and raw (validTime, mm) intervals. `qpf_source.status` is the
+PROVENANCE-CAPTURE status only: an empty or unusable grid can be captured
+("ok") while `qpf_hourly` is null with a reason in `unavailable`; consumers
+must read QPF usability from `qpf_hourly`/`unavailable`. Schema-1 rows stay valid.
 """
 from __future__ import annotations
 

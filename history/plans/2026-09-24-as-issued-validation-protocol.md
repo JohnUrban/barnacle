@@ -212,3 +212,70 @@ genuine observations were labeled reconstructions. Replacement rules:
   OBSERVER (observer field or "second observer"); else OBSERVER ESTIMATE.
 - 4.6' LOWER BOUND metric: deficit = max(0, elevation - forecast) (a missed wet
   call if > 0); threshold: observed wet.
+
+## Amendment 2 (2026-09-24 ~16:00 EDT) — POST-REVIEW and POST-SCORING
+Status, stated plainly: these changes follow Codex audit 2026-09-24-a4 round 01
+(audits/2026-09-24-a4/01-as-issued-validation-codex.md) and were made AFTER the
+first outcome run (results at 292cb3188 had been computed and read). They are
+therefore not predeclared. The first-round outputs are preserved unchanged
+(history/reports/as_issued/study-*.json, readiness-*.json and the r1 report);
+revised outputs carry the suffix `-r2`. No threshold or rule below was chosen
+by comparing its effect on the results; each responds to a specific audit
+finding. The verdict vocabulary and adequacy floors are unchanged.
+- **A2.1 Admission gates (R1).** EXACT/NEAR require a control replay of the
+  issuance's own published rule: bay within 0.0015 ft of the published bay
+  (stored 0.001); with rain, the tank re-run on the published bay matches the
+  published pluvial line (no presence mismatch, <= 0.002 ft); tank source
+  fingerprint in the supported set (verified equal to the frozen reference);
+  gap-free half-hour grid; finite inputs; rain for every hour from the series
+  start through the observation (NEAR: only the first core hour missing).
+  Interpolation never crosses a gap > 30 min. Counterfactual arms are not
+  required to equal the published line.
+- **A2.2 Study A admission (R2).** Anchors are rebuilt from the record's
+  advisory rows and raw NWPS (total minus the larger NWPS value of the
+  advisory hour and the next) and must match the recorded anchors; the hourly
+  correction is reconstructed from the recorded anchors per the v0.10.6 spec
+  (linear between anchors, full within 1 h outside the first/last, fading to
+  zero over 6 h; cross-checked against production); published minus raw must
+  equal it within 0.011 ft, replacing section 3's 0.006 ft, which ignored the
+  0.01-ft storage of anchors (NWPS +-0.005, anchors +-0.005, outlook +-0.0005);
+  the `nws_product` label must coincide with anchoring. Phase requires a NOAA
+  extremum on each side within 13 h; otherwise UNAVAILABLE, counted and
+  excluded, never MID. Episodes: a gap of exactly 12 h starts a new episode
+  (section 3's "< 12 h apart").
+- **A2.3 Observations (R3).** Rules 4.2'/4.3' are replaced for scoring by an
+  auditable normalization manifest (history/data/as_issued/
+  observation_normalization.json, built by history/scripts/as_issued/
+  normalization.py) keyed by ledger row and the SHA-256 of the parsed row, and
+  verified against the ledger at every run. Each entry records a POINT (tape
+  rows: +-0.5 in, from the 2026-07-13 record's "within tape precision"),
+  INTERVAL (a bracket stated in the row or event record), UPPER or LOWER
+  bound; an optional time window; the method from the event record (tape,
+  photo bound, photo, live report, second observer); primary or
+  sensitivity-only use (superseded rows 159 and 178; the 50-60 % second
+  observer, row 165); and unresolved numeric/text conflicts (rows 153, 164),
+  where the row's explicit wording bound is used and the conflict is recorded.
+  Row 183's stated bracket (+7.2-7.5 in) is now used. Brackets are scored by
+  interval error (distance from the forecast, or its range over the time
+  window, to the bracket; 0 inside); their midpoint error is sensitivity only.
+  B1/B2 paired comparisons use primary POINT rows; bracket rows are reported
+  beside them. The ledger is not edited.
+- **A2.4 Thresholds (R4).** Section 4.6 is implemented as written: a POINT at
+  or below the elevation is dry. A bracket is wet when lo > elevation, dry
+  when hi <= elevation, otherwise UNKNOWN, reported in the denominator.
+  UPPER: dry when hi <= elevation; LOWER: wet when lo >= elevation.
+- **A2.5 Peaks and narrative (R5).** "Highest sampled water" is reported apart
+  from the event peak, which is taken only from the primary records (tape
+  peak, photo bracket, or a lower bound when the crest was missed; inferred
+  backcasts are not used). A conditional scenario is "above"/"below" a peak
+  only when outside its bracket; with a lower bound only, "above" is
+  indeterminate. Error causes (e.g. QPF smoothing) are hypotheses unless an
+  as-used input attribution exists.
+- **A2.6 Adequacy, clarified.** Five unanimous episode/event signs give a
+  ONE-sided sign-test p = 1/32 = 0.031 (two-sided 0.0625). Five is a
+  provisional floor for starting an event-level comparison, not adequate power;
+  it assumes independent events (storms separated by the declared gaps), and a
+  five-event bootstrap interval is coarse. There is no correction for testing
+  three phases; any phase verdict must be read with the others.
+- **A2.7 Times.** Ledger times use the shared station-time helper (offset-bearing
+  values kept; legacy ambiguous fall-back hours fold=0).

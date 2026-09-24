@@ -19,5 +19,6 @@ establish multi-event as-issued flood skill. Owner decisions and review:
 Schema 2 (branch research/as-issued-validation, pending review): `qpf_source`
 (grid updateTime, retrieval time, unit, raw validTime/mm intervals),
 `advisory.issued_utc`, and `nwps.retrieved_basis`; the NWPS retrieval is
-never replaced by the generation time. The half-hourly core line of the same
+never replaced by the generation time. `qpf_source.status` is a capture
+status, not QPF usability (read that from `qpf_hourly` and `unavailable`). The half-hourly core line of the same
 generation is in the published docs/forecast.json blob (join by generated_utc).

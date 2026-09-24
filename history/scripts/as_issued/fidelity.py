@@ -9,8 +9,8 @@ F2 core tank: the published pluvial line re-run from the published bay and the
    as-used hourly rain where that rain is archived (v0.10.6 replay records;
    the outlook's hourly rain from 2026-09-23), with the tank source at the
    forecast's own commit fingerprinted.
-F3 advisory parity (Study A control): raw NWPS hourly (replay record) plus the
-   recorded correction vs the published outlook line, by source label.
+F3 advisory control (Study A): published outlook minus raw NWPS versus the
+   correction reconstructed from the recorded anchors, by source label.
 F4 reading: the published observed-surge reading vs the published gauge level
    at the same time minus hourly-interpolated astronomy (production's method).
 Tolerances follow stored precision: bay/tide 0.001 ft, NWPS 0.01 ft, NOAA
@@ -186,19 +186,27 @@ def f2_tank(f, commit, replay, tank):
 
 
 def f3_parity(f, replay):
+    """Advisory control (a4 R2): published outlook minus raw NWPS versus the
+    correction reconstructed from the RECORDED anchors, by source label."""
     if replay is None or not replay.get("nwps"):
         return {"status": "no raw NWPS archived"}
     from forecast import replay_archive as ra
+    from . import advisory as AD
     raw = {t: v["ft"] for t, v in ra.expand(replay["nwps"]["hourly"])}
-    corr = [c.get("ft") for c in (replay.get("advisory_corrections") or [])]
+    anchors = sorted((A.parse_utc(c["utc"]), float(c["ft"])) for c in (replay.get("advisory_corrections") or [])
+                     if c.get("ft") is not None)
     ser = ((f.get("outlook_7d") or {}).get("series")) or []
     by_src = defaultdict(list)
+    label_mismatch = 0
     for p in ser:
         t = A.parse_utc(p["utc"])
         if p.get("surge_source") in ("nwps", "nws_product") and t in raw and p.get("tide_navd88") is not None:
-            by_src[p["surge_source"]].append(abs((p["tide_navd88"] - NAVD) - raw[t]))
-    return {"status": "compared", "corrections": corr, "nonzero_corrections": sum(1 for c in corr if c and abs(c) >= 0.005),
-            "by_source": {k: {"n": len(v), "max_abs_diff_ft": round(max(v), 4)} for k, v in by_src.items()},
+            corr, anchored = AD.correction_at(anchors, t)
+            by_src[p["surge_source"]].append(abs((p["tide_navd88"] - NAVD) - raw[t] - corr))
+            label_mismatch += (p["surge_source"] == "nws_product") != anchored
+    return {"status": "compared", "anchors": [round(c, 3) for _t, c in anchors],
+            "nonzero_anchors": sum(1 for _t, c in anchors if abs(c) >= 0.005), "label_mismatches": label_mismatch,
+            "by_source": {k: {"n": len(v), "max_abs_residual_ft": round(max(v), 4)} for k, v in by_src.items()},
             "nwps_issued": replay["nwps"].get("issued"), "nwps_retrieved": replay["nwps"].get("retrieved")}
 
 
@@ -304,9 +312,10 @@ def summarize(rows):
                            "first_hour_uncovered": sum(1 for x in rep if not x["first_point_hour_covered"]),
                            "tank_fingerprints": dict(Counter(x["tank_fingerprint"] for x in rep))}
     f3 = [r["F3"] for r in rows if r["F3"]["status"] == "compared"]
-    out["F3_advisory_parity"] = {"records": len(f3), "nonzero_corrections": sum(x["nonzero_corrections"] for x in f3),
-                                 "max_abs_diff_by_source": {s: max(x["by_source"][s]["max_abs_diff_ft"] for x in f3 if s in x["by_source"])
-                                                            for s in {k for x in f3 for k in x["by_source"]}}}
+    out["F3_advisory_control"] = {"records": len(f3), "nonzero_anchors": sum(x["nonzero_anchors"] for x in f3),
+                                  "label_mismatches": sum(x["label_mismatches"] for x in f3),
+                                  "max_abs_residual_by_source": {s: max(x["by_source"][s]["max_abs_residual_ft"] for x in f3 if s in x["by_source"])
+                                                                 for s in {k for x in f3 for k in x["by_source"]}}}
     f4 = [r["F4"] for r in rows if r["F4"].get("abs_diff_ft") is not None]
     out["F4_reading"] = {"compared": len(f4), "max_abs_diff_ft": max((x["abs_diff_ft"] for x in f4), default=None),
                          "rebuilt_only": sum(1 for r in rows if r["F4"]["status"] == "rebuilt" and r["F4"].get("abs_diff_ft") is None),

@@ -33,6 +33,20 @@ class QpfProvenanceTests(unittest.TestCase):
         self.assertEqual((m["status"], m["grid_update_time"], m["uom"]), ("ok", "2026-09-24T15:02:11+00:00", "wmoUnit:mm"))
         self.assertEqual(m["intervals"], [["2026-09-24T12:00:00+00:00/PT6H", 3.0], ["2026-09-24T18:00:00+00:00/PT1H", None]])
 
+    def test_capture_status_is_not_usability(self):
+        """a4: qpf_source.status reports provenance CAPTURE; an empty grid is captured
+        ('ok') while the forecast has no usable QPF (fetch returns None)."""
+        empty = {"properties": {"updateTime": "t", "quantitativePrecipitation": {"uom": "wmoUnit:mm", "values": []}}}
+        with patch.object(ff, "_get", side_effect=lambda url, *a, **k: {"properties": {"forecastGridData": "g"}} if "points" in url else empty):
+            self.assertIsNone(ff.fetch_nws_qpf())
+        m = ff._LAST_REPLAY_INPUTS["qpf_meta"]
+        self.assertEqual((m["status"], m["intervals"]), ("ok", []))
+        r = ra.build_record({"generated_utc": "2026-09-24T16:14:12Z", "water_series": [], "all_tides": [],
+                             "input_health": {"nws_qpf": {"status": "unavailable", "detail": "no usable buckets"}}},
+                            qpf_hourly=None, qpf_meta=m)
+        self.assertIsNone(r["qpf_hourly"]); self.assertIn("qpf_hourly", r["unavailable"])
+        self.assertEqual(r["qpf_source"]["status"], "ok")
+
     def test_failed_fetch_records_unavailable(self):
         with patch.object(ff, "_get", side_effect=OSError("down")):
             self.assertIsNone(ff.fetch_nws_qpf())

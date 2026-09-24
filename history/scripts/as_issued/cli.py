@@ -34,8 +34,8 @@ def readiness():
     summ = F.summarize(rows)
     meta = {"generated_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"), "repo_head": head,
             "note": "inputs only: no observation or outcome is read"}
-    _write("readiness-inventory.json", {**meta, **{k: v for k, v in inv.items() if k != "rows"}, "rows": inv["rows"]})
-    _write("readiness-fidelity.json", {**meta, "summary": summ, "rows": rows})
+    _write(f"readiness-inventory-{REVISION}.json", {**meta, **{k: v for k, v in inv.items() if k != "rows"}, "rows": inv["rows"]})
+    _write(f"readiness-fidelity-{REVISION}.json", {**meta, "summary": summ, "rows": rows})
     print(json.dumps(summ, indent=1, default=str))
 
 
@@ -66,29 +66,40 @@ def advisory():
     rep.update(evaluated_utc=now.isoformat(), replay_records=len(rows), skipped=skipped,
                outcome_manifest=os.path.relpath(man, A.ROOT) if man else None, repo_head=A._git("rev-parse", "HEAD").decode().strip())
     print(json.dumps(rep, indent=1, default=str))
-    _write("study-a-advisory.json", {"report": rep, "pairs": pairs})
+    _write(f"study-a-advisory-{REVISION}.json", {"report": rep, "pairs": pairs})
+
+
+REVISION = "r2"   # audit 2026-09-24-a4 repairs; r1 outputs (no suffix) are preserved unchanged
+
+
+def load_normalized():
+    """Normalization-manifest entries, each verified against the current ledger row hash."""
+    from as_issued import normalization as N
+    with open(N.OUT) as f:
+        man = json.load(f)
+    hashes, ledger_sha, _n = N.row_hashes()
+    bad = [e["row"] for e in man["entries"] if hashes.get(e["row"]) != e["row_sha256"]]
+    if bad:
+        raise SystemExit(f"normalization manifest out of date for ledger rows {bad}; rebuild it")
+    return man, ledger_sha
 
 
 def street():
-    """Study B. Reads the observation ledger; no network."""
+    """Study B (revision r2). Reads the normalization manifest; no network."""
     ctx = S.Context()
-    observations, sha = O.load()
-    rep, pairs = S.evaluate(ctx, observations)
-    rep.update(ledger_sha256=sha, observations_total=len(observations),
-               observations_eligible=sum(o["eligible"] for o in observations),
+    man, sha = load_normalized()
+    rep, pairs = S.evaluate(ctx, man["entries"])
+    rep.update(ledger_sha256=sha, manifest_entries=len(man["entries"]),
+               primary_entries=sum(e["primary"] for e in man["entries"]),
                repo_head=A._git("rev-parse", "HEAD").decode().strip(),
-               evaluated_utc=dt.datetime.now(dt.timezone.utc).isoformat())
-    from collections import Counter
-    rep["observation_exclusions"] = dict(Counter(" ; ".join(o["reasons"]) or "no classifiable level"
-                                                 for o in observations if not o["eligible"]))
+               evaluated_utc=dt.datetime.now(dt.timezone.utc).isoformat(), revision=REVISION)
     print(json.dumps({k: v for k, v in rep.items() if k.startswith(("class_counts", "verdicts", "events", "pairs", "exclusion"))},
                      indent=1, default=str))
-    _write("study-b-street.json", {"report": rep, "pairs": pairs,
-                                   "observations": [{k: v for k, v in o.items()} for o in observations]})
-    events = R.per_event(pairs)
-    _write("study-b-events.json", {"per_event_published_line": events,
-                                   "conditional_burst_scenarios": R.conditional_scenarios(ctx, events),
-                                   "input_fault_annotations": input_faults(ctx, pairs)})
+    _write(f"study-b-street-{REVISION}.json", {"report": rep, "pairs": pairs})
+    events = R.per_event(pairs, man["event_peaks"])
+    _write(f"study-b-events-{REVISION}.json", {"per_event_published_line": events,
+                                              "conditional_burst_scenarios": R.conditional_scenarios(ctx, events),
+                                              "input_fault_annotations": input_faults(ctx, pairs)})
 
 
 def input_faults(ctx, pairs):

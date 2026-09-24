@@ -10,6 +10,16 @@ archived inputs:
 K, D and L use the tank from the series start with empty storage and the
 as-used hourly rain when archived; otherwise street = bay and the pair can be
 at best APPROX-TIDE. Pair classes: EXACT, NEAR, APPROX-TIDE, EXCLUDED.
+
+Admission gates (audit 2026-09-24-a4 R1; Amendment 2): EXACT and NEAR need a
+CONTROL replay of the issuance's own published rule to match the published
+bay (<= 0.0015 ft) and, with rain, the published pluvial line (no presence
+mismatch, <= 0.002 ft), a tank implementation whose fingerprint is supported,
+a gap-free half-hour grid and finite inputs; rain must cover every hour from
+the series start through the observation (NEAR: only the first core hour
+missing). Counterfactual arms are never required to equal the published line.
+Observations come from the normalization manifest (R3): points, tolerance
+intervals, brackets, bounds, time windows, primary vs sensitivity rows.
 """
 from __future__ import annotations
 
@@ -25,6 +35,12 @@ from . import obs as O
 
 UTC = dt.timezone.utc
 NAVD = -2.82
+BAY_TOL_FT = 0.0015          # published bay stored to 0.001 ft
+TANK_TOL_FT = 0.002          # published pluvial stored to 0.001 ft; bay input rounded
+MAX_STEP = dt.timedelta(minutes=30, seconds=1)
+# tank implementations verified equal to models/wind_shadow/rain_ref.py (14,600 points, 2026-09-24)
+SUPPORTED_TANKS = {"c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e":
+                   "production tank v0.10.1-v0.10.6 (fingerprint of simulate_pluvial_series, _pluvial_fill, constants, curve)"}
 TAU_H = 36.0
 FIXED_LOW_BAY = 2.50
 LEAD_BINS = ((0, 6), (6, 12), (12, 24), (24, 30))
@@ -38,17 +54,29 @@ def issuance_time(s):
 
 
 def interp(times, values, t):
-    """Linear between the bracketing half-hour points; None outside or at a gap."""
+    """Linear between the bracketing half-hour points; None outside the grid,
+    at a missing value, or across a gap longer than 30 min (a4 R1)."""
     if not times or t < times[0] or t > times[-1]:
         return None
+    if t == times[0]:
+        return values[0]
     for i in range(1, len(times)):
         if times[i] >= t:
             a, b = values[i - 1], values[i]
-            if a is None or b is None:
+            if a is None or b is None or (times[i] - times[i - 1]) > MAX_STEP:
                 return None
             span = (times[i] - times[i - 1]).total_seconds()
             return a + (b - a) * ((t - times[i - 1]).total_seconds() / span if span else 0.0)
-    return values[0] if times[0] == t else None
+    return None
+
+
+def window_range(times, values, t0, t1):
+    """(min, max) of the interpolated line over [t0, t1] (grid points inside plus ends)."""
+    pts = [interp(times, values, t0), interp(times, values, t1)]
+    pts += [v for t, v in zip(times, values) if t0 < t < t1]
+    if any(x is None for x in pts):
+        return None
+    return min(pts), max(pts)
 
 
 def decay(reading, t_read, mean, t, tau=TAU_H):
@@ -68,6 +96,9 @@ class Context:
         self.replay = {r["generated_utc"]: r for r, _i in A.replay_records()}
         self.tank = F._tank()
         self._blobs, self._arms = {}, {}
+
+    def tank_fingerprint(self, s):
+        return F.tank_fingerprint(s["commit"])
 
     def forecast(self, s):
         if s["blob"] not in self._blobs:
@@ -133,6 +164,36 @@ def arms(ctx, s):
             res["reasons"].append("astronomy not covered")
         ctx._arms[s["blob"]] = res
         return res
+    # ---- a4 R1: control replay of the issuance's own published rule
+    gates = []
+    if any((b - a) != dt.timedelta(minutes=30) for a, b in zip(times, times[1:])):
+        gates.append("irregular or gapped half-hour grid")
+    pub_bay = [p["tide_navd88"] for _t, p in pts]
+    if not all(isinstance(x, (int, float)) and math.isfinite(x) for x in pub_bay + [val, mean]):
+        gates.append("non-finite input")
+    elif dec:
+        ctrl = [ctx.p30[t] + NAVD + decay(dec["surge_obs_ft"], A.parse_utc(dec["observation_utc"]), dec["mean_ft"], t,
+                                          dec.get("tau_h") or TAU_H) for t in times]
+        d = max(abs(a - b) for a, b in zip(ctrl, pub_bay))
+        res["facts"]["control_bay_max_diff_ft"] = round(d, 5)
+        if d > BAY_TOL_FT:
+            gates.append(f"control bay replay mismatch ({d:.4f} ft)")
+    if src:
+        rates_c = [rain.get(t.replace(minute=0), 0.0) for t in times]
+        tc = ctx.tank.simulate_pluvial_series(times, pub_bay, rates_c)
+        pub_pl = res["P_pluvial"]
+        pres = sum((x is None) != (y is None) for x, y in zip(tc, pub_pl))
+        diffs = [abs(x - y) for x, y in zip(tc, pub_pl) if x is not None and y is not None]
+        res["facts"].update(control_tank_presence_mismatches=pres,
+                            control_tank_max_diff_ft=round(max(diffs), 5) if diffs else 0.0)
+        if pres or (diffs and max(diffs) > TANK_TOL_FT):
+            gates.append(f"control tank replay mismatch ({pres} presence, max {max(diffs) if diffs else 0:.4f} ft)")
+        fp = ctx.tank_fingerprint(s)
+        res["facts"]["tank_fingerprint"] = fp
+        if fp not in SUPPORTED_TANKS:
+            gates.append("unsupported tank implementation")
+        res["rain_by_hour"] = rain
+    res["gates"] = gates
     astro = [ctx.p30[t] + NAVD for t in times]
     bay_k = [a + val for a in astro]
     bay_d = [a + decay(val, t_r, mean, t) for a, t in zip(astro, times)]
@@ -157,14 +218,21 @@ def arms(ctx, s):
 def pair_class(res, o, t_o):
     if res["reasons"]:
         return "EXCLUDED", "; ".join(res["reasons"])
+    if res.get("gates"):
+        return "EXCLUDED", "admission gate: " + "; ".join(res["gates"])
     fa = res["facts"]
     if fa["rain_source"] in ("replay record qpf_hourly", "outlook hourly rain (nws_grid)"):
-        if fa["reading_exact"] and fa["mean_exact"] and fa["rain_complete"]:
+        rain = res.get("rain_by_hour") or {}
+        needed = sorted({t.replace(minute=0) for t in res["times"] if t <= t_o})
+        missing = [h for h in needed if h not in rain]
+        if not fa["reading_exact"]:
+            return "EXCLUDED", fa["reading_basis"]
+        if not missing and fa["mean_exact"]:
             return "EXACT", None
-        if fa["reading_exact"]:
-            return "NEAR", ("mean reconstructed; " if not fa["mean_exact"] else "") + (
-                "" if fa["rain_complete"] else f"rain hours {fa['rain_hours']}")
-        return "EXCLUDED", fa["reading_basis"]
+        if missing and missing != needed[:1]:
+            return "EXCLUDED", f"rain not archived for {len(missing)} antecedent hours"
+        return "NEAR", ("mean reconstructed; " if not fa["mean_exact"] else "") + (
+            "first core hour's rain not archived" if missing else "")
     pub_pluv = interp(res["times"], [0.0 if x is None else 1.0 for x in res["P_pluvial"]], t_o)
     if o["dry"] and fa["reading_exact"] and (pub_pluv or 0.0) == 0.0:
         return "APPROX-TIDE", "rain not archived; dry window; no published pluvial water"
@@ -172,62 +240,99 @@ def pair_class(res, o, t_o):
 
 
 def build_pairs(ctx, observations):
+    """observations: normalization-manifest entries (see normalization.py)."""
     pairs = []
     for o in observations:
-        if not o["eligible"]:
-            continue
-        t_o = o["time_utc"]
-        cands = [s for s in ctx.issuances if s["_t"] < t_o and (t_o - s["_t"]) <= dt.timedelta(hours=30)]
+        t_o = A.parse_utc(o["time_utc"]) if isinstance(o["time_utc"], str) else o["time_utc"]
+        win = o.get("time_window_utc")
+        w0, w1 = ((A.parse_utc(win[0]), A.parse_utc(win[1])) if win else (None, None))
+        t_ref = w0 + (w1 - w0) / 2 if win else t_o
+        t_last = w1 if win else t_o
+        cands = [s for s in ctx.issuances if s["_t"] < (w0 or t_o) and (t_ref - s["_t"]) <= dt.timedelta(hours=30)]
         for lo, hi in LEAD_BINS:
-            inbin = [s for s in cands if dt.timedelta(hours=lo) < (t_o - s["_t"]) <= dt.timedelta(hours=hi)]
+            inbin = [s for s in cands if dt.timedelta(hours=lo) < (t_ref - s["_t"]) <= dt.timedelta(hours=hi)]
             chosen = None
             for s in sorted(inbin, key=lambda s: s["_t"], reverse=True):
                 res = arms(ctx, s)
-                if res["times"] and res["times"][0] <= t_o <= res["times"][-1]:
+                if res["times"] and res["times"][0] <= (w0 or t_o) and t_last <= res["times"][-1]:
                     chosen = (s, res)
                     break
             if chosen is None:
                 continue
             s, res = chosen
-            cls, why = pair_class(res, o, t_o)
-            rec = {"obs_row": o["row"], "obs_time": t_o, "landmark": o["landmark"], "elevation": o["elevation"],
-                   "level_type": o["level_type"], "level": o["level_navd88"], "evidence": o["evidence"], "dry": o["dry"],
+            cls, why = pair_class(res, o, t_last)
+            rec = {"obs_row": o["row"], "obs_time": t_ref, "obs_window": [w0, w1] if win else None,
+                   "landmark": o["landmark"], "elevation": o["elevation"], "level_type": o["level_type"],
+                   "point": o.get("point"), "lo": o.get("lo"), "hi": o.get("hi"),
+                   "point_is_midpoint": bool(o.get("point_is_midpoint")), "method": o["method"],
+                   "primary": o.get("primary", True), "dry": o["dry"],
                    "issuance": s["_t"], "issuance_basis": s["_basis"], "model_version": s["model_version"],
-                   "blob": s["blob"], "lead_h": round((t_o - s["_t"]).total_seconds() / 3600, 2),
+                   "blob": s["blob"], "lead_h": round((t_ref - s["_t"]).total_seconds() / 3600, 2),
                    "lead_bin": f"({lo},{hi}]", "class": cls, "class_note": why}
             for arm in ARMS:
                 series = res.get(arm)
-                rec[arm] = None if series is None else interp(res["times"], series, t_o)
+                rec[arm] = None if series is None else interp(res["times"], series, t_ref)
+                rec[arm + "_range"] = (None if series is None or not win else window_range(res["times"], series, w0, w1))
             rates = res.get("rates")
             if rates:
-                w = [r for t, r in zip(res["times"], rates) if dt.timedelta(0) <= (t_o - t) <= dt.timedelta(hours=6)]
+                w = [r for t, r in zip(res["times"], rates) if dt.timedelta(0) <= (t_ref - t) <= dt.timedelta(hours=6)]
                 rec["wet"] = bool(w and max(w) >= 0.25)
             else:
                 rec["wet"] = None
-            rec["published_pluvial_at_obs"] = interp(res["times"], res["P_pluvial"], t_o)
+            rec["published_pluvial_at_obs"] = interp(res["times"], res["P_pluvial"], t_ref)
             if rec["published_pluvial_at_obs"] is not None:
                 rec["wet"] = True
             pairs.append(rec)
     return pairs
 
 
+def observed_wet(p):
+    """Declared rule (protocol 4.6): POINT above the elevation = wet, at/below =
+    dry. Brackets (Amendment 2): wet if lo > elevation, dry if hi <= elevation,
+    otherwise UNKNOWN (reported, never dropped). UPPER: dry if hi <= elevation;
+    LOWER: wet if lo >= elevation."""
+    e, t = p["elevation"], p["level_type"]
+    if t == "POINT":
+        return p["point"] > e
+    if t == "INTERVAL":
+        return True if p["lo"] > e else False if p["hi"] <= e else None
+    if t == "UPPER":
+        return False if p["hi"] <= e else None
+    return True if p["lo"] >= e else None
+
+
 def score(p, arm):
-    """Per-pair scores for one arm: error (POINT), exceedance/deficit (bounds), threshold cell."""
+    """Per-pair scores for one arm (ft): point error (POINT), interval error
+    (distance from the forecast, or its range over a time window, to [lo, hi];
+    0 inside), midpoint error (INTERVAL, sensitivity only), bound
+    exceedance/deficit, local depth error (inches, POINT), threshold cell."""
     f = p.get(arm)
     if f is None:
         return None
     e = p["elevation"]
-    out = {"forecast": f, "forecast_wet": f > e}
+    rng = p.get(arm + "_range") or (f, f)
+    out = {"forecast": f, "forecast_wet": f > e, "observed_wet": observed_wet(p)}
+    lo, hi = p.get("lo"), p.get("hi")
     if p["level_type"] == "POINT":
-        out["error"] = f - p["level"]
-        out["observed_wet"] = None if abs(p["level"] - e) < 1e-9 else p["level"] > e
-    elif p["level_type"] == "UPPER":
-        out["exceedance"] = max(0.0, f - e)
-        out["observed_wet"] = False
-    else:
-        out["deficit"] = max(0.0, e - f)
-        out["observed_wet"] = True
+        out["error"] = f - p["point"]
+        out["depth_error_in"] = (max(0.0, f - e) - max(0.0, p["point"] - e)) * 12
+    if p["level_type"] == "INTERVAL":
+        out["midpoint_error"] = f - p["point"]
+    if p["level_type"] in ("POINT", "INTERVAL") and lo is not None and hi is not None:
+        out["interval_error"] = 0.0 if (rng[1] >= lo and rng[0] <= hi) else (lo - rng[1] if rng[1] < lo else rng[0] - hi)
+    if p["level_type"] == "UPPER":
+        out["exceedance"] = max(0.0, rng[0] - hi)
+    if p["level_type"] == "LOWER":
+        out["deficit"] = max(0.0, lo - rng[1])
     return out
+
+
+def cell(sc):
+    if sc["observed_wet"] is None:
+        return "unknown (bracket straddles the landmark)"
+    if sc["observed_wet"]:
+        return "hit" if sc["forecast_wet"] else "miss"
+    return "false alarm" if sc["forecast_wet"] else "correct negative"
 
 
 def _bootstrap(per_event, n=2000, seed=20260924):
@@ -241,10 +346,10 @@ def _bootstrap(per_event, n=2000, seed=20260924):
     return [round(vals[int(0.05 * n)], 4), round(vals[int(0.95 * n)], 4)]
 
 
-def summarize(pairs, arm, events_of):
-    rows = [(p, score(p, arm)) for p in pairs]
+def summarize(pairs, arm, events_of, primary_only=True):
+    rows = [(p, score(p, arm)) for p in pairs if (p["primary"] or not primary_only)]
     rows = [(p, sc) for p, sc in rows if sc is not None]
-    pts = [(p, sc) for p, sc in rows if "error" in sc and p["evidence"] != "RECONSTRUCTION"]
+    pts = [(p, sc) for p, sc in rows if "error" in sc]
     out = {"pairs": len(rows), "point_pairs": len(pts)}
     if pts:
         errs = [sc["error"] for _p, sc in pts]
@@ -252,30 +357,32 @@ def summarize(pairs, arm, events_of):
         for p, sc in pts:
             per_ev[events_of[p["obs_row"]]].append(abs(sc["error"]))
         ev_mae = {k: sum(v) / len(v) for k, v in per_ev.items()}
+        dep = [sc["depth_error_in"] for _p, sc in pts]
         out.update(mae_ft=round(sum(map(abs, errs)) / len(errs), 4), bias_ft=round(sum(errs) / len(errs), 4),
                    large_rate=round(sum(abs(x) > 0.25 for x in errs) / len(errs), 4), events=len(ev_mae),
-                   event_weighted_mae_ft=round(sum(ev_mae.values()) / len(ev_mae), 4),
-                   event_mae_ci90=_bootstrap(ev_mae))
+                   event_weighted_mae_ft=round(sum(ev_mae.values()) / len(ev_mae), 4), event_mae_ci90=_bootstrap(ev_mae),
+                   depth_mae_in=round(sum(map(abs, dep)) / len(dep), 2), depth_bias_in=round(sum(dep) / len(dep), 2))
+    iv = [sc["interval_error"] for _p, sc in rows if "interval_error" in sc]
+    out["interval"] = {"n": len(iv), "inside": sum(x == 0 for x in iv),
+                       "mean_distance_ft": round(sum(iv) / len(iv), 4) if iv else None}
+    mid = [sc["midpoint_error"] for _p, sc in rows if "midpoint_error" in sc]
+    out["bracket_midpoint_sensitivity"] = {"n": len(mid), "mae_ft": round(sum(map(abs, mid)) / len(mid), 4) if mid else None}
     ub = [sc["exceedance"] for _p, sc in rows if "exceedance" in sc]
     lb = [sc["deficit"] for _p, sc in rows if "deficit" in sc]
     out["upper_bound"] = {"n": len(ub), "false_wet": sum(x > 0 for x in ub), "max_exceedance_ft": round(max(ub), 3) if ub else None}
     out["lower_bound"] = {"n": len(lb), "missed_wet": sum(x > 0 for x in lb), "max_deficit_ft": round(max(lb), 3) if lb else None}
-    cell = Counter()
-    for _p, sc in rows:
-        if sc["observed_wet"] is None:
-            continue
-        cell[("hit" if sc["forecast_wet"] else "miss") if sc["observed_wet"] else
-             ("false alarm" if sc["forecast_wet"] else "correct negative")] += 1
-    out["threshold"] = dict(cell)
+    out["threshold"] = dict(Counter(cell(sc) for _p, sc in rows))
     return out
 
 
 def compare(pairs, a, b, events_of):
-    """Paired event-level comparison of two arms on POINT pairs (a minus b)."""
+    """Paired event-level comparison of two arms on PRIMARY POINT pairs (a minus b)."""
     per_ev = defaultdict(lambda: [[], []])
     for p in pairs:
+        if not p["primary"]:
+            continue
         sa, sb = score(p, a), score(p, b)
-        if sa is None or sb is None or "error" not in sa or p["evidence"] == "RECONSTRUCTION":
+        if sa is None or sb is None or "error" not in sa:
             continue
         ev = events_of[p["obs_row"]]
         per_ev[ev][0].append(abs(sa["error"])); per_ev[ev][1].append(abs(sb["error"]))
@@ -314,6 +421,9 @@ def evaluate(ctx, observations):
         sub = [p for p in pairs if (p["model_version"] or "pre-v0.10.1") == v]
         rep["B0_published_by_version"][v] = {lb: summarize([p for p in sub if p["lead_bin"] == lb], "P", events_of)
                                              for lb in [f"({a},{b}]" for a, b in LEAD_BINS]}
+    rep["sensitivity_all_rows"] = {cls: summarize([p for p in pairs if p["class"] == cls], "D", events_of, primary_only=False)
+                                   for cls in ("EXACT", "NEAR", "APPROX-TIDE")}
+    rep["published_all_rows_sensitivity"] = summarize(pairs, "P", events_of, primary_only=False)
     for cls in ("EXACT", "NEAR", "APPROX-TIDE"):
         sub = [p for p in pairs if p["class"] == cls]
         block = {"pairs": len(sub), "events": len({events_of[p["obs_row"]] for p in sub})}

@@ -8,12 +8,15 @@ import datetime as dt
 import hashlib
 import os
 import re
+import sys
 from zoneinfo import ZoneInfo
 
 UTC = dt.timezone.utc
 NY = ZoneInfo("America/New_York")
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 LEDGER = os.path.join(ROOT, "data", "labeled_observations.csv")
+sys.path.insert(0, ROOT)
+from forecast.station_time import parse_station_local_time  # noqa: E402
 FIRST_BAY_LINE = dt.datetime(2026, 7, 6, 19, 35, 5, tzinfo=UTC)
 
 UPPER_WORDS = ("at/below", "no water", "dry", "receded", "exposed", "driveable")
@@ -26,10 +29,9 @@ DRY_NO = ("downpour", "thunder", "drizzle", "shower", "burst", "heavy rain", "li
 
 
 def local_to_utc(s):
-    t = dt.datetime.fromisoformat(s.strip())
-    if t.tzinfo is None:
-        t = t.replace(tzinfo=NY)
-    return t.astimezone(UTC)
+    """Station-local ledger time -> UTC via the shared helper (AGENTS rule 3):
+    offset-bearing values keep their offset; legacy naive values use fold=0."""
+    return parse_station_local_time(s.strip()).astimezone(UTC)
 
 
 def _has(text, words):
