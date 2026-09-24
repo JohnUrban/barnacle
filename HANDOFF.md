@@ -11,45 +11,31 @@ per-tide pages, widget, ntfy/email/SMS. Real people receive alerts.
 Production model **v0.10.5** (`model/v0.10.5.md`), promoted `4bb885e02`.
 SMS = imminent impact; ntfy/email = longer-lead; alert tide horizon <=48 h.
 
-## v0.10.6 candidate — independent review HOLD
+## v0.10.6 candidate — repaired (round 02), independent verification owed
 
-Claude's branch `v0.10.6-candidate`, reviewed at `ba57f53d5` (not merged).
-Spec on branch: `model/v0.10.6.md`. Decay toward recent mean (tau 36 h),
-fresh/stale outage ladder, hourly P-ETSS, last-guidance decay tail, source
-boundaries and advisory markers. New golden; old frozen replays unchanged.
-Codex completed review against the owner-agreed seven-day checklist:
-`history/plans/2026-09-23-v0.10.6-outlook-review.md`.
-Report: `audits/2026-09-24-a1/01-v0.10.6-candidate-review-codex.md`.
-Read-only probes + JSON results are beside it. Audit OPEN; Claude reply owed.
+Branch `v0.10.6-candidate` at `ce2f898c8` (not merged; main runs v0.10.5).
+Spec on branch `model/v0.10.6.md`: decay toward the trailing mean (tau 36 h)
+from the reading's time, outage ladder, hourly P-ETSS, last-guidance decay,
+labeled source boundaries, advisory markers, new golden; old replays unchanged.
+Codex round 01 (HOLD, R1-R6): `audits/2026-09-24-a1/01-...-codex.md`.
+Claude round 02 (all six confirmed and repaired, evidence per finding):
+`audits/2026-09-24-a1/02-repairs-reply-claude.md`. 298 tests, three replays,
+gate, both 7-day charts visually checked. Codex's probe now reports the
+repaired behaviour for R1, R3, R4 and R5.
 
-290 tests (required GRIB decoder), gate and all three replays PASS. Historical
-surge study rerun supports basic decay. Both candidate outlook charts render
-in browser. These checks do not waive the six findings:
-- R1: stale/missing-guidance tide table can use astronomy while curve uses
-  aged reading/typical offset; fixture discrepancy up to 1.624 ft.
-- R2: lower chart marks assumed tail as NWS/P-ETSS; intro/spec stale.
-- R3: shadow skill/readiness mixes different model versions.
-- R4: parseable naive mean timestamp aborts whole build instead of fallback.
-- R5: water_series_input top-level age/time are not from selected state;
-  state admission/write health not surfaced as specified.
-- R6: separate low-tide/compound comparisons incomplete; partial historical
-  issuance-time rain windows DO exist (Sep13 pre-event commit 3a6c96faf).
+John's decision on items 2 and 5 (00:31 EDT): Codex's recommendations. Done
+on the branch: advisory corrections kept as EXPERIMENTAL; prospective
+replay-input archive `data/replay_inputs/YYYY-MM.jsonl` (raw NWPS, advisory
+rows, astronomy, corrected output, QPF as issued, surge state, tank init);
+bounded rain comparison `history/reports/2026-09-24-v0.10.6-rain-comparison.txt`.
+Honest result: on six measured rain floods (MRMS rain) the constant rule did
+slightly better (one building compound storm); history over ~13,900
+rising-surge readings still favors decay. Residual deferred by John:
+multi-event as-issued rain-flood skill (the archive collects its inputs).
 
-Next: Claude repairs/replies, Codex verifies the completed candidate, John
-records promotion DECISION, then merge/rebase preserving bot rows and
-regenerate pages on updated main. Do not merge the stale generated pages.
-No production numerical/alert/ledger changes were made in this review.
-
-## Owner decisions still pending
-
-Item 2: John says prospective NWPS logging sounds sensible. Codex recommends
-conditional temporary retention of advisory corrections as experimental,
-with raw/corrected hourly forecast logging and all-tide-phase scoring.
-A captured +0.4 ft is not a universal bound or proof of negligible impact.
-Item 5: recommend bounded checks using partial archived QPF and wet synthetic
-scenarios, then explicit deferral of residual multi-event skill while full
-issuance inputs are archived. Plug-band surge MAE is not rain-flood validation.
-These are recommendations, not recorded waivers or promotion approval.
+Next: Codex verifies `ce2f898c8`; John's promotion DECISION; then merge onto
+updated main with pages regenerated there (the branch's generated pages are
+stale by design; a rebase conflicts only in generated pages and HANDOFF).
 
 ## v0.10.5 behavior and audit history
 
