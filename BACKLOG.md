@@ -8,13 +8,15 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **v0.10.6 promotion and deployed close-out (2026-09-24).** Candidate
-      `1053eb436` independently approved in audit round05; R1-R6 resolved.
-      John: "Claude is done. I am ready to move forward if you are."
-      Conditional promotion approval accepted after verification. Merge onto
-      updated main, regenerate, preserve ledgers, gate/replays/tests, then
-      verify deployed charts/stamps and first replay-input archive record.
-      Items2/5 limitations remain accepted; close audit after deployment.
+- [x] **v0.10.6 promoted; audit 2026-09-24-a1 CLOSED (2026-09-24).**
+      Reviewed candidate `1053eb436`, promotion `75a9933ff`, owner decision
+      recorded before promotion in `b999ea1d0`. R1-R6 resolved; 298 tests,
+      three replays, gate, CI and Pages PASS. Eighteen public artifacts match;
+      landing and both outlook charts visually verified. First replay-input
+      record committed and remotely verified; ledgers only gained rows.
+      Report: `audits/2026-09-24-a1/06-close-out-codex.md` and evidence JSON.
+      Accepted experimental-correction and as-issued-skill limitations remain
+      research follow-ups, not release blockers. No pending promotion decision.
 
 - [x] **Seven-day top chart rendering regression (2026-09-23, post-close).**
       John's report confirmed an unescaped apostrophe in generated JavaScript,
@@ -22,7 +24,7 @@ looks stale, trust this file. Ledger lines are append-only:
       now execute in a regression test. Report `audits/2026-09-23-a1/08-post-close-chart-rendering-fix-codex.md`.
       Forecast numbers unchanged; display-only correction, model stays v0.10.5.
 
-- [ ] **v0.10.6: SEVEN-DAY CURVE REVIEW (John, 2026-09-23 23:55).**
+- [x] **v0.10.6: SEVEN-DAY CURVE REVIEW (John, 2026-09-23 23:55).**
       Fold source/assumption labeling, NWS high-tide correction review,
       hourly P-ETSS use and guidance-to-decay transitions into the same bump.
       Validate low tides, drain-band/rain tank effects and map/surface parity,
@@ -31,7 +33,7 @@ looks stale, trust this file. Ledger lines are append-only:
       and passing release checks alone do not establish forecast accuracy.
       Checklist: `history/plans/2026-09-23-v0.10.6-outlook-review.md`.
 
-- [ ] **v0.10.6: SURGE DECAY + MISSING-SURGE LADDER (owner decisions
+- [x] **v0.10.6: SURGE DECAY + MISSING-SURGE LADDER (owner decisions
       2026-09-23 22:55-23:15).** One formula for fresh and stale readings:
       mean + (s_obs - mean) * exp(-(t - t_obs)/tau), trailing-365-d mean,
       tau ~36 h (measured in three views), age labels, snap to the mean with
@@ -560,3 +562,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | DECISION | v0.10.6-promotion | John: "Claude is done. I am ready to move forward if you are." Authorizes promotion conditional on Codex readiness. Codex independently verified candidate 1053eb436 after rounds01/03 and Claude replies02/04: R1-R6 resolved; corrected B/C/D study reproduces exactly, runtime/tests/goldens unchanged since the 298-test round03. Review audits/2026-09-24-a1/05-candidate-approval-codex.md. Proceed with merge, regeneration on updated main, release checks and deployed verification; accepted items2/5 limitations stand [STATED: John in session; VERIFIED: independent review]
 
 2026-09-24 | DONE | v0.10.6-promotion-build | Reviewed candidate 1053eb436 merged onto current main with regeneration at 2026-09-24T05:46:59Z using --no-send. Runtime/tests/goldens equal the reviewed candidate; only promotion documentation added. All previous canonical ledger bytes retained (predictions +6, day-risk +1, outlook +14; observations/accuracy unchanged); alert_state unchanged. First replay-input archive and surge state written. Model spec records honest preview/generation/deployment distinction. Three frozen replays pass; deployed verification and audit close-out follow [VERIFIED]
+
+2026-09-24 | DONE | audit-2026-09-24-a1-CLOSED | v0.10.6 promoted in 75a9933ff after independent Codex review (rounds01/03/05), Claude replies02/04, and prior John DECISION v0.10.6-promotion in b999ea1d0. Final 298 tests, three frozen replays, gate, CI and Pages PASS. Eighteen public artifact byte matches and visual verification of landing plus both outlook charts. Canonical ledgers preserve prior bytes; first replay-input record remotely verified, alert state unchanged, manual regeneration --no-send. Cutover/stamps/archive links documented. Round06 and close-out-verification.json close the audit; accepted items2/5 research limits and nonblocking cohort explanation remain separate [VERIFIED]
