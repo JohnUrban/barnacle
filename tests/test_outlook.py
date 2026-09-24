@@ -246,7 +246,8 @@ class LadderTests(unittest.TestCase):
         self.assertEqual(by["2026-09-23 18:19-04:00"]["outlook_source"], "nws_product")
         self.assertEqual(by["2026-09-23 18:19-04:00"]["outlook_mllw"], 6.9)
         self.assertEqual(by["2026-09-26 08:01-04:00"]["outlook_source"], "petss_mid")   # 73 h: product row absent, NWPS out of reach
-        self.assertEqual(by["2026-09-27 20:58-04:00"]["outlook_source"], "persist_decay")  # 110 h
+        # 110 h: beyond P-ETSS the last guidance value decays toward the typical offset (v0.10.6)
+        self.assertEqual(by["2026-09-27 20:58-04:00"]["outlook_source"], "guidance_decay")
         self.assertEqual(len(ol["tides"]), 14)
         self.assertTrue(all(t["band_lo_mllw"] is None for t in ol["tides"] if t["lead_h"] > 102))
 
@@ -285,9 +286,12 @@ class LadderTests(unittest.TestCase):
     def test_persistence_decay_is_labeled_assumption(self):
         ol = _build()
         self.assertEqual(ol["assumptions"]["persistence_decay_tau_h"], 36.0)   # v0.10.6, measured
-        late = [t for t in ol["tides"] if t["outlook_source"] == "persist_decay"]
+        # the observed-reading decay stays in every tide's guidance (the shadow
+        # ledger scores it against flat persistence) even where guidance_decay leads
+        late = [t for t in ol["tides"] if t["lead_h"] > 102]
         self.assertTrue(late)
         for t in late:
+            self.assertEqual(t["outlook_source"], "guidance_decay")
             self.assertLess(t["guidance"]["persist_decay"], t["guidance"]["persist_flat"])
 
     def test_outlook_never_enters_all_tides_or_alerts(self):
@@ -315,7 +319,7 @@ class RainPathwayTests(unittest.TestCase):
         for p in S:
             self.assertIsNotNone(p["tide_navd88"])
             self.assertIsNotNone(p["water_navd88"])
-            self.assertIn(p["surge_source"], ("nwps", "nws_product", "petss_mid", "persist_decay", "astro"))
+            self.assertIn(p["surge_source"], tuple(outlook.HOURLY_SURGE_SOURCES))
         self.assertTrue({p["surge_source"] for p in S if 0 <= p["lead_h"] <= 60} <= {"nwps", "nws_product"})
         self.assertIn("nbm", {p["rain_source"] for p in S if p["lead_h"] > 80})
 

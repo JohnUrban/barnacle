@@ -857,7 +857,8 @@ OUTLOOK_GUIDANCE_PATH = os.path.join(_REPO_ROOT, "data", "outlook_guidance.json"
 
 
 def build_outlook_7d_field(now_utc, all_tides, persisted_surge, surge_age_min,
-                           nws_hourly=None, qpf_hourly=None, surge_mean_ft=0.0):
+                           nws_hourly=None, qpf_hourly=None, surge_mean_ft=0.0,
+                           obs_reading=None):
     """(outlook_7d, health_entries) for the 7-day outlook (2026-09-23).
 
     A NEW field: never widens all_tides, so alerts, per-tide pages, the
@@ -887,7 +888,8 @@ def build_outlook_7d_field(now_utc, all_tides, persisted_surge, surge_age_min,
         nws_hourly=nws_hourly, qpf_hourly=qpf_hourly,
         simulate_fn=simulate_pluvial_series,
         potential_fn=estimate_pluvial_water_models,
-        enhancement_ft=LOCAL_ENHANCEMENT_FT, surge_mean_ft=surge_mean_ft)
+        enhancement_ft=LOCAL_ENHANCEMENT_FT, surge_mean_ft=surge_mean_ft,
+        obs_reading=obs_reading)
     n_guided = sum(1 for t in outlook_7d["tides"] if t["outlook_source"] != "astro")
     entries["outlook_7d"] = {
         "status": "ok",
@@ -929,7 +931,7 @@ PREDICTIONS_LOG_FIELDS = [
     "regime_predicted",
     "cold_lockout",              # "true" | "false"
     "confidence_level",          # "high" | "medium" | "low" | ""
-    "model_version",             # as-run model spec version (currently v0.10.5)
+    "model_version",             # as-run model spec version (currently v0.10.6)
 ]
 
 DAY_RISK_LOG_PATH = os.path.join(_REPO_ROOT, "data", "day_risk_log.csv")
@@ -1137,7 +1139,7 @@ def update_forecast_accuracy():
     return _summarize_accuracy(last_n=30)
 
 
-CURRENT_MODEL_VERSION = "v0.10.5"
+CURRENT_MODEL_VERSION = "v0.10.6"
 FORECAST_SCHEMA_VERSION = "1.0"
 
 # v0.8 wind-direction sectors for the storm-bump adjustment. Sandy Hook
@@ -2679,7 +2681,9 @@ def build_forecast():
             generated_utc, all_tides, persisted_surge,
             surge_meta.get("age_min"), nws_hourly=nws_hourly,
             qpf_hourly=(qpf_hourly if qpf_available else None),
-            surge_mean_ft=surge_anchor.mean_ft)
+            surge_mean_ft=surge_anchor.mean_ft,
+            obs_reading=((surge_anchor.surge_ft, surge_anchor.obs_utc)
+                         if surge_anchor.rung != "typical-offset" else None))
         input_health.update(_ol_health)
     except Exception as e:
         input_health["outlook_7d"] = {"status": "unavailable",
@@ -3083,6 +3087,7 @@ def _fmt_metric(value, spec=".2f", unavailable="unavailable"):
 _INPUT_LABELS = {
     "tide_predictions": "NOAA tide predictions",
     "surge_observation": "live surge observation",
+    "surge_mean": "typical surge offset (trailing 365-day mean)",
     "nws_coastal_product": "NWS coastal flood product",
     "nws_qpf": "NWS quantitative precipitation forecast",
     "nws_hourly": "NWS hourly weather forecast",
@@ -5586,6 +5591,24 @@ def _render_water_series_section(forecast):
              "backgroundColor": "rgba(217,119,6,0.9)",
              "pointStyle": "rectRot", "pointRadius": 6,
              "pointBorderWidth": 2, "showLine": False})
+    # v0.10.6 (seven-day review item 6): the NWS advisory's OWN high-tide
+    # numbers as markers, so any gap between them and the persistence curve
+    # is visible and labeled, never hidden by blending.
+    adv_data = [None] * len(labels)
+    _by_hour = {p["time"][:13]: i for i, p in enumerate(series)}
+    for t in forecast.get("all_tides") or []:
+        if t.get("source") == "nws-coastal-flood-product" and t.get("time", "")[:13] in _by_hour:
+            adv_data[_by_hour[t["time"][:13]]] = to_in(
+                t["forecast_peak_mllw"] + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET)
+    has_advisory = any(v is not None for v in adv_data)
+    if has_advisory:
+        _adv = [v for v in adv_data if v is not None]
+        y_min = min(y_min, min(_adv) - 3)
+        y_max = max(y_max, max(_adv) + 3)
+        datasets.append(
+            {"label": "NWS advisory high tide (its own number)", "data": adv_data,
+             "borderColor": "#b91c1c", "backgroundColor": "#b91c1c",
+             "pointStyle": "rectRot", "pointRadius": 5, "showLine": False})
     if has_rain_layer:
         datasets.append(
             {"label": "Rain street-water (v0.10 tank hydrograph)",
@@ -5735,8 +5758,9 @@ def _render_water_series_section(forecast):
         note_bits.append("The blue curve starts from the latest observed surge and lets it decay "
                          f"toward the typical offset ({_decay.get('mean_ft', 0):+.2f} ft) with a "
                          f"{_decay.get('tau_h', 36):.0f}-hour time constant; ")
-    note_bits.append("individual NWS high-tide projections use their own guidance and may differ. "
-                     "Windows below are derived from these curves.")
+    note_bits.append("individual NWS high-tide projections use their own guidance and may differ"
+                     + (" (red diamonds: the advisory's own numbers)" if has_advisory else "")
+                     + ". Windows below are derived from these curves.")
     return f"""
   <section class="water-series">
     <h2>Predicted near-term water levels</h2>
@@ -6126,6 +6150,17 @@ def _load_map_points_for_js():
     return out
 
 
+def _near_term_label(forecast):
+    """What the first 30 h of the maps are built from (v0.10.6 ladder)."""
+    si = forecast.get("water_series_input") or {}
+    if si.get("source") == "typical-offset":
+        return "astronomy + the typical surge offset (no usable surge reading)"
+    dec = si.get("decay") or {}
+    if dec.get("rung") in ("stale-download", "stale-state"):
+        return "an OLDER observed surge reading decaying toward the typical offset"
+    return "the observed surge decaying toward the typical offset"
+
+
 def _client_map_section_html(forecast, container_class="heatmap", level=2,
                               base_map_url="icons/map_raw.png",
                               show_depth_slider=False):
@@ -6508,6 +6543,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         // forecast moment. Burst checkbox swaps in the navy-band
         // potential level across flagged (rain-risk) hours.
         var MS = {map_series_js};
+        var NEAR_LABEL = {json.dumps(" (" + _near_term_label(forecast) + ")")};
         var tSlider = document.getElementById('time-slider-input');
         var tLabel = document.getElementById('time-slider-value');
         var bToggle = document.getElementById('burst-potential-toggle');
@@ -6567,7 +6603,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             + (burst ? ' \u2014 BURST POTENTIAL' : '')
             + (pt.b && !burst ? ' (rain-risk hour)' : '')
             + (pt.u ? ' \u2014 RAIN FORECAST UNAVAILABLE: tide-only, not a flood forecast' : '')
-            + (pt.o ? ' (7-day outlook guidance)' : ' (observed-surge persistence)');
+            + (pt.o ? ' (7-day outlook guidance)' : NEAR_LABEL);
           rerender();
         }}
         function jumpTo(i) {{
@@ -6761,7 +6797,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
   <section class="{container_class}">
     <{hh}>Flood Map Forecast</{hh}>
     {intro_note}{toggle_html}{shading_html}
-    <p class="note">Near-term curve: observed-surge persistence. Later points use
+    <p class="note">Near-term curve: {_near_term_label(forecast)}. Later points use
     experimental outlook guidance; a change at the source boundary is not an observed jump.</p>
     {_render_input_health_html(forecast, scope="outlook")}
     <div class="map-wrap" style="position:relative">

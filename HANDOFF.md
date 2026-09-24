@@ -8,7 +8,7 @@
 Production forecaster for 342 Bay Ave, Highlands NJ. Sandy Hook + NWS +
 catchment MRMS; 18 landmarks; hourly site/JSON, ~10-minute nowcast, maps,
 per-tide pages, widget, ntfy/email/SMS. Real people receive alerts.
-Model **v0.10.5** (`model/v0.10.5.md`), promoted `4bb885e02`.
+Model **v0.10.6** (`model/v0.10.6.md`) on branch `v0.10.6-candidate` — CANDIDATE, not promoted; main runs v0.10.5 (`4bb885e02`).
 SMS = imminent impact; ntfy/email = longer-lead; alert tide horizon <=48 h.
 
 ## Post-close correction: seven-day plot

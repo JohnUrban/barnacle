@@ -38,7 +38,7 @@ SURGE_SNAP_MAX_AGE_H = 168.0        # a reading older than a week is never used
 # (history/scripts/pull_surge_forecast_test_data.py output), rounded.
 SURGE_MEAN_FALLBACK_FT = 0.54
 SURGE_MEAN_FALLBACK_NOTE = "trailing 365-d mean to 2026-09-22, +0.541 ft"
-SURGE_MEAN_OK_AGE_H = 72.0          # warm-job mean younger than this: ok
+SURGE_MEAN_OK_AGE_H = 7 * 24.0      # a 364-day mean barely moves in a week: ok up to 7 d
 SURGE_MEAN_MAX_AGE_D = 45.0         # older than this: fall back to the constant
 
 RUNGS = ("fresh", "stale-download", "stale-state", "typical-offset")

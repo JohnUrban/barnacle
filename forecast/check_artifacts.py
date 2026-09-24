@@ -232,7 +232,7 @@ def validate_csv_semantics(path, relpath, now_utc=None):
                 failures.append(f"row {logical_row}: invalid confidence_level")
 
     elif relpath == "data/outlook_log.csv":
-        allowed_sources = {"nws_product", "nwps", "petss_mid", "persist_decay", "astro"}
+        allowed_sources = {"nws_product", "nwps", "petss_mid", "guidance_decay", "persist_decay", "astro"}
         allowed_prod = {"", "nws-coastal-flood-product", "surge-persistence",
                         "astronomical-only-degraded", "typical-offset-degraded"}
         allowed_rain = {"", "nws_grid", "nbm", "wpc_24h"}

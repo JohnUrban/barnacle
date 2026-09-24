@@ -237,6 +237,7 @@
     .catch(function() {});
   var DATA = null, BASE = null, SERIES = null, startI = 0;
   var forecastPeak = null, proj = null, POT = null;
+  var NEAR_LABEL = " (observed surge, decaying toward the typical offset)";
   var thumbOn = true;
   try {
     thumbOn = localStorage.getItem("barnacle-town-thumb") !== "0";
@@ -814,7 +815,7 @@
     slider.value = (lvl + MLLW_OFF).toFixed(2);
     tLabel.textContent = p.time + extra
       + (p.rain_unknown ? " — RAIN FORECAST UNAVAILABLE: tide-only, not a flood forecast" : "")
-      + (p.outlook ? " (7-day outlook guidance)" : " (observed-surge persistence)");
+      + (p.outlook ? " (7-day outlook guidance)" : NEAR_LABEL);
   }
   function jumpTo(pred) {
     if (!SERIES || !SERIES.length) return;
@@ -902,6 +903,12 @@
     .then(function(r) { return r.json(); })
     .then(function(f) {
       forecastPeak = f.peak_forecast_observed_mllw || null;
+      var wsi = f.water_series_input || {};
+      NEAR_LABEL = wsi.source === "typical-offset"
+        ? " (astronomy + the typical surge offset: no usable surge reading)"
+        : ((wsi.decay || {}).rung === "stale-download" || (wsi.decay || {}).rung === "stale-state")
+          ? " (an older observed surge reading, decaying toward the typical offset)"
+          : " (observed surge, decaying toward the typical offset)";
       var bad = Object.keys(f.input_health || {}).filter(function(k) {
         return f.input_health[k].status !== "ok";
       });

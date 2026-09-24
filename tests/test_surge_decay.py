@@ -92,7 +92,7 @@ class MeanTests(unittest.TestCase):
     def test_age_gate_and_fallback(self):
         m, src, h = sd.resolve_mean(T0, self.rec())
         self.assertEqual((m, h["status"]), (0.53, "ok"))
-        m, src, h = sd.resolve_mean(T0, self.rec(computed_utc="2026-09-18T00:00:00Z"))
+        m, src, h = sd.resolve_mean(T0, self.rec(computed_utc="2026-09-10T00:00:00Z"))
         self.assertEqual((m, h["status"]), (0.53, "degraded"))
         for bad in (None, {"mean_ft": "x"}, self.rec(n_hours=100), self.rec(mean_ft=7.0),
                     self.rec(computed_utc="2026-07-01T00:00:00Z")):
@@ -196,3 +196,131 @@ class OutlookRungTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def srcs_hour(stamp):
+    return outlook._utc(stamp).replace(minute=0, second=0, microsecond=0)
+
+
+class HourlyEstimatorTests(unittest.TestCase):
+    """v0.10.6 checklist items 1-4: one estimator for the chart line and the table."""
+
+    def _ol(self, **kw):
+        try:
+            from tests import test_outlook as to
+        except ImportError:
+            import test_outlook as to
+        return to, to._build(**kw)
+
+    def test_line_and_table_agree_at_every_tide(self):
+        to, ol = self._ol()
+        S = {p["time"][:13]: p for p in ol["series"]}
+        for t in ol["tides"]:
+            p = S.get(t["time"][:13])
+            if p is None or t["outlook_source"] not in ("guidance_decay",):
+                continue
+            # one estimator: the table evaluates it at the tide's minute, the line on
+            # the hour; they may differ only by <= 1 h of decay (and 0.01 ft rounding)
+            line = p["tide_navd88"] - ff.LOCAL_ENHANCEMENT_FT - ff.MLLW_TO_NAVD88_OFFSET - p["astro_mllw"]
+            table = t["outlook_mllw"] - t["astro_mllw"]
+            self.assertLessEqual(abs(table - line), abs(line) * (1 - math.exp(-1 / 36)) + 0.011)
+
+    def test_sources_in_order_and_petss_used_hourly(self):
+        to, ol = self._ol()
+        order = ["observed_decay", "nws_product", "nwps", "petss_hourly", "guidance_decay"]
+        seen = []
+        for p in ol["series"]:
+            if not seen or seen[-1] != p["surge_source"]:
+                seen.append(p["surge_source"])
+        self.assertIn("petss_hourly", seen)
+        self.assertEqual(seen[-1], "guidance_decay")
+        ranks = [order.index(x) for x in seen if x in order and x not in ("nws_product", "nwps")]
+        self.assertEqual(ranks, sorted(ranks))                           # never back to an earlier source
+        # P-ETSS fills exactly the hours the gauge forecast does not cover, out to 102 h
+        nwps_hours = {srcs_hour(q["utc"]) for q in to._fixture_data()["nwps"]["series"]}
+        petss = [p for p in ol["series"] if p["surge_source"] == "petss_hourly"]
+        self.assertTrue(petss)
+        for p in petss:
+            self.assertLessEqual(p["lead_h"], 102)
+            self.assertTrue(srcs_hour(p["utc"]) not in nwps_hours or p["lead_h"] > 72)
+
+    def test_decay_starts_from_the_last_guidance_value_without_smoothing(self):
+        to, ol = self._ol()
+        S = ol["series"]
+        i = next(k for k, p in enumerate(S) if p["surge_source"] == "guidance_decay" and k > 0)
+        last_g, first_d = S[i - 1], S[i]
+        sg = lambda p: p["tide_navd88"] - ff.LOCAL_ENHANCEMENT_FT - ff.MLLW_TO_NAVD88_OFFSET - p["astro_mllw"]
+        # one hour of decay toward the mean (0.0 in this fixture build), no blending
+        self.assertAlmostEqual(sg(first_d), sg(last_g) * math.exp(-1 / 36), delta=0.01)
+
+    def test_advisory_corrections_are_reported_and_chart_draws_sources(self):
+        from forecast import outlook_page
+        import re
+        to, ol = self._ol()
+        self.assertTrue(ol["assumptions"]["advisory_corrections"])
+        html = outlook_page._chart(ol)
+        D = json.loads(re.search(r"var D = (\{.*?\});", html, re.S).group(1))
+        self.assertEqual([r["src"] for r in D["runs"]][-1], "guidance_decay")
+        self.assertTrue(any(v is not None for v in D["advisory"]))
+        self.assertIn("A step at a boundary is a change of source", html)
+
+    def test_no_guidance_matches_the_production_rule(self):
+        to, _ = self._ol()
+        data = to._fixture_data(); data["nwps"] = None; data["petss"] = None
+        obs = (1.8, to.NOW - dt.timedelta(minutes=20))
+        est = outlook.hourly_surge_estimator(to.NOW, data, [], 0.54, obs)
+        prod = sd.SurgeAnchor("fresh", 0.54, "m", 1.8, obs[1])
+        for h in (1, 12, 30, 100):
+            t = to.NOW + dt.timedelta(hours=h)
+            s, src = est(t)
+            self.assertEqual(src, "observed_decay")
+            self.assertAlmostEqual(s, prod.at(t), places=9)
+
+
+class SourceExpiryTests(unittest.TestCase):
+    """Checklist item 4/6: expired or missing sources fall to the next rung,
+    visibly, and the tail decays from whatever guidance was last available."""
+
+    def _est(self, drop):
+        try:
+            from tests import test_outlook as to
+        except ImportError:
+            import test_outlook as to
+        data = to._fixture_data()
+        for k in drop:
+            data[k] = None
+        return to, data, outlook.hourly_surge_estimator(to.NOW, data, [], 0.54, (1.8, to.NOW))
+
+    def test_no_gauge_forecast_uses_petss_from_the_start(self):
+        to, data, est = self._est(["nwps"])
+        s, src = est(to.NOW + dt.timedelta(hours=5))
+        self.assertEqual(src, "petss_hourly")
+
+    def test_no_petss_decays_from_the_last_gauge_hour(self):
+        to, data, est = self._est(["petss"])
+        last = max(outlook._utc(p["utc"]) for p in data["nwps"]["series"])
+        s_last, src_last = est(last)
+        self.assertIn(src_last, ("nwps", "nws_product"))
+        s, src = est(last + dt.timedelta(hours=10))
+        self.assertEqual(src, "guidance_decay")
+        self.assertAlmostEqual(s, 0.54 + (s_last - 0.54) * math.exp(-10 / 36), places=9)
+
+    def test_nothing_but_the_reading(self):
+        to, data, est = self._est(["nwps", "petss"])
+        self.assertEqual(est(to.NOW + dt.timedelta(hours=50))[1], "observed_decay")
+        est0 = outlook.hourly_surge_estimator(to.NOW, data, [], 0.54, None)
+        self.assertEqual(est0(to.NOW + dt.timedelta(hours=50)), (0.54, "typical_offset"))
+
+
+class GoldenTests(unittest.TestCase):
+    """Rule 5 class (a): the v0.10.6 formula change carries a NEW replay golden."""
+
+    def test_v0_10_6_golden_reproduces(self):
+        import importlib.util
+        from pathlib import Path
+        path = Path(__file__).resolve().parents[1] / "history" / "scripts" / "reproduce_v0_10_6.py"
+        spec = importlib.util.spec_from_file_location("reproduce_v0_10_6", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        golden = mod.verify()
+        self.assertEqual(golden["constants"]["tau_h"], 36.0)
