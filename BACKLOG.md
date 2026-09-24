@@ -95,16 +95,16 @@ looks stale, trust this file. Ledger lines are append-only:
       guidance, low-tide/plug/underprediction and rain checks. Production stays
       v0.10.6; no displayed or alert wind term, no automatic promotion. Any live
       adoption needs separate version/replays/review and John DECISION.
-- [ ] **Social offline rehearsal — findings CLOSED; owner choices next.**
-      Codex doc 17 on local `plan/social-broadcast` at 76ca46b4e independently
-      verifies Tern 310404834: S1–S6 plus R1/R2/C1 resolved; 384 tests/gate,
-      71 gallery cases/0 failures, counterfactual counts reproduced. Stacked
-      layout ready for owner review. Doc 17 recommends grouped wording,
-      tide/rain expiry policy with separate radar freshness, and initial
-      inherited base eligibility. These are proposals, not owner approvals.
-      Landscape legend/marker polish only if selected; no required repair
-      round remains for reviewed findings. No production merge or posting.
-      Report/probes: sibling barnacle-social-plan/history/plans/2026-09-24-social-broadcast/.
+- [ ] **Social offline rehearsal — new owner scope (doc 18).** Previous
+      technical findings closed in doc 17; expanded work is not launch-ready.
+      John accepts stacked with aligned map/chart edges and inherited alert
+      eligibility. Wording and expiry remain undecided. Tern next: add bounded
+      lower/downtown Highlands street-depth view, same selected level/evidence
+      and palette; streets only, label rain extrapolation as approximate.
+      Depersonalize social copy: Bay/Central focus, no house number/residence
+      framing; preserve internal model/landmark data. Prepare revised wording
+      retaining useful depth. No provider integration or posting. Brief in
+      sibling social branch history/plans/2026-09-24-social-broadcast/18-owner-downtown-and-wording.md.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -658,3 +658,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | OPEN | as-issued-validation-handoff | John requested resuming accepted v0.10.6 items 2/5. Codex prepared history/plans/2026-09-24-as-issued-validation-handoff.md and reproducible readiness census: 12 v0.10.6 input records from 05:46:59Z to 16:14:12Z, 10.454 h, no nonzero advisory anchors. Separate offline advisory ablation and street rain/tide evaluation; first prove replay/observation eligibility, commit method before scoring, preserve prior evidence corrections, propose logging repairs if needed. No production change, wind-trial change or skill claim [VERIFIED/STATED: census and owner request]
 2026-09-24 | FACT | social-stage-b-round15-review | Codex verified Tern 6955519bb on separate local branch; review committed a716b2b60. S1–S6 resolved, 376 tests pass, gate clean, full gallery 71 cases/0 failures and counterfactual 59 posts reproduced. Radar map peak/bounds R1 and conditional timing R2 remain; text-checksum validation C1 recommended. No production implementation or posting; Tern can repair without new owner decisions [VERIFIED: sibling social branch doc 15 and probes]
 2026-09-24 | DONE | social-stage-b-repair-closeout | Codex independently verified Tern 310404834 in sibling social doc 17, commit 76ca46b4e (local branch): all reviewed findings closed, 384 tests/gate and 71-case gallery pass. Stacked gallery ready for owner wording/layout/expiry/pilot-policy choices; landscape marker occlusion noted if that option is selected. Recommendations are not approvals; no production integration, provider connection or posting [VERIFIED: doc 17 and probes]
+2026-09-24 | DECISION | social-owner-direction-round18 | John: stacked accepted with aligned map/chart edges; accepts existing alert eligibility; wording package and queued-post expiry not approved. Requires lower/downtown Highlands street-only view (Shore Drive to bay, Henry Hudson Trail/Seastreak area through Highlands Bridge), same depth palette/event state, with social presentation centered on Bay/Central rather than residence/address. Codex recorded doc 18 for Tern offline prototypes and clarified generic proposed titles lose useful depth; spatial rain extrapolation remains approximate. No production changes or launch [STATED/VERIFIED: owner session and town-map source]
