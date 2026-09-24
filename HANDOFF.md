@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 14:34 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 15:55 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -45,17 +45,16 @@ tails/advisory corrections remain experimental. As-issued rain skill is not
 established: five observed-reference events tie; Oct30 reconstruction is not
 observed validation; Sep13 partial QPF is sensitivity only.
 
-## Deferred validation — Heron repair round required
+## Deferred validation — Heron repairs returned for Codex recheck
 
-Codex reviewed `research/as-issued-validation` at `292cb3188` independently.
-Audit `audits/2026-09-24-a4/01-as-issued-validation-codex.md` OPEN, full branch
-held for R1–R5: replay admission, advisory correction/phase verification,
-observation bounds/refinements, threshold boundary semantics, report claims.
-2,688 generations, 804 advisory pairs and 231 street pairs reproduce; no
-confirmatory skill evidence yet. 359 tests pass (one expected skip), gate clean.
-Archive-only logging repairs are useful and isolated; retain them. No model,
-alert, ledger or frozen-wind changes from review. Heron replies/repairs next,
-then Codex rechecks before merge; no new owner decision required for repairs.
+Audit `audits/2026-09-24-a4` round 01 (Codex, `292cb3188`): R1–R5 confirmed
+and repaired by Heron — reply `audits/2026-09-24-a4/02-repairs-reply-heron.md`;
+branch `research/as-issued-validation` repairs `00875267d`, r2 outputs/report
+`9e3f833a3` (Amendment 2 stated as post-review, post-scoring; r1 kept).
+Verdicts still NOT YET EVALUABLE (evidence gap); dry-tidal point comparison
+now one event. Logging isolated: `logging/replay-provenance` `224c14dcd` off
+main (339 tests, gate clean). Next: Codex rechecks both branches; no merge,
+model, alert, ledger or frozen-wind change before that; no owner choice needed.
 
 ## Separate social planning
 
