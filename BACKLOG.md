@@ -71,15 +71,16 @@ looks stale, trust this file. Ledger lines are append-only:
       requires matched observations and issuance-time inputs; radar hindcasts
       and partial-input sensitivities remain separate. No production changes
       or edits to the now-frozen wind trial. Accepted release limits stand.
-      Codex audit `audits/2026-09-24-a4/01-as-issued-validation-codex.md`
-      reviewed Heron candidate `292cb3188`: OPEN, needs R1–R5 repair before
-      full merge (replay/correction admission, observation bounds/refinements,
-      threshold semantics and historical claims). Saved results reproduce;
-      not-yet-evaluable verdict stands. Archive logging patch is isolated and
-      useful. Heron reply/repair then independent recheck; no owner choice needed.
-      Heron round02 (audits/2026-09-24-a4/02-repairs-reply-heron.md): R1-R5 +
-      smaller items repaired on the branch (00875267d, r2 9e3f833a3); logging
-      isolated on logging/replay-provenance 224c14dcd. Codex recheck next.
+      Codex round03 (`audits/2026-09-24-a4/03-repairs-verification-codex.md`)
+      reviews Heron research 9e3f833a3 and logging 224c14dcd. R2–R4 and main
+      R5 corrections verified; R1 remains OPEN for matching combined-control
+      and finite/nonnegative input admission, plus R6 count/prose corrections.
+      235 total pairs = 224 primary + 11 sensitivity; no EXACT/NEAR. Saved
+      results reproduce; invalid-admission probes are synthetic, not live faults.
+      Research remains unmerged. Heron round04 repairs then independent review.
+      Logging-only schema-2 provenance patch integrated under existing archive
+      approval; QPF rates unchanged, no model/alert/frozen-wind changes. No new
+      owner choice needed. Scientific evaluation awaits informative events.
 - [x] **Wind research corrections — audit 2026-09-24-a2 CLOSED (2026-09-24).**
       Claude reply02 confirmed R1-R5 and repaired the studies in `142907573`.
       Codex round03 reproduces all three revised reports, verifies canonical
@@ -688,3 +689,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | FACT | social-codex-doc21-review | Codex reviewed Tern 26145cf03 and committed local review bf6a54273. 408 tests, gate, 72 cases and 14 delivery scenarios reproduce; accepts Tern L1–L4 corrections of Codex wording. OPEN R1–R3 cover incomplete town legend (51 cases), unavailable surface gray claim (synthetic), and incomplete two-image correction plan/demo; phone key/legend still tiny. Recorded expanded owner geography, retained official NJ boundary/source and coverage sketch. Tern reply/repair then independent recheck; social branch remains local-only, no live forecast/alert change [VERIFIED: sibling social doc 21 and probes]
 
 2026-09-24 | DECISION | social-owner-wording-round22 | John clarified targeted copy repairs, preserving Barnacle flood alert/FLOOD ALERT, concise all-caps impact leads and LIVE radar for active accelerated nowcast. Explicit above/below landmark references; no public 342/residence framing or EDT/EST suffix; AM/PM/date context retained and internal timestamps unchanged. Standard MLLW plus intersection-grate chart scales for offline review; maps show ground-relative depth, not grate-relative town depth. Codex doc 22 (local social commit f987e5597) supersedes conflicting earlier proposals and combines implementation with doc 21 repairs. Final strings/expiry and production adoption remain open; no live changes [STATED: owner session; sibling social doc 22]
+
+2026-09-24 | FACT | as-issued-validation-a4-round03 | Codex independently reproduced Heron 9e3f833a3: 2688 inventory/1848 fidelity/804 advisory/235 street rows and reports; 224 street pairs primary, no EXACT/NEAR. R2–R4 and main R5 fixes accepted. R1 OPEN: combined-control mismatch, constant-rule tolerance and invalid/null/negative/non-finite inputs; R6 report counts/mean-vs-point prose. Real 37 replayable combined curves (2701 points) match controls. 377 research tests pass. Audit OPEN; Heron round04 prompt in audits/2026-09-24-a4/03-repairs-verification-codex.md. No scientific skill conclusion or evaluator merge [VERIFIED: round03 receipts]
+2026-09-24 | DONE | replay-archive-provenance-schema2 | Integrated Heron logging-only patch 224c14dcd after independent Codex a4 round03 review, under existing v0.10.6-items-2-and-5 archive approval. Logs QPF source issuance/retrieval/raw intervals, advisory issuance, truthful NWPS retrieval basis; schema1 remains valid. Capture status is not usable-input status. Seven differential QPF cases unchanged; 339 tests/gate pass; all seven frozen wind hashes unchanged. Archive-only repair, no model bump, forecast/alert/evaluator change [VERIFIED: audits/2026-09-24-a4/03-isolation.json and review]

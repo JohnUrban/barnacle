@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 16:41 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 16:56 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -45,16 +45,18 @@ tails/advisory corrections remain experimental. As-issued rain skill is not
 established: five observed-reference events tie; Oct30 reconstruction is not
 observed validation; Sep13 partial QPF is sensitivity only.
 
-## Deferred validation — Heron repairs returned for Codex recheck
+## Deferred validation — Heron round 04 needed; logging integrated
 
-Audit `audits/2026-09-24-a4` round 01 (Codex, `292cb3188`): R1–R5 confirmed
-and repaired by Heron — reply `audits/2026-09-24-a4/02-repairs-reply-heron.md`;
-branch `research/as-issued-validation` repairs `00875267d`, r2 outputs/report
-`9e3f833a3` (Amendment 2 stated as post-review, post-scoring; r1 kept).
-Verdicts still NOT YET EVALUABLE (evidence gap); dry-tidal point comparison
-now one event. Logging isolated: `logging/replay-provenance` `224c14dcd` off
-main (339 tests, gate clean). Next: Codex rechecks both branches; no merge,
-model, alert, ledger or frozen-wind change before that; no owner choice needed.
+Codex audit a4 round 03 independently reviewed research `9e3f833a3` and logging
+`224c14dcd`: research OPEN, R1 incomplete combined-control/finite-input admission;
+R6 report count/prose corrections. R2–R4 and material R5 repairs verified.
+All retained results reproduce: 804 ZERO advisory pairs; 235 street pairs,
+224 primary, no EXACT/NEAR. Both science questions remain NOT YET EVALUABLE.
+Report/prompt: `audits/2026-09-24-a4/03-repairs-verification-codex.md`.
+Research stays unmerged. Logging-only schema-2 patch integrated under existing
+items-2/5 archive approval; rates unchanged, seven frozen wind hashes unchanged.
+Research 377 tests and logging 339 pass (one expected local-data skip each).
+Heron finishes R1/R6 and returns round 04; no owner choice needed.
 
 ## Separate social rehearsal — Tern repair/expanded map pass next
 

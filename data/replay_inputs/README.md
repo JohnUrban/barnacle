@@ -15,3 +15,11 @@ Purpose: future raw-vs-corrected high/mid/low-tide scoring and rain-flood
 replays. Collection does not itself validate the advisory adjustments or
 establish multi-event as-issued flood skill. Owner decisions and review:
 `BACKLOG.md` items2/5 and `audits/2026-09-24-a1/`.
+
+Schema 2 (2026-09-24; Heron archive-only repair, independently reviewed in
+[audit a4 round 03](../../audits/2026-09-24-a4/03-repairs-verification-codex.md)): `qpf_source`
+(grid updateTime, retrieval time, unit, raw validTime/mm intervals),
+`advisory.issued_utc`, and `nwps.retrieved_basis`; the NWPS retrieval is
+never replaced by the generation time. `qpf_source.status` is a capture
+status, not QPF usability (read that from `qpf_hourly` and `unavailable`). The half-hourly core line of the same
+generation is in the published docs/forecast.json blob (join by generated_utc).

@@ -218,7 +218,7 @@ _LAST_SURGE_OBSERVATION_META = {
     "age_min": None,
 }
 # v0.10.6 replay archive: raw inputs captured during build_forecast for main()
-_LAST_REPLAY_INPUTS = {"outlook_data": None, "outlook_health": None, "qpf_hourly": None}
+_LAST_REPLAY_INPUTS = {"outlook_data": None, "outlook_health": None, "qpf_hourly": None, "qpf_meta": None}
 # v0.10.6: the latest computable reading, fresh or not: (surge_ft, obs_utc).
 _LAST_SURGE_READING = {"reading": None}
 SURGE_STATE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -1648,7 +1648,13 @@ def fetch_nws_qpf():
     Returns list of (bucket_start_utc_datetime, rate_in_per_hr),
     hour-aligned, sorted. ``None`` on fetch/parse failure or when no usable
     forecast buckets remain.
+
+    Provenance for the replay archive only (as-issued validation logging
+    repair, 2026-09-24): the grid's updateTime, the retrieval time and the
+    raw intervals (validTime, mm) are left in _LAST_REPLAY_INPUTS["qpf_meta"].
+    The returned rates are unchanged.
     """
+    _LAST_REPLAY_INPUTS["qpf_meta"] = {"status": "unavailable", "reason": "fetch failed"}
     try:
         pts = _get(f"https://api.weather.gov/points/{HIGHLANDS_LAT},{HIGHLANDS_LON}")
         grid_url = pts["properties"]["forecastGridData"]
@@ -1656,6 +1662,14 @@ def fetch_nws_qpf():
         values = grid["properties"]["quantitativePrecipitation"]["values"]
     except Exception:
         return None
+    try:
+        _LAST_REPLAY_INPUTS["qpf_meta"] = {
+            "status": "ok", "grid_update_time": grid["properties"].get("updateTime"),
+            "retrieved_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "uom": grid["properties"]["quantitativePrecipitation"].get("uom"),
+            "intervals": [[v.get("validTime"), v.get("value")] for v in values]}
+    except Exception:  # provenance only: never affects the rates
+        _LAST_REPLAY_INPUTS["qpf_meta"] = {"status": "unavailable", "reason": "provenance not parsable"}
     out = []
     for v in values:
         try:
@@ -7955,7 +7969,8 @@ def _main_core(holder):
     try:
         _replay_archive.append(_replay_archive.build_record(
             forecast, _LAST_REPLAY_INPUTS.get("outlook_data"),
-            _LAST_REPLAY_INPUTS.get("outlook_health"), _LAST_REPLAY_INPUTS.get("qpf_hourly")))
+            _LAST_REPLAY_INPUTS.get("outlook_health"), _LAST_REPLAY_INPUTS.get("qpf_hourly"),
+            qpf_meta=_LAST_REPLAY_INPUTS.get("qpf_meta")))
     except Exception as e:
         print(f"WARNING: replay archive not written: {e}", flush=True)
         forecast.setdefault("input_health", {})["outlook_replay_archive"] = {
