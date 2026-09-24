@@ -1,0 +1,43 @@
+{
+  "candidate_commit": "fe7e1ebc9",
+  "candidate_id": "wind-shadow-c2",
+  "reviewer": "Codex",
+  "review_date_station": "2026-09-24",
+  "verdict": "HOLD merge; audit OPEN",
+  "freeze_hashes_match": {
+    "models/wind_shadow/manifest.json": true,
+    "models/wind_shadow/DESIGN.md": true,
+    "forecast/wind_shadow.py": true,
+    "history/scripts/evaluate_wind_shadow.py": true,
+    "history/scripts/fit_wind_shadow_c2.py": true
+  },
+  "full_suite": {
+    "tests": 322,
+    "passed": true,
+    "skipped": 1,
+    "skip": "official trial log absent",
+    "required_grib_decoder": true,
+    "python": "3.14.7 (/Users/johnurban/.barnacle/venv/bin/python)",
+    "initial_scratch_failure": "Incomplete mirror lacked model/bin/assets; supplied and full suite rerun successfully."
+  },
+  "production_core_ast_equal_except_holder": true,
+  "candidate_artifact_gate": "clean before adverse probes",
+  "independent_evidence": [
+    "round03-fit-results.json",
+    "round03-boundary-results.json"
+  ],
+  "author_probes_rerun": "round03-author-probes.json",
+  "real_official_records_written": 0,
+  "live_network_calls": 0,
+  "candidate_code_edited": false,
+  "reproduction_scripts": [
+    "verify_c2_fit_codex.py",
+    "verify_c2_boundaries_codex.py"
+  ],
+  "not_verified": [
+    "Historical per-cycle forecast availability",
+    "Original deleted c1 smoke-test bytes",
+    "NDFD coastal mapping experiment",
+    "Prospective forecast skill"
+  ]
+}

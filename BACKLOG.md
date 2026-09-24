@@ -69,19 +69,20 @@ looks stale, trust this file. Ledger lines are append-only:
       wind term or live-skill approval. Report `audits/2026-09-24-a2/03-close-out-codex.md`.
 - [ ] **Open-Meteo wind/pressure SHADOW candidate — HOLD before merge (2026-09-24).**
       John approved development and shadow collection (`wind-shadow-open-meteo`);
-      feed choice is settled. Claude built `wind-shadow` at `d82a82970`.
-      Independent audit `audits/2026-09-24-a3/01-wind-shadow-candidate-review-codex.md`
-      is OPEN: R1–R8 need reply/repair and re-review before the first official
-      record. Fit/route/raw hashes reproduce and 310 tests pass, but episode/end
-      rules, insufficient-evidence PASS, timeout/QC accounting, missing required
-      comparators/rain evaluation, mean construction/provenance, frozen identity,
-      publish-gate isolation and offline collection boundaries need correction.
-      The approved plan also misstated the production mean window; correct it
-      with the fit, not only the implementation. No trial record or merge by
-      Codex. Before collection update the freeze; afterward changes need a new
-      candidate identity/period. Keep >=60 days AND >=5 eligible completed storms,
-      paired production/NWS/P-ETSS and rain checks, no production forecast/alert
-      effects. Separate model promotion/version/replays/John DECISION still required.
+      feed choice is settled. Claude repaired `wind-shadow` at `fe7e1ebc9`,
+      retiring c1 and freezing c2. Codex round03 independently reproduces all
+      48 refits, five dataset hashes and 322 tests; episode/sparse-evidence,
+      timeout, QC and mean-window repairs verify. Audit a3 remains OPEN:
+      production gate still crashes on non-object shadow JSON; freeze is not
+      enforced before collection/scoring; rain replay discards initial storage;
+      NWS comparison includes Barnacle fallback; availability/raw-provenance
+      gaps and opt-in dry-run collection remain. Primary report:
+      `audits/2026-09-24-a3/03-c2-verification-codex.md` (Claude reply04 next).
+      No official c2 record or merge by Codex. Before collection update the
+      freeze; afterward changes need a new identity/period. Keep >=60 days AND
+      >=5 eligible scored completed storms, paired production/guidance and rain
+      checks, no production forecast/alert effects. Separate model promotion,
+      version/replays and John DECISION remain required.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -602,3 +603,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 
 2026-09-24 | OPEN | wind-shadow-c1-review-a3 | Codex independent review of d82a82970: HOLD before merge/collection. All 48 coefficient vectors reproduce within rounding, 698 raw run hashes and 42,578 extracted rows verify, all 5 freeze hashes match, 310 decoder-required tests and gate pass. R1-R8 demonstrate incorrect gap/endpoint rules and insufficient-evidence FINAL PASS, timeout/QC/denominator gaps, missing approved comparator/rain evaluation, baseline/training/provenance mismatches (including an inaccurate prior plan description), missing freeze enforcement, shared publish-gate coupling and offline writes. Candidate untouched; no official record written. Report audits/2026-09-24-a3/01-wind-shadow-candidate-review-codex.md; independent Claude reply required [VERIFIED]
 2026-09-24 | DONE | wind-shadow-a3-round02 | Claude confirmed and repaired audit 2026-09-24-a3 R1-R8 on branch wind-shadow fe7e1ebc9 (not merged): c1 RETIRED before any official record, candidate wind-shadow-c2; strict consecutive-valid episodes with actual completion time, FINAL needs coverage >= 0.80 and >= 5 scorable episodes; pre-network baseline (timeouts keep it); strict observation QC; production-curve, NWS/P-ETSS, per-episode, continuity and rain-tank comparisons; production mean replay corrected (0.0055/0.021 ft vs c1); pressure window 720 h, flags, compact provenance; run used only if confirmed available by issuance; identity binding + FREEZE CI check; shadow log out of the fatal gate, quarantine; opt-in collection (production workflow only). Smoke tests: two local c1 records deleted by Claude's cleanup, identified and reconstructed (SMOKE_TESTS.md), excluded. Reply audits/2026-09-24-a3/02-repairs-reply-claude.md; independent verification owed before merge [VERIFIED: branch commit, round02-repairs-results.json]
+
+2026-09-24 | OPEN | wind-shadow-c2-review-a3-round03 | Codex independently verified fe7e1ebc9: all 48 refits/sample counts/rounded MAEs, five dataset hashes, 698 raw runs and 322 tests pass; R1/R2 and mean-policy repairs confirmed. HOLD remains for R3/R5/R6/R7/R8: actual gate CLI crashes on []/null shadow rows; altered manifest logs as official and changed evaluator still scores; rain restarts empty and misses archived prior rain; Barnacle decay counts as NWS coverage; remaining availability/QC/raw retention gaps; no-send/dry-run invoke shadow when trial env is set. All adverse probes isolated with mocked network, no live trial record or candidate mutation. Report audits/2026-09-24-a3/03-c2-verification-codex.md; Claude reply04 and repairs next. Earlier round02 claims are superseded where this independent evidence demonstrates remaining gaps [VERIFIED]
