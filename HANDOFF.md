@@ -11,7 +11,7 @@ best-effort ~10-minute nowcast, town map, per-tide pages, widget, ntfy/email/SMS
 Model **v0.10.4** (`model/v0.10.4.md`). Real people receive alerts. SMS is fresh imminent impact;
 ntfy/email are longer-lead watches. Core alert tide horizon remains <=48 h.
 
-## Immediate: recovery implemented; Claude review next; v0.10.5 HOLD
+## Immediate: recovery reviewed (PASS + F1); v0.10.5 HOLD
 
 John noticed the uniformly raised widget/site curve and authorized Codex's
 selective recovery plan. Report + evidence:
@@ -48,10 +48,11 @@ All original ledger bytes preserved; normal generation appends retained.
 First recovery CI failed a missing HANDOFF spec link (Codex omission after
 local tests); link restored. Production artifact deployment was unaffected.
 
-Next: Claude independently reviews Codex's new patch, especially missing-surge
-handling, scoped health, every consumer, percentile fix and generated artifacts.
-Codex's author verification is not independent approval. Then John's explicit
-promotion DECISION before atomic class-(b) spec/archive/code/log-doc bump.
+06 Claude (Opus 5.5) reviewed the recovery: PASS as restoration, one finding
+F1 = missing observed surge now yields NO curve/tank (pre-today: tank on
+astronomy, degraded). John chooses (a) keep or (b) labeled astronomy-only
+curve (reviewer recommends b). Then John's promotion DECISION before the
+atomic class-(b) spec/archive/code/log-doc bump.
 The 20:09Z Python-3.11 failed publish stays honestly recorded.
 
 ## Live advisory / scientific limits
