@@ -8,17 +8,21 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **v0.10.6 candidate review HOLD (Codex, 2026-09-24).** Reviewed
-      `ba57f53d5`; 290 tests, gate and all three replays pass, but six findings
-      remain: outage table/curve disagreement, source/spec mislabeling,
-      mixed-version skill scores, malformed mean timestamp abort, selected-state
-      provenance/health, and incomplete low-tide/compound evidence. Report:
-      `audits/2026-09-24-a1/01-v0.10.6-candidate-review-codex.md` with probes.
-      Claude reply/repairs required; main stays v0.10.5. Item 2: recommend
-      temporary experimental correction retention with prospective logging;
-      item 5: use partial archived QPF + wet sensitivity checks, then consider
-      a narrower deferral and archive full issuance inputs. Neither is a
-      recorded owner waiver or promotion DECISION yet.
+- [ ] **v0.10.6 candidate review HOLD — narrow R6 evidence corrections
+      (Codex round 03, 2026-09-24).** Independently verified `b95b29829`,
+      including `ce2f898c8`: R1-R5 resolved; 298 tests, gate and three
+      frozen replays pass; both candidate charts render. Low-tide and
+      bounded rain calculations reproduce. Remaining R6: missing archived
+      rain cannot establish an ~8-inch forecast miss; event peak references
+      need correct provenance (including Oct30, July6 and Aug7); controlled
+      cases grouped by center-time bay are not all unchanged. Report/probe:
+      `audits/2026-09-24-a1/03-repair-verification-codex.md`.
+      Keep verified runtime changes. Claude corrects research/spec claims,
+      then focused verification. John's items-2/5 decision IS recorded:
+      experimental corrections + prospective archive, only residual
+      multi-event as-issued skill deferred. No repeated waiver needed.
+      Promotion DECISION and post-merge regeneration/deployment checks
+      remain owed; main stays v0.10.5, audit OPEN.
 
 - [x] **Seven-day top chart rendering regression (2026-09-23, post-close).**
       John's report confirmed an unescaped apostrophe in generated JavaScript,
@@ -556,3 +560,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | DECISION | v0.10.6-items-2-and-5 | John (00:31 EDT): "Codex finished and discussed it with me. I will go with Codex's recommendations on items 2 and 5." = item 2: retain the NWS advisory corrections as explicitly EXPERIMENTAL, with prospective logging of raw hourly NWPS, advisory rows, astronomy and corrected output (issuance/retrieval/target times, model version) for high/mid/low-tide scoring; item 5: a bounded comparison with what exists (low-tide score, controlled wet scenarios, archived event windows) PLUS a prospective replay-input archive, accepting only the remaining multi-event as-issued skill limitation. Not a promotion decision [STATED: John in session; recommendations in audits/2026-09-24-a1/01]
 2026-09-24 | DONE | v0.10.6-round02-repairs | branch v0.10.6-candidate ce2f898c8: R1 (table uses the one estimator on every fallback rung, decay from the reading's time), R2 (assumed rungs triangles, texts/spec corrected, markers snap to nearest and say so), R3 (FORMULA_SINCE cohorts in shadow scoring), R4 (naive/malformed mean falls back through the whole build; warm job refuses non-finite means), R5 (provenance = reading used, live_fetch kept, surge_state health incl. write failures), R6 (low-tide view; bounded rain comparison: controlled scenarios, 6 measured events, Sep 13 as issued; exploratory rising-surge check). Items 2/5: data/replay_inputs archive (forecast/replay_archive.py). On six measured rain floods with MRMS rain the constant rule did slightly better (bay 0.46 vs 0.53 ft, tank peak 2.0 vs 2.1 in; one building compound storm); history over ~13,900 rising-surge readings still favors decay. 298 tests, three replays, gate. Reply audits/2026-09-24-a1/02-repairs-reply-claude.md. Independent verification + DECISION owed [VERIFIED: branch commit, history/reports/2026-09-24-v0.10.6-rain-comparison.txt]
 2026-09-24 | FACT | oct30-peak-is-a-reconstruction | John (00:49): the 2025-10-30 peak (+20.8 in over the SW grate, 5.25 NAVD88) has no tape measurement. It is a 1:1 tide-decay extrapolation from one photo anchor (~4.66 NAVD88 at 15:41, +13.5 in, a true lower bound); the event file's "lower bound" label is inverted (slower/lagged recession at the house means a LOWER peak; faster rain drainage a higher one). Corrected append-only: event README addendum, labeled_observations ERRATUM row, v0.10.6 reply addendum and spec note. Consequence for the v0.10.6 rain comparison: the bay-error result is gauge-based and stands (decay under-predicted Oct 30's building bay by ~0.3 ft more); the tank-peak result depends on the unmeasured peak (decay closer only if the true peak was < ~15 in); on the five tape-measured events the two rules tie (bay 0.41 vs 0.42 ft, rain peak 1.34 vs 1.34 in). The 2026-09-23 retrospective's "+20.8 observed" (compound support above the plug) inherits the same caveat [VERIFIED: README reconstruction section, history/reports/2026-09-24-v0.10.6-rain-comparison.txt]
+
+2026-09-24 | FACT | v0.10.6-round03-verification | Codex independently verified b95b29829 including ce2f898c8: R1-R5 resolved, 298 tests with required decoder, artifact gate and v0.10.1/v0.10.3/v0.10.6 replays PASS; both candidate charts render; low-tide score and bounded rain calculations reproduce. R6 remains HOLD for evidence corrections: unarchived Sep13 rain zero-fill cannot establish an ~8-inch forecast miss (observed-bay result is 8.0 in, not 5.2-5.7); runnable study/spec must distinguish reconstructed/photo/observed peak references and honor July6 canonical bracket; center-time below-plug group includes -2.0-in changes. Keep runtime repairs. Prospective archive append/gate verified; first real committed record pending promotion. Items2/5 owner decision accepted, no repeated waiver needed; promotion DECISION and deployed close-out still owed. Report audits/2026-09-24-a1/03-repair-verification-codex.md with reproducible evidence [VERIFIED]

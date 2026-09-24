@@ -1,0 +1,244 @@
+{
+  "candidate": "b95b2982958d6fc676e79f64c240411069840441",
+  "outlook_fallback_comparisons": [
+    {
+      "case": "missing",
+      "time": "2026-09-23 18:19-04:00",
+      "table_mllw": 5.65,
+      "table_source": "typical_offset",
+      "estimator_at_same_tide_mllw": 5.65,
+      "estimator_source": "typical_offset",
+      "difference_ft": 0.0
+    },
+    {
+      "case": "stale-state",
+      "time": "2026-09-23 18:19-04:00",
+      "table_mllw": 6.73,
+      "table_source": "persist_decay",
+      "estimator_at_same_tide_mllw": 6.734,
+      "estimator_source": "observed_decay",
+      "difference_ft": 0.004
+    },
+    {
+      "case": "fresh-50-min-old",
+      "time": "2026-09-23 18:19-04:00",
+      "table_mllw": 7.04,
+      "table_source": "persist_decay",
+      "estimator_at_same_tide_mllw": 7.049,
+      "estimator_source": "observed_decay",
+      "difference_ft": 0.009
+    }
+  ],
+  "malformed_mean_whole_build": {
+    "built_with_water_series": true,
+    "health": {
+      "status": "degraded",
+      "detail": "malformed trailing-mean record; using the fallback constant"
+    }
+  },
+  "selected_state_provenance": {
+    "source": "surge-persistence",
+    "surge_ft": 1.4944,
+    "observation_time": "2026-09-23 06:13-04:00",
+    "age_min": 600.0,
+    "live_fetch": {
+      "observation_time": "2026-09-23 16:07-04:00",
+      "age_min": 90,
+      "status": "degraded",
+      "detail": "observation too old"
+    },
+    "status": "degraded",
+    "detail": "surge +1.80 ft from a reading 10 h ago, decaying toward the typical offset +0.54 ft (time constant 36 h)",
+    "decay": {
+      "rung": "stale-state",
+      "surge_obs_ft": 1.8,
+      "observation_utc": "2026-09-23T10:13:00Z",
+      "age_h": 10.0,
+      "mean_ft": 0.54,
+      "mean_source": "fallback constant (trailing 365-d mean to 2026-09-22, +0.541 ft)",
+      "tau_h": 36.0,
+      "surge_now_ft": 1.4944,
+      "label": "surge +1.80 ft from a reading 10 h ago, decaying toward the typical offset +0.54 ft (time constant 36 h)"
+    }
+  },
+  "surge_health_keys": [
+    "surge_mean",
+    "surge_state",
+    "surge_observation"
+  ],
+  "synthetic_mixed_version_score": {
+    "n": 1,
+    "n_obs": 1,
+    "n_forecasts": 1,
+    "mae_candidate": 4.0,
+    "mae_baseline": 1.0,
+    "verdict": "NOT YET (1/28 scored tides)"
+  },
+  "synthetic_tank_sensitivity": [
+    {
+      "constant_bay_navd88": 2.7,
+      "rain_in_hr": 0.3,
+      "duration_h": 3,
+      "peak_water_navd88": 4.048074,
+      "peak_inches_over_grate": 6.337
+    },
+    {
+      "constant_bay_navd88": 3.1,
+      "rain_in_hr": 0.3,
+      "duration_h": 3,
+      "peak_water_navd88": 4.14461,
+      "peak_inches_over_grate": 7.495
+    },
+    {
+      "constant_bay_navd88": 3.5,
+      "rain_in_hr": 0.3,
+      "duration_h": 3,
+      "peak_water_navd88": 4.320703,
+      "peak_inches_over_grate": 9.608
+    },
+    {
+      "constant_bay_navd88": 3.9,
+      "rain_in_hr": 0.3,
+      "duration_h": 3,
+      "peak_water_navd88": 4.350359,
+      "peak_inches_over_grate": 9.964
+    }
+  ],
+  "archived_issuance_rain": {
+    "commit": "3a6c96faf7ebbf98c3e69322948aa5c1ddbbcedc",
+    "generated_utc": "2026-09-13T03:14:36Z",
+    "windows": [
+      {
+        "tide": "2026-09-13 09:58",
+        "hourly_rates": [
+          {
+            "time": "2026-09-13T07:00:00-04:00",
+            "in_hr": 0.18333333333333335
+          },
+          {
+            "time": "2026-09-13T08:00:00-04:00",
+            "in_hr": 0.09166666666666667
+          },
+          {
+            "time": "2026-09-13T09:00:00-04:00",
+            "in_hr": 0.09166666666666667
+          },
+          {
+            "time": "2026-09-13T10:00:00-04:00",
+            "in_hr": 0.09166666666666667
+          },
+          {
+            "time": "2026-09-13T11:00:00-04:00",
+            "in_hr": 0.09166666666666667
+          },
+          {
+            "time": "2026-09-13T12:00:00-04:00",
+            "in_hr": 0.09166666666666667
+          }
+        ]
+      },
+      {
+        "tide": "2026-09-13 22:13",
+        "hourly_rates": [
+          {
+            "time": "2026-09-13T20:00:00-04:00",
+            "in_hr": 0.0
+          },
+          {
+            "time": "2026-09-13T21:00:00-04:00",
+            "in_hr": 0.0
+          },
+          {
+            "time": "2026-09-13T22:00:00-04:00",
+            "in_hr": 0.0
+          },
+          {
+            "time": "2026-09-13T23:00:00-04:00",
+            "in_hr": 0.0
+          },
+          {
+            "time": "2026-09-14T00:00:00-04:00",
+            "in_hr": 0.0
+          },
+          {
+            "time": "2026-09-14T01:00:00-04:00",
+            "in_hr": 0.0
+          }
+        ]
+      }
+    ]
+  },
+  "candidate_root": "/private/tmp/barnacle-v0106-r2",
+  "archive": {
+    "append_preserves_prefix": true,
+    "gate_accepts_record": true,
+    "raw_nwps_hours": 72,
+    "outlook_hours": 79,
+    "qpf_in_hr": 0.1235,
+    "unavailable": {
+      "nwps": "not fetched",
+      "qpf_hourly": "37 hourly buckets"
+    }
+  },
+  "rain_comparison": {
+    "parts_B_C_D_reproduce": true,
+    "five_other_events_as_coded": {
+      "baybias_v5": 0.411333,
+      "baybias_v6": 0.422667,
+      "err_v5": 1.34,
+      "err_v6": 1.34
+    },
+    "center_bay_below_3": {
+      "n": 45,
+      "unchanged_peaks": 42,
+      "minimum_peak_change_in": -2.0
+    },
+    "sep13_partial_input_result": {
+      "issued": "2026-09-13T03:14:36Z",
+      "qpf_hours_covered": [
+        "11:00Z",
+        "12:00Z",
+        "13:00Z",
+        "14:00Z",
+        "15:00Z",
+        "16:00Z"
+      ],
+      "reading_at_issuance": 0.5,
+      "mean": 0.54,
+      "observed bay": {
+        "bay_at_07Z_local_range": [
+          -1.54,
+          3.95
+        ],
+        "tank_peak_in": 8.0
+      },
+      "as-issued v0.10.3 curve": {
+        "bay_at_07Z_local_range": [
+          -1.87,
+          3.41
+        ],
+        "tank_peak_in": 5.7
+      },
+      "v0.10.5 constant": {
+        "bay_at_07Z_local_range": [
+          -1.86,
+          3.43
+        ],
+        "tank_peak_in": 5.2
+      },
+      "v0.10.6 decay": {
+        "bay_at_07Z_local_range": [
+          -1.85,
+          3.44
+        ],
+        "tank_peak_in": 5.4
+      },
+      "measured_peak_in": 13.7
+    },
+    "interpretation": "Not a complete as-issued flood-skill comparison; see round 03."
+  },
+  "oct30_ledger_correction": {
+    "prefix_preserved": true,
+    "lines_added": 1
+  }
+}
