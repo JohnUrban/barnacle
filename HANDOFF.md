@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 23:38 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 23:55 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. Attic is archival.
 
 ## System and current release
@@ -53,6 +53,16 @@ New formula/goldens, independent review + promotion DECISION required.
 Conditions-driven decay research remains separate, not validated by release audit.
 Compound/p90 scenarios, source skill, source seams and grid assumptions remain
 tracked scientific validation. No rain/tide retune in this correction.
+
+## Added v0.10.6 release scope (John, 23:55 EDT)
+
+Fold the seven-day curve review into Claude's current v0.10.6 work. Checklist:
+`history/plans/2026-09-23-v0.10.6-outlook-review.md`.
+Show source boundaries; review NWS product corrections at low tides, hourly
+P-ETSS use and the transition into mean-reverting decay. Check rain tank/maps
+and every affected surface. Resolve or record owner-approved deferrals before
+close-out; independent candidate review and promotion DECISION still required.
+This authorizes scope, not advance approval of an unseen implementation.
 
 ## Live advisory and operational residuals
 

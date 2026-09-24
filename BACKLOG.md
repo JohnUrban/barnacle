@@ -14,6 +14,15 @@ looks stale, trust this file. Ledger lines are append-only:
       now execute in a regression test. Report `audits/2026-09-23-a1/08-post-close-chart-rendering-fix-codex.md`.
       Forecast numbers unchanged; display-only correction, model stays v0.10.5.
 
+- [ ] **v0.10.6: SEVEN-DAY CURVE REVIEW (John, 2026-09-23 23:55).**
+      Fold source/assumption labeling, NWS high-tide correction review,
+      hourly P-ETSS use and guidance-to-decay transitions into the same bump.
+      Validate low tides, drain-band/rain tank effects and map/surface parity,
+      with independent candidate review and visual verification before close-out.
+      Resolve or obtain an explicit owner-approved deferral; a smooth graph
+      and passing release checks alone do not establish forecast accuracy.
+      Checklist: `history/plans/2026-09-23-v0.10.6-outlook-review.md`.
+
 - [ ] **v0.10.6: SURGE DECAY + MISSING-SURGE LADDER (owner decisions
       2026-09-23 22:55-23:15).** One formula for fresh and stale readings:
       mean + (s_obs - mean) * exp(-(t - t_obs)/tau), trailing-365-d mean,
@@ -526,3 +535,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-23 | DONE | outlook-chart-js-escaping | John reported blank continuous plot on seven-day page. Codex confirmed committed/public JS SyntaxError from unescaped apostrophe in burst label (introduced 017ab4a63), missed by prior JSON-only chart checks and release close-out. Double-quoted JS label; regenerated outlook from existing JSON; added Node VM execution test asserting both chart constructors/data. No model/numeric/ledger/alert changes. Round08 documents the audit miss without rewriting round07 [VERIFIED]
 2026-09-23 | FACT | surge-forcing-research-round-2 | archived FORECAST wind (Open-Meteo previous-runs, gfs_seamless and ecmwf_ifs025 at the station; values 24-48 h old at use, issued before the forecast time), fit 2024-02..2025-04, scored 2025-05..2026-09 (history/scripts/surge_forecast_wind_test.py, data via pull_surge_forecast_test_data.py). 24-h MAE: tau-36 decay 0.289 all / 0.274 plug / 0.477 storm starts -> forecast-wind term refit on GFS 0.237 / 0.228 / 0.355 (ECMWF same), vs observed-wind upper bound 0.228 / 0.210 / 0.327: ~85 % of the gain survives real forecasts; better at every lead 6-48 h in every view. Coefficients must be fitted on the forecast product used (station-anemometer coefficients transfer poorly to GFS). Predeclared criterion PASS. Build after v0.10.6 as its own version; live forecast source is an owner decision [VERIFIED: history/reports/2026-09-23-surge-forecast-wind-results.txt]
 2026-09-23 | OPEN | surge-wind-term | next version after v0.10.6: add a forecast-wind (+pressure) term to the decayed surge, coefficients fitted on the live forecast product. Owner decides the source: GFS via Open-Meteo (archived, easy), GFS from NOMADS, or the NWS grid wind already fetched (no easy archive; would need a shadow period to fit) [STATED]
+
+2026-09-23 | DECISION | v0.10.6-outlook-curve-scope | John asks to fold the seven-day curve recommendations into Claude's ongoing v0.10.6 work and its close-out review. Source/assumption visibility, NWS correction and hourly P-ETSS review, guidance-to-decay transition, all-hour/low-tide/rain-tank and surface checks belong in the candidate scope. Checklist history/plans/2026-09-23-v0.10.6-outlook-review.md; implementation/review scope authorized, not advance promotion approval [STATED: John in session]
