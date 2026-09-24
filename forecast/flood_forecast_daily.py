@@ -881,7 +881,7 @@ PREDICTIONS_LOG_FIELDS = [
     "regime_predicted",
     "cold_lockout",              # "true" | "false"
     "confidence_level",          # "high" | "medium" | "low" | ""
-    "model_version",             # as-run model spec version (currently v0.10.4)
+    "model_version",             # as-run model spec version (currently v0.10.5)
 ]
 
 DAY_RISK_LOG_PATH = os.path.join(_REPO_ROOT, "data", "day_risk_log.csv")
@@ -1089,7 +1089,7 @@ def update_forecast_accuracy():
     return _summarize_accuracy(last_n=30)
 
 
-CURRENT_MODEL_VERSION = "v0.10.4"
+CURRENT_MODEL_VERSION = "v0.10.5"
 FORECAST_SCHEMA_VERSION = "1.0"
 
 # v0.8 wind-direction sectors for the storm-bump adjustment. Sandy Hook

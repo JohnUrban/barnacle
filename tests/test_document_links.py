@@ -10,7 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 class DocumentationLinkTests(unittest.TestCase):
     def test_repaired_local_markdown_links_resolve(self):
         paths = [
-            ROOT / "model" / "v0.10.4.md",
+            ROOT / "model" / "v0.10.5.md",
+            ROOT / "model" / "archive" / "v0.10.4.md",
             ROOT / "model" / "archive" / "v0.10.3.md",
             ROOT / "model" / "archive" / "v0.10.1.md",
             ROOT / "model" / "archive" / "v0.10.2.md",

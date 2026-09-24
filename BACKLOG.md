@@ -8,17 +8,15 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **SELECTIVE RECOVERY — IMPLEMENTED, Claude review pending (2026-09-23).**
-      John authorized implementation after reviewing the plan. Production curve
-      restored to fresh observed-surge persistence; per-tide NWS products kept.
-      Missing observed surge gives no definite continuous/tank curve; new
-      water_series_input records provenance. Core/outlook health split is in
-      place with consumer warnings. Codex reviewed Claude round 04 and repaired
-      one remaining percentile admission issue. Round 05:
-      `audits/2026-09-23-a1/05-round04-review-and-recovery-codex.md`.
-      266 tests + frozen replays + gate pass. Next: Claude independently reviews
-      Codex's new patch; model promotion remains separate and on HOLD.
-
+- [ ] **v0.10.6: SURGE DECAY + MISSING-SURGE LADDER (owner decisions
+      2026-09-23 22:55-23:15).** One formula for fresh and stale readings:
+      mean + (s_obs - mean) * exp(-(t - t_obs)/tau), trailing-365-d mean,
+      tau ~36 h (measured in three views), age labels, snap to the mean with
+      "surge unavailable, using the typical offset". Class (a): new version,
+      new goldens, independent review + DECISION. Plan:
+      `history/plans/2026-09-23-surge-decay-plan.md`. Research next:
+      conditions-driven decay (historical Sandy Hook wind/pressure vs surge
+      persistence).
 - [ ] **UNVALIDATED ELEMENTS INTRODUCED 2026-09-23 (John: keep this list so we
       can return to it).** Each is labeled on its surface and none drives an
       alert; none is scored yet. (1) The compound burst scenario evaluated at
@@ -45,11 +43,12 @@ looks stale, trust this file. Ledger lines are append-only:
       preserved. Outlook page/maps show their failures; widget source unchanged.
       Existing site/widget differences in forecast scope remain explicit; no
       experimental compound scenario has been promoted into core/widget policy.
-- [ ] **Independent repo / v0.10.5 audit — HOLD, round 05.** Independent
-      verification of Claude's targeted round-04 repairs is recorded. Codex's
-      selective-recovery patch and one P-ETSS inversion fix need Claude's
-      independent review next; then John's promotion DECISION precedes the
-      atomic class-(b) bump. Code remains v0.10.4 (corrective rule-5(c) recovery).
+- [ ] **Audit 2026-09-23-a1 — v0.10.5 PROMOTED 2026-09-23 (late evening EDT);
+      close-out owed.** Reviews: Codex rounds 01/03/05 (round 05 passes S1-S7),
+      Claude round 06 (Codex recovery PASS; F1 decided for v0.10.6). Owner
+      approval: DECISION v0.10.5-promotion. Remaining: an independent
+      close-out round (Codex) verifying the promoting commit's stamps,
+      archive, links, regenerated surfaces and cutover note; then CLOSED.
 
 - [ ] **7-DAY OUTLOOK (arc opened 2026-09-23, John).** Extend
       predictions to 7 days as a NEW display-only field + page, never by
@@ -65,10 +64,8 @@ looks stale, trust this file. Ledger lines are append-only:
       link-only. Prereq Phase 0: ALERT_WINDOW_HOURS filter so the
       outlook cannot change alerting. Survey + plan in chat 2026-09-23
       07:45. SHIPPED 2026-09-23 (outlook v1): adapters + shadow ledger +
-      page. OPEN: v0.10.5 class-(b) bump (AGENTS rule 5) for the new
-      inputs, alert window and shadow policy — needs an independent
-      candidate review + owner DECISION before the promoting commit
-      (rule 12); replay goldens must pass unchanged. NBM percentile bands
+      page. v0.10.5 class-(b) bump PROMOTED 2026-09-23 (see the audit
+      loop above); replay goldens passed unchanged. NBM percentile bands
       and human confidence-label phase-out shipped; remaining audit repairs above stay open;
       confidence-JSON removal is shipped. Continue score collector (c).
 **Active / near-term**
@@ -508,3 +505,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-23 | FACT | surge-decay-views-measured | history/scripts/surge_decay_views.py (Sandy Hook 2006-2026-05, no look-ahead means): decay toward the trailing 365-d mean with tau 36 h is best or near-best in all three views (all hours, high tides, bay near the plug band) and in storm starts; 24 h MAE const -> tau36: all 0.399 -> 0.343, high tides 0.394 -> 0.335, plug band 0.385 -> 0.356, storms 0.739 -> 0.559. Same tau in 2006-2015 and 2016-2026 halves. Toward ZERO loses to constant in the plug-band view; toward the mean wins there. John's persistence hypothesis, first test: storms elevated >= +1 ft for 24 h are more predictable but their best tau is not longer (24-36 h); past persistence alone does not slow decay, so the signal must come from forecast forcing (wind, pressure, guidance) [VERIFIED: history/reports/2026-09-23-surge-decay-views.txt]
 2026-09-23 | OPEN | surge-decay-implementation | plan history/plans/2026-09-23-surge-decay-plan.md: one formula mean + (s_obs - mean) exp(-(t - t_obs)/36 h) for fresh and stale readings, trailing-365-d mean, outage ladder with snap-and-label, product rows keep precedence, outlook persistence rung replaced. Owner to choose sequencing with the held v0.10.5 (promote first then v0.10.6, or one combined reviewed version) [STATED]
 2026-09-23 | OPEN | conditional-surge-decay-research | John's idea: condition tau on forecast forcing so a persisting storm decays slowly. Pull historical Sandy Hook wind/pressure (CO-OPS) and test tau by onshore wind persistence; then use NWS grid wind live. Past-surge persistence alone showed no slower decay [STATED]
+2026-09-23 | DECISION | v0.10.5-promotion | John (23:22 EDT): "Where are we on closing out what is already done for v0.10.5? If it can be bumped as is at this point, then do it. Then we just work on v0.10.6 with these newer ideas." Approval given on the reviewed state: Codex round 05 (S1-S7 pass + extra S6 fix), Claude round 06 (recovery PASS; F1 moved to v0.10.6 by owner decisions missing-surge-ladder / -decay). Interim missing-surge behaviour (no curve, labeled unavailable) ships in v0.10.5 and is replaced in v0.10.6 [VERIFIED: John in session]
+2026-09-23 | DONE | v0.10.5-promoted | promoting commit: model/v0.10.5-candidate.md -> model/v0.10.5.md (complete spec: header with review citations and honest cutover note, Inputs & policy, physics sections carried forward unchanged from v0.10.4); model/v0.10.4.md -> model/archive/ with links repaired; CURRENT_MODEL_VERSION v0.10.5; AGENTS, README, PLAYBOOK, HANDOFF, both ledger READMEs restamped; version/link tests updated; surfaces regenerated no-send. Both frozen replays PASS unchanged. Ledger rows from the v0.10.4-stamped live interval are not rewritten. Close-out review by Codex owed [VERIFIED: this commit]
