@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 17:36 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 17:50 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -56,26 +56,25 @@ lines kept in B0; strict-JSON backstop; C1 clock erratum) and r4 receipts
 per_event -> strict JSON; r4 equals r3 on the real archive). 388 tests, gate
 clean. A/B1/B2 still NOT YET EVALUABLE. Research unmerged pending Codex review.
 
-## Separate social rehearsal — Tern repair/expanded map pass next
+## Social rehearsal — returned repairs verified; regional captions next
 
-Local `plan/social-broadcast`, sibling barnacle-social-plan, review `bf6a54273`.
-Codex doc 21 reviewed Tern `26145cf03`: 408 tests, 72-case gallery, 14 delivery
-scenarios and gate pass; alignment/shared map state verified; L1–L4 wording
-repairs accepted. OPEN R1–R3: town legend omits used colors, unavailable surface
-gets dry-gray explanation, correction planner/demo covers only one image.
-John broadened map scope to all Highlands or bay-facing Route 36 if clearer,
-including riverfront beyond old east edge; fit tightly. Doc 21 retains official
-NJ boundary and coverage sketch; approximate town tags cannot define coverage.
-Codex recommends bay-/river-facing primary and whole-borough comparison.
-Doc 22 (`f987e5597`) records owner agreement: targeted fixes, preserve warning-first
-and active/fresh LIVE radar, explicit above/below references, no public house
-references or EDT/EST. Prototype MLLW/local-grate chart scales; maps keep local
-ground-relative depths. Tern implements docs 21–22 together, including phone
-key/legend and orientation, then Codex reviews and John evaluates copy/visuals.
-Existing eligibility accepted; final strings and expiry remain open.
-Offline → Facebook only → optional later expansion. No live copy,
-accounts or posts; social branch stays local-only. Never overwrite newer main
-living docs with that branch's snapshots. Heron work stays separate.
+Local `plan/social-broadcast`, sibling barnacle-social-plan, review `3d264ae37`.
+Codex doc 24 verifies Tern `4a44a6e3c`: doc21 R1–R3 CLOSED (drawn legends,
+unavailable-vs-dry styles, complete two-image corrections). 428 tests, gate,
+74 practice cases/zero errors, 14 delivery scenarios; coverage probe reproduced.
+Doc22 warning-first/LIVE and references retained; no public house framing;
+MLLW/local-grate dual chart scales. Bayside crop recommended, adds 377 pieces
+and retains all 510 old-corridor pieces. Sampled visuals checked; final phone
+and copy acceptance remain open. John has not exhaustively reviewed strings.
+John requests town wet-street depth range, Bay & Central reference range,
+then regional ranges (Snug Harbor–Huddy, Washington–Sea Drift,
+Miller–Veterans Park as draft examples). Doc24 is Tern's next offline brief:
+reviewable boundaries, exact wet street masks, same map time/scenario,
+no invented regional peak; town drainage extrapolation remains explicit.
+Existing eligibility accepted; final strings and queued-post expiry remain open.
+Offline → Facebook only → optional later expansion. No accounts/posts,
+production copy/model changes or merge; social branch stays local-only.
+Never overwrite main living docs with the branch snapshots. Heron stays separate.
 
 ## Future owner task — neutral reference landmarks
 

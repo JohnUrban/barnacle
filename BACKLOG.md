@@ -107,28 +107,24 @@ looks stale, trust this file. Ledger lines are append-only:
       guidance, low-tide/plug/underprediction and rain checks. Production stays
       v0.10.6; no displayed or alert wind term, no automatic promotion. Any live
       adoption needs separate version/replays/review and John DECISION.
-- [ ] **Social offline rehearsal — docs 21–22 repairs and owner copy direction.**
-      Local social review `bf6a54273` checks Tern `26145cf03`: 408 tests,
-      72 practice cases and 14 delivery scenarios reproduce; aligned map/curve,
-      common selected level and production isolation verified. OPEN R1–R3:
-      town colors absent from legend, missing surface described as above-water
-      gray, correction path/demo incomplete for two images. Phone key/legend
-      remains ~5–6 CSS px. Tern reply/repair, then independent recheck.
-      John permits all Highlands or bay-side Route 36 if clearer, including
-      riverfront beyond old east edge; tightly fit selected streets. Doc 21
-      retains official NJ borough boundary, source receipt and coverage sketch;
-      approximate town tags do not define municipal/address coverage. Codex
-      recommends bay-/river-facing primary plus whole-borough comparison.
-      Owner doc 22 settles principles: retain warning-first and active/fresh
-      LIVE radar; clarify above/below references; omit public EDT and house
-      references; prototype MLLW/local-grate dual axes. Map depth stays local
-      ground-relative. Targeted edits, not a general rewrite. Tern implements
-      docs 21–22 together; Codex review then owner copy/visual feedback.
-      Existing eligibility accepted; final strings and expiry remain open.
-      Offline/local-only: no provider, accounts, posting or production changes.
-      Brief: sibling social branch history/plans/2026-09-24-social-broadcast/
-      `21-independent-review-and-broader-map-codex.md` and
-      `22-owner-wording-and-public-references.md`.
+- [ ] **Social offline rehearsal — repairs verified; regional caption prototype next.**
+      Codex local review `3d264ae37` (doc24) verifies Tern `4a44a6e3c`:
+      doc21 R1–R3 CLOSED; 428 tests, gate, 74 practice cases/zero errors,
+      14 delivery scenarios; coverage and legend checks reproduce. Warning-first,
+      active/fresh LIVE radar, explicit references and dual chart scales retained.
+      Public house framing removed. Bayside crop recommended within John's scope;
+      all 510 old corridor pieces kept, 377 added. Final phone/copy review open.
+      John requests second caption level: wet-street depth range across selected
+      town map, Bay & Central reference range, then regional ranges. Suggested
+      regions: Snug Harbor–Huddy, Washington–Sea Drift, Miller–Veterans Park.
+      Tern next: doc24 offline brief with reviewable polygons and street masks,
+      exact shared time/scenario/depth semantics and explicit town drainage
+      extrapolation. No invented region-specific peak, uniform curb depth,
+      or missing-as-dry claim. Final strings and expiry remain undecided;
+      existing eligibility and offline → Facebook-only sequence already accepted.
+      No provider/accounts/posts or live changes. Brief on sibling social branch:
+      history/plans/2026-09-24-social-broadcast/
+      `24-codex-verification-and-regional-captions.md`.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -699,3 +695,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | FACT | as-issued-validation-a4-round05 | Codex verifies Heron c9b898616: prior round03 admission probes now exclude correctly, R6 counts/prose fixed, 382 tests and gate pass; all 2688 inventory/1848 fidelity/804 advisory/235 street rows and r3 aggregates reproduce. R1 remains OPEN for full execution: malformed numbers/time raise before the gate or during later interpolation, and excluded NaN P contaminates B0 metrics/thresholds. Round06 prompt specifies evaluate/event-report/strict-JSON and fidelity checks. Research unmerged; logging schema2 operational at 21:11:34Z. No live/model/alert/wind change [VERIFIED: audits/2026-09-24-a4/05-round04-verification-codex.md and receipts]
 2026-09-24 | FACT | as-issued-a4-codex-row-erratum | Heron correctly identified Codex round03 R6 row-reference error: September13 primary 0–6 h pairs are ledger rows 183 and 185, not 182 and 183. Row182 is the excluded driveway sighting. Count of two was correct; earlier audit preserved with this append-only correction [VERIFIED: r3 pair rows and ledger; audit a4 round05]
 2026-09-24 | DONE | as-issued-validation-a4-round06 | Heron completed audit 2026-09-24-a4 R1's full input path on research/as-issued-validation (d7ed15d4b; receipts da06d511d; Amendment 4 post-review; C1 clock erratum; r1-r3 kept): published series and rule metadata validated before any arithmetic; invalid published values unscorable with reasons in every arm/summary/per-event table (no NaN metric, no fabricated cell); valid published lines kept in B0 when only counterfactual inputs fail; fidelity entry points return statuses; strict-JSON backstop. 14 boundary cases + 5 positive controls pass evaluate -> per_event -> strict JSON; r4 equals r3 on the real archive apart from the new reason fields. 388 tests. Reply audits/2026-09-24-a4/06-round05-repairs-reply-heron.md; Codex verification owed; research unmerged [VERIFIED: branch commits, round06-receipts.json]
+
+2026-09-24 | FACT | social-doc24-verification | Codex local review 3d264ae37 verifies Tern 4a44a6e3c: doc21 R1–R3 CLOSED; 428 tests, gate, 74 practice cases (72 eligible)/zero errors, 14 delivery scenarios and coverage/legend probe pass. Sampled visual review; final phone/copy approval and expiry remain open. No production adoption or posting. [VERIFIED: sibling social doc24 and 24-verification.json]
+2026-09-24 | DECISION | social-regional-depth-caption-direction | John requests two levels: Bay & Central detail plus town-map caption beginning with wet-street depth range across selected town coverage, then reference intersection range and a few regional ranges (Snug Harbor–Huddy, Washington–Sea Drift, Miller–Veterans Park examples). Codex doc24 records next offline implementation brief; boundaries are drafts, ranges use actual colored streets at the displayed time/scenario, not uniform neighborhood depth or independently forecast regional peaks. No final strings, expiry or launch approval. [STATED: owner session; implementation constraints are Codex recommendations]
