@@ -46,23 +46,27 @@ Core/outlook health split keeps unused outlook failures out of widget warnings;
 full input_health retained. Seven-day guidance remains experimental, separate
 from core alerts. This chart fix needs no widget source copy.
 
-v0.10.6: fresh/stale surge decay toward trailing-365-d mean, candidate tau ~36 h,
-age labels, outage ladder and labeled snap. NOT in v0.10.5. Plan:
-`history/plans/2026-09-23-surge-decay-plan.md`.
+v0.10.6 (candidate branch, see below): fresh/stale surge decay toward the
+trailing-365-d mean, tau 36 h, outage ladder, labeled snap. NOT on main yet.
 New formula/goldens, independent review + promotion DECISION required.
 Conditions-driven decay research remains separate, not validated by release audit.
 Compound/p90 scenarios, source skill, source seams and grid assumptions remain
 tracked scientific validation. No rain/tide retune in this correction.
 
-## Added v0.10.6 release scope (John, 23:55 EDT)
+## v0.10.6 CANDIDATE ready for independent review (2026-09-24 00:11 EDT)
 
-Fold the seven-day curve review into Claude's current v0.10.6 work. Checklist:
-`history/plans/2026-09-23-v0.10.6-outlook-review.md`.
-Show source boundaries; review NWS product corrections at low tides, hourly
-P-ETSS use and the transition into mean-reverting decay. Check rain tank/maps
-and every affected surface. Resolve or record owner-approved deferrals before
-close-out; independent candidate review and promotion DECISION still required.
-This authorizes scope, not advance approval of an unseen implementation.
+Branch `v0.10.6-candidate` (ba57f53d5; CI green). Spec `model/v0.10.6.md` on
+the branch: surge decays toward the trailing mean (tau 36 h) for fresh and
+stale readings, outage ladder with labeled snap, typical offset replaces zero,
+one hourly 7-day estimator (NWPS+advisory, hourly P-ETSS, guidance decay),
+labeled source boundaries, advisory diamonds on both charts. New golden
+`model/data/v0.10.6-reproduction.json`; v0.10.1/v0.10.3 replays unchanged.
+Checklist items 1,3,4,6,7 done; items 2 (low-tide advisory-correction
+validation) and 5 (rain-event tank/map comparison with issuance-time inputs)
+need John's explicit deferral or more work. Live comparison: today's headline
+moderate -> light (v0.10.5's constant curve sat above the NWS advisory).
+Next: Codex reviews the branch against the checklist; John's DECISION; merge
+with pages regenerated on the rebased tree. Main still runs v0.10.5.
 
 ## Live advisory and operational residuals
 
