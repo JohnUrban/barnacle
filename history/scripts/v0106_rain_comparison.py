@@ -1,5 +1,13 @@
 """Item 5 bounded comparison for v0.10.6 (audits/2026-09-24-a1 R6); method
 predeclared in history/plans/2026-09-23-v0.10.6-outlook-review.md.
+Revision r2 (2026-09-24, Codex round 03): every event's reference peak is
+labeled by evidence type and primary record; 2025-10-30 (reconstruction) is
+kept OUT of the observed-reference aggregates; errors are also scored against
+each accepted bracket; issuance uses the last hourly reading AT OR BEFORE the
+issuance time, decaying from that reading's time; part B also groups by the
+maximum bay over the simulated window; part D is a partial-input
+sensitivity experiment (unarchived hours are zero by assumption), not
+forecast skill.
 B: controlled wet scenarios (sensitivity, not skill). C: measured events with
 MRMS rain (reconstructed hindcast, not as-issued skill). D: the Sep 13 as-issued
 forecast's saved QPF windows (partial as-issued inputs).
@@ -49,12 +57,23 @@ def minutes_above(times, levels, inch_thr):
     return sum(step for w in levels if w is not None and inches(w) >= inch_thr)
 
 
-def bay_curves(times, t_iss, mean):
-    s = interp(sv.surge_ft, t_iss)
+def reading_at_or_before(t_iss):
+    """The last hourly observed surge available at issuance, and its time."""
+    t0 = t_iss.replace(minute=0, second=0, microsecond=0)
+    for k in range(0, 4):
+        tt = t0 - dt.timedelta(hours=k)
+        v = sv.surge_ft.get(pd.Timestamp(tt))
+        if v is not None and math.isfinite(v):
+            return float(v), tt
+    return None, None
+
+
+def bay_curves(times, t_iss, mean, reading=None):
+    s, t_obs = reading if reading else reading_at_or_before(t_iss)
     astro = [interp(sv.predicted_mllw, t) for t in times]
     obs = [interp(sv.observed_mllw, t) for t in times]
     const = [a + s + ENH + OFF for a in astro]
-    decay = [a + mean + (s - mean) * math.exp(-(t - t_iss).total_seconds() / 3600 / TAU) + ENH + OFF
+    decay = [a + mean + (s - mean) * math.exp(-max(0.0, (t - t_obs).total_seconds()) / 3600 / TAU) + ENH + OFF
              for a, t in zip(astro, times)]
     obsb = [(o + ENH + OFF) if o is not None else None for o in obs]
     return s, const, decay, obsb
@@ -87,6 +106,7 @@ for s_obs in (1.0, 2.0):
                 i_bay = times.index(min(times, key=lambda t: abs((t - center).total_seconds())))
                 rows.append({"reading": s_obs, "lead": lead, "phase": pname, "rain": rate,
                              "bay_v5": round(const[i_bay], 2), "bay_v6": round(decay[i_bay], 2),
+                             "bay_v5_max": round(max(const), 2),
                              "peak_in_v5": round(inches(max(pc)), 1), "peak_in_v6": round(inches(max(pd_)), 1),
                              "curb_min_v5": minutes_above(times, pc, CURB_IN), "curb_min_v6": minutes_above(times, pd_, CURB_IN),
                              "lawn_min_v5": minutes_above(times, pc, LAWN_IN), "lawn_min_v6": minutes_above(times, pd_, LAWN_IN)})
@@ -94,13 +114,40 @@ df = pd.DataFrame(rows)
 df["d_peak_in"] = (df.peak_in_v6 - df.peak_in_v5).round(1)
 pd.set_option("display.width", 220)
 print(df.to_string(index=False))
-print("\nsummary: |peak change| by bay band (v0.10.5 bay):")
-df["band"] = pd.cut(df.bay_v5, [-9, 3.0, 3.52, 99], labels=["below 3.0 (drains full)", "3.0-3.52 (plug band)", "above 3.52"])
-print(df.groupby("band", observed=True).d_peak_in.agg(["count", "mean", "min", "max"]).round(2).to_string())
+bands = [-9, 3.0, 3.52, 99]
+labels = ["below 3.0", "3.0-3.52 (plug band)", "above 3.52"]
+print("\nsummary A: peak change grouped by the v0.10.5 bay AT THE BURST CENTER (a single instant):")
+df["band_center"] = pd.cut(df.bay_v5, bands, labels=labels)
+print(df.groupby("band_center", observed=True).d_peak_in.agg(["count", "mean", "min", "max"]).round(2).to_string())
+print("\nsummary B: grouped by the MAXIMUM v0.10.5 bay over the simulated window (the trajectory):")
+df["band_max"] = pd.cut(df.bay_v5_max, bands, labels=labels)
+print(df.groupby("band_max", observed=True).d_peak_in.agg(["count", "mean", "min", "max"]).round(2).to_string())
+print("(a case centered below 3.0 ft can still cross the drain band during the window: grouping by center"
+      " time understates where changes occur)")
 
 print("\n=== C. Measured events, MRMS rain, bay from each rule (reconstructed hindcast; NOT as-issued skill) ===")
-OBS_PEAK = {"2025-10-30": 20.8, "2026-07-06": 15.0, "2026-08-03": 13.8, "2026-08-07": 15.4,
-            "2026-09-01": 13.9, "2026-09-13": 13.7}   # inches over the SW grate (BACKLOG rain-flood-retrospective-round-1)
+# Reference peaks, inches over the SW grate: (canonical, bracket lo, bracket hi, evidence type, primary record)
+EVENTS = {
+    "2026-07-06": (15.4, 15.0, 15.8, "tape series; accepted crest window (DECISION 7/6-anchor)",
+                   "assets/observations/2026-07-06/README.md; labeled_observations 2026-07-06T11:34"),
+    "2026-08-03": (13.8, 13.7, 13.9, "live-narrated two-landmark bracket (lawn step / porch base)",
+                   "assets/observations/2026-08-03/README.md; labeled_observations 2026-08-03T10:35"),
+    "2026-08-07": (15.4, 15.0, 15.8, "recession backcast between a photo-timed rise and a receding tape point",
+                   "assets/observations/2026-08-07/README.md; labeled_observations 2026-08-07T18:33/18:43/18:49"),
+    "2026-09-01": (13.9, 13.7, 14.2, "EXIF-timed photo landmark bracket",
+                   "assets/observations/2026-09-01/README.md"),
+    "2026-09-13": (13.7, 13.7, 13.7, "photo-verified landmark level (lawn-step top)",
+                   "assets/observations/2026-09-13/README.md; labeled_observations 2026-09-13T07:01"),
+}
+RECONSTRUCTED = {"2025-10-30": (20.8, 13.5, "1:1 tide-decay extrapolation from one photo anchor; only the "
+                                "photo's +13.5 in is a bound (README addendum 2026-09-24)")}
+print("reference peaks (NOT all tape-measured):")
+for d, (c, lo, hi, kind, rec_) in EVENTS.items():
+    print(f"  {d}: canonical +{c} in, bracket +{lo}..+{hi}: {kind} [{rec_}]")
+for d, (c, floor, kind) in RECONSTRUCTED.items():
+    print(f"  {d}: +{c} in RECONSTRUCTED, floor +{floor}: {kind}; kept OUT of the aggregates")
+OBS_PEAK = {d: v[0] for d, v in EVENTS.items()}
+OBS_PEAK.update({d: v[0] for d, v in RECONSTRUCTED.items()})
 frames = {}
 for r in csv.DictReader(open(ROOT / "history/data/mrms/mrms_extracted.csv")):
     if r["product"] == "PrecipRate":
@@ -131,19 +178,40 @@ for day, peak_obs in OBS_PEAK.items():
             print(day, lead, "missing surge/observed bay"); continue
         _, po = tank(times, obsb, rates); _, pc = tank(times, const, rates); _, pdd = tank(times, decay, rates)
         i_on = times.index(min(times, key=lambda t: abs((t - onset).total_seconds())))
-        crow.append({"event": day, "lead": lead, "reading": round(s, 2), "mean": round(mean, 2),
+        s_used, t_used = reading_at_or_before(t_iss)
+        crow.append({"event": day, "lead": lead, "reading": round(s_used, 2), "reading_utc": t_used.strftime("%m-%d %H:%MZ"),
+                     "mean": round(mean, 2), "ref": "reconstructed" if day in RECONSTRUCTED else "observed",
                      "bay_obs": round(obsb[i_on], 2), "bay_v5": round(const[i_on], 2), "bay_v6": round(decay[i_on], 2),
-                     "peak_obs_meas": peak_obs, "peak_obsbay": round(inches(max(po)), 1),
+                     "peak_ref": peak_obs, "peak_obsbay": round(inches(max(po)), 1),
                      "peak_v5": round(inches(max(pc)), 1), "peak_v6": round(inches(max(pdd)), 1)})
 cd = pd.DataFrame(crow)
 cd["baybias_v5"] = (cd.bay_v5 - cd.bay_obs).round(2); cd["baybias_v6"] = (cd.bay_v6 - cd.bay_obs).round(2)
-cd["err_v5"] = (cd.peak_v5 - cd.peak_obs_meas).round(1); cd["err_v6"] = (cd.peak_v6 - cd.peak_obs_meas).round(1)
-print(cd.to_string(index=False))
-print(f"\nmean |bay error| at onset: v0.10.5 {cd.baybias_v5.abs().mean():.2f} ft, v0.10.6 {cd.baybias_v6.abs().mean():.2f} ft (n={len(cd)})")
-print(f"mean |peak error| vs measured: v0.10.5 {cd.err_v5.abs().mean():.1f} in, v0.10.6 {cd.err_v6.abs().mean():.1f} in; "
-      f"peak changed (|v6-v5| >= 0.1 in) in {int(((cd.peak_v6 - cd.peak_v5).abs() >= 0.1).sum())} of {len(cd)} cases")
+cd["err_v5"] = (cd.peak_v5 - cd.peak_ref).round(1); cd["err_v6"] = (cd.peak_v6 - cd.peak_ref).round(1)
 
-print("\n=== D. Sep 13 as-issued forecast (commit 3a6c96faf, 2026-09-13T03:14:36Z): saved QPF windows ===")
+
+def bracket_err(v, day):
+    lo, hi = EVENTS[day][1], EVENTS[day][2]
+    return 0.0 if lo <= v <= hi else min(abs(v - lo), abs(v - hi))
+print(cd.to_string(index=False))
+ob = cd[cd.ref == "observed"]
+print(f"\nBAY (gauge-based; all six events incl. 2025-10-30): mean |bay error| at onset "
+      f"v0.10.5 {cd.baybias_v5.abs().mean():.2f} ft, v0.10.6 {cd.baybias_v6.abs().mean():.2f} ft (n={len(cd)}); "
+      f"five observed-reference events only: {ob.baybias_v5.abs().mean():.2f} vs {ob.baybias_v6.abs().mean():.2f} ft")
+print(f"PEAK vs OBSERVED references (five events, 2025-10-30 excluded, n={len(ob)}): mean |error| vs canonical "
+      f"v0.10.5 {ob.err_v5.abs().mean():.2f} in, v0.10.6 {ob.err_v6.abs().mean():.2f} in; vs accepted bracket "
+      f"{sum(bracket_err(v, d) for v, d in zip(ob.peak_v5, ob.event)) / len(ob):.2f} vs "
+      f"{sum(bracket_err(v, d) for v, d in zip(ob.peak_v6, ob.event)) / len(ob):.2f} in; "
+      f"simulated peaks differ (|v6-v5| >= 0.1 in) in {int(((ob.peak_v6 - ob.peak_v5).abs() >= 0.1).sum())} of {len(ob)}")
+rc = cd[cd.ref == "reconstructed"]
+for _, r in rc.iterrows():
+    print(f"2025-10-30 (SENSITIVITY ONLY, reconstructed reference) lead {r.lead} h: v0.10.5 +{r.peak_v5} in, v0.10.6 "
+          f"+{r.peak_v6} in, tank on the observed gauge bay +{r.peak_obsbay} in; reference unknown between the "
+          f"+13.5 floor and the +20.8 reconstruction -> which rule was closer is undetermined")
+
+print("\n=== D. Sep 13 PARTIAL-INPUT SENSITIVITY EXPERIMENT (not forecast skill): commit 3a6c96faf, 2026-09-13T03:14:36Z ===")
+print("Only the saved v0.10.3 curve is a genuine archived OUTPUT; the constant/decay curves are counterfactual"
+      " reconstructions from the archived surge reading; rain = the saved hourly QPF window, with every"
+      " unarchived hour set to ZERO by assumption (a coverage limitation, not a forecast value).")
 f = json.loads(subprocess.check_output(["git", "-C", str(ROOT), "show", "3a6c96faf:docs/forecast.json"]))
 issued = dt.datetime.fromisoformat(f["generated_utc"].replace("Z", "+00:00"))
 qpf = {}
@@ -168,7 +236,10 @@ else:
     times = [t0 + dt.timedelta(minutes=5 * k) for k in range(int((t1 - t0).total_seconds() // 300) + 1)]
     rates = [qpf.get(t.replace(minute=0, second=0, microsecond=0), 0.0) for t in times]
     mean = float(trail.get(pd.Timestamp(issued.replace(minute=0, second=0, microsecond=0))))
-    s, const, decay, obsb = bay_curves(times, issued, mean)
+    archived = float(f["current_surge_ft"])     # the reading the issued forecast used (+0.487 ft)
+    # its observation time was not archived; the forecast called it fresh, so it is
+    # anchored at the issuance time (<= 60 min error in the decay's start)
+    s, const, decay, obsb = bay_curves(times, issued, mean, reading=(archived, issued))
     ws = {ff.parse_station_local_time(p["time"]).astimezone(UTC): p["tide_navd88"] for p in f.get("water_series") or []}
     as_issued = [ws.get(t.replace(minute=(0 if t.minute < 30 else 30), second=0, microsecond=0)) for t in times]
     res = {"issued": f["generated_utc"], "qpf_hours_covered": [t.strftime("%H:%MZ") for t in covered],
@@ -177,6 +248,9 @@ else:
         if any(b is None for b in bays):
             res[name] = "bay unavailable over the window"; continue
         _, pk = tank(times, bays, rates)
-        res[name] = {"bay_at_07Z_local_range": [round(min(bays), 2), round(max(bays), 2)], "tank_peak_in": round(inches(max(pk)), 1)}
-    res["measured_peak_in"] = 13.7
+        res[name] = {"bay_range_navd88": [round(min(bays), 2), round(max(bays), 2)],
+                     "tank_max_over_window_in": round(inches(max(pk)), 1)}
+    res["reference_peak_in"] = "13.7 (photo-verified lawn-step level at 07:01 EDT)"
+    res["note"] = ("maxima over the constructed window, not values at the observed crest; the 10Z burst hour "
+                   "is not in the saved window, so no forecast-error attribution is possible from this run")
     print(json.dumps(res, indent=1))
