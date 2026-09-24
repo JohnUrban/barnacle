@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 17:14 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 17:21 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -45,16 +45,18 @@ tails/advisory corrections remain experimental. As-issued rain skill is not
 established: five observed-reference events tie; Oct30 reconstruction is not
 observed validation; Sep13 partial QPF is sensitivity only.
 
-## Deferred validation — Heron round 04 returned; Codex verification next
+## Deferred validation — round 05 OPEN for full-path input handling
 
-Heron completed a4 R1 (combined-output control, one 0.0015-ft bay tolerance for
-decay and constant rules, numeric admission contract in both evaluators) and R6
-(235 total / 224 primary / 11 sensitivity; July-13 mean vs pointwise range;
-Sep-13 two primary 0-6 h pairs, rows 183/185): reply
-`audits/2026-09-24-a4/04-round03-repairs-reply-heron.md`; research repairs
-`837b0eb40`, r3 outputs/report `c9b898616` (Amendment 3, post-review; r1/r2 kept).
-Numbers equal r2; A/B1/B2 still NOT YET EVALUABLE. 382 tests, gate clean.
-Research stays unmerged pending Codex verification; logging already on main.
+Codex verified Heron `c9b898616`: prior admission probes repaired, R6 CLOSED;
+382 tests/gate pass and all r3 outputs reproduce. R1 still OPEN: malformed
+required inputs can crash before validation; excluded NaN P still enters B0
+metrics/thresholds. Synthetic probes, not a live-forecast failure. Heron round06
+must test evaluate → event report → strict JSON, plus fidelity entry points.
+Review/prompt: `audits/2026-09-24-a4/05-round04-verification-codex.md`.
+Own erratum: Sep13 primary 0–6 h rows are 183/185, not 182/183. Protocol clock
+note also needs correction. Research unmerged; no new owner choice needed.
+Logging schema2 is verified collecting (21:11:34Z generation). A/B1/B2 remain
+NOT YET EVALUABLE: 804 ZERO advisory pairs; 235 street pairs, 224 primary.
 
 ## Separate social rehearsal — Tern repair/expanded map pass next
 

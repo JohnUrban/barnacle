@@ -71,15 +71,15 @@ looks stale, trust this file. Ledger lines are append-only:
       requires matched observations and issuance-time inputs; radar hindcasts
       and partial-input sensitivities remain separate. No production changes
       or edits to the now-frozen wind trial. Accepted release limits stand.
-      Codex round03 (`audits/2026-09-24-a4/03-repairs-verification-codex.md`)
-      reviews Heron research 9e3f833a3 and logging 224c14dcd. R2–R4 and main
-      R5 corrections verified; R1 remains OPEN for matching combined-control
-      and finite/nonnegative input admission, plus R6 count/prose corrections.
-      235 total pairs = 224 primary + 11 sensitivity; no EXACT/NEAR. Saved
-      results reproduce; invalid-admission probes are synthetic, not live faults.
-      Research remains unmerged. Heron round04 repairs then independent review.
-      Heron round04 (audits/2026-09-24-a4/04-round03-repairs-reply-heron.md):
-      R1 completed (837b0eb40) and R6 corrected (r3 c9b898616); Codex verification next.
+      Codex round05 (`audits/2026-09-24-a4/05-round04-verification-codex.md`)
+      verifies Heron c9b898616: earlier admission probes repaired; R6 CLOSED.
+      382 tests pass; all r3 outputs reproduce. R1 remains OPEN through the full
+      path: malformed inputs can crash before validation, and excluded NaN P
+      enters B0 metrics/threshold cells. Synthetic probes, not live failures.
+      Heron round06 must cover evaluate → event report → strict JSON and
+      fidelity entry points. Correct protocol clock estimate. Own row erratum:
+      Sep13 two primary 0–6 h pairs are rows 183/185 (not 182/183 in round03).
+      Research unmerged. 235 total = 224 primary + 11 sensitivity; no EXACT/NEAR.
       Logging-only schema-2 provenance patch integrated under existing archive
       approval; QPF rates unchanged, no model/alert/frozen-wind changes. No new
       owner choice needed. Scientific evaluation awaits informative events.
@@ -695,3 +695,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | FACT | as-issued-validation-a4-round03 | Codex independently reproduced Heron 9e3f833a3: 2688 inventory/1848 fidelity/804 advisory/235 street rows and reports; 224 street pairs primary, no EXACT/NEAR. R2–R4 and main R5 fixes accepted. R1 OPEN: combined-control mismatch, constant-rule tolerance and invalid/null/negative/non-finite inputs; R6 report counts/mean-vs-point prose. Real 37 replayable combined curves (2701 points) match controls. 377 research tests pass. Audit OPEN; Heron round04 prompt in audits/2026-09-24-a4/03-repairs-verification-codex.md. No scientific skill conclusion or evaluator merge [VERIFIED: round03 receipts]
 2026-09-24 | DONE | replay-archive-provenance-schema2 | Integrated Heron logging-only patch 224c14dcd after independent Codex a4 round03 review, under existing v0.10.6-items-2-and-5 archive approval. Logs QPF source issuance/retrieval/raw intervals, advisory issuance, truthful NWPS retrieval basis; schema1 remains valid. Capture status is not usable-input status. Seven differential QPF cases unchanged; 339 tests/gate pass; all seven frozen wind hashes unchanged. Archive-only repair, no model bump, forecast/alert/evaluator change [VERIFIED: audits/2026-09-24-a4/03-isolation.json and review]
 2026-09-24 | DONE | as-issued-validation-a4-round04 | Heron completed audit 2026-09-24-a4 R1 (combined published line = max(bay, pluvial) within 0.002 ft; 0.0015-ft bay control for decay and constant rules; numeric admission contract before arithmetic in street, fidelity and Study A: null rain unavailable, negative/non-finite excluded, NaN cannot pass a tolerance; positive wet fixture repaired; negative tests for each round-03 probe) and R6 (235 total / 224 primary / 11 sensitivity-only; July-13 lead-bin mean vs pointwise -0.21..+0.50 ft; Sep-13 two primary 0-6 h pairs = rows 183 and 185) on research/as-issued-validation (837b0eb40; r3 c9b898616; Amendment 3 post-review; r1/r2 kept, r2 erratum appended). r3 numbers equal r2; verdicts NOT YET EVALUABLE. 382 tests. Reply audits/2026-09-24-a4/04-round03-repairs-reply-heron.md; Codex verification owed; research unmerged [VERIFIED: branch commits, tests]
+
+2026-09-24 | FACT | as-issued-validation-a4-round05 | Codex verifies Heron c9b898616: prior round03 admission probes now exclude correctly, R6 counts/prose fixed, 382 tests and gate pass; all 2688 inventory/1848 fidelity/804 advisory/235 street rows and r3 aggregates reproduce. R1 remains OPEN for full execution: malformed numbers/time raise before the gate or during later interpolation, and excluded NaN P contaminates B0 metrics/thresholds. Round06 prompt specifies evaluate/event-report/strict-JSON and fidelity checks. Research unmerged; logging schema2 operational at 21:11:34Z. No live/model/alert/wind change [VERIFIED: audits/2026-09-24-a4/05-round04-verification-codex.md and receipts]
+2026-09-24 | FACT | as-issued-a4-codex-row-erratum | Heron correctly identified Codex round03 R6 row-reference error: September13 primary 0–6 h pairs are ledger rows 183 and 185, not 182 and 183. Row182 is the excluded driveway sighting. Count of two was correct; earlier audit preserved with this append-only correction [VERIFIED: r3 pair rows and ledger; audit a4 round05]
