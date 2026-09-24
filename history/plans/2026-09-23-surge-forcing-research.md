@@ -80,3 +80,60 @@ archive of GFS/other models for Sandy Hook, 2021+), refit on part and
 score on the rest. Live source would be the NWS grid wind the outlook
 already fetches. That result decides whether v0.10.6 (or a later version)
 adds a wind term; the simple decay (M1) stands on its own either way.
+
+## Round 2 plan: archived FORECAST wind (written 2026-09-23 ~23:55 EDT, before results)
+Question: how much of round 1's perfect-forecast gain survives when the
+future wind comes from a real forecast issued before the forecast time?
+- Forecasts: Open-Meteo previous-runs archive at the station, models
+  gfs_seamless (from 2024-02) and ecmwf_ifs025 (from 2024-03).
+  `_previous_day1` = the value from the run ~24 h before that hour;
+  `_previous_day2` = ~48 h before. For lead k <= 24 h every hour in
+  (t, t+k] uses previous_day1; for 24 < k <= 48 h, previous_day2. So every
+  forecast value used was issued at or before t. Live runs would have
+  FRESHER forecasts, so this is conservative (a lower bound on the gain).
+- Surge 2023-01 .. 2026-09-22 rebuilt from CO-OPS 6-min water_level on the
+  hour minus hourly predictions (the verified hourly product lags).
+- Split: fit 2024-02-01 .. 2025-04-30; score 2025-05-01 .. 2026-09-20.
+- Models on the scored period, leads 6/12/24/30/48 h, same four views:
+  M1 (tau 36 toward trailing-365-d mean); M3-obs (observed future wind +
+  pressure, refit on the fit period: this period's upper bound);
+  M3-fcst-refit (forecast features, coefficients fitted on the fit period);
+  M3-fcst-transfer (round-1 coefficients fitted on 2006-2015 OBSERVED wind,
+  applied unchanged to forecast features: no refit on the short period).
+  theta fixed at round 1's 70 deg. Pressure change = forecast p(t+k) minus
+  observed p(t); pressure anomaly = observed, trailing 30 d.
+- Success (predeclared): a forecast-wind model is worth building if it beats
+  M1 in storm starts at 24-30 h and does not lose in all-hours or plug band,
+  for at least one model source. Storm-start counts are reported; with
+  ~16 months scored, differences under ~0.02 ft are treated as noise.
+
+## Round 2 results (2026-09-23 ~23:50 EDT; `history/reports/2026-09-23-surge-forecast-wind-results.txt`)
+Scored 2025-05-01 .. 2026-09-21 (1,591 storm-start hours, autocorrelated:
+far fewer independent storms). MAE ft [all hours / plug band / storm starts]:
+
+| Lead | M1 decay | M3 forecast wind, refit (GFS) | same (ECMWF) | M3 observed wind (upper bound) |
+|---|---|---|---|---|
+| 12 h | 0.235 / 0.226 / 0.362 | 0.206 / 0.191 / 0.281 | 0.204 / 0.191 / 0.281 | 0.200 / 0.181 / 0.266 |
+| 24 h | 0.289 / 0.274 / 0.477 | 0.237 / 0.228 / 0.355 | 0.235 / 0.229 / 0.355 | 0.228 / 0.210 / 0.327 |
+| 30 h | 0.315 / 0.305 / 0.494 | 0.258 / 0.233 / 0.374 | 0.263 / 0.235 / 0.387 | 0.252 / 0.229 / 0.343 |
+| 48 h | 0.329 / 0.315 / 0.457 | 0.277 / 0.274 / 0.393 | 0.281 / 0.285 / 0.394 | 0.268 / 0.256 / 0.341 |
+
+Readings:
+1. Real forecasts keep most of the gain: at 24 h, forecast wind recovers
+   ~85 % of the perfect-knowledge improvement in all hours and storm starts
+   (storm error 0.477 -> 0.355 ft, -26 %). GFS and ECMWF agree.
+2. These forecasts were 24-48 h OLD at use (previous_day1/2); live runs
+   would use fresher ones, so the live gain should be at least this large.
+3. Coefficients must be fitted to the forecast source: the round-1
+   coefficients (fitted on the station anemometer) transferred poorly to
+   GFS at 12-24 h (worse than M1) though acceptably to ECMWF. A live wind
+   term needs coefficients fitted on the SAME forecast product it uses.
+4. Predeclared criterion: PASS for both sources (beats M1 in storm starts at
+   24-30 h; better in all hours and plug band at every lead 6-48 h).
+
+Consequence: a forecast-wind term is worth building, AFTER v0.10.6's simple
+decay (it adds an input source and fitted coefficients: its own version and
+review). Open design question for John: which live forecast. The NWS grid
+wind Barnacle already fetches has no easy archive to fit on; GFS (a NOAA
+model) is available live and archived through Open-Meteo, or from NOMADS
+directly (heavier). Fit period is short (15 months); refit as data accrue.
