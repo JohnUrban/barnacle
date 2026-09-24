@@ -15,3 +15,9 @@ Purpose: future raw-vs-corrected high/mid/low-tide scoring and rain-flood
 replays. Collection does not itself validate the advisory adjustments or
 establish multi-event as-issued flood skill. Owner decisions and review:
 `BACKLOG.md` items2/5 and `audits/2026-09-24-a1/`.
+
+Schema 2 (branch research/as-issued-validation, pending review): `qpf_source`
+(grid updateTime, retrieval time, unit, raw validTime/mm intervals),
+`advisory.issued_utc`, and `nwps.retrieved_basis`; the NWPS retrieval is
+never replaced by the generation time. The half-hourly core line of the same
+generation is in the published docs/forecast.json blob (join by generated_utc).

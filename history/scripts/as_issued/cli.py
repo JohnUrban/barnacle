@@ -13,7 +13,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
-from as_issued import advisory as AD, archive as A, fidelity as F, noaa, obs as O, street as S  # noqa: E402
+from as_issued import advisory as AD, archive as A, fidelity as F, noaa, obs as O, report as R, street as S  # noqa: E402
 
 OUT = os.path.join(A.ROOT, "history", "reports", "as_issued")
 
@@ -61,7 +61,7 @@ def advisory():
             levels = noaa.water_levels(noaa.load_bodies(man))
     AD.attach_outcomes(pairs, levels, now)
     from forecast import flood_forecast_daily as ff
-    marks = {k: ff.LANDMARKS_BY_KEY[k] if hasattr(ff, "LANDMARKS_BY_KEY") else e for k, _l, e, _s in ff.LANDMARKS}
+    marks = {k: e for k, _l, e, _s in ff.LANDMARKS}
     rep = AD.evaluate(pairs, marks)
     rep.update(evaluated_utc=now.isoformat(), replay_records=len(rows), skipped=skipped,
                outcome_manifest=os.path.relpath(man, A.ROOT) if man else None, repo_head=A._git("rev-parse", "HEAD").decode().strip())
@@ -76,7 +76,6 @@ def street():
     rep, pairs = S.evaluate(ctx, observations)
     rep.update(ledger_sha256=sha, observations_total=len(observations),
                observations_eligible=sum(o["eligible"] for o in observations),
-               observation_exclusions={" ; ".join(o["reasons"]) or "no classifiable level": 1 for o in observations if not o["eligible"]},
                repo_head=A._git("rev-parse", "HEAD").decode().strip(),
                evaluated_utc=dt.datetime.now(dt.timezone.utc).isoformat())
     from collections import Counter
@@ -86,6 +85,28 @@ def street():
                      indent=1, default=str))
     _write("study-b-street.json", {"report": rep, "pairs": pairs,
                                    "observations": [{k: v for k, v in o.items()} for o in observations]})
+    events = R.per_event(pairs)
+    _write("study-b-events.json", {"per_event_published_line": events,
+                                   "conditional_burst_scenarios": R.conditional_scenarios(ctx, events),
+                                   "input_fault_annotations": input_faults(ctx, pairs)})
+
+
+def input_faults(ctx, pairs):
+    """Archive-evidenced input faults in the issuances behind the pairs (not inferred from errors)."""
+    out = {}
+    for p in pairs:
+        s = next(x for x in ctx.issuances if x["blob"] == p["blob"])
+        f = ctx.forecast(s)
+        notes = []
+        if f.get("tide_predictions_stale"):
+            notes.append("tide_predictions_stale: astronomy synthesized from cached extremes (NOAA outage)")
+        lg = [q.get("value_mllw") for q in (f.get("live_gauge_24h") or []) if isinstance(q.get("value_mllw"), (int, float))]
+        if lg and max(lg) > 9.0:
+            notes.append(f"published gauge levels up to {max(lg):.2f} ft MLLW (sensor malfunction; despike added "
+                         "2026-07-09, commit b10568276)")
+        if notes:
+            out[str(p["issuance"])] = notes
+    return out
 
 
 if __name__ == "__main__":

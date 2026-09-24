@@ -11,6 +11,13 @@ later replay or skill study needs and what no public archive keeps for us:
     rung/reading/mean actually used, the tank's initialization, and the
     model version.
 Unavailable inputs are written as unavailable (null + a reason), never as zero.
+
+Schema 2 (as-issued validation logging repairs, 2026-09-24; review before
+merge): `nwps.retrieved` is the outlook gather's run time (labeled by
+`retrieved_basis`) and is never replaced by the generation time; the NWS
+advisory's issuance is a dedicated `advisory.issued_utc` (parsed from the
+status, null + reason when absent); `qpf_source` keeps the grid's updateTime,
+retrieval time and raw (validTime, mm) intervals. Schema-1 rows stay valid.
 """
 from __future__ import annotations
 
@@ -18,8 +25,9 @@ import datetime as dt
 import json
 import math
 import os
+import re
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 DIR_DEFAULT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                            "data", "replay_inputs")
 REQUIRED_KEYS = ("v", "generated_utc", "model_version", "surge", "nwps", "advisory",
@@ -62,10 +70,21 @@ def expand(block):
     return [(t, {k: v[i] for k, v in cols.items()}) for i, t in enumerate(ts)]
 
 
-def build_record(forecast, outlook_data=None, outlook_health=None, qpf_hourly=None):
+def advisory_issued_utc(status):
+    """(issued UTC stamp, None) parsed from the NWS status text, or (None, reason)."""
+    m = re.search(r"issued (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2}))", str(status or ""))
+    if not m:
+        return None, "no advisory issuance in the status"
+    try:
+        return _stamp(_parse(m.group(1))), None
+    except ValueError:
+        return None, f"unparsable issuance {m.group(1)!r}"
+
+
+def build_record(forecast, outlook_data=None, outlook_health=None, qpf_hourly=None, qpf_meta=None):
     """The archive line for one run. `outlook_data`/`outlook_health` are the
     outlook gather() results; `qpf_hourly` the production [(utc, in/hr)] or
-    None when the QPF fetch failed."""
+    None when the QPF fetch failed; `qpf_meta` the QPF fetch's provenance."""
     unavailable = {}
     gen = forecast.get("generated_utc")
     si = forecast.get("water_series_input") or {}
@@ -75,13 +94,17 @@ def build_record(forecast, outlook_data=None, outlook_health=None, qpf_hourly=No
     od = outlook_data or {}
     oh = outlook_health or {}
     if od.get("nwps") and (od["nwps"].get("series")):
+        fetched = (oh.get("nwps") or {}).get("fetched_at")
         nwps = {"issued": od["nwps"].get("issued"),
-                "retrieved": (oh.get("nwps") or {}).get("fetched_at") or gen,
+                "retrieved": fetched,
+                "retrieved_basis": ("outlook gather start (run time), not the response time" if fetched
+                                    else "unavailable: no fetch time reported"),
                 "hourly": columnar([p["utc"] for p in od["nwps"]["series"]],
                                    ft=[_r(p.get("ft"), 2) for p in od["nwps"]["series"]])}
     else:
         unavailable["nwps"] = (oh.get("nwps") or {}).get("detail") or "not fetched"
-    advisory = {"status": forecast.get("nws_status"),
+    _iss, _iss_why = advisory_issued_utc(forecast.get("nws_status"))
+    advisory = {"status": forecast.get("nws_status"), "issued_utc": _iss, "issued_reason": _iss_why,
                 "rows": [[t.get("time"), _r(t.get("forecast_peak_mllw"), 2), _r(t.get("surge_ft"), 2)]
                          for t in (forecast.get("all_tides") or [])
                          if t.get("source") == "nws-coastal-flood-product"]}
@@ -107,7 +130,8 @@ def build_record(forecast, outlook_data=None, outlook_health=None, qpf_hourly=No
             "qpf_hourly": qpf, "rain_guidance_cycles": {
                 "nbm": ((ol.get("reach") or {}).get("nbm_cycle")),
                 "petss": ((ol.get("reach") or {}).get("petss_cycle"))},
-            "tank_init": tank_init, "unavailable": unavailable}
+            "tank_init": tank_init, "unavailable": unavailable,
+            "qpf_source": qpf_meta if qpf_meta is not None else {"status": "unavailable", "reason": "not captured"}}
 
 
 def append(record, directory=None):
