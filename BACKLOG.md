@@ -129,6 +129,22 @@ looks stale, trust this file. Ledger lines are append-only:
       gate — predictions_log, day_risk_log, heartbeats, observed_peaks,
       tide caches; and surface hourly-run gate failures as a workflow-level
       alert (42 red runs went unnoticed for 42 h).
+- [ ] **JOHN — future neutral landmark survey (deferred, 2026-09-24).**
+      Identify durable, recognizable reference features at the VFW on the
+      SE corner and the parking lot diagonally across on the SW corner
+      (locations STATED by John). Seek features serving the same flood-depth
+      interpretation role as the lawn/porch steps; equal elevations are not
+      assumed. Goal: community-oriented references that remain useful if John
+      moves but continues maintaining Barnacle for Highlands residents.
+      John's tasks: shortlist exact physical points; photograph and locate
+      them on the existing map; measure elevations relative to established
+      references with method/date/uncertainty; observe flood crossings when
+      practical and retain primary records. Then review which points should
+      supplement or replace display references. No new surveyed values or
+      landmark equivalence established yet. Keep existing landmarks for now;
+      this is NOT a Tern/social-card requirement or current-work blocker.
+      Any later model landmark adoption follows rule 5 and surface parity;
+      preserve existing landmark IDs and historical observations.
 - [ ] Re-copy widget source v7.29a into Scriptable. John references v7.28a
       and intends to copy the new source (2026-09-24); installation not yet
       confirmed. The sole behavior change from v7.28a removes the estimated
@@ -606,3 +622,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 
 2026-09-24 | OPEN | wind-shadow-c2-review-a3-round03 | Codex independently verified fe7e1ebc9: all 48 refits/sample counts/rounded MAEs, five dataset hashes, 698 raw runs and 322 tests pass; R1/R2 and mean-policy repairs confirmed. HOLD remains for R3/R5/R6/R7/R8: actual gate CLI crashes on []/null shadow rows; altered manifest logs as official and changed evaluator still scores; rain restarts empty and misses archived prior rain; Barnacle decay counts as NWS coverage; remaining availability/QC/raw retention gaps; no-send/dry-run invoke shadow when trial env is set. All adverse probes isolated with mocked network, no live trial record or candidate mutation. Report audits/2026-09-24-a3/03-c2-verification-codex.md; Claude reply04 and repairs next. Earlier round02 claims are superseded where this independent evidence demonstrates remaining gaps [VERIFIED]
 2026-09-24 | DONE | wind-shadow-a3-round04 | Claude confirmed and repaired audit 2026-09-24-a3 round 03 (R3 R5 R6 R7 R8) on branch wind-shadow 7988715ce (not merged; still c2, pretrial bundle 37ed563a): gate CLI exit 0 for truncated/[]/null/string/non-UTF-8/directory shadow evidence; bundle verified before every official record (disabled record, no fetch) and before scoring (exit 3), first-record binding in evaluator and CI; trial start = first durable official record of any status; frozen tank copy (rain_ref.py) run from production's as-issued series start, every landmark scored; raw NWPS and P-ETSS mid separate from Barnacle's outlook; run availability, 0..60-min pressure bound, lossless hourly pressure, raw outcome bodies; mode excludes --no-send/--dry-run before the shadow is called. Outcome QC refined to tolerance flags F=R=L=0 (O is a sample count; O=0 would drop 7.9 % of 1.0-1.5 ft hours vs 1.8 % below 0.5 ft) for Codex review; refit with QC'd outcomes (max coef change 0.0005). 331 tests; live preview run candidate. Reply audits/2026-09-24-a3/04-round03-repairs-reply-claude.md; independent verification owed before merge [VERIFIED: branch commit, round04-author-probes.json]
+
+2026-09-24 | OPEN | john-neutral-landmark-survey | John proposes future neutral reference features at the VFW (SE corner) and parking lot diagonally across (SW corner), equivalent in purpose to house lawn/porch landmarks, to support continued community forecasting if he moves. Owner tasks: select exact durable points, photograph/map, measure with provenance/uncertainty, and document flood crossings before proposing adoption. Keep existing landmarks now; explicitly no change to Tern's current scope. No new measurements or equal-elevation claim [STATED: John in session]

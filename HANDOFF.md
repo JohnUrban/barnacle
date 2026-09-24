@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 11:21 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 11:42 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Immediate obligation — wind-shadow c2 round-03 repairs await Codex verification; HOLD merge
@@ -53,6 +53,13 @@ failure cases. John settled W9: AM/PM public event prose, 24-hour internal
 records. Practice output stays local. Tern recommended as developer; Codex
 independent reviewer. No provider selected, accounts connected or posts sent.
 Merge narrow doc changes when adopting; do not overwrite newer living docs.
+
+## Future owner task — neutral reference landmarks
+
+John will identify/map/measure candidate features at the VFW (SE) and parking
+lot (SW), serving the same role as house steps if he later moves. Details in
+BACKLOG `john-neutral-landmark-survey`; no elevations or equivalence established.
+Existing landmarks stay; this adds no requirement to Tern's current work.
 
 ## Operations
 
