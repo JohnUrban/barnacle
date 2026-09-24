@@ -71,20 +71,19 @@ looks stale, trust this file. Ledger lines are append-only:
       requires matched observations and issuance-time inputs; radar hindcasts
       and partial-input sensitivities remain separate. No production changes
       or edits to the now-frozen wind trial. Accepted release limits stand.
-      Codex round07 (`audits/2026-09-24-a4/07-round06-verification-codex.md`)
-      verifies Heron da06d511d: 388 tests OK (one expected skip), gate, all r4
-      outputs reproduced, prior boundary/positive controls pass. Invalid P is
-      unscorable; valid published-only B0 remains. Clock erratum C1 CLOSED.
-      R1 remains OPEN narrowly: absent/null decay tau bypasses validation and
-      crashes F1/full evaluator. Independent probe and bounded Heron prompt in
-      round07; repair + final verification deferred to next session. This is
-      offline robustness, not a demonstrated live incident. No owner choice.
-      R2–R6 resolved. Research unmerged. 235 pairs = 224 primary + 11 sensitivity;
-      no EXACT/NEAR; A/B1/B2 NOT YET EVALUABLE. Prior row erratum stands:
-      Sep13 primary 0–6 h rows 183/185 (not 182/183 in round03).
-      Logging-only schema-2 provenance patch already integrated; no logging,
-      model/alert/social/frozen-wind changes needed. Scientific evaluation
-      awaits informative events and matched issuance-time inputs/outcomes.
+      Evaluator audit a4 CLOSED in Codex round09:
+      `audits/2026-09-24-a4/09-close-out-codex.md`, candidate cd17a5a14.
+      R1–R6 and C1 resolved; missing/null timescale excludes safely, valid B0
+      retained, mean-only exception verified. 390 tests OK (one expected skip),
+      gate, all r5 outputs reproduced, seven frozen wind hashes match.
+      Research remains unmerged but ready for separate integration; no further
+      Heron repair or owner decision needed for close-out. Preserve current main
+      living docs when integrating. No production or frozen-trial change.
+      Scientific follow-up stays OPEN: 235 pairs = 224 primary + 11 sensitivity,
+      no EXACT/NEAR, all 804 advisory pairs zero-correction; A/B1/B2 remain
+      NOT YET EVALUABLE. B0 descriptive. Logging schema 2 already live; await
+      informative events and matched issuance-time inputs/street outcomes.
+      Prior row erratum stands: Sep13 primary 0–6 h rows 183/185.
 - [x] **Wind research corrections — audit 2026-09-24-a2 CLOSED (2026-09-24).**
       Claude reply02 confirmed R1-R5 and repaired the studies in `142907573`.
       Codex round03 reproduces all three revised reports, verifies canonical
@@ -703,3 +702,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 
 2026-09-24 | FACT | as-issued-round07-stopping-point | Codex verifies Heron da06d511d/d7ed15d4b: 388 tests OK (one expected skip), gate, r4 archive reproduction and earlier full-path controls pass; invalid published values no longer score; clock erratum C1 closed. Independent missing/null-tau probes still crash F1/full evaluator; R1 remains narrowly OPEN, R2–R6 resolved. Exact next-session repair prompt and receipts in audits/2026-09-24-a4/07-round06-verification-codex.md. Research stays unmerged; no live changes or urgent owner decision. A/B1/B2 remain NOT YET EVALUABLE; collection continues. [VERIFIED: round07 receipts]
 2026-09-24 | DONE | as-issued-validation-a4-round08 | Heron repaired audit 2026-09-24-a4 round 07's remaining R1 item on research/as-issued-validation (cd17a5a14; Amendment 5 post-review; r1-r4 kept): a decaying reading requires a present, non-null, positive finite published tau_h (missing/null = reasoned exclusion before use; the control replay no longer fills in the 36-h constant); mean-only rung is a declared, tested exception. Codex 07-verify-tau.py: null/missing excluded with strict JSON and valid B0 kept, baseline EXACT. r5 equals r4 on the real archive; 19 boundary cases + 5 controls pass (round08-receipts.json); 390 tests. Reply audits/2026-09-24-a4/08-round07-repair-reply-heron.md; final Codex verification owed; research unmerged [VERIFIED: branch commit, receipts]
+
+2026-09-24 | DONE | as-issued-evaluator-audit-closeout | Codex round09 independently verifies Heron cd17a5a14; audit 2026-09-24-a4 CLOSED, R1–R6/C1 resolved. Missing/null tau and mean-only controls pass; 390 tests OK (one expected skip), gate, all r5 archive outputs reproduced, seven frozen hashes match. Research unmerged and ready for separate integration; no additional repair requested from Heron. A/B1/B2 still NOT YET EVALUABLE; scientific follow-up and collection remain open. No production change. [VERIFIED: audits/2026-09-24-a4/09-close-out-codex.md and receipts]

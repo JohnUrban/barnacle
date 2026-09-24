@@ -1,0 +1,131 @@
+{
+  "candidate": "cd17a5a14",
+  "tests": {
+    "run": 390,
+    "result": "OK",
+    "skips": 1,
+    "required_grib": true
+  },
+  "gate": "clean",
+  "mean_only_probes": {
+    "absent": {
+      "rule_problems": [],
+      "F1": {
+        "points": 73,
+        "stale_tides_flag": false,
+        "rule": "decay",
+        "max_abs_vs_rule": 0.0
+      },
+      "classes": {
+        "EXCLUDED": 1
+      },
+      "reasons": [
+        "reading unavailable: no published gauge levels"
+      ],
+      "B0_point_pairs": 1,
+      "strict_json": "passed"
+    },
+    "null": {
+      "rule_problems": [],
+      "F1": {
+        "points": 73,
+        "stale_tides_flag": false,
+        "rule": "decay",
+        "max_abs_vs_rule": 0.0
+      },
+      "classes": {
+        "EXCLUDED": 1
+      },
+      "reasons": [
+        "reading unavailable: no published gauge levels"
+      ],
+      "B0_point_pairs": 1,
+      "strict_json": "passed"
+    },
+    "valid": {
+      "rule_problems": [],
+      "F1": {
+        "points": 73,
+        "stale_tides_flag": false,
+        "rule": "decay",
+        "max_abs_vs_rule": 0.0
+      },
+      "classes": {
+        "EXCLUDED": 1
+      },
+      "reasons": [
+        "reading unavailable: no published gauge levels"
+      ],
+      "B0_point_pairs": 1,
+      "strict_json": "passed"
+    },
+    "invalid": {
+      "rule_problems": [
+        "decay tau_h not a positive finite number"
+      ],
+      "F1": {
+        "status": "invalid published input",
+        "invalid_bay_values": 0,
+        "rule_problems": [
+          "decay tau_h not a positive finite number"
+        ]
+      },
+      "classes": {
+        "EXCLUDED": 1
+      },
+      "reasons": [
+        "invalid published input: decay tau_h not a positive finite number"
+      ],
+      "B0_point_pairs": 1,
+      "strict_json": "passed"
+    }
+  },
+  "frozen_files": [
+    {
+      "path": "models/wind_shadow/manifest.json",
+      "matches": true
+    },
+    {
+      "path": "models/wind_shadow/DESIGN.md",
+      "matches": true
+    },
+    {
+      "path": "forecast/wind_shadow.py",
+      "matches": true
+    },
+    {
+      "path": "history/scripts/evaluate_wind_shadow.py",
+      "matches": true
+    },
+    {
+      "path": "history/scripts/fit_wind_shadow_c2.py",
+      "matches": true
+    },
+    {
+      "path": "models/wind_shadow/rain_ref.py",
+      "matches": true
+    },
+    {
+      "path": "models/wind_shadow/stage_storage_curve.csv",
+      "matches": true
+    }
+  ],
+  "syntax_311_files": 13,
+  "changed_production_paths": [],
+  "modified_prior_reports": [],
+  "changed_paths": [
+    "history/plans/2026-09-24-as-issued-validation-protocol.md",
+    "history/reports/as_issued/readiness-fidelity-r5.json",
+    "history/reports/as_issued/readiness-inventory-r5.json",
+    "history/reports/as_issued/readiness-summary-r5.json",
+    "history/reports/as_issued/round08-receipts.json",
+    "history/reports/as_issued/study-a-advisory-r5.json",
+    "history/reports/as_issued/study-b-events-r5.json",
+    "history/reports/as_issued/study-b-street-r5.json",
+    "history/scripts/as_issued/cli.py",
+    "history/scripts/as_issued/fidelity.py",
+    "history/scripts/as_issued/round06_receipts.py",
+    "history/scripts/as_issued/street.py",
+    "tests/test_as_issued_validation.py"
+  ]
+}

@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 18:39 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 18:42 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -45,15 +45,19 @@ tails/advisory corrections remain experimental. As-issued rain skill is not
 established: five observed-reference events tie; Oct30 reconstruction is not
 observed validation; Sep13 partial QPF is sensitivity only.
 
-## Deferred validation — Heron round 08 returned; final Codex verification next
+## Deferred validation — evaluator audit a4 CLOSED; science awaits data
 
-a4 round 07 (Codex) verified round 06 and left one narrow R1 item (missing/null
-decay tau). Heron round 08: `audits/2026-09-24-a4/08-round07-repair-reply-heron.md`;
-research `cd17a5a14` (Amendment 5: a decaying reading requires its published
-tau; never filled with 36 h; mean-only rung is a declared exception). Codex's
-`07-verify-tau.py`: null/missing now reasoned exclusions with strict JSON and
-valid B0 kept; baseline EXACT. r5 equals r4; 390 tests; gate clean.
-A/B1/B2 still NOT YET EVALUABLE. Research unmerged pending Codex verification.
+Codex round09 independently verifies Heron `cd17a5a14`:
+`audits/2026-09-24-a4/09-close-out-codex.md`. R1–R6 and C1 resolved.
+Missing/null tau now excludes safely, preserves valid B0, never substitutes
+36 h; mean-only exception checked. 390 tests OK (one expected local-data skip),
+gate, all r5 outputs reproduced; seven frozen wind hashes unchanged.
+Research remains unmerged, ready for a separate integration step. No further
+Heron repair or owner decision required for audit close-out. Preserve newer
+main coordination when integrating; no production/model/alert changes here.
+A/B1/B2 still NOT YET EVALUABLE; B0 descriptive. Archive logging is already
+live. Await informative correction/rain events and matched as-issued outcomes;
+scientific follow-up remains OPEN despite evaluator audit closure.
 
 ## Social rehearsal — returned repairs verified; regional captions next
 
