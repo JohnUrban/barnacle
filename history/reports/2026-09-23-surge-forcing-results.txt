@@ -1,0 +1,47 @@
+hours 187368; wind valid 81.9%; pressure valid 78.7%; test-decade wind valid 98.6%, pressure 96.7%
+theta* (training decade) = 70 deg FROM (corr 0.624); prior NE-E 45-90; corr at 45: 0.469/0.557, at 90: 0.596, at 225: -0.469
+
+=== lead 6 h (MAE ft, held-out 2016-2026) ===
+                                                   model  features_missing  all hours  high tides  plug band  storm starts
+                                             M0 constant             0.000      0.228       0.221      0.217         0.330
+                               M1 decay tau36 (baseline)             0.000      0.218       0.206      0.206         0.308
+             M2 A past wind: tau by tercile [36, 24, 36]             0.009      0.217       0.205      0.206         0.308
+           M2 B future wind: tau by tercile [24, 18, 48]             0.008      0.217       0.205      0.204         0.301
+  M3 A past wind+pressure: coef [0.0004, 0.0069, 0.0034]             0.051      0.216       0.203      0.207         0.302
+M3 B future wind+pressure: coef [0.0009, -0.0044, 0.002]             0.050      0.211       0.197      0.201         0.290
+
+=== lead 12 h (MAE ft, held-out 2016-2026) ===
+                                                   model  features_missing  all hours  high tides  plug band  storm starts
+                                             M0 constant             0.000      0.297       0.292      0.278         0.464
+                               M1 decay tau36 (baseline)             0.000      0.274       0.269      0.269         0.408
+             M2 A past wind: tau by tercile [36, 36, 36]             0.009      0.274       0.269      0.269         0.408
+           M2 B future wind: tau by tercile [36, 24, 72]             0.009      0.273       0.268      0.262         0.397
+  M3 A past wind+pressure: coef [0.0004, 0.0146, 0.0055]             0.051      0.272       0.267      0.273         0.391
+M3 B future wind+pressure: coef [0.0019, -0.006, 0.0009]             0.051      0.255       0.252      0.248         0.352
+
+=== lead 24 h (MAE ft, held-out 2016-2026) ===
+                                                     model  features_missing  all hours  high tides  plug band  storm starts
+                                               M0 constant             0.000      0.400       0.396      0.376         0.679
+                                 M1 decay tau36 (baseline)             0.000      0.345       0.339      0.350         0.527
+               M2 A past wind: tau by tercile [36, 36, 36]             0.009      0.345       0.339      0.350         0.527
+             M2 B future wind: tau by tercile [24, 36, 48]             0.009      0.342       0.336      0.341         0.489
+      M3 A past wind+pressure: coef [-0.0, 0.0155, 0.0072]             0.051      0.345       0.338      0.351         0.502
+M3 B future wind+pressure: coef [0.0033, -0.0077, -0.0058]             0.052      0.307       0.302      0.299         0.416
+
+=== lead 30 h (MAE ft, held-out 2016-2026) ===
+                                                     model  features_missing  all hours  high tides  plug band  storm starts
+                                               M0 constant             0.000      0.449       0.451      0.431         0.760
+                                 M1 decay tau36 (baseline)             0.000      0.371       0.361      0.378         0.550
+               M2 A past wind: tau by tercile [24, 36, 36]             0.009      0.371       0.361      0.373         0.549
+             M2 B future wind: tau by tercile [18, 24, 48]             0.009      0.369       0.359      0.371         0.496
+    M3 A past wind+pressure: coef [-0.0003, 0.0117, 0.007]             0.051      0.371       0.360      0.376         0.528
+M3 B future wind+pressure: coef [0.0037, -0.0091, -0.0097]             0.052      0.328       0.319      0.324         0.433
+
+=== lead 48 h (MAE ft, held-out 2016-2026) ===
+                                                    model  features_missing  all hours  high tides  plug band  storm starts
+                                              M0 constant             0.000      0.502       0.499      0.487         0.845
+                                M1 decay tau36 (baseline)             0.000      0.392       0.384      0.410         0.538
+              M2 A past wind: tau by tercile [24, 48, 36]             0.009      0.392       0.384      0.405         0.538
+            M2 B future wind: tau by tercile [18, 36, 48]             0.010      0.390       0.382      0.404         0.493
+  M3 A past wind+pressure: coef [-0.0006, 0.0042, 0.0051]             0.051      0.393       0.385      0.404         0.527
+M3 B future wind+pressure: coef [0.0041, -0.0126, -0.017]             0.054      0.344       0.338      0.352         0.426
