@@ -284,7 +284,7 @@ class LadderTests(unittest.TestCase):
 
     def test_persistence_decay_is_labeled_assumption(self):
         ol = _build()
-        self.assertEqual(ol["assumptions"]["persistence_decay_tau_h"], 48.0)
+        self.assertEqual(ol["assumptions"]["persistence_decay_tau_h"], 36.0)   # v0.10.6, measured
         late = [t for t in ol["tides"] if t["outlook_source"] == "persist_decay"]
         self.assertTrue(late)
         for t in late:

@@ -13,6 +13,22 @@ from unittest.mock import patch
 from forecast import flood_forecast_daily as ff
 from forecast import check_artifacts, outlook_sources, rendering
 
+
+# v0.10.6: whole-build tests never read the repo's live surge state or the
+# warm job's trailing mean (they are data files the bots rewrite).
+_isolation = [patch.object(ff, "_load_surge_state", return_value=None),
+              patch.object(ff._surge_mean, "load", return_value=None)]
+
+
+def setUpModule():
+    for p in _isolation:
+        p.start()
+
+
+def tearDownModule():
+    for p in _isolation:
+        p.stop()
+
 NOW = ff.parse_station_local_time('2026-09-23 16:13-04:00')
 class FrozenDateTime(dt.datetime):
     @classmethod
@@ -76,7 +92,9 @@ class SelectiveRecoveryTests(unittest.TestCase):
             self.assertEqual(a['water_series_input'],b['water_series_input'])
             self.assertAlmostEqual(b['all_tides'][-1]['forecast_peak_mllw']-a['all_tides'][-1]['forecast_peak_mllw'],1.2)
             self.assertEqual(b['current_surge_ft'],3.0) # legacy worst-tide meaning
-            self.assertEqual(b['water_series_input']['surge_ft'],1.424)
+            # v0.10.6: the reading is 1.424; the curve's surge decays from its time
+            self.assertEqual(b['water_series_input']['decay']['surge_obs_ft'],1.424)
+            self.assertAlmostEqual(b['water_series_input']['surge_ft'],1.424,delta=0.01)
         self.assertGreater(max(p['water_navd88'] for p in b['water_series']),b['water_series'][0]['tide_navd88'])
 
     def test_negative_zero_and_missing_surge(self):
@@ -84,11 +102,15 @@ class SelectiveRecoveryTests(unittest.TestCase):
             f=build(surge=surge)
             self.assertAlmostEqual(f['water_series'][0]['tide_navd88'],round(1+surge+ff.LOCAL_ENHANCEMENT_FT+ff.MLLW_TO_NAVD88_OFFSET,3))
             self.assertEqual(f['water_series_input']['observation_time'],'2026-09-23 16:07-04:00')
+        # v0.10.6 (owner decision missing-surge-ladder): no reading -> the
+        # curve and tank run on astronomy + the typical offset, labeled.
         f=build(surge=None,rain=2)
-        self.assertEqual(f['water_series'],[])
+        self.assertTrue(f['water_series'])
         self.assertIn('surge_observation',f['degraded_inputs'])
-        self.assertEqual(f['water_series_input']['source'],'unavailable')
-        self.assertIn('no fresh observed surge',ff._render_water_series_section(f))
+        self.assertEqual(f['water_series_input']['source'],'typical-offset')
+        self.assertAlmostEqual(f['water_series'][0]['tide_navd88'],
+                               round(1+0.54+ff.LOCAL_ENHANCEMENT_FT+ff.MLLW_TO_NAVD88_OFFSET,3))
+        self.assertIn('typical offset',ff._render_water_series_section(f))
         self.assertEqual(f['all_tides'][0]['forecast_peak_mllw'],7.6)
         with patch.object(ff,'_get') as transport, patch.object(ff,'simulate_pluvial_series') as tank:
             self.assertEqual(ff.build_water_series(None,[]),[])
@@ -116,8 +138,12 @@ class SelectiveRecoveryTests(unittest.TestCase):
         self.assertEqual(validate(f),[])
         f['degraded_inputs'].append('outlook_petss')
         self.assertTrue(any('degraded_inputs mismatch' in x for x in validate(f)))
-        f=build(surge=None);f['water_series']=[{'time':'invalid','water_navd88':0}]
+        # legacy 'unavailable' payloads keep their rule
+        f=build(surge=None);f['water_series_input']={'source':'unavailable','surge_ft':None}
+        f['water_series']=[{'time':'invalid','water_navd88':0}]
         self.assertTrue(any('unavailable series input' in x for x in validate(f)))
+        f=build(surge=None);f['water_series_input']['surge_ft']=float('nan')
+        self.assertTrue(any('finite surge' in x for x in validate(f)))
 
     def test_crossed_percentiles_are_counted_and_degraded(self):
         now=NOW.astimezone(dt.timezone.utc)

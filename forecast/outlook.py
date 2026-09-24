@@ -14,7 +14,7 @@ Surge ladder by lead (first available wins for the central line):
   nws_product   NWS coastal flood product row (matched within 2 h)
   nwps          NWS water-prediction gauge forecast, <= 72 h  (SHADOW)
   petss_mid     midpoint of P-ETSS p10/p90 surge, <= 102 h   (band shown)
-  persist_decay this hour's surge decayed e^(-lead/48 h)      (ASSUMPTION)
+  persist_decay this hour's surge decayed toward the trailing mean, tau 36 h (v0.10.6, measured)
   astro         astronomy only, labeled "no surge guidance"
 """
 
@@ -34,7 +34,7 @@ HORIZON_HOURS = 168
 NWPS_HORIZON_H = 72
 PETSS_HORIZON_H = 102
 PRODUCT_MATCH_H = 2.0
-PERSISTENCE_DECAY_TAU_H = 48.0     # assumption, scored by the shadow ledger
+PERSISTENCE_DECAY_TAU_H = 36.0     # v0.10.6: measured (surge_decay.SURGE_DECAY_TAU_H); toward the trailing mean
 LEAD_BUCKETS = ((0, 24, "0-24 h"), (24, 48, "24-48 h"), (48, 72, "48-72 h"),
                 (72, 102, "72-102 h"), (102, 168, "102-168 h"))
 REGIME_RANK = {"dry": 0, "cold_lockout": 0, "unknown": 0, "street": 1, "light": 2,
@@ -146,7 +146,7 @@ def _rain_at(grid, nbm, wpc, t_utc, lead_h):
 
 
 def build_tides(now_utc, data, all_tides, persisted_surge, classify_fn,
-                depths_fn, mllw_to_navd88_offset):
+                depths_fn, mllw_to_navd88_offset, surge_mean_ft=0.0):
     astro = (data.get("astro") or {}).get("highs") or []
     grid = (data.get("grid") or {}).get("series") or {}
     nwps = (data.get("nwps") or {}).get("series")
@@ -178,7 +178,7 @@ def build_tides(now_utc, data, all_tides, persisted_surge, classify_fn,
                 g["petss_mid"] = astro_mllw + (lo + hi) / 2.0
         if persisted_surge is not None:
             g["persist_flat"] = astro_mllw + persisted_surge
-            g["persist_decay"] = astro_mllw + persisted_surge * math.exp(
+            g["persist_decay"] = astro_mllw + surge_mean_ft + (persisted_surge - surge_mean_ft) * math.exp(
                 -max(lead, 0.0) / PERSISTENCE_DECAY_TAU_H)
         central, central_src = astro_mllw, "astro"
         for src in LADDER:
@@ -656,9 +656,10 @@ def build_outlook_7d(now_utc, data, health, all_tides, persisted_surge,
                      surge_age_min, classify_fn, depths_fn,
                      mllw_to_navd88_offset, model_version, shadow=None,
                      nws_hourly=None, qpf_hourly=None, simulate_fn=None,
-                     potential_fn=None, enhancement_ft=0.0):
+                     potential_fn=None, enhancement_ft=0.0, surge_mean_ft=0.0):
     tides = build_tides(now_utc, data, all_tides, persisted_surge,
-                        classify_fn, depths_fn, mllw_to_navd88_offset)
+                        classify_fn, depths_fn, mllw_to_navd88_offset,
+                        surge_mean_ft=surge_mean_ft)
     days = build_days(now_utc, tides, data)
     series = build_series(now_utc, data, tides, nws_hourly, qpf_hourly,
                           simulate_fn, mllw_to_navd88_offset, enhancement_ft)
@@ -681,6 +682,7 @@ def build_outlook_7d(now_utc, data, health, all_tides, persisted_surge,
         },
         "assumptions": {
             "persistence_decay_tau_h": PERSISTENCE_DECAY_TAU_H,
+            "persistence_decay_mean_ft": _r(surge_mean_ft, 3),
             "persisted_surge_ft": _r(persisted_surge, 3),
             "persisted_surge_age_min": surge_age_min,
             "petss_central": "midpoint of the p10/p90 surge band",

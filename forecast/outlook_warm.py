@@ -20,6 +20,7 @@ import sys
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _HERE)
 import outlook_sources as srcs  # noqa: E402
+import surge_mean  # noqa: E402
 
 PATH = srcs.GUIDANCE_PATH_DEFAULT
 
@@ -43,6 +44,10 @@ def main(argv=None):
         h = srcs.merge_nbm_qmd({"buckets": []}, existing.get("nbm_qmd"), now)
         print(f"{'nbm_qmd':8s} {h['status']:11s} {h['detail']}")
         return 0 if worst < 2 else 1
+    # v0.10.6: trailing 365-d mean surge for the surge decay (production
+    # input; the hourly run age-gates it and has a documented fallback)
+    rec, note = surge_mean.refresh(now)
+    print(f"surge_mean {note}: {rec.get('mean_ft') if rec else 'none'}", flush=True)
     data = srcs.fetch_guidance(now, existing, qmd_budget_s=args.budget)
     srcs.save_guidance(args.path, data)
     for key in ("nbm", "nbm_qmd", "petss", "wpc"):

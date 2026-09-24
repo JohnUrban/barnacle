@@ -41,7 +41,8 @@ SOURCE_LABELS = {
 SOURCE_SHORT = {"nws_product": "NWS product", "nwps": "NWS gauge fcst",
                 "petss_mid": "P-ETSS mid", "persist_decay": "persist. decayed",
                 "astro": "astro only", "nws-coastal-flood-product": "NWS product",
-                "surge-persistence": "persistence", "astronomical-only-degraded": "astro (degraded)"}
+                "surge-persistence": "persistence", "astronomical-only-degraded": "astro (degraded)",
+                "typical-offset-degraded": "astro + typical offset (degraded)"}
 REGIME_LABEL = {"dry": "no flooding", "street": "street water", "light": "light flooding",
                 "moderate": "moderate flooding", "severe": "severe flooding",
                 "cold_lockout": "cold lockout", "unknown": "unknown (no rain forecast)"}

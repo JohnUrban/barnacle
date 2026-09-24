@@ -234,7 +234,7 @@ def validate_csv_semantics(path, relpath, now_utc=None):
     elif relpath == "data/outlook_log.csv":
         allowed_sources = {"nws_product", "nwps", "petss_mid", "persist_decay", "astro"}
         allowed_prod = {"", "nws-coastal-flood-product", "surge-persistence",
-                        "astronomical-only-degraded"}
+                        "astronomical-only-degraded", "typical-offset-degraded"}
         allowed_rain = {"", "nws_grid", "nbm", "wpc_24h"}
         for logical_row, row in enumerate(rows, 2):
             try:
@@ -404,7 +404,7 @@ def validate_forecast_metadata(path, expected_model_version=None, now_utc=None):
             failures.append("outlook_degraded_inputs mismatch")
     si = forecast.get("water_series_input")
     if si is not None:
-        if not isinstance(si, dict) or si.get("source") not in {"surge-persistence", "unavailable"}:
+        if not isinstance(si, dict) or si.get("source") not in {"surge-persistence", "typical-offset", "unavailable"}:
             failures.append("invalid water_series_input")
         elif si["source"] == "unavailable":
             if si.get("surge_ft") is not None or forecast.get("water_series"):
