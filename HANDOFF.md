@@ -1,53 +1,49 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 01:10 EDT.** Rewrite wholesale each ship; <100 lines.
-`BACKLOG.md` OPEN LOOPS is authoritative. Attic is archival.
+**Snapshot: 2026-09-24 01:46 EDT.** Rewrite wholesale each ship; <100 lines.
+`BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Current system and release
+## Release in progress
 
-Production forecaster for 342 Bay Ave, Highlands NJ. Sandy Hook + NWS +
-catchment MRMS; 18 landmarks; hourly site/JSON, ~10-minute nowcast, maps,
-per-tide pages, widget, ntfy/email/SMS. Real people receive alerts.
-Production **v0.10.5** (`model/v0.10.5.md`), promoted `4bb885e02`.
-SMS = imminent impact; ntfy/email = longer-lead; alert tide horizon <=48 h.
+Production is v0.10.5. Candidate `1053eb436` on `v0.10.6-candidate` is
+independently APPROVED in `audits/2026-09-24-a1/05-candidate-approval-codex.md`.
+R1-R5 runtime repairs verified in round03 (298 tests, gate, three replays,
+both candidate charts). Claude round04 corrects R6 research/spec claims;
+Codex reproduced those results exactly. No further candidate blocker.
+John's promotion approval is recorded in BACKLOG DECISION v0.10.6-promotion.
+Next: merge candidate onto updated main, regenerate pages, preserve ledgers,
+run release checks, publish, verify deployed charts/stamps and archive, close.
+Audit is OPEN pending deployment, not awaiting another owner approval.
 
-## v0.10.6 candidate — code verified; evidence corrections owe a re-check
+## What v0.10.6 does and does not establish
 
-Branch `v0.10.6-candidate` at `1053eb436` (not merged; main runs v0.10.5).
-Codex round 03 (01:08 EDT): R1-R5 RESOLVED, keep the code; HOLD only for
-R6 study/spec claims. Claude round 04 (`audits/2026-09-24-a1/04-...-claude.md`)
-corrected them, research/docs only: Sep 13 is a partial-input sensitivity
-experiment (no forecast-miss claim); references labeled by evidence type;
-Oct 30 (reconstruction) out of the aggregates. Corrected result: on five
-observed rain floods the constant and decay rules TIE exactly; Oct 30's
-gauge shows decay under-predicting a building surge by ~0.3 ft.
-John's items 2/5 decision stands (experimental corrections kept; the
-`data/replay_inputs/` archive starts at merge).
+Surge decays toward the trailing mean with a 36-h time constant, from the
+reading's time. Missing-input ladder: fresh/stale-download/stale-state/typical
+offset. Seven-day outlook uses hourly P-ETSS and a labeled last-guidance
+assumed tail; advisory predictions remain inspectable. Core still does not
+spread the worst advisory surge over every low tide.
+John accepted experimental advisory corrections with prospective raw/output
+logging, and deferral of residual multi-event as-issued rain-flood skill.
+Archive implementation is verified; first real committed record owed.
+Corrected rain study: five observed-reference events tie, Oct30 peak is a
+reconstruction outside aggregates, Sep13 partial QPF is sensitivity only.
+Historical low-tide surge evidence supports decay; it is not street skill.
 
-Next: Codex re-checks `1053eb436` (affected comparison + gate); John's
-promotion DECISION; merge onto updated main regenerating pages there; verify
-deployed stamps, both charts and the archive's first record; then CLOSED.
+## Operations and residual work
 
-## v0.10.5 behavior and audit history
+Production serves 342 Bay Ave, Highlands NJ: 18 landmarks, hourly site/JSON,
+~10-min radar nowcast, maps, per-tide pages, widget, ntfy/email/SMS.
+SMS is imminent impact; ntfy/email longer lead; alert tide horizon <=48 h.
+Seven-day guidance is experimental and separate from core alerts.
+CF.Y.0021 Sep23 16:00 to Sep26 02:00 EDT: use PLAYBOOK and current inputs.
+v0.10.5 audit closed; post-close chart-escaping repair `0b9c4404a` is retained.
+Forecast-wind research is a separate planned version, not validated here.
+Source skill, compound/p90 scenarios, lag/hysteresis and antecedent wetness
+remain open. Scoring-cohort explanation on the page is a nonblocking follow-up.
+Operational visibility, storm dispatch, durable outbox, archive gaps and
+external-watchdog credentials remain open; local watchdog is Mac-awake only.
+Widget v7.29a re-copy owed; driveway remains a proxy, not a landmark.
 
-Core curve/tank use fresh observed-surge persistence, not worst product surge.
-NWS per-tide projections remain separate. Missing reading = unavailable core
-curve (owner-approved interim). Core/outlook health scopes are separate.
-Seven-day guidance remains experimental and separate from core alerts.
-Audit 2026-09-23-a1 closed round07; round08 records post-close chart-escaping
-defect/audit miss; fixed `0b9c4404a`, deployed chart visually verified.
-
-## Research and operational residuals
-
-Forecast-wind research remains a separate planned version; this review has
-not validated it. Source skill, compound/p90 scenarios, coverage assumptions,
-lag/hysteresis and antecedent wetness remain open. CF.Y.0021: Sep23 16:00
-to Sep26 02:00 EDT; consult PLAYBOOK and current inputs during the event.
-Log John's primary observations immediately, with provenance intact.
-Writer/validator parity, hourly failure visibility, storm dispatch, durable
-delivery outbox and archive gaps remain open. External watchdog credentials
-pending; local watchdog covers Mac-awake hours. Widget v7.29a re-copy owed.
-
-Date before relative-time prose; station-time helpers only. Explicit staging;
-commit -> gate -> push; rejected push -> rebase or abort -> gate again -> retry.
-Ledger conflicts union. Review credit follows actual participation and scope.
+Log primary observations with provenance. Date before relative-time prose;
+station-time helpers only. Explicit staging; commit -> gate -> push; rejected
+push -> rebase or abort -> gate again -> retry. Ledger conflicts union.

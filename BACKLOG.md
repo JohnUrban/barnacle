@@ -8,21 +8,13 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **v0.10.6 candidate review HOLD — narrow R6 evidence corrections
-      (Codex round 03, 2026-09-24).** Independently verified `b95b29829`,
-      including `ce2f898c8`: R1-R5 resolved; 298 tests, gate and three
-      frozen replays pass; both candidate charts render. Low-tide and
-      bounded rain calculations reproduce. Remaining R6: missing archived
-      rain cannot establish an ~8-inch forecast miss; event peak references
-      need correct provenance (including Oct30, July6 and Aug7); controlled
-      cases grouped by center-time bay are not all unchanged. Report/probe:
-      `audits/2026-09-24-a1/03-repair-verification-codex.md`.
-      Keep verified runtime changes. Claude corrects research/spec claims,
-      then focused verification. John's items-2/5 decision IS recorded:
-      experimental corrections + prospective archive, only residual
-      multi-event as-issued skill deferred. No repeated waiver needed.
-      Promotion DECISION and post-merge regeneration/deployment checks
-      remain owed; main stays v0.10.5, audit OPEN.
+- [ ] **v0.10.6 promotion and deployed close-out (2026-09-24).** Candidate
+      `1053eb436` independently approved in audit round05; R1-R6 resolved.
+      John: "Claude is done. I am ready to move forward if you are."
+      Conditional promotion approval accepted after verification. Merge onto
+      updated main, regenerate, preserve ledgers, gate/replays/tests, then
+      verify deployed charts/stamps and first replay-input archive record.
+      Items2/5 limitations remain accepted; close audit after deployment.
 
 - [x] **Seven-day top chart rendering regression (2026-09-23, post-close).**
       John's report confirmed an unescaped apostrophe in generated JavaScript,
@@ -564,3 +556,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | FACT | v0.10.6-round03-verification | Codex independently verified b95b29829 including ce2f898c8: R1-R5 resolved, 298 tests with required decoder, artifact gate and v0.10.1/v0.10.3/v0.10.6 replays PASS; both candidate charts render; low-tide score and bounded rain calculations reproduce. R6 remains HOLD for evidence corrections: unarchived Sep13 rain zero-fill cannot establish an ~8-inch forecast miss (observed-bay result is 8.0 in, not 5.2-5.7); runnable study/spec must distinguish reconstructed/photo/observed peak references and honor July6 canonical bracket; center-time below-plug group includes -2.0-in changes. Keep runtime repairs. Prospective archive append/gate verified; first real committed record pending promotion. Items2/5 owner decision accepted, no repeated waiver needed; promotion DECISION and deployed close-out still owed. Report audits/2026-09-24-a1/03-repair-verification-codex.md with reproducible evidence [VERIFIED]
 2026-09-24 | DONE | v0.10.6-round04-evidence-corrections | Codex round 03 (01:08 EDT): R1-R5 resolved, keep the code; HOLD narrowed to R6 study/spec claims. Branch 1053eb436 (research/docs only): Sep 13 part D relabeled a partial-input sensitivity experiment with all four maxima (observed bay 8.0, archived v0.10.3 curve 5.7, constant 4.8, decay 5.2 in) and no forecast-error attribution; references labeled by evidence type (07-06 canonical +15.4, not +15.0), 2025-10-30 out of aggregates; issuance-available readings; controlled scenarios grouped by trajectory. Corrected result: the five observed-reference events TIE (bay 0.43 vs 0.43 ft, peak 1.42 vs 1.42 in, identical simulated peaks). Reply audits/2026-09-24-a1/04-evidence-corrections-claude.md; r1 report and round-02 reply kept with appended pointers [VERIFIED: history/reports/2026-09-24-v0.10.6-rain-comparison-r2.txt]
 2026-09-24 | OPEN | outlook-cohort-display | Codex round 03 non-blocking: render the shadow-scoring `cohorts` explanation on the 7-day page (it shows 0 scored tides for changed-formula columns next to 1 for unchanged sources without saying why). After v0.10.6 promotion [STATED]
+
+2026-09-24 | DECISION | v0.10.6-promotion | John: "Claude is done. I am ready to move forward if you are." Authorizes promotion conditional on Codex readiness. Codex independently verified candidate 1053eb436 after rounds01/03 and Claude replies02/04: R1-R6 resolved; corrected B/C/D study reproduces exactly, runtime/tests/goldens unchanged since the 298-test round03. Review audits/2026-09-24-a1/05-candidate-approval-codex.md. Proceed with merge, regeneration on updated main, release checks and deployed verification; accepted items2/5 limitations stand [STATED: John in session; VERIFIED: independent review]
