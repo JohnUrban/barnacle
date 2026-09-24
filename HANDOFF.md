@@ -26,17 +26,22 @@ unverified. Corrected signal supports research, not live or street-flood skill.
 John approved Open-Meteo `gfs_seamless` wind AND pressure for a SHADOW-only
 candidate (BACKLOG DECISION `wind-shadow-open-meteo`). Read the updated plan
 `history/plans/2026-09-24-wind-term-candidate-plan.md`. No repeated feed-choice
-approval needed. No candidate code or evaluation record yet.
-Next owner of implementation: build source-matched offline fit/raw archive,
-freeze the exact source/clock/mean/QC/coefficients/evaluator manifest, test
-production isolation and fallbacks, then start hourly shadow logging.
+approval needed.
+BUILT (Claude, 2026-09-24) on branch `wind-shadow` (d82a82970; CI green; NOT
+merged, no evaluation record yet): design + route rule committed first
+(f66c077d5); 698 single runs archived with hashes; equivalence failed ->
+route A (fit on single runs only, spring/summer: no winter storms); frozen
+manifest/evaluator (`models/wind_shadow/FREEZE.md`); shadow runs after all
+production outputs and alerts, 25-s bounded, append-only `data/wind_shadow/`.
+NDFD probe done (`history/reports/2026-09-24-ndfd-feasibility.txt`): no
+pressure element; house coastal cell does not map to the API.
+Next: independent review of the branch, then merge = first record = trial
+start. Review changes before the merge only update FREEZE.md.
 Nothing changes displayed forecasts, rain predictions, maps, widget or alerts.
 Minimum evaluation: 60 days AND five completed storms, target high/low/plug,
 underprediction and rain-tank checks, production and NWS/P-ETSS comparators.
 Fallback is v0.10.6 with an explicit shadow reason; missing/slow candidate
 inputs cannot damage or unboundedly delay production. No test-set refitting.
-Run a bounded NDFD archive feasibility check; the archive exists, but exact
-grid/issuance/pressure equivalence is unproven. Preserve NWS inputs too.
 A live term still needs a new version, replays, independent candidate review
 and separate John DECISION. No subscription purchase or automatic cutover.
 
