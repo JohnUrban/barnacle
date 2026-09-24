@@ -128,3 +128,9 @@ python3 history/scripts/as_issued/cli.py advisory
 python3 history/scripts/as_issued/cli.py street
 python3 -m unittest tests.test_as_issued_validation tests.test_replay_archive_provenance
 ```
+
+---
+Erratum appended 2026-09-24 (audit 2026-09-24-a4 round 03, R6): "235 primary pairs" should read 235 total / 224 primary /
+11 sensitivity-only (primary: 33 APPROX-TIDE + 191 EXCLUDED); "within +0.43 ft at every lead" describes lead-bin MEAN bias
+(pointwise -0.21 to +0.50 ft); 2026-09-13 has two primary 0-6 h pairs (rows 183 and 185). Corrected in
+[the r3 report](2026-09-24-as-issued-validation-report-r3.md). Text above is kept unchanged.
