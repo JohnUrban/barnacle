@@ -25,6 +25,11 @@ constant tide surge); required numbers are validated BEFORE any arithmetic
 (finite bay/combined/astronomy/reading/mean, pluvial finite or absent = dry,
 rain finite and >= 0; a null rain hour is UNAVAILABLE, never zero) and
 failures are reasoned exclusions, never crashes.
+Round 05 (Amendment 4): the published series and rule metadata are validated
+BEFORE the astronomy check or the reading parse; an invalid published value
+is UNSCORABLE (with a reason) in every arm and summary, never a number or a
+wet/dry cell; a valid published line stays scorable for B0 whatever
+happens to the counterfactual arms.
 Observations come from the normalization manifest (R3): points, tolerance
 intervals, brackets, bounds, time windows, primary vs sensitivity rows.
 """
@@ -54,8 +59,7 @@ LEAD_BINS = ((0, 6), (6, 12), (12, 24), (24, 30))
 ARMS = ("P", "K", "D", "T", "L")
 
 
-def _num(x):
-    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+_num = F.num
 
 
 def clean_rain(rain):
@@ -84,11 +88,11 @@ def interp(times, values, t):
     if not times or t < times[0] or t > times[-1]:
         return None
     if t == times[0]:
-        return values[0]
+        return values[0] if _num(values[0]) else None
     for i in range(1, len(times)):
         if times[i] >= t:
             a, b = values[i - 1], values[i]
-            if a is None or b is None or (times[i] - times[i - 1]) > MAX_STEP:
+            if not _num(a) or not _num(b) or (times[i] - times[i - 1]) > MAX_STEP:
                 return None
             span = (times[i] - times[i - 1]).total_seconds()
             return a + (b - a) * ((t - times[i - 1]).total_seconds() / span if span else 0.0)
@@ -99,7 +103,7 @@ def window_range(times, values, t0, t1):
     """(min, max) of the interpolated line over [t0, t1] (grid points inside plus ends)."""
     pts = [interp(times, values, t0), interp(times, values, t1)]
     pts += [v for t, v in zip(times, values) if t0 < t < t1]
-    if any(x is None for x in pts):
+    if any(not _num(x) for x in pts):
         return None
     return min(pts), max(pts)
 
@@ -172,8 +176,18 @@ def arms(ctx, s):
     f = ctx.forecast(s)
     pts = [(t, p) for t, p in F.core_points(f) if p.get("tide_navd88") is not None]
     times = [t for t, _p in pts]
-    res = {"times": times, "P": [p.get("water_navd88") for _t, p in pts],
-           "P_pluvial": [p.get("pluvial_navd88") for _t, p in pts], "reasons": [], "facts": {}}
+    # the published line: invalid values become None (UNSCORABLE), never numbers
+    res = {"times": times, "P": [p.get("water_navd88") if _num(p.get("water_navd88")) else None for _t, p in pts],
+           "P_pluvial": [p.get("pluvial_navd88") if _num(p.get("pluvial_navd88")) else None for _t, p in pts],
+           "reasons": [], "facts": {}}
+    sp, rp = F.series_problems(pts), F.rule_problems(f)
+    res["facts"]["published_invalid"] = sp
+    if sp or rp:
+        # validated before any astronomy/reading arithmetic (a4 round 05)
+        res["reasons"].append("invalid published input: " + "; ".join(
+            [f"{n} invalid {k} value(s)" for k, n in sorted(sp.items())] + rp))
+        ctx._arms[s["blob"]] = res
+        return res
     f1 = F.f1_astronomy(f, ctx.p30)
     astro_ok = ("max_abs_vs_rule" in f1 and f1["max_abs_vs_rule"] <= 0.0025) or (
         f1.get("spread") is not None and f1["spread"] <= 0.0025 and f1.get("matches_a_tide_surge"))
@@ -338,6 +352,11 @@ def build_pairs(ctx, observations):
                 series = res.get(arm)
                 rec[arm] = None if series is None else interp(res["times"], series, t_ref)
                 rec[arm + "_range"] = (None if series is None or not win else window_range(res["times"], series, w0, w1))
+                if rec[arm] is None or (win and rec[arm + "_range"] is None):
+                    rec[arm] = rec[arm + "_range"] = None
+                    rec[arm + "_why"] = ("published line invalid or missing at the observation time" if arm == "P"
+                                         else "arm not computed: " + (why or "rain not archived") if series is None
+                                         else "arm invalid or missing at the observation time")
             rates = res.get("rates")
             if rates:
                 w = [r for t, r in zip(res["times"], rates) if dt.timedelta(0) <= (t_ref - t) <= dt.timedelta(hours=6)]
@@ -372,10 +391,15 @@ def score(p, arm):
     0 inside), midpoint error (INTERVAL, sensitivity only), bound
     exceedance/deficit, local depth error (inches, POINT), threshold cell."""
     f = p.get(arm)
-    if f is None:
+    if not _num(f):
         return None
     e = p["elevation"]
+    need = {"POINT": ("point",), "INTERVAL": ("point", "lo", "hi"), "UPPER": ("hi",), "LOWER": ("lo",)}.get(p["level_type"], ())
+    if not _num(e) or any(not _num(p.get(k)) for k in need):
+        return None
     rng = p.get(arm + "_range") or (f, f)
+    if not all(_num(x) for x in rng):
+        return None
     out = {"forecast": f, "forecast_wet": f > e, "observed_wet": observed_wet(p)}
     lo, hi = p.get("lo"), p.get("hi")
     if p["level_type"] == "POINT":
@@ -413,6 +437,8 @@ def _bootstrap(per_event, n=2000, seed=20260924):
 
 def summarize(pairs, arm, events_of, primary_only=True):
     rows = [(p, score(p, arm)) for p in pairs if (p["primary"] or not primary_only)]
+    unscorable = Counter(p.get(arm + "_why") or "observation or forecast value not a finite number"
+                         for p, sc in rows if sc is None)
     rows = [(p, sc) for p, sc in rows if sc is not None]
     pts = [(p, sc) for p, sc in rows if "error" in sc]
     out = {"pairs": len(rows), "point_pairs": len(pts)}
@@ -437,6 +463,7 @@ def summarize(pairs, arm, events_of, primary_only=True):
     out["upper_bound"] = {"n": len(ub), "false_wet": sum(x > 0 for x in ub), "max_exceedance_ft": round(max(ub), 3) if ub else None}
     out["lower_bound"] = {"n": len(lb), "missed_wet": sum(x > 0 for x in lb), "max_deficit_ft": round(max(lb), 3) if lb else None}
     out["threshold"] = dict(Counter(cell(sc) for _p, sc in rows))
+    out["unscorable"] = dict(unscorable)
     return out
 
 

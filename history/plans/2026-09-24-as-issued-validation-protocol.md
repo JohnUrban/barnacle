@@ -305,3 +305,27 @@ threshold was chosen by its effect on results.
 - **A3.4 Reporting populations.** Reports state total, primary and
   sensitivity-only pairs and their class counts separately; lead-bin figures
   are labeled as means, with the pointwise range beside them.
+
+## Erratum to Amendment 3's header (audit a4 round 05, C1)
+The header's "~17:30 EDT" was an unsupported estimate. The recorded times are
+the repair commit 837b0eb40 at 2026-09-24 17:06:14 EDT and the r3 outputs commit
+c9b898616 at 17:07:57 EDT; Amendment 3 was committed with 837b0eb40. No drafting
+time is claimed. The post-review/post-scoring disclosure is unchanged.
+
+## Amendment 4 — POST-REVIEW completion of the input contract (audit a4 round 05)
+Committed with the repair; its commit time is the record of when. Not
+predeclared; r1-r3 outputs are kept unchanged and revised outputs carry `-r4`.
+- **A4.1 Validation order.** The published core series (bay, combined, pluvial)
+  and the surge-rule metadata (decay mean, tau, reading value and time; the
+  v0.10.5 reading and time) are validated BEFORE the astronomy check, the
+  reading parse or any other arithmetic. Failures are counterfactual
+  exclusions with the specific reason; nothing raises.
+- **A4.2 Published line.** An invalid or missing published value is UNSCORABLE
+  (counted with its reason) in every arm and summary: never a number, never a
+  wet/dry cell. A valid published line stays scorable for B0 whenever only the
+  counterfactual inputs are invalid or unavailable.
+- **A4.3 Fidelity entry points** (astronomy, tank, advisory control, reading)
+  apply the same checks when called directly and return a status, not an
+  exception.
+- **A4.4 Outputs** are written as strict JSON (non-finite numbers refused) as a
+  final backstop, not as the admission mechanism.

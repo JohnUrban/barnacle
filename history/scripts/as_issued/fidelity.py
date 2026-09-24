@@ -51,15 +51,78 @@ def load_astronomy(directory=ASTRO_DIR):
     return p30, p6, sorted(set(hilo))
 
 
+def num(x):
+    """A finite real number (bools and strings are not)."""
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
+
+
+def _time_ok(x):
+    try:
+        return A.parse_utc(x) is not None
+    except (TypeError, ValueError, AttributeError):
+        return False
+
+
 def core_points(f):
+    """[(utc, point)] with a parseable time (malformed entries/times are skipped,
+    which leaves a gap that later checks treat as a gap)."""
     out = []
-    for p in f.get("water_series") or []:
+    ws = f.get("water_series") if isinstance(f, dict) else None
+    for p in ws if isinstance(ws, list) else []:
+        if not isinstance(p, dict):
+            continue
         try:
             t = parse_station_local_time(p["time"]).astimezone(UTC)
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError, AttributeError):
             continue
         out.append((t, p))
     return sorted(out, key=lambda x: x[0])
+
+
+def series_problems(pts):
+    """Counts of invalid published values on the core line (audit a4 round 05):
+    bay and combined must be finite numbers where present; pluvial must be a
+    finite number or absent (absent = no water above the street base)."""
+    c = Counter()
+    for _t, p in pts:
+        if p.get("tide_navd88") is not None and not num(p.get("tide_navd88")):
+            c["bay"] += 1
+        if p.get("water_navd88") is not None and not num(p.get("water_navd88")):
+            c["combined"] += 1
+        if p.get("pluvial_navd88") is not None and not num(p.get("pluvial_navd88")):
+            c["pluvial"] += 1
+    return dict(c)
+
+
+def rule_problems(f):
+    """Problems in the published surge-rule metadata, checked BEFORE it is used."""
+    wsi = f.get("water_series_input")
+    if wsi is None:
+        return []
+    if not isinstance(wsi, dict):
+        return ["water_series_input is not an object"]
+    out = []
+    dec = wsi.get("decay")
+    if dec:
+        if not isinstance(dec, dict):
+            return ["decay metadata is not an object"]
+        if not num(dec.get("mean_ft")):
+            out.append("decay mean_ft not a finite number")
+        if dec.get("tau_h") is not None and not (num(dec.get("tau_h")) and dec["tau_h"] > 0):
+            out.append("decay tau_h not a positive finite number")
+        if dec.get("surge_obs_ft") is not None or dec.get("observation_utc") is not None:
+            if not num(dec.get("surge_obs_ft")):
+                out.append("decay surge_obs_ft not a finite number")
+            if not _time_ok(dec.get("observation_utc")):
+                out.append("decay observation_utc not a parseable time")
+    elif wsi.get("surge_ft") is not None:
+        if not num(wsi.get("surge_ft")):
+            out.append("published reading surge_ft not a finite number")
+        try:
+            parse_station_local_time(wsi.get("observation_time"))
+        except (TypeError, ValueError, AttributeError):
+            out.append("published reading observation_time not parseable")
+    return out
 
 
 def decay_surge(decay, t, tau=None):
@@ -87,6 +150,10 @@ def f1_astronomy(f, p30):
     pts = [(t, p) for t, p in core_points(f) if p.get("tide_navd88") is not None]
     if not pts:
         return {"status": "no published bay line"}
+    bad = series_problems(pts).get("bay", 0)
+    rp = rule_problems(f)
+    if bad or rp:
+        return {"status": "invalid published input", "invalid_bay_values": bad, "rule_problems": rp}
     miss = [t for t, _p in pts if t not in p30]
     if miss:
         return {"status": "astronomy not covered", "missing": len(miss)}
@@ -103,7 +170,7 @@ def f1_astronomy(f, p30):
         if rule[1] is not None:
             out["max_abs_vs_rule"] = round(max(abs(v - rule[1]) for v in vals), 4)
         else:
-            tides = [t.get("surge_ft") for t in (f.get("all_tides") or []) if t.get("surge_ft") is not None]
+            tides = [t.get("surge_ft") for t in (f.get("all_tides") or []) if isinstance(t, dict) and num(t.get("surge_ft"))]
             out["matches_a_tide_surge"] = any(abs(out["implied_surge"] - s) <= 0.002 for s in tides)
     return out
 
@@ -167,6 +234,9 @@ def f2_tank(f, commit, replay, tank):
     pts = [(t, p) for t, p in core_points(f) if p.get("tide_navd88") is not None]
     if len(pts) < 2:
         return {"status": "no published bay line"}
+    sp = series_problems(pts)
+    if sp.get("bay") or sp.get("pluvial"):
+        return {"status": "not replayable", "reason": f"invalid published values {sp}"}
     src, rain = archived_rain(f, replay)
     if src is None:
         return {"status": "not replayable", "reason": rain}
@@ -196,15 +266,22 @@ def f3_parity(f, replay):
         return {"status": "no raw NWPS archived"}
     from forecast import replay_archive as ra
     from . import advisory as AD
-    raw = {t: v["ft"] for t, v in ra.expand(replay["nwps"]["hourly"])}
-    anchors = sorted((A.parse_utc(c["utc"]), float(c["ft"])) for c in (replay.get("advisory_corrections") or [])
-                     if c.get("ft") is not None)
+    raw = {t: v.get("ft") for t, v in ra.expand(replay["nwps"]["hourly"])}
+    corr_rows = replay.get("advisory_corrections") or []
+    if any(v is not None and not num(v) for v in raw.values()) or any(
+            not num(c.get("ft")) or not _time_ok(c.get("utc")) for c in corr_rows):
+        return {"status": "invalid input", "reason": "non-finite raw NWPS value or invalid recorded anchor"}
+    raw = {t: v for t, v in raw.items() if v is not None}
+    anchors = sorted((A.parse_utc(c["utc"]), float(c["ft"])) for c in corr_rows)
     ser = ((f.get("outlook_7d") or {}).get("series")) or []
     by_src = defaultdict(list)
     label_mismatch = 0
     for p in ser:
-        t = A.parse_utc(p["utc"])
-        if p.get("surge_source") in ("nwps", "nws_product") and t in raw and p.get("tide_navd88") is not None:
+        try:
+            t = A.parse_utc(p["utc"])
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+        if p.get("surge_source") in ("nwps", "nws_product") and t in raw and num(p.get("tide_navd88")):
             corr, anchored = AD.correction_at(anchors, t)
             by_src[p["surge_source"]].append(abs((p["tide_navd88"] - NAVD) - raw[t] - corr))
             label_mismatch += (p["surge_source"] == "nws_product") != anchored
@@ -232,6 +309,9 @@ def f4_reading(f, p30):
     published gauge series is a separate fetch from the one production used,
     so its last point may be a different 6-min observation: compared only when
     the times agree (v0.10.6 observation_utc / v0.10.5 observation_time)."""
+    rp = rule_problems(f)
+    if rp:
+        return {"status": "invalid published input", "rule_problems": rp}
     wsi = f.get("water_series_input") or {}
     dec = wsi.get("decay") or {}
     pub = dec.get("surge_obs_ft", wsi.get("surge_ft"))
@@ -245,10 +325,12 @@ def f4_reading(f, p30):
     if not lg:
         return {"status": "no published gauge levels"}
     series = {}
-    for q in lg:
+    for q in lg if isinstance(lg, list) else []:
         try:
-            series[parse_station_local_time(q["time"]).astimezone(UTC)] = float(q["value_mllw"])
-        except (KeyError, TypeError, ValueError):
+            v = float(q["value_mllw"])
+            if math.isfinite(v):
+                series[parse_station_local_time(q["time"]).astimezone(UTC)] = v
+        except (KeyError, TypeError, ValueError, AttributeError):
             continue
     if not series:
         return {"status": "no published gauge levels"}

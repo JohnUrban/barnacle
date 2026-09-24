@@ -433,6 +433,133 @@ class StreetArmTests(unittest.TestCase):
         self.assertEqual(S.verdict(dict(base, events=5, events_won_by_first=2)), "INCONCLUSIVE")
 
 
+def _mutate(case):
+    """(forecast, replay, p30) for a named full-path case (audit a4 rounds 03/05 probes + controls)."""
+    from forecast import replay_archive as ra
+    rain = None
+    if case == "exact_wet":
+        rain = [1.0] * 5 + [0.0] * 35
+    if case == "near_wet":                # the unarchived first core hour was dry in the published run
+        rain = [0.0] + [1.0] * 4 + [0.0] * 35
+    f, r, a = _v106(rain=rain, pluvial="consistent" if rain else None)
+    ws, dec = f["water_series"], f["water_series_input"]["decay"]
+    hrs = [START.replace(minute=0) + dt.timedelta(hours=k) for k in range(40)]
+    if case == "bay_string": ws[10]["tide_navd88"] = "bad"
+    if case == "mean_string": dec["mean_ft"] = "bad"
+    if case == "tau_string": dec["tau_h"] = "bad"
+    if case == "reading_bad_time": dec["observation_utc"] = "bad"
+    if case == "reading_string": dec["surge_obs_ft"] = "bad"
+    if case == "combined_nan":
+        for q in ws: q["water_navd88"] = float("nan")
+    if case == "combined_string":
+        for q in ws: q["water_navd88"] = "bad"
+    if case == "combined_plus5":
+        for q in ws: q["water_navd88"] += 5.0
+    if case == "pluvial_nan": ws[12]["pluvial_navd88"] = float("nan")
+    if case == "pluvial_string": ws[12]["pluvial_navd88"] = "bad"
+    if case == "time_bad": ws[15]["time"] = "not a time"
+    if case in ("rain_negative", "rain_nan", "rain_null"):
+        v = {"rain_negative": -1.0, "rain_nan": float("nan"), "rain_null": None}[case]
+        r[f["generated_utc"]]["qpf_hourly"] = ra.columnar(hrs, in_hr=[v] * 40)
+    if case == "near_wet":
+        rec = r[f["generated_utc"]]
+        rates = [x["in_hr"] for _t, x in ra.expand(rec["qpf_hourly"])]
+        rec["qpf_hourly"] = ra.columnar(hrs[1:], in_hr=rates[1:])
+    if case == "published_only":          # rain not archived, wet window: counterfactual EXCLUDED, B0 still scored
+        r = {}
+    return f, r, a
+
+
+MALFORMED = ("bay_string", "mean_string", "tau_string", "reading_bad_time", "reading_string", "combined_nan",
+             "combined_string", "combined_plus5", "pluvial_nan", "pluvial_string", "rain_negative", "rain_nan", "rain_null")
+
+
+def _full_chain(case, dry=True):
+    f, r, a = _mutate(case)
+    obs = [_entry("2026-09-24T08:00", "curb", "POINT", point=4.24, dry=dry)]
+    rep, pairs = S.evaluate(FakeCtx({"b1": f}, r, a), obs)
+    events = RP.per_event(pairs, {})
+    text = json.dumps({"report": rep, "events": events, "pairs": pairs}, allow_nan=False, default=str)
+    return rep, pairs, events, text
+
+
+class FullPathTests(unittest.TestCase):
+    """a4 round 05: evaluate -> per_event -> strict JSON for every boundary case and positive control."""
+
+    def test_malformed_inputs_never_raise_score_or_reach_a_verdict(self):
+        for case in MALFORMED:
+            with self.subTest(case=case):
+                rep, pairs, events, text = _full_chain(case)             # no exception, strict JSON
+                self.assertEqual(set(rep["class_counts"]), {"EXCLUDED"}, case)
+                self.assertTrue(all(p["class_note"] for p in pairs))       # a specific reason
+                self.assertEqual(rep["verdicts"]["B1 decay vs persisted (EXACT only)"], "NOT YET EVALUABLE")
+                for p in pairs:
+                    for arm in ("K", "D", "T", "L"):
+                        self.assertTrue(p[arm] is None or math.isfinite(p[arm]))
+
+    def test_invalid_published_line_is_unscorable_not_a_cell(self):
+        for case in ("combined_nan", "combined_string"):
+            rep, pairs, events, _t = _full_chain(case)
+            b0 = rep["B0_published_by_version"]["v0.10.6"]["(0,6]"]
+            self.assertEqual(b0["point_pairs"], 0); self.assertEqual(b0["threshold"], {})
+            self.assertEqual(b0["unscorable"], {"published line invalid or missing at the observation time": 1})
+            self.assertEqual(events[0]["leads"]["(0,6]"]["threshold"], {})
+            self.assertIn("invalid combined", pairs[0]["class_note"])
+
+    def test_valid_published_line_survives_counterfactual_exclusion(self):
+        for case in ("bay_string", "mean_string", "tau_string", "reading_bad_time", "rain_negative", "rain_null"):
+            rep, _p, _e, _t = _full_chain(case)
+            b0 = rep["B0_published_by_version"]["v0.10.6"]["(0,6]"]
+            self.assertEqual(b0["point_pairs"], 1, case); self.assertTrue(math.isfinite(b0["mae_ft"]))
+
+    def test_positive_controls(self):
+        rep, pairs, _e, _t = _full_chain("baseline")
+        self.assertEqual(rep["class_counts"], {"EXACT": 1})
+        rep, pairs, _e, _t = _full_chain("exact_wet")
+        self.assertEqual(rep["class_counts"], {"EXACT": 1}); self.assertIsNotNone(pairs[0]["D"])
+        rep, pairs, _e, _t = _full_chain("near_wet")
+        self.assertEqual(rep["class_counts"], {"NEAR": 1}, pairs[0]["class_note"])
+        rep, pairs, _e, _t = _full_chain("published_only", dry=False)
+        self.assertEqual(rep["class_counts"], {"EXCLUDED": 1})
+        b0 = rep["B0_published_by_version"]["v0.10.6"]["(0,6]"]
+        self.assertEqual(b0["point_pairs"], 1); self.assertTrue(math.isfinite(b0["mae_ft"]))
+        rep, pairs, _e, _t = _full_chain("published_only", dry=True)
+        self.assertEqual(rep["class_counts"], {"APPROX-TIDE": 1})
+
+    def test_fidelity_entry_points_do_not_raise(self):
+        p30 = _v106()[2]
+        tank = F._tank()
+        for case in MALFORMED + ("time_bad",):
+            f, r, _a = _mutate(case)
+            rp = r.get(f["generated_utc"])
+            out = [F.f1_astronomy(f, p30), F.f2_tank(f, "HEAD", rp, tank), F.f3_parity(f, rp), F.f4_reading(f, p30)]
+            json.dumps(out, allow_nan=False, default=str)
+            if case in ("bay_string", "mean_string", "tau_string", "reading_bad_time", "reading_string"):
+                self.assertEqual(out[0]["status"], "invalid published input", case)
+            if case.startswith("rain_") and case != "rain_null":
+                self.assertEqual(out[1]["status"], "not replayable", case)
+
+    def test_advisory_full_chain_is_strict_json(self):
+        for mutate in ("outlook_nan", "anchor_nan", "raw_nan", "outcome_nan", "none"):
+            rows, fc, levels, hilo = _advisory_fixture(0.3, 6, "corrected")
+            g = rows[0][0]["generated_utc"]
+            if mutate == "outlook_nan":
+                fc[g]["outlook_7d"]["series"][3]["tide_navd88"] = float("nan")
+            if mutate == "anchor_nan":
+                rows[0][0]["advisory_corrections"][0]["ft"] = float("nan")
+            if mutate == "raw_nan":
+                rows[0][0]["nwps"]["hourly"]["ft"][2] = float("nan")
+            pairs, skipped = AD.build_pairs(rows, fc.get, hilo)
+            if mutate == "outcome_nan":
+                levels = {k: dict(v, v=float("nan")) if i % 3 == 0 else v for i, (k, v) in enumerate(levels.items())}
+            AD.attach_outcomes(pairs, levels, dt.datetime(2026, 12, 1, tzinfo=UTC))
+            rep = AD.evaluate(pairs, {"test_mark": 1.35})
+            json.dumps({"report": rep, "skipped": skipped, "pairs": pairs}, allow_nan=False, default=str)
+            if mutate != "none":
+                self.assertTrue(skipped or rep["unscored"], mutate)
+        self.assertEqual(rep["phases"]["HIGH"]["verdict"], "IMPROVES")   # positive control still evaluates
+
+
 def _advisory_fixture(anchor_ft, n_episodes, obs_follows, corrupt_anchors=False, gap_h=72):
     """Synthetic replay records built END TO END: raw NWPS hourly, advisory rows
     whose totals exceed raw NWPS by anchor_ft at each advisory high tide, the

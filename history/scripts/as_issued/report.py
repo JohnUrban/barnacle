@@ -32,8 +32,8 @@ def per_event(pairs, event_peaks):
         obs_rows = {p["obs_row"]: p for p in ps}
         prim = [p for p in obs_rows.values() if p["primary"]]
         dry = all(p["dry"] for p in obs_rows.values())
-        sampled = [p["point"] if p["level_type"] == "POINT" else p["lo"] for p in prim
-                   if p["level_type"] in ("POINT", "INTERVAL", "LOWER")]
+        sampled = [x for x in (p["point"] if p["level_type"] == "POINT" else p["lo"] for p in prim
+                               if p["level_type"] in ("POINT", "INTERVAL", "LOWER")) if S._num(x)]
         day = min(p["obs_time"] for p in ps).astimezone(O.NY).strftime("%Y-%m-%d")
         pk = event_peaks.get(day)
         row = {"event": k, "first_obs": min(p["obs_time"] for p in ps), "observations": len(obs_rows),
@@ -46,6 +46,7 @@ def per_event(pairs, event_peaks):
         for lb in [f"({a},{b}]" for a, b in S.LEAD_BINS]:
             sub = [p for p in ps if p["lead_bin"] == lb and p["primary"]]
             scs = [(p, S.score(p, "P")) for p in sub]
+            uns = Counter(p.get("P_why") or "not scorable" for p, sc in scs if sc is None)
             scs = [(p, sc) for p, sc in scs if sc is not None]
             errs = [sc["error"] for _p, sc in scs if "error" in sc]
             dep = [sc["depth_error_in"] for _p, sc in scs if "depth_error_in" in sc]
@@ -60,7 +61,8 @@ def per_event(pairs, event_peaks):
                 "depth_bias_in": round(sum(dep) / len(dep), 1) if dep else None,
                 "interval_inside": f"{sum(x == 0 for x in iv)}/{len(iv)}" if iv else None,
                 "published_pluvial_at_obs": sum(1 for p, _sc in scs if p["published_pluvial_at_obs"] is not None),
-                "threshold": dict(Counter(S.cell(sc) for _p, sc in scs))}
+                "threshold": dict(Counter(S.cell(sc) for _p, sc in scs)),
+                "unscorable": dict(uns)}
         rows.append(row)
     return rows
 

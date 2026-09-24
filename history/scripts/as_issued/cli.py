@@ -22,7 +22,9 @@ def _write(name, obj):
     os.makedirs(OUT, exist_ok=True)
     path = os.path.join(OUT, name)
     with open(path, "w") as f:
-        json.dump(obj, f, sort_keys=True, default=str, separators=(",", ":"))
+        # strict JSON as a final BACKSTOP (a4 round 05): a non-finite number reaching an
+        # output is a bug; admission handling, not this, is what keeps it out
+        json.dump(obj, f, sort_keys=True, default=str, separators=(",", ":"), allow_nan=False)
         f.write("\n")
     return path
 
@@ -76,7 +78,7 @@ def advisory():
     _write(f"study-a-advisory-{REVISION}.json", {"report": rep, "pairs": pairs})
 
 
-REVISION = "r3"   # audit 2026-09-24-a4 round 03 completion; r1 (no suffix) and r2 outputs are preserved unchanged
+REVISION = "r4"   # audit 2026-09-24-a4 round 05 completion; r1 (no suffix), r2 and r3 outputs are preserved unchanged
 
 
 def load_normalized():
