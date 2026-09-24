@@ -40,10 +40,16 @@ try:
     from . import outlook as _outlook            # noqa: F401
     from . import outlook_sources as _outlook_sources
     from .outlook_page import render_outlook_page   # noqa: F401
+    from . import surge_decay as _surge_decay
+    from . import surge_mean as _surge_mean
+    from . import replay_archive as _replay_archive
 except ImportError:                      # run as a script from forecast/
     import outlook as _outlook           # noqa: F401
     import outlook_sources as _outlook_sources
     from outlook_page import render_outlook_page    # noqa: F401
+    import surge_decay as _surge_decay
+    import surge_mean as _surge_mean
+    import replay_archive as _replay_archive
 try:
     from .station_time import (          # noqa: F401
         STATION_TZ, _station_local_now, _station_local_today,
@@ -211,6 +217,50 @@ _LAST_SURGE_OBSERVATION_META = {
     "detail": "not fetched",
     "age_min": None,
 }
+# v0.10.6 replay archive: raw inputs captured during build_forecast for main()
+_LAST_REPLAY_INPUTS = {"outlook_data": None, "outlook_health": None, "qpf_hourly": None}
+# v0.10.6: the latest computable reading, fresh or not: (surge_ft, obs_utc).
+_LAST_SURGE_READING = {"reading": None}
+SURGE_STATE_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                "data", "surge_state.json")
+
+
+_SURGE_STATE_META = {"status": "ok", "detail": "not read"}
+
+
+def _load_surge_state(path=None):
+    """(surge_ft, obs_utc) of the last good FRESH reading an earlier run
+    saved, or None. Consumed by the v0.10.6 stale-state rung. Admission
+    problems are recorded in _SURGE_STATE_META for input_health (R5)."""
+    target = path or SURGE_STATE_PATH
+    if not os.path.exists(target):
+        _SURGE_STATE_META.update(status="ok", detail="no saved reading yet")
+        return None
+    try:
+        with open(target, encoding="utf-8") as f:
+            rec = json.load(f)
+        when = dt.datetime.fromisoformat(str(rec["observation_utc"]).replace("Z", "+00:00"))
+        val = float(rec["surge_ft"])
+        if when.tzinfo is None or not math.isfinite(val):
+            raise ValueError("naive time or non-finite surge")
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        _SURGE_STATE_META.update(status="degraded", detail=f"saved reading unreadable ({type(e).__name__}); not used")
+        return None
+    _SURGE_STATE_META.update(status="ok", detail=f"saved reading {val:+.3f} ft at {rec['observation_utc']}")
+    return (val, when)
+
+
+def _save_surge_state(surge_ft, obs_utc, now_utc, path=None):
+    rec = {"surge_ft": round(float(surge_ft), 4),
+           "observation_utc": obs_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+           "written_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+           "note": "last fresh Sandy Hook surge reading (v0.10.6 stale-state rung)"}
+    target = path or SURGE_STATE_PATH
+    tmp = target + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(rec, f, indent=1, sort_keys=True)
+        f.write("\n")
+    os.replace(tmp, target)
 
 
 def station_observation_age_min(value, now_local=None):
@@ -394,7 +444,7 @@ def fetch_tides_24h():
 
 
 def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
-                       hours_forward=30, interval_min=30):
+                       hours_forward=30, interval_min=30, surge_fn=None):
     """Model-predicted water level at 342 Bay over a continuous window
     — the data behind the widget tide-curve chart (user request
     2026-07-06: "show 12-24 hours of the expected height over time
@@ -407,9 +457,10 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
                        + MLLW_TO_NAVD88_OFFSET
 
     Notes / honest limitations:
-    - `surge_ft` (persisted surge or NWS value) is applied as a
-      CONSTANT across the window — same assumption the per-tide
-      forecast makes. Fine near-term, increasingly wrong further out.
+    - v0.10.6: `surge_fn(t_utc)` (the surge-decay anchor) gives each
+      point its own surge, decaying from the reading's time toward the
+      trailing-365-d mean. Without it, `surge_ft` is applied as a
+      constant (the nowcast's explicit astronomy-only 0.0 caller).
     - RAIN IS IN THE SERIES (2026-07-06 — the rain-DNA directive:
       rain modeling is Barnacle's value-add over tide apps and is
       never deferred). Each timestep gets the v0.9-alpha pluvial
@@ -429,7 +480,8 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
     """
     # Missing bay forcing cannot produce a definite tide/tank forecast.
     # Explicit zero remains valid (including nowcast's astronomy-only caller).
-    if surge_ft is None:
+    # v0.10.6 callers always pass surge_fn (the typical-offset rung included).
+    if surge_ft is None and surge_fn is None:
         return []
     now = _station_local_now()
     start = now - dt.timedelta(hours=hours_back)
@@ -567,7 +619,9 @@ def build_water_series(surge_ft, qpf_hourly=None, hours_back=6,
             t_local = parse_station_local_time(p["t"])
         except (TypeError, ValueError):
             continue
-        tide_water = astro + (surge_ft or 0.0) + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
+        point_surge = (surge_fn(t_local.astimezone(dt.timezone.utc)) if surge_fn is not None
+                       else (surge_ft or 0.0))
+        tide_water = astro + point_surge + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET
         # v0.10: feed the tank RAW hourly QPF rates — the tank model
         # supplies its own lag + integration (the old ad-hoc two-hour
         # smoothing is retired with the per-point static estimate).
@@ -670,6 +724,7 @@ def fetch_current_surge():
         "age_min": None,
         "observation_time": None,
     })
+    _LAST_SURGE_READING["reading"] = None
     obs = fetch_observed_recent()
     if not obs:
         return None
@@ -682,14 +737,15 @@ def fetch_current_surge():
         return None
     _LAST_SURGE_OBSERVATION_META["observation_time"] = station_time_storage_key(last_obs_time)
     _LAST_SURGE_OBSERVATION_META["age_min"] = round(age_min, 1)
-    if age_min < -2 or age_min > SURGE_OBS_MAX_AGE_MIN:
+    if age_min < -2:
         _LAST_SURGE_OBSERVATION_META.update({
             "status": "degraded",
-            "detail": (f"latest observation {age_min:.1f} min old; "
-                       f"surge persistence limit is "
-                       f"{SURGE_OBS_MAX_AGE_MIN} min"),
+            "detail": f"latest observation {age_min:.1f} min in the future",
         })
         return None
+    # v0.10.6: an older reading is still COMPUTED (the stale-download rung
+    # decays it from its own time); only a fresh one is returned here.
+    stale = age_min > SURGE_OBS_MAX_AGE_MIN
     try:
         obs_dt = parse_station_local_time(last_obs_time)
     except (ValueError, TypeError):
@@ -739,6 +795,15 @@ def fetch_current_surge():
     else:
         return None
     surge = last_obs_val - pred_at_obs
+    _LAST_SURGE_READING["reading"] = (surge, obs_dt.astimezone(dt.timezone.utc))
+    if stale:
+        _LAST_SURGE_OBSERVATION_META.update({
+            "status": "degraded",
+            "detail": (f"latest observation {age_min:.1f} min old "
+                       f"(fresh limit {SURGE_OBS_MAX_AGE_MIN} min); "
+                       f"observed minus astronomical then: {surge:+.3f} ft"),
+        })
+        return None
     _LAST_SURGE_OBSERVATION_META.update({
         "status": "ok",
         "detail": (f"observed minus astronomical: {surge:+.3f} ft; "
@@ -809,7 +874,8 @@ OUTLOOK_GUIDANCE_PATH = os.path.join(_REPO_ROOT, "data", "outlook_guidance.json"
 
 
 def build_outlook_7d_field(now_utc, all_tides, persisted_surge, surge_age_min,
-                           nws_hourly=None, qpf_hourly=None):
+                           nws_hourly=None, qpf_hourly=None, surge_mean_ft=0.0,
+                           obs_reading=None):
     """(outlook_7d, health_entries) for the 7-day outlook (2026-09-23).
 
     A NEW field: never widens all_tides, so alerts, per-tide pages, the
@@ -822,6 +888,7 @@ def build_outlook_7d_field(now_utc, all_tides, persisted_surge, surge_age_min,
     data, health = _outlook_sources.gather(
         now_utc, guidance_path=OUTLOOK_GUIDANCE_PATH,
         deadline=_outlook_sources.Deadline(_outlook_sources.OUTLOOK_FETCH_BUDGET_S))
+    _LAST_REPLAY_INPUTS.update(outlook_data=data, outlook_health=health)
     entries = {f"outlook_{k.strip('_')}": {"status": h.get("status", "unavailable"),
                                            "detail": h.get("detail", "")}
                for k, h in health.items()}
@@ -839,7 +906,8 @@ def build_outlook_7d_field(now_utc, all_tides, persisted_surge, surge_age_min,
         nws_hourly=nws_hourly, qpf_hourly=qpf_hourly,
         simulate_fn=simulate_pluvial_series,
         potential_fn=estimate_pluvial_water_models,
-        enhancement_ft=LOCAL_ENHANCEMENT_FT)
+        enhancement_ft=LOCAL_ENHANCEMENT_FT, surge_mean_ft=surge_mean_ft,
+        obs_reading=obs_reading)
     n_guided = sum(1 for t in outlook_7d["tides"] if t["outlook_source"] != "astro")
     entries["outlook_7d"] = {
         "status": "ok",
@@ -874,14 +942,14 @@ PREDICTIONS_LOG_FIELDS = [
     "hours_until_peak",          # signed; negative once peak has passed
     "predicted_mllw_astronomical",  # NOAA hilo astronomical-only prediction
     "surge_ft_predicted",        # signed; ft above/below astronomical
-    "surge_source",              # "nws-coastal-flood-product" | "surge-persistence"
+    "surge_source",              # "nws-coastal-flood-product" | "surge-persistence" | "typical-offset-degraded" (v0.10.6)
     "sh_peak_mllw_predicted",    # astronomical + surge (NOT cold-lockout aware)
     "peak_rain_in_hr_predicted",
     "water_navd88_predicted",    # = sh_peak_mllw + LOCAL_ENHANCEMENT_FT + (-2.82)
     "regime_predicted",
     "cold_lockout",              # "true" | "false"
     "confidence_level",          # "high" | "medium" | "low" | ""
-    "model_version",             # as-run model spec version (currently v0.10.5)
+    "model_version",             # as-run model spec version (currently v0.10.6)
 ]
 
 DAY_RISK_LOG_PATH = os.path.join(_REPO_ROOT, "data", "day_risk_log.csv")
@@ -1089,7 +1157,7 @@ def update_forecast_accuracy():
     return _summarize_accuracy(last_n=30)
 
 
-CURRENT_MODEL_VERSION = "v0.10.5"
+CURRENT_MODEL_VERSION = "v0.10.6"
 FORECAST_SCHEMA_VERSION = "1.0"
 
 # v0.8 wind-direction sectors for the storm-bump adjustment. Sandy Hook
@@ -2087,6 +2155,7 @@ def build_forecast():
     # it (2026-07-06 fix; forecastHourly periods carry no QPF and the
     # old read silently returned 0.0 forever).
     qpf_result = fetch_nws_qpf()   # list of (utc_dt, in/hr), or None
+    _LAST_REPLAY_INPUTS.update(outlook_data=None, outlook_health=None, qpf_hourly=qpf_result)
     qpf_available = qpf_result is not None
     qpf_hourly = qpf_result or []
     input_health["nws_qpf"] = {
@@ -2146,11 +2215,38 @@ def build_forecast():
     else:
         surge_error = ""
     surge_meta = dict(_LAST_SURGE_OBSERVATION_META)
+    # v0.10.6 SURGE DECAY: every future hour's surge decays from the newest
+    # valid reading's time toward the trailing-365-d mean (surge_decay.py).
+    _reading = _LAST_SURGE_READING.get("reading")
+    _stale = _reading if persisted_surge is None else None
+    _fresh = None
+    if persisted_surge is not None:
+        # the fresh value is authoritative; its time comes from the reading
+        # (or the observation metadata; at worst the run instant)
+        _when = (_reading[1] if (_reading and abs(_reading[0] - persisted_surge) < 1e-9)
+                 else None)            # only the reading that produced THIS value
+        if _when is None and surge_meta.get("observation_time"):
+            try:
+                _when = parse_station_local_time(surge_meta["observation_time"]).astimezone(dt.timezone.utc)
+            except (TypeError, ValueError):
+                _when = None
+        _fresh = (persisted_surge, _when or generated_utc)
+    surge_mean_ft, surge_mean_src, input_health["surge_mean"] = (
+        _surge_decay.resolve_mean(generated_utc, _surge_mean.load()))
+    surge_anchor = _surge_decay.choose_anchor(
+        generated_utc, surge_mean_ft, surge_mean_src,
+        fresh=_fresh, stale=_stale, state=_load_surge_state())
+    input_health["surge_state"] = {"status": _SURGE_STATE_META.get("status", "ok"),
+                                   "detail": _SURGE_STATE_META.get("detail", "")
+                                   + ("; USED (stale-state rung)" if surge_anchor.rung == "stale-state" else "")}
+    # (the fresh reading is SAVED by main(), next to the ledger writes;
+    # build_forecast only reads, so tests and previews never write data/)
     input_health["surge_observation"] = {
         "status": ("ok" if persisted_surge is not None
                    else surge_meta.get("status", "unavailable")),
-        "detail": (surge_meta.get("detail") if not surge_error
-                   else surge_error),
+        "detail": ((surge_meta.get("detail") if not surge_error else surge_error)
+                   + ("" if persisted_surge is not None
+                      else f"; using: {surge_anchor.label(generated_utc)}")),
     }
 
     # Evaluate each high tide independently
@@ -2177,19 +2273,22 @@ def build_forecast():
                 surge = closest["departure_ft"]
                 source = "nws-coastal-flood-product"
 
-        if forecast_peak is None and persisted_surge is not None:
-            # Surge persistence fallback. v0.7 (2026-06-14) dropped the
-            # `max(0.0, surge)` clip — negative surge is now passed
-            # through (HANDOFF 9c.6). Anti-surge conditions exist; the
-            # forecast should be allowed to predict below the
-            # astronomical tide.
-            surge = persisted_surge
+        if forecast_peak is None and surge_anchor.rung != "typical-offset":
+            # Surge persistence fallback, v0.10.6: the reading DECAYS from
+            # its own time toward the trailing mean (surge_decay.py). v0.7
+            # (2026-06-14) dropped the `max(0.0, surge)` clip — negative
+            # surge is passed through; anti-surge conditions exist.
+            _when = (peak_dt.astimezone(dt.timezone.utc) if peak_dt is not None
+                     else generated_utc)
+            surge = surge_anchor.at(_when)
             forecast_peak = tide_pred + surge
             source = "surge-persistence"
         elif forecast_peak is None:
-            surge = 0.0
-            forecast_peak = tide_pred
-            source = "astronomical-only-degraded"
+            # v0.10.6: no usable reading: astronomy plus the typical offset
+            # (the trailing mean; zero is biased low by ~0.5 ft), labeled.
+            surge = surge_anchor.mean_ft
+            forecast_peak = tide_pred + surge
+            source = "typical-offset-degraded"
 
         # Rain in [-90 min, +15 min] of THIS high tide (v0.7 before-biased
         # window — HANDOFF 9c.7). Rain after the peak cannot raise the
@@ -2469,14 +2568,24 @@ def build_forecast():
     # chart: restore observed-surge persistence (2026-09-23 recovery).
     # Product rows remain authoritative for THEIR high tides, not a constant
     # offset for every hour. No observed surge means no definite tank/curve.
-    water_series = build_water_series(persisted_surge, qpf_result)
+    water_series = build_water_series(surge_anchor.at(generated_utc), qpf_result,
+                                      surge_fn=surge_anchor.at)
+    # R5: provenance describes the reading actually USED; the attempted live
+    # fetch is kept separately as a diagnostic.
+    _age_h = surge_anchor.age_h(generated_utc)
     water_series_input = {
-        "source": "surge-persistence" if persisted_surge is not None else "unavailable",
-        "surge_ft": persisted_surge,
-        "observation_time": surge_meta.get("observation_time"),
-        "age_min": surge_meta.get("age_min"),
-        "status": "ok" if persisted_surge is not None else "unavailable",
-        "detail": surge_meta.get("detail", ""),
+        "source": ("typical-offset" if surge_anchor.rung == "typical-offset"
+                   else "surge-persistence"),
+        "surge_ft": round(surge_anchor.at(generated_utc), 4),
+        "observation_time": (station_time_storage_key(utc_to_station_local(surge_anchor.obs_utc))
+                             if surge_anchor.obs_utc is not None else None),
+        "age_min": round(_age_h * 60.0, 1) if _age_h is not None else None,
+        "live_fetch": {"observation_time": surge_meta.get("observation_time"),
+                       "age_min": surge_meta.get("age_min"),
+                       "status": surge_meta.get("status"), "detail": surge_meta.get("detail", "")},
+        "status": "ok" if surge_anchor.rung == "fresh" else "degraded",
+        "detail": surge_anchor.label(generated_utc),
+        "decay": surge_anchor.as_json(generated_utc),
     }
     input_health["tide_predictions"] = {
         "status": ("degraded" if _TIDE_FALLBACK_USED["flag"] else "ok"),
@@ -2600,7 +2709,10 @@ def build_forecast():
         outlook_7d, _ol_health = build_outlook_7d_field(
             generated_utc, all_tides, persisted_surge,
             surge_meta.get("age_min"), nws_hourly=nws_hourly,
-            qpf_hourly=(qpf_hourly if qpf_available else None))
+            qpf_hourly=(qpf_hourly if qpf_available else None),
+            surge_mean_ft=surge_anchor.mean_ft,
+            obs_reading=((surge_anchor.surge_ft, surge_anchor.obs_utc)
+                         if surge_anchor.rung != "typical-offset" else None))
         input_health.update(_ol_health)
     except Exception as e:
         input_health["outlook_7d"] = {"status": "unavailable",
@@ -2794,7 +2906,7 @@ def _tide_confidence(forecast, t):
         level = "medium"
         reason = ("NWS Coastal Flood product active, but this parser path "
                   "awaits its first independently verified real event")
-    elif surge_source == "astronomical-only-degraded":
+    elif surge_source in ("astronomical-only-degraded", "typical-offset-degraded"):
         level = "low"
         reason = ("live surge observation unavailable — astronomical tide "
                   "only, with no storm departure applied")
@@ -3004,6 +3116,8 @@ def _fmt_metric(value, spec=".2f", unavailable="unavailable"):
 _INPUT_LABELS = {
     "tide_predictions": "NOAA tide predictions",
     "surge_observation": "live surge observation",
+    "surge_mean": "typical surge offset (trailing 365-day mean)",
+    "surge_state": "saved last surge reading",
     "nws_coastal_product": "NWS coastal flood product",
     "nws_qpf": "NWS quantitative precipitation forecast",
     "nws_hourly": "NWS hourly weather forecast",
@@ -3468,7 +3582,7 @@ def assess_confidence(forecast):
         return ("medium",
                 "NWS Coastal Flood product active, but its parser output "
                 "awaits first-event independent verification")
-    if surge_source == "astronomical-only-degraded":
+    if surge_source in ("astronomical-only-degraded", "typical-offset-degraded"):
         return ("low",
                 "live surge observation unavailable — astronomical tide only; "
                 "storm departure is unknown")
@@ -5507,6 +5621,38 @@ def _render_water_series_section(forecast):
              "backgroundColor": "rgba(217,119,6,0.9)",
              "pointStyle": "rectRot", "pointRadius": 6,
              "pointBorderWidth": 2, "showLine": False})
+    # v0.10.6 (seven-day review item 6): the NWS advisory's OWN high-tide
+    # numbers as markers, so any gap between them and the persistence curve
+    # is visible and labeled, never hidden by blending.
+    # (review 2026-09-24-a1 R2: each marker goes to the NEAREST half-hour point;
+    # the exact advisory time is in the tide table and the note says so)
+    adv_data = [None] * len(labels)
+    _pt_times = []
+    for p in series:
+        try:
+            _pt_times.append(parse_station_local_time(p["time"]))
+        except (TypeError, ValueError):
+            _pt_times.append(None)
+    for t in forecast.get("all_tides") or []:
+        if t.get("source") != "nws-coastal-flood-product":
+            continue
+        try:
+            tt = parse_station_local_time(t["time"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        cands = [(abs((pt - tt).total_seconds()), i) for i, pt in enumerate(_pt_times) if pt is not None]
+        if cands and min(cands)[0] <= 15 * 60:
+            adv_data[min(cands)[1]] = to_in(
+                t["forecast_peak_mllw"] + LOCAL_ENHANCEMENT_FT + MLLW_TO_NAVD88_OFFSET)
+    has_advisory = any(v is not None for v in adv_data)
+    if has_advisory:
+        _adv = [v for v in adv_data if v is not None]
+        y_min = min(y_min, min(_adv) - 3)
+        y_max = max(y_max, max(_adv) + 3)
+        datasets.append(
+            {"label": "NWS advisory high tide (its own number)", "data": adv_data,
+             "borderColor": "#b91c1c", "backgroundColor": "#b91c1c",
+             "pointStyle": "rectRot", "pointRadius": 5, "showLine": False})
     if has_rain_layer:
         datasets.append(
             {"label": "Rain street-water (v0.10 tank hydrograph)",
@@ -5648,9 +5794,18 @@ def _render_water_series_section(forecast):
                 f"in the calibrated range and diverge for violent "
                 f"bursts.")
         note_bits.append(band_note)
-    note_bits.append("The blue curve holds the latest valid observed surge constant; "
-                     "individual NWS high-tide projections use their own guidance and may differ. "
-                     "Windows below are derived from these curves.")
+    _decay = (forecast.get("water_series_input") or {}).get("decay") or {}
+    if _decay.get("rung") == "typical-offset":
+        note_bits.append(f"No usable surge reading: the blue curve is astronomy plus the typical "
+                         f"offset ({_decay.get('mean_ft', 0):+.2f} ft), not a storm forecast. ")
+    else:
+        note_bits.append("The blue curve starts from the latest observed surge and lets it decay "
+                         f"toward the typical offset ({_decay.get('mean_ft', 0):+.2f} ft) with a "
+                         f"{_decay.get('tau_h', 36):.0f}-hour time constant; ")
+    note_bits.append("individual NWS high-tide projections use their own guidance and may differ"
+                     + (" (red diamonds: the advisory's own numbers, plotted at the nearest half hour; "
+                        "exact times in the tide table)" if has_advisory else "")
+                     + ". Windows below are derived from these curves.")
     return f"""
   <section class="water-series">
     <h2>Predicted near-term water levels</h2>
@@ -6040,6 +6195,17 @@ def _load_map_points_for_js():
     return out
 
 
+def _near_term_label(forecast):
+    """What the first 30 h of the maps are built from (v0.10.6 ladder)."""
+    si = forecast.get("water_series_input") or {}
+    if si.get("source") == "typical-offset":
+        return "astronomy + the typical surge offset (no usable surge reading)"
+    dec = si.get("decay") or {}
+    if dec.get("rung") in ("stale-download", "stale-state"):
+        return "an OLDER observed surge reading decaying toward the typical offset"
+    return "the observed surge decaying toward the typical offset"
+
+
 def _client_map_section_html(forecast, container_class="heatmap", level=2,
                               base_map_url="icons/map_raw.png",
                               show_depth_slider=False):
@@ -6422,6 +6588,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
         // forecast moment. Burst checkbox swaps in the navy-band
         // potential level across flagged (rain-risk) hours.
         var MS = {map_series_js};
+        var NEAR_LABEL = {json.dumps(" (" + _near_term_label(forecast) + ")")};
         var tSlider = document.getElementById('time-slider-input');
         var tLabel = document.getElementById('time-slider-value');
         var bToggle = document.getElementById('burst-potential-toggle');
@@ -6481,7 +6648,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
             + (burst ? ' \u2014 BURST POTENTIAL' : '')
             + (pt.b && !burst ? ' (rain-risk hour)' : '')
             + (pt.u ? ' \u2014 RAIN FORECAST UNAVAILABLE: tide-only, not a flood forecast' : '')
-            + (pt.o ? ' (7-day outlook guidance)' : ' (observed-surge persistence)');
+            + (pt.o ? ' (7-day outlook guidance)' : NEAR_LABEL);
           rerender();
         }}
         function jumpTo(i) {{
@@ -6675,7 +6842,7 @@ def _client_map_section_html(forecast, container_class="heatmap", level=2,
   <section class="{container_class}">
     <{hh}>Flood Map Forecast</{hh}>
     {intro_note}{toggle_html}{shading_html}
-    <p class="note">Near-term curve: observed-surge persistence. Later points use
+    <p class="note">Near-term curve: {_near_term_label(forecast)}. Later points use
     experimental outlook guidance; a change at the source boundary is not an observed jump.</p>
     {_render_input_health_html(forecast, scope="outlook")}
     <div class="map-wrap" style="position:relative">
@@ -7734,6 +7901,33 @@ def main():
 
     # Append to the master predictions log (HANDOFF 9b.3). Append-only.
     # Wrapped: a logging failure must not break the daily forecast run.
+    # v0.10.6: remember the last FRESH surge reading for the stale-state rung.
+    # A failed write is VISIBLE (R5): input_health + degraded_inputs.
+    try:
+        _dec = (forecast.get("water_series_input") or {}).get("decay") or {}
+        if _dec.get("rung") == "fresh" and _dec.get("observation_utc"):
+            _save_surge_state(_dec["surge_obs_ft"], dt.datetime.fromisoformat(
+                _dec["observation_utc"].replace("Z", "+00:00")),
+                dt.datetime.now(dt.timezone.utc))
+    except Exception as e:
+        print(f"WARNING: surge state not saved: {e}", flush=True)
+        forecast.setdefault("input_health", {})["surge_state"] = {
+            "status": "degraded", "detail": f"saving the last fresh reading failed ({type(e).__name__})"}
+        if "surge_state" not in (forecast.get("degraded_inputs") or []):
+            forecast["degraded_inputs"] = sorted((forecast.get("degraded_inputs") or []) + ["surge_state"])
+    # v0.10.6 prospective replay-input archive (items 2 and 5 of the v0.10.6
+    # review, owner decision 2026-09-24). A failure is visible (outlook scope:
+    # it does not change the forecast) and never breaks the run.
+    try:
+        _replay_archive.append(_replay_archive.build_record(
+            forecast, _LAST_REPLAY_INPUTS.get("outlook_data"),
+            _LAST_REPLAY_INPUTS.get("outlook_health"), _LAST_REPLAY_INPUTS.get("qpf_hourly")))
+    except Exception as e:
+        print(f"WARNING: replay archive not written: {e}", flush=True)
+        forecast.setdefault("input_health", {})["outlook_replay_archive"] = {
+            "status": "degraded", "detail": f"replay-input archive write failed ({type(e).__name__})"}
+        if "outlook_degraded_inputs" in forecast and "outlook_replay_archive" not in forecast["outlook_degraded_inputs"]:
+            forecast["outlook_degraded_inputs"] = sorted(forecast["outlook_degraded_inputs"] + ["outlook_replay_archive"])
     try:
         append_predictions_log(forecast)
         append_day_risk_log(forecast)

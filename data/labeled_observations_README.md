@@ -3,7 +3,7 @@
 Append-only log of empirical water-depth observations at named landmarks
 near 342 Bay Ave. Each row is "what John (or another observer) actually saw
 at a given time at a given landmark." Used to validate, calibrate, or
-refine the flood model (current spec: `model/v0.10.5.md`).
+refine the flood model (current spec: `model/v0.10.6.md`).
 
 ## Why this exists (updated 2026-07-06; original rationale below is history)
 

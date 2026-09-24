@@ -1,18 +1,21 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 01:46 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 01:49 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Release in progress
 
-Production is v0.10.5. Candidate `1053eb436` on `v0.10.6-candidate` is
+v0.10.6 (`model/v0.10.6.md`) is merged locally for promotion.
+Candidate `1053eb436` is
 independently APPROVED in `audits/2026-09-24-a1/05-candidate-approval-codex.md`.
 R1-R5 runtime repairs verified in round03 (298 tests, gate, three replays,
 both candidate charts). Claude round04 corrects R6 research/spec claims;
 Codex reproduced those results exactly. No further candidate blocker.
 John's promotion approval is recorded in BACKLOG DECISION v0.10.6-promotion.
-Next: merge candidate onto updated main, regenerate pages, preserve ledgers,
-run release checks, publish, verify deployed charts/stamps and archive, close.
+Regenerated on integrated main at 2026-09-24T05:46:59Z. Ledgers retain all
+previous bytes (predictions +6, day-risk +1, outlook +14); alert state unchanged.
+Three replays pass. Next: finish release checks, publish, verify deployed
+charts/stamps and the first committed archive, then close the audit.
 Audit is OPEN pending deployment, not awaiting another owner approval.
 
 ## What v0.10.6 does and does not establish

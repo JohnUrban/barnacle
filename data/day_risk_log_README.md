@@ -14,3 +14,8 @@ The key is `generated_utc`; `local_day` is derived through the station-time
 conversion. `potential_navd88` is the higher as-issued pluvial potential from
 the production pair, not a measured outcome. Merge conflicts resolve by union,
 and the publish gate rejects duplicate generation keys or invalid values.
+
+The v0.10.6 promotion generation is `2026-09-24T05:46:59Z`. Its bay input
+uses surge decay toward the trailing mean; historical rows are unchanged.
+This log retains its rain-risk meaning; the full model and all-pathway
+behavior are specified in `model/v0.10.6.md`.

@@ -12,6 +12,10 @@ import datetime as dt
 import html
 import json
 
+
+def _utc(stamp):
+    return dt.datetime.fromisoformat(str(stamp).replace("Z", "+00:00")).astimezone(dt.timezone.utc)
+
 try:
     from .station_time import parse_station_local_time
 except ImportError:                      # run as a script from forecast/
@@ -35,13 +39,17 @@ SOURCE_LABELS = {
     "nws_product": "NWS coastal flood product",
     "nwps": "NWS gauge forecast (shadow)",
     "petss_mid": "P-ETSS mid-band (GEFS surge)",
-    "persist_decay": "persistence, decayed (assumption)",
+    "persist_decay": "observed reading, decayed toward the typical offset",
+    "guidance_decay": "last guidance value, decayed toward the typical offset (assumed)",
+    "typical_offset": "astronomy + the typical surge offset (no surge information)",
     "astro": "astronomy only (no surge guidance)",
 }
 SOURCE_SHORT = {"nws_product": "NWS product", "nwps": "NWS gauge fcst",
-                "petss_mid": "P-ETSS mid", "persist_decay": "persist. decayed",
+                "petss_mid": "P-ETSS mid", "persist_decay": "reading decayed",
+                "guidance_decay": "guidance decayed", "typical_offset": "typical offset",
                 "astro": "astro only", "nws-coastal-flood-product": "NWS product",
-                "surge-persistence": "persistence", "astronomical-only-degraded": "astro (degraded)"}
+                "surge-persistence": "persistence", "astronomical-only-degraded": "astro (degraded)",
+                "typical-offset-degraded": "astro + typical offset (degraded)"}
 REGIME_LABEL = {"dry": "no flooding", "street": "street water", "light": "light flooding",
                 "moderate": "moderate flooding", "severe": "severe flooding",
                 "cold_lockout": "cold lockout", "unknown": "unknown (no rain forecast)"}
@@ -99,9 +107,13 @@ def _intro(ol, forecast):
          "every day. SHADOW: shown and scored, not yet the production surge source."),
         ("P-ETSS", "NOAA's GEFS-based probabilistic surge, hourly to 102 h; the shaded "
          "band is its 10th to 90th percentile and the line is the midpoint."),
-        ("Beyond 102 h", f"this hour's surge decayed with a {a.get('persistence_decay_tau_h', 48):.0f}-hour "
-         "e-folding time. That decay is an ASSUMPTION scored by the shadow ledger; astronomy "
-         "is the only honest number there."),
+        ("Beyond the guidance (about 102 h)", f"the LAST guidance hour's surge decaying toward the typical "
+         f"offset ({(a.get('persistence_decay_mean_ft') or 0):+.2f} ft) with a "
+         f"{a.get('persistence_decay_tau_h', 36):.0f}-hour time constant. The decay law was measured on "
+         "observed readings; applying it to a forecast value is an ASSUMPTION, drawn with triangles and "
+         "labeled on the chart. With no guidance at all, the observed reading decays from its own time "
+         "(the landing curve's rule); with no reading, the typical offset alone. Astronomy is the only "
+         "number here that needs no model."),
         ("Rain", f"NWS grid amounts to {grid_qpf_end}Z, then the National Blend of Models (NBM) "
          "6-h amounts to 7 days, WPC daily totals as fallback. Rain chance is the NWS grid to 7 days. "
          "NBM's probabilistic file adds the 10th/50th/90th percentile amounts and the chance of "
@@ -270,9 +282,33 @@ def _chart(ol):
         burst.append(inch_navd(max(pot, p["tide_navd88"])) if (p.get("burst_risk") and pot is not None) else None)
     unknown = [inch_navd(p.get("tide_navd88")) if p.get("rain_unknown") else None for p in series]
     src = [p.get("surge_source") for p in series]
+    # v0.10.6 checklist item 1: contiguous source runs, drawn as labeled bands
+    runs = []
+    for i, sname in enumerate(src):
+        if runs and runs[-1]["src"] == sname:
+            runs[-1]["end"] = i
+        else:
+            runs.append({"src": sname, "start": i, "end": i})
+    short = {"nws_product": "gauge fcst + advisory", "nwps": "gauge fcst", "petss_hourly": "P-ETSS hourly",
+             "guidance_decay": "guidance decaying (assumed)", "observed_decay": "reading decaying",
+             "typical_offset": "typical offset only"}
+    for r in runs:
+        r["label"] = short.get(r["src"], r["src"] or "?")
+    # the advisory's own high-tide numbers, as markers (inspectable, not hidden in the line)
+    # R2: each advisory marker goes to the NEAREST hourly slot (the chart's x-axis
+    # is hourly); the exact advisory time is in the table, and the note says so.
+    s_utc = [_utc(p["utc"]) for p in series]
+    advisory = [None] * len(series)
+    for t in ol.get("tides") or []:
+        if (t.get("guidance") or {}).get("nws_product") is None or not s_utc:
+            continue
+        tu = _utc(t["utc"])
+        i = min(range(len(s_utc)), key=lambda k: abs((s_utc[k] - tu).total_seconds()))
+        if abs((s_utc[i] - tu).total_seconds()) <= 1800:
+            advisory[i] = _inch(t["guidance"]["nws_product"])
     now_i = next((i for i, p in enumerate(series) if (p.get("lead_h") or 0) >= 0), 0)
     data = {"labels": labels, "tide": tide, "astro": astro, "pluv": pluv, "burst": burst,
-            "unknown": unknown, "src": src, "now_i": now_i,
+            "unknown": unknown, "src": src, "now_i": now_i, "runs": runs, "advisory": advisory,
             "landmarks": [{"label": n, "y": y, "color": c, "solid": solid}
                           for n, y, c, solid in LANDMARK_LINES]}
     all_vals = [v for k in ("tide", "astro", "pluv", "burst") for v in data[k] if v is not None] + \
@@ -299,18 +335,33 @@ def _chart(ol):
     { label: 'Tide + guidance surge (bay water)', data: D.tide, borderColor: '#1a5fa8',
       borderWidth: 2, pointRadius: 0, tension: 0.3 },
     { label: 'Astronomical tide only', data: D.astro, borderColor: '#7aa6d8', borderDash: [6, 4],
-      borderWidth: 1.2, pointRadius: 0, tension: 0.3 }
+      borderWidth: 1.2, pointRadius: 0, tension: 0.3 },
+    { label: 'NWS advisory high tide (its own number)', data: D.advisory, showLine: false,
+      borderColor: '#b91c1c', backgroundColor: '#b91c1c', pointStyle: 'rectRot', pointRadius: 5 }
   ];
   D.landmarks.forEach(function (lm) {
     datasets.push({ label: lm.label, data: D.labels.map(function () { return lm.y; }),
       borderColor: lm.color, borderWidth: lm.solid ? 1.5 : 1.2,
       borderDash: lm.solid ? [] : [6, 5], fill: false, pointRadius: 0 });
   });
+  var srcBands = { id: 'srcBands', beforeDraw: function (chart) {
+    var c = chart.ctx, a = chart.chartArea, xs = chart.scales.x;
+    c.save(); c.font = '10px sans-serif'; c.textBaseline = 'top';
+    D.runs.forEach(function (r, k) {
+      var x0 = xs.getPixelForValue(r.start) - (r.start > 0 ? 0.5 * (xs.getPixelForValue(1) - xs.getPixelForValue(0)) : 0);
+      var x1 = xs.getPixelForValue(r.end);
+      c.fillStyle = (k % 2) ? 'rgba(0,0,0,0.035)' : 'rgba(0,0,0,0)';
+      c.fillRect(x0, a.top, x1 - x0, a.bottom - a.top);
+      if (k > 0) { c.strokeStyle = '#555'; c.setLineDash([3, 3]); c.beginPath();
+        c.moveTo(x0, a.top); c.lineTo(x0, a.bottom); c.stroke(); c.setLineDash([]); }
+      if (x1 - x0 > 40) { c.fillStyle = '#444'; c.fillText(r.label, x0 + 3, a.top + 2); }
+    });
+    c.restore(); } };
   var nowLine = { id: 'nowLine', afterDraw: function (chart) {
     var x = chart.scales.x.getPixelForValue(D.now_i), c = chart.ctx, a = chart.chartArea;
     c.save(); c.strokeStyle = '#222'; c.lineWidth = 1.2; c.beginPath();
     c.moveTo(x, a.top); c.lineTo(x, a.bottom); c.stroke(); c.restore(); } };
-  new Chart(el, { type: 'line', data: { labels: D.labels, datasets: datasets }, plugins: [nowLine],
+  new Chart(el, { type: 'line', data: { labels: D.labels, datasets: datasets }, plugins: [srcBands, nowLine],
     options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
       scales: { y: { title: { display: true, text: 'inches vs SW grate (\u00b1 = above/below)' },
                      min: D.y_min, max: D.y_max },
@@ -320,8 +371,14 @@ def _chart(ol):
 </script>"""
     return (f'<section><h2>Water at the corner, next 7 days</h2>'
             f'<p class="note">Same grammar as the landing chart: blue is bay water (astronomical tide plus '
-            f'guidance surge: NWS gauge forecast inside 72 h, then P-ETSS, then decayed persistence); '
-            f'amber is rain street-water from the production tank model driven by the forecast rain '
+            f'guidance surge). Its surge source changes along the line and each switch is drawn as a dashed '
+            f'boundary with the source named at the top: the NWS gauge forecast (with the advisory\'s correction '
+            f'carried between advisory high tides) inside 72 h, then P-ETSS hourly to ~102 h, then the last '
+            f'guidance value decaying toward the typical offset (an assumption), or the observed reading decaying '
+            f'when there is no guidance. A step at a boundary is a change of source, not a forecast of the water '
+            f'jumping. Red diamonds are the NWS advisory\'s own high-tide numbers, plotted at the nearest hour '
+            f'(exact times in the table). '
+            f'Amber is rain street-water from the production tank model driven by the forecast rain '
             f'(NWS grid, then NBM); the navy band is the burst scenario at each burst-capable hour\'s own tide '
             f'level, the same numbers the maps use (the cards also quote the rain-alone low-bay figure and the '
             f'hypothetical burst on the day\'s high tide, which has no clock and is not on this chart). Thick '
@@ -361,13 +418,14 @@ def _peaks_chart(ol):
   var D = __DATA__;
   var el = document.getElementById('outlook-peaks-chart');
   if (!el || typeof Chart === 'undefined') { return; }
+  var ASSUMED = ['guidance_decay', 'persist_decay', 'typical_offset'];
   var datasets = [
     { label: 'Guidance band (P-ETSS 10-90%)', data: D.hi, borderWidth: 0,
       backgroundColor: 'rgba(26,95,168,0.15)', pointRadius: 0, fill: '+1', spanGaps: false },
     { label: 'band low', data: D.lo, borderWidth: 0, pointRadius: 0, fill: false, spanGaps: false },
     { label: 'Outlook (tide + guidance)', data: D.outlook, borderColor: '#1a5fa8',
       backgroundColor: '#1a5fa8', borderWidth: 2.5, pointRadius: 4, tension: 0.2,
-      pointStyle: D.sources.map(function (s) { return s === 'astro' ? 'crossRot' : (s === 'persist_decay' ? 'triangle' : 'circle'); }) },
+      pointStyle: D.sources.map(function (s) { return s === 'astro' ? 'crossRot' : (ASSUMED.indexOf(s) >= 0 ? 'triangle' : 'circle'); }) },
     { label: 'Astronomical tide only', data: D.astro, borderColor: '#7aa6d8', borderDash: [6, 4],
       borderWidth: 1.5, pointRadius: 2, tension: 0.2 },
     { label: 'Production forecast (landing page, 72 h)', data: D.production, borderColor: '#555555',
@@ -388,8 +446,9 @@ def _peaks_chart(ol):
 })();
 </script>"""
     return (f'<section><h2>High tides with the surge band, next 7 days</h2>'
-            f'<p class="note">Restored at John\'s request (2026-09-23): the per-tide view with the P-ETSS 10th to 90th percentile band, which is where a tide\'s reasonable high end shows (Saturday\'s band reaches the first porch step). Blue line: outlook with guidance (circle = NWS/P-ETSS guidance, triangle = '
-            f'decayed persistence, cross = astronomy only). Dashed light blue: astronomy alone. Shaded: '
+            f'<p class="note">Restored at John\'s request (2026-09-23): the per-tide view with the P-ETSS 10th to 90th percentile band, which is where a tide\'s reasonable high end shows (Saturday\'s band reaches the first porch step). Blue line: outlook (circle = NWS or P-ETSS guidance; triangle = ASSUMED: '
+            f'a guidance value or the observed reading decaying toward the typical offset, or the typical '
+            f'offset alone; cross = astronomy only). Dashed light blue: astronomy alone. Shaded: '
             f'P-ETSS 10th to 90th percentile surge band. Gray diamonds: the production forecast for the '
             f'same tides. Landmark lines are the same five as the landing chart, in the same colors. '
             f'The frame is the landing chart\'s standard \u221260 to +36 inches and only widens if a line would be clipped.</p>'

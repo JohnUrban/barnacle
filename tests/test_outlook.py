@@ -246,7 +246,8 @@ class LadderTests(unittest.TestCase):
         self.assertEqual(by["2026-09-23 18:19-04:00"]["outlook_source"], "nws_product")
         self.assertEqual(by["2026-09-23 18:19-04:00"]["outlook_mllw"], 6.9)
         self.assertEqual(by["2026-09-26 08:01-04:00"]["outlook_source"], "petss_mid")   # 73 h: product row absent, NWPS out of reach
-        self.assertEqual(by["2026-09-27 20:58-04:00"]["outlook_source"], "persist_decay")  # 110 h
+        # 110 h: beyond P-ETSS the last guidance value decays toward the typical offset (v0.10.6)
+        self.assertEqual(by["2026-09-27 20:58-04:00"]["outlook_source"], "guidance_decay")
         self.assertEqual(len(ol["tides"]), 14)
         self.assertTrue(all(t["band_lo_mllw"] is None for t in ol["tides"] if t["lead_h"] > 102))
 
@@ -269,9 +270,11 @@ class LadderTests(unittest.TestCase):
         ol = outlook.build_outlook_7d(NOW, data, _health(data), [], None, None,
                                       ff.classify_regime_from_water,
                                       lambda p: ff.predict_landmark_depths(p, 0.0, False),
-                                      ff.MLLW_TO_NAVD88_OFFSET, "v0.10.4")
-        self.assertTrue(all(t["outlook_source"] == "astro" for t in ol["tides"]))
-        self.assertTrue(all(t["outlook_mllw"] == t["astro_mllw"] for t in ol["tides"]))
+                                      ff.MLLW_TO_NAVD88_OFFSET, "v0.10.4", surge_mean_ft=0.54)
+        # v0.10.6: no surge information at all -> astronomy + the labeled typical
+        # offset (never a zero surge presented as a forecast)
+        self.assertTrue(all(t["outlook_source"] == "typical_offset" for t in ol["tides"]))
+        self.assertTrue(all(abs(t["outlook_mllw"] - (t["astro_mllw"] + 0.54)) <= 0.011 for t in ol["tides"]))
 
     def test_rain_source_switches_from_grid_to_nbm_beyond_grid_reach(self):
         ol = _build()
@@ -284,10 +287,13 @@ class LadderTests(unittest.TestCase):
 
     def test_persistence_decay_is_labeled_assumption(self):
         ol = _build()
-        self.assertEqual(ol["assumptions"]["persistence_decay_tau_h"], 48.0)
-        late = [t for t in ol["tides"] if t["outlook_source"] == "persist_decay"]
+        self.assertEqual(ol["assumptions"]["persistence_decay_tau_h"], 36.0)   # v0.10.6, measured
+        # the observed-reading decay stays in every tide's guidance (the shadow
+        # ledger scores it against flat persistence) even where guidance_decay leads
+        late = [t for t in ol["tides"] if t["lead_h"] > 102]
         self.assertTrue(late)
         for t in late:
+            self.assertEqual(t["outlook_source"], "guidance_decay")
             self.assertLess(t["guidance"]["persist_decay"], t["guidance"]["persist_flat"])
 
     def test_outlook_never_enters_all_tides_or_alerts(self):
@@ -315,7 +321,7 @@ class RainPathwayTests(unittest.TestCase):
         for p in S:
             self.assertIsNotNone(p["tide_navd88"])
             self.assertIsNotNone(p["water_navd88"])
-            self.assertIn(p["surge_source"], ("nwps", "nws_product", "petss_mid", "persist_decay", "astro"))
+            self.assertIn(p["surge_source"], tuple(outlook.HOURLY_SURGE_SOURCES))
         self.assertTrue({p["surge_source"] for p in S if 0 <= p["lead_h"] <= 60} <= {"nwps", "nws_product"})
         self.assertIn("nbm", {p["rain_source"] for p in S if p["lead_h"] > 80})
 
@@ -493,7 +499,8 @@ class AuditRepairBTests(unittest.TestCase):
     def test_r2_one_tide_many_issuances_is_one_observation(self):
         target = "2026-09-24 06:47-04:00"
         rows = [dict(target_tide_time=target, lead_h=str(40 - i), nwps_mllw="6.5",
-                     persist_flat_mllw="7.5", outlook_mllw="6.5", generated_utc=f"run-{i}") for i in range(28)]
+                     persist_flat_mllw="7.5", outlook_mllw="6.5", generated_utc=f"run-{i}",
+                     model_version="v0.10.6") for i in range(28)]
         sc = outlook.score_shadow(rows, {target: 6.5})
         r = sc["readiness"]["nwps_vs_persistence_le72h"]
         self.assertEqual(r["n"], 1)

@@ -1,0 +1,57 @@
+baseline v0.10.5 2026-09-24T04:01:55Z | candidate v0.10.5 2026-09-24T04:02:06Z
+candidate series input: surge +2.17 ft from a reading just now, decaying toward the typical offset +0.53 ft (time constant 36 h)
+baseline  series input: observed minus astronomical: +2.169 ft; observation age 8.0 min 2.1685999999999996
+
+30-h curve, 73 common points: candidate minus baseline (ft)
+  2026-09-23 18:00-04:00  tide 4.43 -> 4.43 (+0.00)
+  2026-09-23 22:00-04:00  tide 1.63 -> 1.63 (+0.00)
+  2026-09-24 02:00-04:00  tide 0.47 -> 0.37 (-0.09)
+  2026-09-24 06:00-04:00  tide 4.02 -> 3.77 (-0.26)
+  2026-09-24 10:00-04:00  tide 1.93 -> 1.53 (-0.40)
+  2026-09-24 14:00-04:00  tide 0.47 -> -0.06 (-0.53)
+  2026-09-24 18:00-04:00  tide 4.36 -> 3.72 (-0.65)
+  2026-09-24 22:00-04:00  tide 2.30 -> 1.55 (-0.75)
+  2026-09-25 02:00-04:00  tide -0.20 -> -1.04 (-0.84)
+  2026-09-25 06:00-04:00  tide 3.97 -> 3.04 (-0.93)
+  tide diff range -0.93..+0.00 ft; tank diff range +0.00..+0.00 ft
+
+per-tide peaks (source):
+  2026-09-24 06:47-04:00  6.4 (nws-coastal-flood-product) -> 6.4 (nws-coastal-flood-product)
+  2026-09-24 19:01-04:00  7.0 (nws-coastal-flood-product) -> 7.0 (nws-coastal-flood-product)
+  2026-09-25 07:25-04:00  6.9 (nws-coastal-flood-product) -> 6.9 (nws-coastal-flood-product)
+  2026-09-25 19:40-04:00  7.5 (nws-coastal-flood-product) -> 7.5 (nws-coastal-flood-product)
+  2026-09-26 08:01-04:00  7.5 (nws-coastal-flood-product) -> 7.5 (nws-coastal-flood-product)
+  2026-09-26 20:18-04:00  7.2 (nws-coastal-flood-product) -> 7.2 (nws-coastal-flood-product)
+
+day_worst: [('09-24', 'moderate', 'tide'), ('09-25', 'moderate', 'tide'), ('09-26', 'moderate', 'tide')] -> [('09-24', 'light', 'tide'), ('09-25', 'moderate', 'tide'), ('09-26', 'moderate', 'tide')]
+today regime: moderate -> street | flood windows: 14 -> 13
+Traceback (most recent call last):
+  File "<stdin>", line 27, in <module>
+  File "/opt/homebrew/Cellar/python@3.13/3.13.15/Frameworks/Python.framework/Versions/3.13/lib/python3.13/unittest/__init__.py", line 80, in __getattr__
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+AttributeError: module 'unittest' has no attribute 'mock'
+alert level: (3, 'moderate tide 2026-09-25 19:40-04:00', 'tide:2026-09-25 19:40-04:00') -> (3, 'moderate tide 2026-09-25 19:40-04:00', 'tide:2026-09-25 19:40-04:00')
+degraded: [] -> [] | outlook: ['outlook_nbm'] -> ['outlook_nbm']
+baseline curve vs advisory at advisory tides: 09-24 06:47 advisory 6.40 curve(hour) 6.99 | 09-24 19:01 advisory 7.00 curve(hour) 7.40
+candidate curve vs advisory at advisory tides: 09-24 06:47 advisory 6.40 curve(hour) 6.71 | 09-24 19:01 advisory 7.00 curve(hour) 6.71
+
+7-day line by candidate source: surge baseline -> candidate, ft
+  petss_hourly    n= 26 lead    -5..   92 h  diff mean +0.10 (min -0.08, max +0.54); baseline sources ['nws_product', 'petss_mid']
+  nwps            n=  1 lead    -1..   -1 h  diff mean +0.00 (min +0.00, max +0.00); baseline sources ['nwps']
+  nws_product     n= 71 lead    -0..   70 h  diff mean +0.00 (min +0.00, max +0.00); baseline sources ['nws_product']
+  guidance_decay  n= 76 lead    93..  168 h  diff mean +0.62 (min -0.02, max +0.85); baseline sources ['persist_decay', 'petss_mid']
+  2026-09-26 15:00-04:00: surge +1.90 (nws_product) -> +1.90 (nws_product)
+  2026-09-27 12:00-04:00: surge +1.46 (petss_mid) -> +1.55 (petss_hourly)
+  2026-09-28 00:00-04:00: surge +1.08 (petss_mid) -> +1.26 (guidance_decay)
+  2026-09-28 09:00-04:00: surge +0.26 (persist_decay) -> +1.10 (guidance_decay)
+  2026-09-30 12:00-04:00: surge +0.08 (persist_decay) -> +0.67 (guidance_decay)
+  boundary petss_hourly -> nwps at 2026-09-23 23:00-04:00: surge +2.10 -> +2.07
+  boundary nwps -> nws_product at 2026-09-24 00:00-04:00: surge +2.07 -> +2.04
+  boundary nws_product -> petss_hourly at 2026-09-26 23:00-04:00: surge +1.69 -> +1.75
+  boundary petss_hourly -> guidance_decay at 2026-09-27 21:00-04:00: surge +1.35 -> +1.33
+
+7-day cards regime: [('09-24', 'light'), ('09-25', 'moderate'), ('09-26', 'moderate'), ('09-27', 'light'), ('09-28', 'dry'), ('09-29', 'dry'), ('09-30', 'dry'), ('10-01', 'dry')] 
+                 -> [('09-24', 'light'), ('09-25', 'moderate'), ('09-26', 'moderate'), ('09-27', 'light'), ('09-28', 'light'), ('09-29', 'street'), ('09-30', 'street'), ('10-01', 'dry')]
+7-day table sources: ['nws_product', 'nws_product', 'nws_product', 'nws_product', 'nws_product', 'nws_product', 'petss_mid', 'petss_mid', 'guidance_decay', 'guidance_decay', 'guidance_decay', 'guidance_decay', 'guidance_decay', 'guidance_decay']
+worst flood chance: {'time': '2026-09-25 20:00-04:00', 'navd88': 4.712, 'pathway': 'rain (tank line)'} -> {'time': '2026-09-25 20:00-04:00', 'navd88': 4.712, 'pathway': 'rain (tank line)'}
+map payload water: 211 common points, diff -0.93..+0.85 ft

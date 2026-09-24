@@ -14,7 +14,7 @@ Surge ladder by lead (first available wins for the central line):
   nws_product   NWS coastal flood product row (matched within 2 h)
   nwps          NWS water-prediction gauge forecast, <= 72 h  (SHADOW)
   petss_mid     midpoint of P-ETSS p10/p90 surge, <= 102 h   (band shown)
-  persist_decay this hour's surge decayed e^(-lead/48 h)      (ASSUMPTION)
+  persist_decay this hour's surge decayed toward the trailing mean, tau 36 h (v0.10.6, measured)
   astro         astronomy only, labeled "no surge guidance"
 """
 
@@ -34,7 +34,7 @@ HORIZON_HOURS = 168
 NWPS_HORIZON_H = 72
 PETSS_HORIZON_H = 102
 PRODUCT_MATCH_H = 2.0
-PERSISTENCE_DECAY_TAU_H = 48.0     # assumption, scored by the shadow ledger
+PERSISTENCE_DECAY_TAU_H = 36.0     # v0.10.6: measured (surge_decay.SURGE_DECAY_TAU_H); toward the trailing mean
 LEAD_BUCKETS = ((0, 24, "0-24 h"), (24, 48, "24-48 h"), (48, 72, "48-72 h"),
                 (72, 102, "72-102 h"), (102, 168, "102-168 h"))
 REGIME_RANK = {"dry": 0, "cold_lockout": 0, "unknown": 0, "street": 1, "light": 2,
@@ -42,7 +42,11 @@ REGIME_RANK = {"dry": 0, "cold_lockout": 0, "unknown": 0, "street": 1, "light": 
 READINESS_MIN_N = 28               # distinct observed tides (~two weeks at two per day)
 PAIRINGS = (("nwps_mllw", "persist_flat_mllw"), ("nws_product_mllw", "persist_flat_mllw"),
             ("persist_decay_mllw", "persist_flat_mllw"), ("outlook_mllw", "production_mllw"))
-LADDER = ("nws_product", "nwps", "petss_mid", "persist_decay")
+LADDER = ("nws_product", "nwps", "petss_mid", "guidance_decay", "persist_decay", "typical_offset")
+# estimator source -> per-tide rung (review 2026-09-24-a1 R1: the table uses the
+# SAME estimator as the hourly line for every fallback rung)
+EST_TO_RUNG = {"guidance_decay": "guidance_decay", "observed_decay": "persist_decay",
+               "typical_offset": "typical_offset"}
 
 OUTLOOK_LOG_FIELDS = [
     "generated_utc", "target_tide_time", "lead_h", "astro_mllw",
@@ -146,7 +150,7 @@ def _rain_at(grid, nbm, wpc, t_utc, lead_h):
 
 
 def build_tides(now_utc, data, all_tides, persisted_surge, classify_fn,
-                depths_fn, mllw_to_navd88_offset):
+                depths_fn, mllw_to_navd88_offset, surge_mean_ft=0.0, est=None):
     astro = (data.get("astro") or {}).get("highs") or []
     grid = (data.get("grid") or {}).get("series") or {}
     nwps = (data.get("nwps") or {}).get("series")
@@ -176,9 +180,21 @@ def build_tides(now_utc, data, all_tides, persisted_surge, classify_fn,
                 g["petss_p10"] = astro_mllw + lo
                 g["petss_p90"] = astro_mllw + hi
                 g["petss_mid"] = astro_mllw + (lo + hi) / 2.0
+        if est is not None and not ({"nws_product", "nwps", "petss_mid"} & set(g)):
+            # every fallback rung comes from the one estimator the hourly line uses
+            sg, esrc = est(t_utc)
+            rung = EST_TO_RUNG.get(esrc)
+            if rung:
+                g[rung] = astro_mllw + sg
         if persisted_surge is not None:
             g["persist_flat"] = astro_mllw + persisted_surge
-            g["persist_decay"] = astro_mllw + persisted_surge * math.exp(
+        # shadow column: the observed reading decayed from ITS OWN time (R1), also
+        # when the reading is stale; legacy callers without an estimator keep lead
+        obs = est.observed(t_utc) if est is not None else None
+        if obs is not None:
+            g.setdefault("persist_decay", astro_mllw + obs)
+        elif est is None and persisted_surge is not None:
+            g["persist_decay"] = astro_mllw + surge_mean_ft + (persisted_surge - surge_mean_ft) * math.exp(
                 -max(lead, 0.0) / PERSISTENCE_DECAY_TAU_H)
         central, central_src = astro_mllw, "astro"
         for src in LADDER:
@@ -457,6 +473,97 @@ def _burst_hours(nws_hourly, qpf_hourly, nbm):
     return hours, convective_days
 
 
+# ---------------------------------------------------------------------------
+# v0.10.6: ONE hourly surge estimator for the chart line and the per-tide table
+# (checklist history/plans/2026-09-23-v0.10.6-outlook-review.md items 1-4)
+# ---------------------------------------------------------------------------
+HOURLY_SURGE_SOURCES = {
+    "nws_product": "NWS gauge forecast + advisory correction",
+    "nwps": "NWS gauge forecast (hourly)",
+    "petss_hourly": "P-ETSS hourly surge (mid of p10-p90)",
+    "guidance_decay": "last guidance value decaying toward the typical offset (assumed)",
+    "observed_decay": "observed reading decaying toward the typical offset",
+    "typical_offset": "astronomy + typical offset (no surge information)",
+}
+
+
+def _anchors_from_production(all_tides, nwps_by_hour):
+    """(instant, advisory_total - nwps_total) for every PRODUCTION tide whose
+    source is the NWS coastal flood product and whose hour NWPS covers."""
+    out = []
+    for t in all_tides or []:
+        if t.get("source") != "nws-coastal-flood-product" or t.get("forecast_peak_mllw") is None:
+            continue
+        try:
+            inst = parse_station_local_time(t["time"]).astimezone(dt.timezone.utc)
+        except (KeyError, TypeError, ValueError):
+            continue
+        key = inst.replace(minute=0, second=0, microsecond=0)
+        near = [nwps_by_hour[k] for k in (key, key + dt.timedelta(hours=1)) if k in nwps_by_hour]
+        if near:
+            out.append((inst, float(t["forecast_peak_mllw"]) - max(near)))
+    return sorted(out)
+
+
+def hourly_surge_estimator(now_utc, data, all_tides, surge_mean_ft=0.0, obs_reading=None,
+                           tau_h=PERSISTENCE_DECAY_TAU_H):
+    """est(t_utc) -> (surge_ft, source) for any hour, by precedence:
+    NWS gauge forecast (+ the advisory correction between advisory tides,
+    <= 72 h) -> P-ETSS hourly mid (<= 102 h) -> the LAST guidance value decaying
+    toward the typical offset (an assumption: the decay law was measured on
+    observed readings) -> the observed reading decaying from its own time
+    (the production curve's rule) -> the typical offset. Source switches are
+    reported per hour and drawn on the chart; nothing is smoothed across them."""
+    astro = {_utc(p["utc"]).replace(minute=0, second=0, microsecond=0): float(p["mllw"])
+             for p in ((data.get("astro_hourly") or {}).get("points") or [])}
+    nwps = (data.get("nwps") or {}).get("series") or []
+    nwps_by_hour = {_utc(p["utc"]).replace(minute=0, second=0, microsecond=0): p["ft"] for p in nwps}
+    petss = data.get("petss") or {}
+    p_lo = {_utc(q["utc"]).replace(minute=0, second=0, microsecond=0): q["surge_ft"] for q in (petss.get("p10") or [])}
+    p_hi = {_utc(q["utc"]).replace(minute=0, second=0, microsecond=0): q["surge_ft"] for q in (petss.get("p90") or [])}
+    anchors = _anchors_from_production(all_tides, nwps_by_hour)
+    guidance = {}                                   # hour -> (surge, source)
+    for key in sorted(astro):
+        lead = (key - now_utc).total_seconds() / 3600.0
+        if key in nwps_by_hour and lead <= NWPS_HORIZON_H:
+            corr, anchored = _anchor_correction(anchors, key)
+            guidance[key] = (float(nwps_by_hour[key]) + corr - astro[key],
+                             "nws_product" if anchored else "nwps")
+        elif key in p_lo and key in p_hi and lead <= PETSS_HORIZON_H:
+            guidance[key] = ((p_lo[key] + p_hi[key]) / 2.0, "petss_hourly")
+    g_keys = sorted(guidance)
+
+    def est(t_utc):
+        key = t_utc.replace(minute=0, second=0, microsecond=0)
+        if key in guidance:
+            return guidance[key]
+        prev = [k for k in g_keys if k < key]
+        if prev:
+            k0 = prev[-1]
+            s0 = guidance[k0][0]
+            age = (t_utc - k0).total_seconds() / 3600.0
+            return surge_mean_ft + (s0 - surge_mean_ft) * math.exp(-age / tau_h), "guidance_decay"
+        if obs_reading and obs_reading[0] is not None and obs_reading[1] is not None:
+            s0, t0 = obs_reading
+            age = (t_utc - t0).total_seconds() / 3600.0
+            if age <= 0:
+                return float(s0), "observed_decay"
+            return surge_mean_ft + (s0 - surge_mean_ft) * math.exp(-age / tau_h), "observed_decay"
+        return surge_mean_ft, "typical_offset"
+
+    def observed(t_utc):
+        """The observed reading decayed from its own time (None without one)."""
+        if not (obs_reading and obs_reading[0] is not None and obs_reading[1] is not None):
+            return None
+        s0, t0 = obs_reading
+        age = (t_utc - t0).total_seconds() / 3600.0
+        return float(s0) if age <= 0 else surge_mean_ft + (s0 - surge_mean_ft) * math.exp(-age / tau_h)
+    est.anchors = anchors
+    est.observed = observed
+    est.mean = surge_mean_ft
+    return est
+
+
 def series_end_utc(now_utc):
     """Rolling horizon: now + HORIZON_HOURS (audit round 03 S3: the declared
     168 h, the series, the tide table and the slider share one scope)."""
@@ -464,11 +571,12 @@ def series_end_utc(now_utc):
 
 
 def build_series(now_utc, data, tides, nws_hourly, qpf_hourly, simulate_fn,
-                 mllw_to_navd88_offset, enhancement_ft):
+                 mllw_to_navd88_offset, enhancement_ft, est=None):
     """Hourly points from -6 h to +168 h:
-    tide_navd88 = astro + guidance surge (NWPS hourly inside its reach,
-    else the per-tide ladder interpolated), pluvial_navd88 from the
-    production tank driven by NWS-grid / NBM / WPC rain, water = max."""
+    tide_navd88 = astro + the hourly surge estimator's value (v0.10.6:
+    hourly_surge_estimator; each point carries its surge_source),
+    pluvial_navd88 from the production tank driven by NWS-grid / NBM / WPC
+    rain, water = max."""
     hourly = (data.get("astro_hourly") or {}).get("points") or []
     if not hourly:
         return []
@@ -492,10 +600,11 @@ def build_series(now_utc, data, tides, nws_hourly, qpf_hourly, simulate_fn,
         astro = float(p["mllw"])
         key = t.replace(minute=0, second=0, microsecond=0)
         lead = (t - now_utc).total_seconds() / 3600.0
-        if key in nwps_by_hour and lead <= NWPS_HORIZON_H:
-            # NWPS supplies the hourly SHAPE; the CFW product rows stay the
-            # anchor (audit R8): an additive correction interpolated between
-            # product-anchored tides pulls the curve through each row.
+        if est is not None:
+            sg, src = est(t)
+            total = astro + sg
+        elif key in nwps_by_hour and lead <= NWPS_HORIZON_H:
+            # legacy path (no estimator supplied): NWPS shape + advisory anchors
             corr, csrc = _anchor_correction(anchors, t)
             total, src = float(nwps_by_hour[key]) + corr, ("nws_product" if csrc else "nwps")
         else:
@@ -656,12 +765,17 @@ def build_outlook_7d(now_utc, data, health, all_tides, persisted_surge,
                      surge_age_min, classify_fn, depths_fn,
                      mllw_to_navd88_offset, model_version, shadow=None,
                      nws_hourly=None, qpf_hourly=None, simulate_fn=None,
-                     potential_fn=None, enhancement_ft=0.0):
+                     potential_fn=None, enhancement_ft=0.0, surge_mean_ft=0.0,
+                     obs_reading=None):
+    if obs_reading is None and persisted_surge is not None:
+        obs_reading = (persisted_surge, now_utc)
+    est = hourly_surge_estimator(now_utc, data, all_tides, surge_mean_ft, obs_reading)
     tides = build_tides(now_utc, data, all_tides, persisted_surge,
-                        classify_fn, depths_fn, mllw_to_navd88_offset)
+                        classify_fn, depths_fn, mllw_to_navd88_offset,
+                        surge_mean_ft=surge_mean_ft, est=est)
     days = build_days(now_utc, tides, data)
     series = build_series(now_utc, data, tides, nws_hourly, qpf_hourly,
-                          simulate_fn, mllw_to_navd88_offset, enhancement_ft)
+                          simulate_fn, mllw_to_navd88_offset, enhancement_ft, est=est)
     days = add_rain_pathway(days, series, nws_hourly, potential_fn, classify_fn)
     worst = worst_points(series, days)
     petss = data.get("petss") or {}
@@ -681,9 +795,13 @@ def build_outlook_7d(now_utc, data, health, all_tides, persisted_surge,
         },
         "assumptions": {
             "persistence_decay_tau_h": PERSISTENCE_DECAY_TAU_H,
+            "persistence_decay_mean_ft": _r(surge_mean_ft, 3),
             "persisted_surge_ft": _r(persisted_surge, 3),
             "persisted_surge_age_min": surge_age_min,
-            "petss_central": "midpoint of the p10/p90 surge band",
+            "petss_central": "midpoint of the p10/p90 surge band, used hourly (v0.10.6)",
+            "hourly_surge_sources": HOURLY_SURGE_SOURCES,
+            "advisory_corrections": [{"utc": a.strftime("%Y-%m-%dT%H:%M:%SZ"), "ft": _r(c, 2)}
+                                     for a, c in est.anchors],
             "shadow": ("NWPS gauge forecast and P-ETSS are guidance only; production "
                        "surge stays product-or-persistence until the shadow ledger "
                        "shows a lower error (BACKLOG DECISION nwps-gauge-forecast-shadow)"),
@@ -776,6 +894,28 @@ def _lead_bucket(lead):
     return None
 
 
+# review 2026-09-24-a1 R3: a column whose FORMULA changed at a version is scored
+# only on rows written by that version or later; unchanged sources keep their
+# whole history. Rows are never rewritten; the cohort is reported.
+FORMULA_SINCE = {"persist_decay_mllw": "v0.10.6", "outlook_mllw": "v0.10.6",
+                 "production_mllw": "v0.10.6"}
+
+
+def _version_key(v):
+    try:
+        return tuple(int(x) for x in str(v).lstrip("v").split("."))
+    except ValueError:
+        return None
+
+
+def _in_cohort(col, row):
+    since = FORMULA_SINCE.get(col)
+    if since is None:
+        return True
+    k = _version_key(row.get("model_version"))
+    return k is not None and k >= _version_key(since)
+
+
 def score_shadow(rows, observed_by_time):
     """MAE / bias per source per lead bucket, plus promotion readiness.
 
@@ -804,7 +944,7 @@ def score_shadow(rows, observed_by_time):
         errs = {}
         for col in SCORED_COLUMNS:
             v = r.get(col)
-            if v in (None, ""):
+            if v in (None, "") or not _in_cohort(col, r):
                 continue
             try:
                 errs[col] = float(v) - obs
@@ -865,6 +1005,7 @@ def score_shadow(rows, observed_by_time):
         "scored_tides": scored_tides,
         "sampling": ("unit = one issued forecast of one tide; absolute errors averaged within a tide, "
                      "then across tides; candidate and baseline paired on the same issuance row"),
+        "cohorts": {col: f"rows from {since} on (formula changed)" for col, since in FORMULA_SINCE.items()},
         "buckets": buckets,
         "readiness": {
             "nwps_vs_persistence_le72h": pairwise("nwps_mllw", "persist_flat_mllw", 72),

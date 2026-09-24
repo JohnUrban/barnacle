@@ -11,6 +11,22 @@ from forecast import nowcast
 from forecast import nws_surge_parser
 
 
+# v0.10.6: whole-build tests never read the repo's live surge state or the
+# warm job's trailing mean (they are data files the bots rewrite).
+_isolation = [mock.patch.object(ff, "_load_surge_state", return_value=None),
+              mock.patch.object(ff._surge_mean, "load", return_value=None)]
+
+
+def setUpModule():
+    for p in _isolation:
+        p.start()
+
+
+def tearDownModule():
+    for p in _isolation:
+        p.stop()
+
+
 class InputHealthTests(unittest.TestCase):
     def test_stale_surge_observation_is_degraded_not_persisted(self):
         now = dt.datetime(2026, 9, 14, 12, 0)
@@ -19,10 +35,16 @@ class InputHealthTests(unittest.TestCase):
             return_value=[("2026-09-14 10:54", 5.2)],
         ), mock.patch.object(ff, "_station_local_now", return_value=now), \
                 mock.patch.object(ff, "_get") as get:
+            get.return_value = {"predictions": [
+                {"t": "2026-09-14 14:00", "v": "4.0"}, {"t": "2026-09-14 15:00", "v": "4.2"}]}
             surge = ff.fetch_current_surge()
 
+        # v0.10.6: a stale reading is never returned as FRESH persistence,
+        # but it is computed and kept for the stale-download rung.
         self.assertIsNone(surge)
-        get.assert_not_called()
+        reading = ff._LAST_SURGE_READING["reading"]
+        self.assertIsNotNone(reading)
+        self.assertAlmostEqual(reading[0], 5.2 - 4.18, places=6)
         self.assertEqual(ff._LAST_SURGE_OBSERVATION_META["status"],
                          "degraded")
         self.assertIn("66.0 min old",
@@ -93,7 +115,9 @@ class InputHealthTests(unittest.TestCase):
         self.assertEqual(forecast["model_version"], ff.CURRENT_MODEL_VERSION)
         self.assertIsNone(forecast["cumulative_rain_24h_in"])
         self.assertIsNone(forecast["peak_rain_rate_in_hr"])
-        self.assertEqual(forecast["surge_source"], "astronomical-only-degraded")
+        # v0.10.6: no reading at all -> astronomy + the typical offset, labeled
+        self.assertEqual(forecast["surge_source"], "typical-offset-degraded")
+        self.assertEqual(forecast["water_series_input"]["source"], "typical-offset")
         self.assertEqual(
             forecast["input_health"]["nws_qpf"]["status"], "unavailable"
         )
