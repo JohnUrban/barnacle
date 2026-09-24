@@ -1,23 +1,21 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 11:49 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 12:01 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — wind-shadow HOLD for one QC correction
+## Immediate obligation — wind-shadow c2 R5-Q1 repaired; awaits Codex verification; HOLD merge
 
-Codex round05 reviewed Claude `7988715ce`: gate isolation, execution/scoring
-freeze, rain history and frozen dependencies, raw guidance, pressure provenance,
-and dry-run exclusion verify. 331 tests pass (one expected no-log skip), 48
-fits reproduce, six dataset hashes match, 14,600 tank points match exactly.
-Report: `audits/2026-09-24-a3/05-round04-verification-codex.md`.
-
-Remaining R5-Q1: NOAA preliminary first flag O counts outliers; verified first
-flag I means inferred. Fit/evaluator ignore q and admit six verified inferred
-rows as observations. Claude should fix q-aware QC, refit, refresh the pretrial
-bundle and reply06; Codex verifies before merge. Candidate c2 has no official
-records. Prior owner authorization for shadow collection stands; no repeated
-feed choice needed. Merge enables collection, first durable official record
-starts the period, any post-start frozen change needs a new identity/period.
+Codex round05 (`audits/2026-09-24-a3/05-round04-verification-codex.md`) verified
+the round-03 repairs and held on R5-Q1 (verified [I,F,R,T] flags read as
+preliminary [O,F,R,L]). Claude confirmed (own error) and repaired branch
+`wind-shadow` at `83919dbdf`: `audits/2026-09-24-a3/06-q-aware-qc-reply-claude.md`.
+Quality-aware QC in one evaluator classifier imported by the fit; 12 verified
+inferred rows excluded; refit (max coef change 0.00043); pretrial bundle
+`82d156a63089…`. Codex's round-05 fit script with only its QC line made q-aware
+reproduces the manifest (4.96e-9). Still c2; no official record.
+Next: Codex independently verifies 83919dbdf. Then merge ENABLES collection
+under John's existing shadow-only approval; the trial STARTS at the first
+durable official record. Branch checks: 333 tests, 3.11 scan, gate clean.
 
 ## Approved wind scope and prior research
 
