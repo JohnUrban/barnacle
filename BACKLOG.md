@@ -104,19 +104,22 @@ looks stale, trust this file. Ledger lines are append-only:
       guidance, low-tide/plug/underprediction and rain checks. Production stays
       v0.10.6; no displayed or alert wind term, no automatic promotion. Any live
       adoption needs separate version/replays/review and John DECISION.
-- [ ] **Social offline rehearsal — new owner scope (doc 18).** Previous
-      technical findings closed in doc 17; expanded work is not launch-ready.
-      John accepts stacked with aligned map/chart edges and inherited alert
-      eligibility. Wording and expiry remain undecided. Tern next: add bounded
-      lower/downtown Highlands street-depth view, same selected level/evidence
-      and palette; streets only, label rain extrapolation as approximate.
-      Depersonalize social copy: Bay/Central focus, no house number/residence
-      framing; preserve internal model/landmark data. Codex implemented the
-      offline wording pass in sibling doc 19: 392 tests and full 71-case gallery.
-      Tern independently reviews that implementation before finishing doc 18's
-      map work. Owner copy feedback still pending; Heron's separate audit a4
-      now awaits its repair reply. No provider integration or posting. Brief in
-      sibling social branch history/plans/2026-09-24-social-broadcast/18-owner-downtown-and-wording.md.
+- [ ] **Social offline rehearsal — doc 21 review and broader map scope.**
+      Local social review `bf6a54273` checks Tern `26145cf03`: 408 tests,
+      72 practice cases and 14 delivery scenarios reproduce; aligned map/curve,
+      common selected level and production isolation verified. OPEN R1–R3:
+      town colors absent from legend, missing surface described as above-water
+      gray, correction path/demo incomplete for two images. Phone key/legend
+      remains ~5–6 CSS px. Tern reply/repair, then independent recheck.
+      John permits all Highlands or bay-side Route 36 if clearer, including
+      riverfront beyond old east edge; tightly fit selected streets. Doc 21
+      retains official NJ borough boundary, source receipt and coverage sketch;
+      approximate town tags do not define municipal/address coverage. Codex
+      recommends bay-/river-facing primary plus whole-borough comparison.
+      Existing eligibility accepted; wording and expiry still undecided.
+      Offline/local-only: no provider, accounts, posting or production changes.
+      Brief: sibling social branch history/plans/2026-09-24-social-broadcast/
+      `21-independent-review-and-broader-map-codex.md`.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -675,3 +678,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | DONE | social-codex-wording-pass | John assigned Codex the wording pass before returning map work to Tern. Local social commit 0c6b512a7, doc 19: depth/reference and supported conditionals retained in titles; exact radar detail/trend, public labels without house number, whole-clause SMS and full comparison rows. 392 tests, 71-case rehearsal, gate; all primary numeric/time/source facts, signatures, rank, eligibility and validity proposals unchanged against doc 17. Tern reviews Codex implementation then completes doc 18 maps; owner copy feedback and expiry choice remain pending. Production untouched. Heron review held until Tern handoff [STATED/VERIFIED: owner session and sibling social doc 19/checks]
 2026-09-24 | FACT | as-issued-validation-a4-round01 | Codex independently reviewed Heron research/as-issued-validation at 292cb3188. Audit a4 OPEN; full candidate held for five P1 findings: EXACT replay fidelity not enforced, nonzero advisory correction/phase not verified, observation bounds/provenance/refinements lost, 42 threshold comparisons omitted contrary to protocol, historical peak/miss/causal claims overstated. Reproduced 2688 generations, 1848 fidelity rows, 804 advisory pairs, 231 street pairs and event MAE; central not-yet-evaluable conclusions stand. 359 tests pass (one expected absent-local-data skip), gate clean, seven frozen hashes match. Archive-only logging repairs useful and isolated; candidate untouched/unmerged. Heron repair prompt and reproducible probes in audits/2026-09-24-a4/01-as-issued-validation-codex.md; no live forecast/alert change or new owner decision [VERIFIED: independent audit receipts]
 2026-09-24 | DONE | as-issued-validation-a4-round02 | Heron confirmed and repaired audit 2026-09-24-a4 R1-R5 and the smaller items on research/as-issued-validation (repairs 00875267d; r2 outputs/report 9e3f833a3; protocol Amendment 2 stated as post-review and post-scoring; r1 outputs and report kept): EXACT gated on control replay; anchors rebuilt and corrections reconstructed with phase coverage; observation manifest with bounds/tolerances/time windows/supersession/conflicts verified by row hash; declared threshold rule with UNKNOWN brackets; peak brackets and narrative corrected. Verdicts unchanged (NOT YET EVALUABLE); dry-tidal point comparison now one event. Logging isolated on logging/replay-provenance 224c14dcd. Reply audits/2026-09-24-a4/02-repairs-reply-heron.md; Codex recheck owed before any merge [VERIFIED: branch commits, tests]
+2026-09-24 | DECISION | social-broader-highlands-map | John permits all Highlands streets/addresses or bay-facing Route 36 scope if clearer, including riverfront beyond the prior right edge; fit the chosen area tightly. Replaces earlier Shore Drive crop restriction; no property shading, address labeling, model/eligibility change, final wording or expiry approval [STATED: owner session; sibling social doc 21]
+2026-09-24 | FACT | social-codex-doc21-review | Codex reviewed Tern 26145cf03 and committed local review bf6a54273. 408 tests, gate, 72 cases and 14 delivery scenarios reproduce; accepts Tern L1–L4 corrections of Codex wording. OPEN R1–R3 cover incomplete town legend (51 cases), unavailable surface gray claim (synthetic), and incomplete two-image correction plan/demo; phone key/legend still tiny. Recorded expanded owner geography, retained official NJ boundary/source and coverage sketch. Tern reply/repair then independent recheck; social branch remains local-only, no live forecast/alert change [VERIFIED: sibling social doc 21 and probes]

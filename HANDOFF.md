@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 15:55 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 15:56 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -56,19 +56,22 @@ now one event. Logging isolated: `logging/replay-provenance` `224c14dcd` off
 main (339 tests, gate clean). Next: Codex rechecks both branches; no merge,
 model, alert, ledger or frozen-wind change before that; no owner choice needed.
 
-## Separate social planning
+## Separate social rehearsal — Tern repair/expanded map pass next
 
-John approved local practice posts → Facebook only → optional later expansion.
-Separate `plan/social-broadcast`, sibling barnacle-social-plan: Codex doc 19
-implements the owner-requested offline wording pass. Useful-depth titles,
-precise radar detail/trend, conditional projections and rain/tide context;
-public reference labels omit the house number. 392 tests, 71-case gallery/gate.
-Tern next: independently review Codex's wording, then complete doc 18's aligned
-stacked panels and bounded downtown street-depth view, same event/palette and
-honest rain-extrapolation label. Existing eligibility accepted; final wording
-and expiry NOT approved. Prior findings closed (doc 17); new scope not ready.
-No live wording change, accounts or posts. Social branch stays local-only.
-Merge narrow doc changes when adopting; do not overwrite newer living docs.
+Local `plan/social-broadcast`, sibling barnacle-social-plan, review `bf6a54273`.
+Codex doc 21 reviewed Tern `26145cf03`: 408 tests, 72-case gallery, 14 delivery
+scenarios and gate pass; alignment/shared map state verified; L1–L4 wording
+repairs accepted. OPEN R1–R3: town legend omits used colors, unavailable surface
+gets dry-gray explanation, correction planner/demo covers only one image.
+John broadened map scope to all Highlands or bay-facing Route 36 if clearer,
+including riverfront beyond old east edge; fit tightly. Doc 21 retains official
+NJ boundary and coverage sketch; approximate town tags cannot define coverage.
+Codex recommends bay-/river-facing primary and whole-borough comparison.
+Tern replies/repairs, improves tiny phone key/legend and orientation, regenerates
+for Codex/owner review. Existing eligibility accepted; final copy and expiry
+not approved. Offline → Facebook only → optional later expansion. No live copy,
+accounts or posts; social branch stays local-only. Never overwrite newer main
+living docs with that branch's snapshots. Heron work stays separate.
 
 ## Future owner task — neutral reference landmarks
 
