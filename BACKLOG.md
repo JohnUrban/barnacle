@@ -71,6 +71,12 @@ looks stale, trust this file. Ledger lines are append-only:
       requires matched observations and issuance-time inputs; radar hindcasts
       and partial-input sensitivities remain separate. No production changes
       or edits to the now-frozen wind trial. Accepted release limits stand.
+      Codex audit `audits/2026-09-24-a4/01-as-issued-validation-codex.md`
+      reviewed Heron candidate `292cb3188`: OPEN, needs R1–R5 repair before
+      full merge (replay/correction admission, observation bounds/refinements,
+      threshold semantics and historical claims). Saved results reproduce;
+      not-yet-evaluable verdict stands. Archive logging patch is isolated and
+      useful. Heron reply/repair then independent recheck; no owner choice needed.
 - [x] **Wind research corrections — audit 2026-09-24-a2 CLOSED (2026-09-24).**
       Claude reply02 confirmed R1-R5 and repaired the studies in `142907573`.
       Codex round03 reproduces all three revised reports, verifies canonical
@@ -105,8 +111,8 @@ looks stale, trust this file. Ledger lines are append-only:
       framing; preserve internal model/landmark data. Codex implemented the
       offline wording pass in sibling doc 19: 392 tests and full 71-case gallery.
       Tern independently reviews that implementation before finishing doc 18's
-      map work. Owner copy feedback still pending; Heron's separate review is
-      queued until Tern is working. No provider integration or posting. Brief in
+      map work. Owner copy feedback still pending; Heron's separate audit a4
+      now awaits its repair reply. No provider integration or posting. Brief in
       sibling social branch history/plans/2026-09-24-social-broadcast/18-owner-downtown-and-wording.md.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
@@ -664,3 +670,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | DECISION | social-owner-direction-round18 | John: stacked accepted with aligned map/chart edges; accepts existing alert eligibility; wording package and queued-post expiry not approved. Requires lower/downtown Highlands street-only view (Shore Drive to bay, Henry Hudson Trail/Seastreak area through Highlands Bridge), same depth palette/event state, with social presentation centered on Bay/Central rather than residence/address. Codex recorded doc 18 for Tern offline prototypes and clarified generic proposed titles lose useful depth; spatial rain extrapolation remains approximate. No production changes or launch [STATED/VERIFIED: owner session and town-map source]
 
 2026-09-24 | DONE | social-codex-wording-pass | John assigned Codex the wording pass before returning map work to Tern. Local social commit 0c6b512a7, doc 19: depth/reference and supported conditionals retained in titles; exact radar detail/trend, public labels without house number, whole-clause SMS and full comparison rows. 392 tests, 71-case rehearsal, gate; all primary numeric/time/source facts, signatures, rank, eligibility and validity proposals unchanged against doc 17. Tern reviews Codex implementation then completes doc 18 maps; owner copy feedback and expiry choice remain pending. Production untouched. Heron review held until Tern handoff [STATED/VERIFIED: owner session and sibling social doc 19/checks]
+2026-09-24 | FACT | as-issued-validation-a4-round01 | Codex independently reviewed Heron research/as-issued-validation at 292cb3188. Audit a4 OPEN; full candidate held for five P1 findings: EXACT replay fidelity not enforced, nonzero advisory correction/phase not verified, observation bounds/provenance/refinements lost, 42 threshold comparisons omitted contrary to protocol, historical peak/miss/causal claims overstated. Reproduced 2688 generations, 1848 fidelity rows, 804 advisory pairs, 231 street pairs and event MAE; central not-yet-evaluable conclusions stand. 359 tests pass (one expected absent-local-data skip), gate clean, seven frozen hashes match. Archive-only logging repairs useful and isolated; candidate untouched/unmerged. Heron repair prompt and reproducible probes in audits/2026-09-24-a4/01-as-issued-validation-codex.md; no live forecast/alert change or new owner decision [VERIFIED: independent audit receipts]

@@ -1,0 +1,286 @@
+{
+  "point_at_reference": {
+    "forecast": 4.5,
+    "forecast_wet": true,
+    "error": 0.33999999999999986,
+    "observed_wet": null
+  },
+  "replay_mismatch_admitted": {
+    "class": "EXACT",
+    "P": 4.957,
+    "D": 5.2298704111918175,
+    "class_note": null,
+    "max_tank_difference": {
+      "status": "replayed",
+      "rain_source": "replay record qpf_hourly",
+      "rain_hours_covered": "37/37",
+      "first_point_hour_covered": true,
+      "max_abs_diff_ft": 0.0,
+      "presence_mismatches": 72,
+      "published_pluvial_points": 0,
+      "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+    }
+  },
+  "wrong_correction_metadata": {
+    "pairs_admitted": 144,
+    "declared_nonzero_anchors": 0,
+    "cohorts": {
+      "NONZERO": 144
+    },
+    "verdicts": {
+      "HIGH": "IMPROVES",
+      "MID": "IMPROVES",
+      "LOW": "IMPROVES"
+    }
+  },
+  "absent_phase_coverage": "MID",
+  "real_point_threshold_omissions": {
+    "pairs": 42,
+    "observation_rows": [
+      128,
+      129,
+      132,
+      133,
+      146,
+      148,
+      152,
+      159,
+      160,
+      162,
+      165,
+      166,
+      167,
+      178,
+      181
+    ],
+    "published_predicted_wet": 2,
+    "published_predicted_dry": 40
+  },
+  "observation_source_examples": [
+    {
+      "row": 153,
+      "stored_classification": {
+        "dry": false,
+        "elevation": 4.68,
+        "eligible": true,
+        "evidence": "OBSERVER_ESTIMATE",
+        "landmark": "porch_step_base",
+        "level_navd88": 4.638333333333333,
+        "level_type": "POINT",
+        "raw_depth": "-0.5",
+        "reasons": [],
+        "row": 153,
+        "time_utc": "2026-08-03 14:35:00+00:00"
+      },
+      "source": {
+        "observation_time_local": "2026-08-03T10:35",
+        "landmark_key": "porch_step_base",
+        "landmark_label": "Bottom of porch steps",
+        "observed_depth_in": "-0.5",
+        "observed_qualitative": "PEAK (time est. 10:31-10:36): a little above lawn step, not quite to porch-step bottom but close \u2014 brackets peak ~4.67 NAVD88 = ~+13.8 in vs SW grate",
+        "sh_obs_mllw_actual": "",
+        "model_predicted_depth_in": "",
+        "weather_in_window": "rain broke to medium at 10:31, still raining",
+        "observer": "john",
+        "notes": "peak arrived minutes after the rate break, matching tank timing; 4th-largest measured flood; pure pluvial (bay ~2.4 NAVD88, >1 ft below grates)"
+      }
+    },
+    {
+      "row": 159,
+      "stored_classification": {
+        "dry": false,
+        "elevation": 4.66,
+        "eligible": true,
+        "evidence": "PHOTO",
+        "landmark": "lawn_step",
+        "level_navd88": 4.66,
+        "level_type": "POINT",
+        "raw_depth": "0",
+        "reasons": [],
+        "row": 159,
+        "time_utc": "2026-08-07 22:32:00+00:00"
+      },
+      "source": {
+        "observation_time_local": "2026-08-07T18:32",
+        "landmark_key": "lawn_step",
+        "landmark_label": "Lawn / walkway step",
+        "observed_depth_in": "0",
+        "observed_qualitative": "water hit the lawn step ~18:30-18:34 (user has photos with exact times) \u2014 live report at 18:35",
+        "sh_obs_mllw_actual": "3.59",
+        "model_predicted_depth_in": "",
+        "weather_in_window": "surprise severe thunderstorms; Severe Tstorm Watch 18:02; NO NWS flood product active",
+        "observer": "john",
+        "notes": "EVENT #7: pure pluvial on DEAD LOW tide (bay 0.77 NAVD88 = -33 in vs grate, max drainage); MRMS catchment-mean ramp 2.14@18:02 -> 4.40@18:20 -> 2.61@18:32 (2nd-highest rate on record); tank street_now 10.9 at 18:35 vs observed ~+13.7 \u2014 model lagging reality ~3 in (core-underread + lag pattern, cf events #5/#6)"
+      }
+    },
+    {
+      "row": 161,
+      "stored_classification": {
+        "dry": false,
+        "elevation": 4.68,
+        "eligible": true,
+        "evidence": "OBSERVER_ESTIMATE",
+        "landmark": "porch_step_base",
+        "level_navd88": 4.763333333333333,
+        "level_type": "POINT",
+        "raw_depth": "1",
+        "reasons": [],
+        "row": 161,
+        "time_utc": "2026-08-07 22:43:00+00:00"
+      },
+      "source": {
+        "observation_time_local": "2026-08-07T18:43",
+        "landmark_key": "porch_step_base",
+        "landmark_label": "Bottom of porch steps",
+        "observed_depth_in": "1",
+        "observed_qualitative": "RECEDING: 1 in up the first porch riser (+14.9 vs grate); rain has STOPPED; user missed the peak \u2014 peak >= +14.9, window 18:37-18:43",
+        "sh_obs_mllw_actual": "3.59",
+        "model_predicted_depth_in": "",
+        "weather_in_window": "storm broke ~18:40",
+        "observer": "john",
+        "notes": "EVENT #7 peak bracket: >= +14.9 in (~4.76 NAVD88), likely ~18:39-18:42; at/above the 7/6 anchor (~15.4) pending photo/mud-line refinement \u2014 4th-5th all-time candidate"
+      }
+    },
+    {
+      "row": 166,
+      "stored_classification": {
+        "dry": false,
+        "elevation": 4.66,
+        "eligible": true,
+        "evidence": "PHOTO",
+        "landmark": "lawn_step",
+        "level_navd88": 4.66,
+        "level_type": "POINT",
+        "raw_depth": "0",
+        "reasons": [],
+        "row": 166,
+        "time_utc": "2026-08-07 22:33:00+00:00"
+      },
+      "source": {
+        "observation_time_local": "2026-08-07T18:33",
+        "landmark_key": "lawn_step",
+        "landmark_label": "Lawn / walkway step",
+        "observed_depth_in": "0",
+        "observed_qualitative": "PHOTO-VERIFIED refinement: lawn step level at 18:33:16 EXACT (EXIF, photo 7); porch base 18:37:00 (photos 10-11). Refines the live 18:32 row (18:30-18:34 est)",
+        "sh_obs_mllw_actual": "3.59",
+        "model_predicted_depth_in": "",
+        "weather_in_window": "photos filed in images/",
+        "observer": "john",
+        "notes": "EVENT #7 exact timeline: lawn 18:33:16 -> porch base 18:37:00 (+0.2 in in 3.7 min \u2014 rise DECELERATING as MRMS rates fell from the 18:20 peak); crest bracket [18:37,18:43] -> ~18:40 at ~+15.4 (recession-slope backcast); ties the 7/6 anchor"
+      }
+    },
+    {
+      "row": 168,
+      "stored_classification": {
+        "dry": true,
+        "elevation": 3.64,
+        "eligible": true,
+        "evidence": "PHOTO",
+        "landmark": "corner_SE",
+        "level_navd88": 3.7233333333333336,
+        "level_type": "POINT",
+        "raw_depth": "1",
+        "reasons": [],
+        "row": 168,
+        "time_utc": "2026-08-11 22:56:00+00:00"
+      },
+      "source": {
+        "observation_time_local": "2026-08-11T18:56",
+        "landmark_key": "corner_SE",
+        "landmark_label": "SE corner across Bay (sentinel)",
+        "observed_depth_in": "1",
+        "observed_qualitative": "PHOTO (EXIF): water primarily at SE+SW corners only (3.64); NE/NW corners (3.91) dry-to-unmentioned \u2014 bounds water 3.64-3.9",
+        "sh_obs_mllw_actual": "6.66",
+        "model_predicted_depth_in": "",
+        "weather_in_window": "clear spring-tide evening",
+        "observer": "john",
+        "notes": "assets/observations/2026-08-11/; gauge 6.66=3.84 NAVD88 inside the photo bound; morning pred 6.87 street, obs peak 6.89 [VERIFIED: photo+EXIF+gauge]"
+      }
+    },
+    {
+      "row": 173,
+      "stored_classification": {
+        "dry": false,
+        "elevation": 4.66,
+        "eligible": true,
+        "evidence": "PHOTO",
+        "landmark": "lawn_step",
+        "level_navd88": 4.680833333333333,
+        "level_type": "POINT",
+        "raw_depth": "0.25",
+        "reasons": [],
+        "row": 173,
+        "time_utc": "2026-09-01 23:25:00+00:00"
+      },
+      "source": {
+        "observation_time_local": "2026-09-01T19:25",
+        "landmark_key": "lawn_step",
+        "landmark_label": "Lawn / walkway step",
+        "observed_depth_in": "0.25",
+        "observed_qualitative": "PHOTOS 11+13 (EXIF 19:23:16, 19:25:15): water clearly AT the bottom of the lawn step, maybe 1/2 inch up it at most \u2014 PEAK ~+13.7 to +14.2 in vs SW grate, window ~19:23-19:27",
+        "sh_obs_mllw_actual": "2.5",
+        "model_predicted_depth_in": "",
+        "weather_in_window": "rain visibly slowing by 19:23:29 (photo 12)",
+        "observer": "john",
+        "notes": "EVENT #8 PEAK \u2248 +13.9 (bracket 13.7-14.2): ties event #6 class (+13.8); peak ~1-3 min after the rain break \u2014 tank timing signature again; nowcast projected +14.3 at 19:15 [VERIFIED: photos+EXIF]"
+      }
+    },
+    {
+      "row": 178,
+      "stored_classification": {
+        "dry": false,
+        "elevation": 4.66,
+        "eligible": true,
+        "evidence": "PHOTO",
+        "landmark": "lawn_step",
+        "level_navd88": 4.66,
+        "level_type": "POINT",
+        "raw_depth": "0.0",
+        "reasons": [],
+        "row": 178,
+        "time_utc": "2026-09-13 11:10:00+00:00"
+      },
+      "source": {
+        "observation_time_local": "2026-09-13T07:10",
+        "landmark_key": "lawn_step",
+        "landmark_label": "Lawn / walkway step",
+        "observed_depth_in": "0.0",
+        "observed_qualitative": "PEAK: water pretty much exactly level with the lawn-step top (user eyeball; exact shot not captured; time \u00b110 min pending photo EXIF) => ~+13.7 in vs SW grate. Fast ferocious rise; river-like inflow down Bay from the east (Snug Harbor / Water Witch direction)",
+        "sh_obs_mllw_actual": "4.37",
+        "model_predicted_depth_in": "",
+        "weather_in_window": "MRMS burst 10:54-10:58Z box-mean 3.16-2.62 in/hr, point peak 3.78; ~0.4 in total in ~25 min",
+        "observer": "john",
+        "notes": "EVENT #9, pure pluvial on a RISING mid-tide (bay ~1.5 NAVD88 at peak, below grates, full drain). Hindcast +12.2 @ 07:14 (-1.5 low; near-core signature point>>box). Production DARK the whole event (GH queue wedge + launchd wedge) \u2014 no as-run prediction exists. See assets/observations/2026-09-13/"
+      }
+    },
+    {
+      "row": 181,
+      "stored_classification": {
+        "dry": false,
+        "elevation": 4.66,
+        "eligible": true,
+        "evidence": "PHOTO",
+        "landmark": "lawn_step",
+        "level_navd88": 4.66,
+        "level_type": "POINT",
+        "raw_depth": "0.0",
+        "reasons": [],
+        "row": 181,
+        "time_utc": "2026-09-13 11:01:23+00:00"
+      },
+      "source": {
+        "observation_time_local": "2026-09-13T07:01:23",
+        "landmark_key": "lawn_step",
+        "landmark_label": "Lawn / walkway step",
+        "observed_depth_in": "0.0",
+        "observed_qualitative": "PEAK REFINED [VERIFIED photo 14 EXIF]: water level with lawn-step top; held through 07:04:21 (photo 18). Refines the 07:10 +/-10min [STATED] row appended pre-photos",
+        "sh_obs_mllw_actual": "4.38",
+        "model_predicted_depth_in": "",
+        "weather_in_window": "rain nearly off (no drops visible by photo 14)",
+        "observer": "john",
+        "notes": "EVENT #9: radar heavy onset 06:54 -> photographed peak 07:01 = ~7 min response; hindcast peak 07:14 = 10-13 min LATE, -1.5 low"
+      }
+    }
+  ],
+  "linear_interpolation_across_missing_halfhours": 2.0
+}

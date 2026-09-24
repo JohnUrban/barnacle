@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 14:13 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 14:34 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -45,16 +45,17 @@ tails/advisory corrections remain experimental. As-issued rain skill is not
 established: five observed-reference events tie; Oct30 reconstruction is not
 observed validation; Sep13 partial QPF is sensitivity only.
 
-## Deferred validation — Heron review queued
+## Deferred validation — Heron repair round required
 
-John resumed items 2/5; task brief:
-`history/plans/2026-09-24-as-issued-validation-handoff.md`. Separate research
-branch, offline protocol/evaluator and archive-fidelity checks first. Census:
-12 records over 10.454 h, all correction anchors zero; no skill claim yet.
-Real street-depth evaluation needs as-issued inputs and primary observations.
-Do not edit frozen wind files or production behavior; Codex review before merge.
-John reports Heron finished. Hold its review until Tern is working from the
-social wording handoff below; no validation findings verified in this turn.
+Codex reviewed `research/as-issued-validation` at `292cb3188` independently.
+Audit `audits/2026-09-24-a4/01-as-issued-validation-codex.md` OPEN, full branch
+held for R1–R5: replay admission, advisory correction/phase verification,
+observation bounds/refinements, threshold boundary semantics, report claims.
+2,688 generations, 804 advisory pairs and 231 street pairs reproduce; no
+confirmatory skill evidence yet. 359 tests pass (one expected skip), gate clean.
+Archive-only logging repairs are useful and isolated; retain them. No model,
+alert, ledger or frozen-wind changes from review. Heron replies/repairs next,
+then Codex rechecks before merge; no new owner decision required for repairs.
 
 ## Separate social planning
 
