@@ -524,6 +524,14 @@ def _shadow(ol):
                else f" — MAE {r['mae_candidate']:.2f} vs {r['mae_baseline']:.2f} ft on {r.get('n')} tides "
                     f"({r.get('n_forecasts')} forecasts)")
         lis.append(f"<li><b>{_e(label)}:</b> {_e(r.get('verdict', 'NO DATA YET'))}{_e(mae)}</li>")
+    cohort_names = {"persist_decay_mllw": "Decayed persistence",
+                    "outlook_mllw": "Outlook line", "production_mllw": "Production forecast"}
+    cohorts = "; ".join(f"{_e(cohort_names.get(col, col))}: {_e(rule)}"
+                        for col, rule in (sh.get("cohorts") or {}).items())
+    cohort_note = (f'<p class="note"><b>Which forecasts count:</b> {cohorts}. '
+                   'Unchanged source columns retain their earlier history, so their tide counts can '
+                   'be higher. Earlier records remain in the log. Each candidate comparison uses '
+                   'only matching issuance rows eligible for both forecasts.</p>' if cohorts else "")
     buckets = sh.get("buckets") or []
     cols = ["astro", "nws_product", "nwps", "petss_p10", "petss_p90", "persist_flat",
             "persist_decay", "production", "outlook"]
@@ -542,8 +550,9 @@ def _shadow(ol):
     <p class="note">Every run logs each source's value for each tide (data/outlook_log.csv, append-only).
     Once a tide's observed peak is known, every source is scored against it. Sampling rule: within each
     lead bucket every observed TIDE counts once (its issuances are averaged first), then error is taken
-    across tides; candidate and baseline are paired on the same tides, and READY needs 28 distinct scored
-    tides. Scored so far: {sh.get('scored_tides', 0)} tides from {sh.get('scored_rows', 0)} forecast rows.</p>
+    across tides; candidate and baseline are paired on the same issuance rows, and READY needs 28 distinct scored
+    tides. Outlook line scored so far: {sh.get('scored_tides', 0)} tides from {sh.get('scored_rows', 0)} forecast rows.</p>
+    {cohort_note}
     <ul class="more-info-list">{"".join(lis)}</ul>
     <div class="table-wrap"><table class="tide-table">
       <thead><tr><th>Lead</th>{head}</tr></thead><tbody>{body}</tbody></table></div>

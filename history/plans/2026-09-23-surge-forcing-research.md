@@ -137,3 +137,16 @@ review). Open design question for John: which live forecast. The NWS grid
 wind Barnacle already fetches has no easy archive to fit on; GFS (a NOAA
 model) is available live and archived through Open-Meteo, or from NOMADS
 directly (heavier). Fit period is short (15 months); refit as data accrue.
+
+## Independent review erratum pointer — 2026-09-24 (Codex)
+
+The original plan/results above are retained as historical evidence. Audit
+[`2026-09-24-a2`, round01](../../audits/2026-09-24-a2/01-wind-research-review-codex.md)
+finds a local-time/UTC mismatch in round1 and the transferred coefficients,
+wrong-hour high/plug scoring in round2, and training outcomes crossing the
+split. Its corrected diagnostics still support a 24–30 h research candidate.
+The “every view/every lead,” forecast-age and guaranteed-live-gain claims above
+are superseded by that review; the predeclaration chronology is unverified.
+Claude's independent reply and corrected study are pending. No production
+wind term is approved by these results. Original scripts/reports are preserved;
+the audit contains runnable checks, corrected outputs and data hashes.

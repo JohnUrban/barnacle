@@ -1,0 +1,27 @@
+{
+  "base_commit": "c6566b4a29c45797208b32fb3525d8889fb79a48",
+  "sha256": {
+    "history/scripts/surge_forcing_research.py": "060b1181bc817cad55775dc66214e5d598537305021da18266c03c34486fdedb",
+    "history/scripts/surge_forecast_wind_test.py": "158abf42eb01455d86f62cf29341217ed1ce9594d79b8e8139d95ed26341f843",
+    "history/scripts/pull_sandy_hook_met.py": "918d9992fc920d207fcbbd93729c3fe26321d5a002a3c86cda6958d5950e38cd",
+    "history/scripts/pull_surge_forecast_test_data.py": "4155c67430c4b0a252b95fb41154e29e3854644d7843419e7fb2683f0c859d56",
+    "history/data/sandy_hook_hourly_history.parquet": "519c6a5edc75b1707da580206cc3213624d5fd2be2f818be08c9ef6fc87e15b4",
+    "history/data/sandy_hook_met_hourly.parquet": "27cc0b7e592a5d995dcf8274341f315ed7d2d0f977032be574b9f4907700c697",
+    "history/reports/2026-09-23-surge-forcing-results.txt": "b8937479d4746eb03bd1f0d9be84de923df39ebb357cfa990720de42cb701fed",
+    "history/reports/2026-09-23-surge-forecast-wind-results.txt": "1741caec75ea48a86a4330b3be699d0d80958d6d803494101692b607f222c428"
+  },
+  "original_reports_exactly_reproduced": true,
+  "recompute_command": "python3 audits/2026-09-24-a2/recompute.py",
+  "alignment_command": "python3 audits/2026-09-24-a2/check_time_alignment.py",
+  "environment": "Python with numpy/pandas/pyarrow; /Users/johnurban/software/conda/anaconda3/bin/python3 on reviewer machine",
+  "observations": "Retained local data, no fresh historical downloads. SHA256 pins snapshot; refetch can differ.",
+  "independent_original_masks_max_mae_difference": 1.1102230246251565e-16,
+  "cleanup_checks": {
+    "outlook_tests": 53,
+    "result": "PASS",
+    "artifact_gate": "PASS",
+    "relative_links": "PASS",
+    "numeric_forecast_and_protected_data_unchanged": true,
+    "deployed_visual": "Pending post-push check"
+  }
+}

@@ -42,29 +42,39 @@ looks stale, trust this file. Ledger lines are append-only:
       `history/plans/2026-09-23-surge-decay-plan.md`. Research next:
       conditions-driven decay (historical Sandy Hook wind/pressure vs surge
       persistence).
-- [ ] **UNVALIDATED ELEMENTS INTRODUCED 2026-09-23 (John: keep this list so we
-      can return to it).** Each is labeled on its surface and none drives an
-      alert; none is scored yet. (1) The compound burst scenario evaluated at
-      the actual tide level: one event fits (2025-10-30), one over-predicts by
-      3-4 in at moderate rain on submerged grates (2026-09-13 round 2).
-      (2) The NBM 90th-percentile rain scenario: a probabilistic 6-h amount
-      pushed through a burst analog calibrated on one July event. (3) The
-      surge guidance ladder beyond the NWS product: NWPS gauge forecast (shadow,
-      unscored at Sandy Hook), the P-ETSS 10-90 % band (never scored here),
-      persistence decay tau = 48 h (assumption). The shadow scoreboard exists to
-      catch all three and has no scored tides yet. (4) Rain beyond 72 h is a
-      6-h total spread evenly over hours (understates bursts by construction,
-      like the 72-h QPF). (5) Warm-file freshness bars are judgment calls
-      (P-ETSS read degraded at 2 PM only because of one). (6) Inherited and
-      now repaired by John's selective-recovery authorization: production curve
-      again uses observed-surge persistence, not the worst product surge.
-      Constant persistence remains an approximation; time-varying replacement
-      requires independent comparison. (7) Round-04 S1-S7 repairs independently
-      checked by Codex in round 05; Claude round 06 passed the recovery and
-      percentile fix, and Codex round 07 closed the v0.10.5 release audit.
-      The day-total assumption that absent grid intervals inside reach are dry
-      remains a scientific/source-contract validation item. Retire assumptions
-      only with scored comparisons or an owner decision.
+- [ ] **SCIENTIFIC FOLLOW-UPS (updated 2026-09-24; retain until scored or
+      explicitly retired).** (1) Compound burst scenarios remain experimental:
+      Sep13 round 2 over-predicted by 3-4 in; Oct30's +20.8-in peak is a
+      reconstruction, not an observed validation hit (round04 evidence correction,
+      `audits/2026-09-24-a1/04-evidence-corrections-claude.md`). (2) NBM
+      90th-percentile rain through a burst analog calibrated on one July event
+      is not a locally calibrated probability of street flooding. (3) NWPS,
+      P-ETSS bands, advisory corrections between high tides, and the assumed
+      guidance tail still need prospective skill evaluation; scoreboard counts
+      depend on source and model-version cohort. (4) v0.10.6 uses 36-h decay
+      toward the trailing mean: supported by historical gauge comparisons,
+      but not established as an improvement in as-issued rain-flood skill.
+      Five observed-reference rain events tie; the prospective input archive
+      has started. (5) Spreading rain totals over their intervals smooths
+      bursts; absent-grid-interval-as-dry semantics and warm-file freshness
+      thresholds still require source/operational validation. The worst-product
+      constant lift and subsequent constant-persistence interim were superseded
+      by v0.10.6; neither is pending production repair. Experimental outlook
+      scenarios do not drive core alerts; the production decay does.
+- [ ] **Wind/pressure research review — audit 2026-09-24-a2 OPEN.**
+      Codex reproduced both reports and independently recomputed round2.
+      Round1 mixes local water timestamps with UTC weather (also affecting
+      transferred coefficients). Corrected target-time views and purged training
+      still support a research
+      candidate at 24-30 h; claims of gains at every lead and guaranteed live
+      improvement need revision. See `audits/2026-09-24-a2/01-wind-research-review-codex.md`.
+      Claude's finding-by-finding reply, corrected study, issuance-time source
+      validation and a separately reviewed/versioned candidate remain ahead.
+      No wind/pressure term has been added to production.
+- [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
+      the scorer's cohort metadata and identifies the headline as the outlook
+      line's count. Unchanged sources retain earlier rows; pairings use the same
+      eligible issuance. Display/documentation cleanup only, no forecast change.
 - [x] **DEGRADED-INPUTS SPLIT (2026-09-23 recovery).** Production-only
       degraded_inputs, separate outlook_degraded_inputs, all input_health
       preserved. Outlook page/maps show their failures; widget source unchanged.
@@ -107,9 +117,10 @@ looks stale, trust this file. Ledger lines are append-only:
       gate — predictions_log, day_risk_log, heartbeats, observed_peaks,
       tide caches; and surface hourly-run gate failures as a workflow-level
       alert (42 red runs went unnoticed for 42 h).
-- [ ] Re-copy widget source v7.29a into Scriptable: exact fall-back-hour
-      parsing (v7.27a) and the driveway rung REMOVED (v0.10.4); v7.26a
-      remains installed as of 2026-09-14 and renders correctly meanwhile.
+- [ ] Re-copy widget source v7.29a into Scriptable. John references v7.28a
+      and intends to copy the new source (2026-09-24); installation not yet
+      confirmed. The sole behavior change from v7.28a removes the estimated
+      driveway rung; fall-back-hour parsing was already present in v7.28a.
 - [ ] Nowcast scheduler: trigger TRIPPED by event #7 (18-min publish
       gap covered the entire rise). Half-A (launchd, Mac-awake hours)
       believed installed 2026-08-07 but NEVER fired until revived
@@ -211,9 +222,9 @@ looks stale, trust this file. Ledger lines are append-only:
       (CF.Y.0021) and was fixed the same morning to read the raw CFW
       product; what remains is comparing its Sandy Hook projections
       (6.9 / 7.2 / 7.2 / 7.5 ft MLLW for the 09-23 PM .. 09-25 PM
-      tides) against observed peaks in the ledger before the
-      confidence rule's "awaits first independently verified real
-      event" medium cap is lifted.
+      tides) against observed peaks in the ledger. Human confidence labels
+      and their medium cap were retired; evaluate measured source skill rather
+      than reopening that removed labeling policy.
 - [ ] Confirm/deny 2025-08-21 flood (user saw swirly mud stains at
       August rental inspection — proto-mud-tracer): if primary evidence
       emerges, add it to labeled_observations.csv plus an event README;
@@ -564,3 +575,7 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | DONE | v0.10.6-promotion-build | Reviewed candidate 1053eb436 merged onto current main with regeneration at 2026-09-24T05:46:59Z using --no-send. Runtime/tests/goldens equal the reviewed candidate; only promotion documentation added. All previous canonical ledger bytes retained (predictions +6, day-risk +1, outlook +14; observations/accuracy unchanged); alert_state unchanged. First replay-input archive and surge state written. Model spec records honest preview/generation/deployment distinction. Three frozen replays pass; deployed verification and audit close-out follow [VERIFIED]
 
 2026-09-24 | DONE | audit-2026-09-24-a1-CLOSED | v0.10.6 promoted in 75a9933ff after independent Codex review (rounds01/03/05), Claude replies02/04, and prior John DECISION v0.10.6-promotion in b999ea1d0. Final 298 tests, three frozen replays, gate, CI and Pages PASS. Eighteen public artifact byte matches and visual verification of landing plus both outlook charts. Canonical ledgers preserve prior bytes; first replay-input record remotely verified, alert state unchanged, manual regeneration --no-send. Cutover/stamps/archive links documented. Round06 and close-out-verification.json close the audit; accepted items2/5 research limits and nonblocking cohort explanation remain separate [VERIFIED]
+
+2026-09-24 | DONE | outlook-cohort-display | Render the existing scoring-cohort metadata on the seven-day page, label the overall count as the outlook line and state same-issuance pairing; regenerate from the existing forecast JSON. BACKLOG scientific assumptions updated to v0.10.6 and corrected rain provenance; retired confidence-cap language removed. Numeric forecast, ledger and alert-state files unchanged [VERIFIED]
+2026-09-24 | FACT | widget-7.28a-to-7.29a | 96c9a0f50 changes only the widget version, landmark comment and removal of driveway_central (estimated proxy) from the ladder. No curve/rain/alert logic change; backend forecast changes arrive through JSON in either version. John plans to copy; completion not asserted [VERIFIED: git diff; STATED: John]
+2026-09-24 | OPEN | wind-research-independent-review | Audit 2026-09-24-a2 round01: original reports reproduce, but round1 joins local water to UTC met, round2 scores high/plug masks at issuance instead of target, and fitting labels cross the split. Corrected 24-h GFS refit MAE all 0.2892->0.2369 ft, storm 0.4771->0.3549; target low/plug improve too. Research promising, needs revision before production. Forecast-age/bound claims and predeclared timestamps require correction; original reports retained, plan gains erratum pointer. Claude reply and a separately reviewed/versioned candidate remain ahead [VERIFIED: audit scripts/output/hashes]
