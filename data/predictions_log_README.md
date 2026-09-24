@@ -55,7 +55,7 @@ Each workflow run appends one row per upcoming high tide in
 | `regime_predicted` | `dry` / `street` / `light` / `moderate` / `severe` / `cold_lockout` |
 | `cold_lockout` | `true` / `false` — whether the cold-weather drain-backflow suppression applies |
 | `confidence_level` | `high` / `medium` / `low` — forecast-stability label; displayed numeric ranges use the empirical 80th-percentile absolute error for the label when enough rows exist |
-| `model_version` | Model spec used for that as-run prediction. Current production stamp is `v0.10.5` (since 2026-09-23; inputs and policy only: 48-h alert window, 7-day outlook, scoped input health, observed-surge curve, confidence labels retired; no physics change). `v0.10.4` (2026-09-20) removed `driveway_central` from the landmark ladder. Rows written 2026-09-23 before the promoting commit carry `v0.10.4` although the v0.10.5 inputs and policies were live; they are not rewritten. Historical rows intentionally retain their original versions. |
+| `model_version` | Model spec used for that as-run prediction. Current production stamp is `v0.10.5` (since 2026-09-23; inputs and policy only: 48-h alert window, 7-day outlook, scoped input health, observed-surge curve, confidence labels retired; no physics change). `v0.10.4` (2026-09-20) removed `driveway_central` from the landmark ladder. Earlier as-run rows carry `v0.10.4` although the new inputs and policies were live; the promoting commit includes the first `v0.10.5` generation at 2026-09-24T03:24:52Z (September 23 23:24:52 EDT); they are not rewritten. Historical rows intentionally retain their original versions. |
 
 ## Append-only convention
 

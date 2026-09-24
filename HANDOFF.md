@@ -1,55 +1,63 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-23 16:51 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-23 23:33 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative. Attic is archival.
 
-## System
+## System and completed release
 
 Production hyperlocal flood forecaster for 342 Bay Ave, Highlands NJ.
 Sandy Hook + NWS + catchment MRMS; 18 surveyed landmarks; hourly JSON/site,
 best-effort ~10-minute nowcast, town map, per-tide pages, widget, ntfy/email/SMS.
-Model **v0.10.5** (`model/v0.10.5.md`, promoted 2026-09-23). Real people receive alerts. SMS is fresh imminent impact;
-ntfy/email are longer-lead watches. Core alert tide horizon remains <=48 h.
+Model **v0.10.5** (`model/v0.10.5.md`), promoted by `4bb885e02`.
+SMS is imminent impact; ntfy/email longer-lead watches. Tide alert horizon <=48 h.
 
-## Immediate: v0.10.5 PROMOTED 2026-09-23; close-out and v0.10.6 next
+**Audit 2026-09-23-a1 CLOSED**, Codex round 07:
+`audits/2026-09-23-a1/07-close-out-codex.md` + adjacent verification JSON.
+Codex reviewed Claude rounds 01/03/05; Claude round06 passed Codex recovery;
+John approved promotion 23:22 EDT; Codex independently verified promotion.
+No v0.10.5 release blocker remains. Do not confuse later research with release work.
 
-v0.10.5 = class (b), inputs and policy only (spec `model/v0.10.5.md`;
-v0.10.4 archived). Owner approval: BACKLOG `DECISION | v0.10.5-promotion`.
-Reviews: audit `audits/2026-09-23-a1/` rounds 01-06 (Codex 01/03/05 on
-Claude's work; Claude 06 on Codex's recovery: PASS, F1 moved to v0.10.6).
-Rows logged 2026-09-23 before the promoting commit carry v0.10.4 while the
-new policies were live; not rewritten (cutover note in the spec).
-Owed: Codex close-out round verifying the promoting commit, then CLOSED.
+Verified: 266 decoder-enabled tests, unchanged frozen replays, artifact gate,
+archive/link/stamp consistency, append-only ledgers, promotion CI and Pages.
+Public forecast/index/details/outlook matched promoting commit exactly.
+Minor spec/cutover wording corrected in close-out, no production-code change.
+First v0.10.5 generation: 2026-09-24T03:24:52Z (Sep23 23:24:52 EDT), one minute
+before promoting commit. Earlier v0.10.4-stamped policy rows remain unchanged.
 
-In v0.10.5: 48-h alert window; 7-day outlook field/page with shadow
-ledger; scoped health (`degraded_inputs` production-only,
-`outlook_degraded_inputs`); the 30-h curve and tank use fresh observed-surge
-persistence (not the worst product tide's surge); NWS product rows keep
-their high tides; confidence labels retired. Interim: missing observed
-surge = no curve, labeled unavailable.
+## Current behavior
 
-v0.10.6 (owner decisions 2026-09-23, not started): surge decays from the
-reading time toward the trailing-365-d mean (tau ~36 h, measured) for
-fresh AND stale readings; outage ladder with age labels and a labeled
-snap to the mean. Plan `history/plans/2026-09-23-surge-decay-plan.md`.
-Research: conditions-driven decay from historical wind/pressure.
+The 30-h curve/tank use fresh observed-surge persistence, not the worst product
+tide's surge. Product rows retain their individual high tides. water_series_input
+records actual source/value/time/age; current_surge_ft keeps worst-tide meaning.
+Missing observed surge = no continuous curve, visibly unavailable (INTERIM).
+Codex confirms round06 F1: this outage policy was new, not purely restoration;
+it is included in the class-(b) spec and accepted by the owner for v0.10.5.
 
-## Live advisory / scientific limits
+Seven-day outlook is separate and experimental. Core degraded_inputs excludes
+unused outlook failures; outlook_degraded_inputs scopes those, full input_health
+retained. Outlook/map warnings remain visible. Widget source unchanged; no new
+copy needed for curve repair. Existing v7.29a re-copy obligation remains.
+
+## Next: v0.10.6 and research
+
+Owner decisions 2026-09-23: fresh AND stale surge decay toward trailing-365-d
+mean, candidate tau ~36 h, observation-age labels, outage ladder, labeled snap
+to the typical offset. NOT implemented by v0.10.5. Plan:
+`history/plans/2026-09-23-surge-decay-plan.md`.
+New formula/goldens and independent review + promotion DECISION required.
+Conditions-driven decay research is separate; do not treat its scientific
+claims as independently verified by the v0.10.5 close-out.
+
+Compound/p90 rain scenarios, NWPS/P-ETSS skill, source transition differences,
+persistence and absent-grid-interval assumptions remain tracked validation work.
+No rain/tide retune or new surge formula was smuggled into this promotion.
+
+## Live advisory and operations
 
 CF.Y.0021 advisory: September 23 16:00 -> September 26 02:00 EDT.
-Read PLAYBOOK for event work and log John's observations immediately.
-Latest generated official peaks: Sep23 PM 7.0, Sep24 AM 6.4 / PM 7.1,
-Sep25 AM 7.0 / PM 7.9, Sep26 AM 7.9 ft MLLW. Score actual observed peaks;
-parser success is not skill. Raw KPHI parser remains repaired.
-
-Seven-day outlook stays separate, labeled and experimental: NBM/WPC amounts,
-NWPS shadow, P-ETSS bands, decay assumption, compound/p90 burst scenarios.
-Persistence itself is an approximation. Compare time-varying alternatives on
-matched issued forecasts before replacing core. Rain/tide plug-level research
-is separate; existing head-dependent drainage remains, no retune. Claude's
-retrospective `14e942c4f` still needs independent scientific validation.
-
-## Operations / standing residuals
+Read PLAYBOOK for event work; immediately log John's primary observations.
+Use latest forecast/product for current projections; score against observed peaks.
+Parser success is not skill. Driveway remains a proxy, not a landmark.
 
 Prior 09-14/18/20 audits closed; prior model approvals stand.
 42-hour publishing outage fixed; missing archives, writer/validator parity and
@@ -57,11 +65,9 @@ hourly failure visibility remain open. Optional outlook fetch bounded at 75 s
 but still precedes alerts; moving it out of that path is separate work.
 Nowcast storm dispatch needs live validation; watchdog covers Mac-awake hours;
 external trigger awaits credentials. Durable delivery outbox remains open.
-Widget v7.29a re-copy obligation remains (v7.26a installed per 09-14 record),
-but this backend curve repair needs no new source copy. Driveway stays a proxy.
 
 Run date before relative-time prose; use station-time helpers. Preserve primary
 provenance and append-only data. Explicit staging; commit -> gate -> push;
 rejected push -> rebase or abort -> gate -> retry. Ledger conflicts union.
-Review credit must name actual scope/participation; no model promotion without
-independent review and owner DECISION.
+Review credit follows actual scope/participation. New model promotion requires
+independent review and owner DECISION; do not re-ask for completed approvals.

@@ -35,22 +35,26 @@ looks stale, trust this file. Ledger lines are append-only:
       again uses observed-surge persistence, not the worst product surge.
       Constant persistence remains an approximation; time-varying replacement
       requires independent comparison. (7) Round-04 S1-S7 repairs independently
-      checked by Codex in round 05; Codex's new recovery and final percentile
-      fix await Claude review. Retire scientific assumptions only with scored
-      comparisons or an owner decision.
+      checked by Codex in round 05; Claude round 06 passed the recovery and
+      percentile fix, and Codex round 07 closed the v0.10.5 release audit.
+      The day-total assumption that absent grid intervals inside reach are dry
+      remains a scientific/source-contract validation item. Retire assumptions
+      only with scored comparisons or an owner decision.
 - [x] **DEGRADED-INPUTS SPLIT (2026-09-23 recovery).** Production-only
       degraded_inputs, separate outlook_degraded_inputs, all input_health
       preserved. Outlook page/maps show their failures; widget source unchanged.
       Existing site/widget differences in forecast scope remain explicit; no
       experimental compound scenario has been promoted into core/widget policy.
-- [ ] **Audit 2026-09-23-a1 — v0.10.5 PROMOTED 2026-09-23 (late evening EDT);
-      close-out owed.** Reviews: Codex rounds 01/03/05 (round 05 passes S1-S7),
-      Claude round 06 (Codex recovery PASS; F1 decided for v0.10.6). Owner
-      approval: DECISION v0.10.5-promotion. Remaining: an independent
-      close-out round (Codex) verifying the promoting commit's stamps,
-      archive, links, regenerated surfaces and cutover note; then CLOSED.
+- [x] **Audit 2026-09-23-a1 CLOSED — v0.10.5 verified (2026-09-23).**
+      Codex round 07 independently verified promotion `4bb885e02`: spec/code,
+      stamps, archive/links, regenerated and deployed surfaces, append-only
+      ledgers, unchanged goldens, full suite and gate. Minor documentation
+      corrections included in close-out; no production-code change. Report:
+      `audits/2026-09-23-a1/07-close-out-codex.md`. Claude round 06 independently
+      passed Codex recovery; F1 is documented and owner-approved as interim,
+      replacement assigned to v0.10.6. No v0.10.5 release blocker remains.
 
-- [ ] **7-DAY OUTLOOK (arc opened 2026-09-23, John).** Extend
+- [x] **7-DAY OUTLOOK (v0.10.5 shipped; arc opened 2026-09-23, John).** Extend
       predictions to 7 days as a NEW display-only field + page, never by
       widening `all_tides` (which feeds alerts, per-tide pages, the
       ledger and the widget). Two layers on every surface: the honest
@@ -66,8 +70,9 @@ looks stale, trust this file. Ledger lines are append-only:
       07:45. SHIPPED 2026-09-23 (outlook v1): adapters + shadow ledger +
       page. v0.10.5 class-(b) bump PROMOTED 2026-09-23 (see the audit
       loop above); replay goldens passed unchanged. NBM percentile bands
-      and human confidence-label phase-out shipped; remaining audit repairs above stay open;
-      confidence-JSON removal is shipped. Continue score collector (c).
+      and human confidence-label phase-out shipped; recovery independently
+      reviewed and v0.10.5 audit CLOSED. Confidence JSON removed. Ongoing
+      scientific evaluation stays in the unvalidated-elements list and collector (c).
 **Active / near-term**
 - [x] Audit `2026-09-18-a1` CLOSED 2026-09-18 (round 03, b24220653):
       Codex's work verified and stands; trailer erratum + AGENTS rule 12
@@ -507,3 +512,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-23 | OPEN | conditional-surge-decay-research | John's idea: condition tau on forecast forcing so a persisting storm decays slowly. Pull historical Sandy Hook wind/pressure (CO-OPS) and test tau by onshore wind persistence; then use NWS grid wind live. Past-surge persistence alone showed no slower decay [STATED]
 2026-09-23 | DECISION | v0.10.5-promotion | John (23:22 EDT): "Where are we on closing out what is already done for v0.10.5? If it can be bumped as is at this point, then do it. Then we just work on v0.10.6 with these newer ideas." Approval given on the reviewed state: Codex round 05 (S1-S7 pass + extra S6 fix), Claude round 06 (recovery PASS; F1 moved to v0.10.6 by owner decisions missing-surge-ladder / -decay). Interim missing-surge behaviour (no curve, labeled unavailable) ships in v0.10.5 and is replaced in v0.10.6 [VERIFIED: John in session]
 2026-09-23 | DONE | v0.10.5-promoted | promoting commit: model/v0.10.5-candidate.md -> model/v0.10.5.md (complete spec: header with review citations and honest cutover note, Inputs & policy, physics sections carried forward unchanged from v0.10.4); model/v0.10.4.md -> model/archive/ with links repaired; CURRENT_MODEL_VERSION v0.10.5; AGENTS, README, PLAYBOOK, HANDOFF, both ledger READMEs restamped; version/link tests updated; surfaces regenerated no-send. Both frozen replays PASS unchanged. Ledger rows from the v0.10.4-stamped live interval are not rewritten. Close-out review by Codex owed [VERIFIED: this commit]
+
+2026-09-23 | FACT | correction-recovery-missing-surge-classification | Codex confirms Claude round06 F1: None -> empty curve is a changed outage policy, not purely a restoration; earlier blanket class-(c) characterization was too broad. The v0.10.5 class-(b) spec now explicitly includes it, and John's 23:22 promotion decision accepts it as interim while the replacement ladder/decay is v0.10.6. No historical claims or rows rewritten [VERIFIED: round06, DECISION v0.10.5-promotion, round07]
+2026-09-23 | DONE | audit-2026-09-23-a1-CLOSED | Codex independently verified promoting commit 4bb885e02, with precise cutover/spec wording and archive-reference corrections in close-out. 266 tests (required decoder, no skips), gate, both frozen replays PASS; promotion CI/Pages SUCCESS; public forecast/index/details/outlook bytes match. Ledgers retain every previous byte (promotion adds predictions 6, day-risk 1, outlook 14; observations/accuracy unchanged). Report audits/2026-09-23-a1/07-close-out-codex.md + evidence JSON. v0.10.5 release complete; v0.10.6/research/operations remain separate [VERIFIED]
