@@ -1,0 +1,117 @@
+{
+  "bundle": {
+    "ok": true,
+    "bundle_sha256": "82d156a63089573e837ae2e122336ec62f24fc80548aa8080105e3160aed5029",
+    "table": {
+      "models/wind_shadow/manifest.json": "bd3fb4571833393e52f8f7790282f3210f208ca2180afc4d97bf21884e67bb0a",
+      "models/wind_shadow/DESIGN.md": "a5b8da50b200478cf1e2aff3c139ff2cb1f71af30305e7198c8325c5f7fe2dab",
+      "forecast/wind_shadow.py": "6fe6a0996629c61082e67e344aae5683d945b623bd65d05a8b49fd1bc9978250",
+      "history/scripts/evaluate_wind_shadow.py": "79252d50bacc3902fea230bc0b66ff9b943f0497bab84e32f338ab4ac72c6a9b",
+      "history/scripts/fit_wind_shadow_c2.py": "a1bf5818d36dd1850ccc3b5b9568873a44fd0095bc227a61a0997550f33bf27b",
+      "models/wind_shadow/rain_ref.py": "ea66d9a6731455befd073401df409ef01bb2fc2f2ff32b7c1f55e65bc519d65b",
+      "models/wind_shadow/stage_storage_curve.csv": "3cd2a0e58d238a227b84dc200b1f595a8ea7c950154485181b62e04bd6ba119d"
+    },
+    "problems": []
+  },
+  "quality_semantics": [
+    {
+      "input": {
+        "t": "2026-09-01 00:00",
+        "v": "5.5",
+        "f": "1,0,0,0",
+        "q": "p"
+      },
+      "output": {
+        "pred": 4.0,
+        "obs": 5.5,
+        "surge": 1.5,
+        "valid": true,
+        "reason": null,
+        "q": "p",
+        "f": "1,0,0,0",
+        "outlier_samples": 1
+      }
+    },
+    {
+      "input": {
+        "t": "2026-09-01 01:00",
+        "v": "5.5",
+        "f": "1,0,0,0",
+        "q": "v"
+      },
+      "output": {
+        "pred": 4.0,
+        "obs": null,
+        "surge": null,
+        "valid": false,
+        "reason": "verified value inferred (I=1): not an observation",
+        "q": "v",
+        "f": "1,0,0,0",
+        "inferred": true,
+        "inferred_obs": 5.5
+      }
+    },
+    {
+      "input": {
+        "t": "2026-09-01 02:00",
+        "v": "5.5",
+        "f": "1,0,0,0"
+      },
+      "output": {
+        "pred": 4.0,
+        "obs": null,
+        "surge": null,
+        "valid": false,
+        "reason": "quality status None missing or unsupported",
+        "q": null,
+        "f": "1,0,0,0"
+      }
+    },
+    {
+      "input": {
+        "t": "2026-09-01 03:00",
+        "v": "5.5",
+        "f": "1,0,0,0",
+        "q": "unknown"
+      },
+      "output": {
+        "pred": 4.0,
+        "obs": null,
+        "surge": null,
+        "valid": false,
+        "reason": "quality status 'unknown' missing or unsupported",
+        "q": "unknown",
+        "f": "1,0,0,0"
+      }
+    }
+  ],
+  "frozen_rain": {
+    "points": 14600,
+    "max_difference_ft": 0.0,
+    "presence_mismatches": 0,
+    "landmarks": 16
+  },
+  "raw_guidance": {
+    "nwps_first": 1.0,
+    "petss_first": 0.6,
+    "nwps_beyond_coverage": null,
+    "shared_preissuance_bay": true
+  },
+  "outcome_provenance": {
+    "raw_reparsed": true,
+    "tampered_body_rejected": true
+  },
+  "disabled_start": {
+    "trial": {
+      "start": "2026-09-24 09:00:00+00:00",
+      "first_record_bundle_sha256": "82d156a63089573e837ae2e122336ec62f24fc80548aa8080105e3160aed5029"
+    },
+    "attempts": {
+      "2026-09-24 09:00:00+00:00": [
+        "disabled (bundle check failed at collection)"
+      ]
+    },
+    "evaluable_slots": 1
+  },
+  "production_main_ast_unchanged_except_holder": true
+}

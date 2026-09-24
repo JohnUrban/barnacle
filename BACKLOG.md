@@ -67,21 +67,22 @@ looks stale, trust this file. Ledger lines are append-only:
       UTC history, and matches 50 refit/view scores to independent calculations.
       Original reports remain intact. Exploratory gains survive; no production
       wind term or live-skill approval. Report `audits/2026-09-24-a2/03-close-out-codex.md`.
-- [ ] **Open-Meteo wind/pressure SHADOW candidate — HOLD for R5-Q1 (2026-09-24).**
-      John approved development and shadow collection (`wind-shadow-open-meteo`).
-      Codex round05 verifies Claude's 7988715ce repairs: gate isolation, bundle
-      enforcement, rain history/frozen tank, separate raw guidance, pressure
-      bounds/provenance and opt-in dry-run exclusions. 331 tests pass (one
-      expected no-log skip), 48 fits reproduce; six dataset hashes match.
-      One QC defect remains: preliminary O is an outlier count, but verified I
-      marks inferred water. Fit/evaluator ignore q and admit six verified
-      inferred rows as observations. Fix q-aware QC, refit and refresh the
-      pretrial bundle; Claude reply06 then independent verification.
-      Audit: `audits/2026-09-24-a3/05-round04-verification-codex.md`.
-      No official c2 record or merge. Existing shadow authorization stands;
-      >=60 days AND >=5 eligible scored storms, fixed endpoint, paired
-      production/guidance and rain checks remain. No production wind term or
-      automatic promotion; separate version/replays/John DECISION required.
+- [x] **Wind-shadow candidate audit a3 CLOSED (2026-09-24).** Codex round07
+      independently verifies Claude 83919dbdf: quality-aware QC resolves R5-Q1,
+      all 48 refits/counts/MAEs reproduce, six dataset hashes match; 333 tests
+      pass with expected no-log/local-dataset skips, dataset test separately
+      passes with Parquet. R1–R8 resolved; bundle 82d156a63089… approved for
+      shadow collection under existing `wind-shadow-open-meteo` DECISION.
+      Report: `audits/2026-09-24-a3/07-close-out-codex.md`.
+- [ ] **Wind-shadow prospective trial — enable and verify first record.**
+      Merge reviewed 83919dbdf; confirm the first durable official c2 record's
+      bundle 82d156a63089…, time and status. Merge enables, first record starts
+      the period; do not reset for disabled/fallback outcomes. After start,
+      frozen changes require a new identity/period. At least 60 days AND five
+      eligible scored completed storms, fixed endpoint, paired baseline/raw
+      guidance, low-tide/plug/underprediction and rain checks. Production stays
+      v0.10.6; no displayed or alert wind term, no automatic promotion. Any live
+      adoption needs separate version/replays/review and John DECISION.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -626,3 +627,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 
 2026-09-24 | OPEN | wind-shadow-a3-round05 | Codex verifies Claude 7988715ce round04: R7/R6/R3/R8 repairs and R5 pressure/availability/provenance pass; 331 required-decoder tests OK (one expected skip), all 48 fits/counts/rounded MAEs and six dataset hashes reproduce, 14600 frozen/production tank points match exactly. HOLD one R5-Q1 defect: fit/evaluator ignore quality q and treat verified I=inferred as preliminary O=outlier count; six retained verified inferred rows currently admitted. Correct q-aware QC/refit/freeze before first official record, reply06 then independent check. Main forecasts unchanged; no collection/merge. Primary record: audits/2026-09-24-a3/05-round04-verification-codex.md with executable evidence [VERIFIED]
 2026-09-24 | DONE | wind-shadow-a3-round06 | Claude confirmed R5-Q1 (own error: read only NOAA's preliminary flag section) and repaired on branch wind-shadow 83919dbdf (not merged; still c2, pretrial bundle 82d156a6): evaluator classify_water_level reads flags by quality q (preliminary [O,F,R,L] valid iff F=R=L=0; verified [I,F,R,T] valid iff all 0, inferred kept as inferred_obs and counted, never scored; missing/unknown q invalid); fit imports the same classifier; 12 verified inferred rows excluded (Codex's 6 + 6 also carrying R); 107 preliminary rows admitted with O>0 (corrects the round-04 "113"). Refit n 4087 -> 4081, max coef change 0.00043; Codex's round-05 fit script with only the QC line made q-aware reproduces the manifest (max diff 4.96e-9, all counts and MAEs match). 333 tests. Reply audits/2026-09-24-a3/06-q-aware-qc-reply-claude.md; independent verification owed before merge [VERIFIED: branch commit, round06-fit-qaware-results.json]
+
+2026-09-24 | DONE | wind-shadow-a3-CLOSED | Codex round07 independently verifies 83919dbdf and closes R5-Q1/a3: 4393 QC rows match independent q-aware rule (4375 valid, 12 verified inferred excluded, 107 preliminary outliers admitted); all 48 fits/counts/rounded MAEs reproduce within 4.956e-9, six dataset hashes match, 333 required-decoder tests OK with expected no-log/local-research-data skips and research test separately passing. Frozen bundle 82d156a63089573e837ae2e122336ec62f24fc80548aa8080105e3160aed5029 approved for shadow collection under prior owner DECISION. No prospective skill or live wind promotion claimed; first official record still pending at review. Source: audits/2026-09-24-a3/07-close-out-codex.md and evidence [VERIFIED]

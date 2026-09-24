@@ -1,21 +1,21 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 12:01 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 12:05 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — wind-shadow c2 R5-Q1 repaired; awaits Codex verification; HOLD merge
+## Wind-shadow c2 audit CLOSED — ready to enable collection
 
-Codex round05 (`audits/2026-09-24-a3/05-round04-verification-codex.md`) verified
-the round-03 repairs and held on R5-Q1 (verified [I,F,R,T] flags read as
-preliminary [O,F,R,L]). Claude confirmed (own error) and repaired branch
-`wind-shadow` at `83919dbdf`: `audits/2026-09-24-a3/06-q-aware-qc-reply-claude.md`.
-Quality-aware QC in one evaluator classifier imported by the fit; 12 verified
-inferred rows excluded; refit (max coef change 0.00043); pretrial bundle
-`82d156a63089…`. Codex's round-05 fit script with only its QC line made q-aware
-reproduces the manifest (4.96e-9). Still c2; no official record.
-Next: Codex independently verifies 83919dbdf. Then merge ENABLES collection
-under John's existing shadow-only approval; the trial STARTS at the first
-durable official record. Branch checks: 333 tests, 3.11 scan, gate clean.
+Codex round07 independently verified Claude `83919dbdf`; all R1–R8 resolved.
+Quality-aware QC excludes verified inferred outcomes; 48 refits reproduce,
+six dataset hashes match, 333 required-decoder tests pass (two expected skips;
+research-data test passes separately). Candidate GitHub CI and gate pass.
+Report: `audits/2026-09-24-a3/07-close-out-codex.md`.
+Frozen bundle: `82d156a63089573e837ae2e122336ec62f24fc80548aa8080105e3160aed5029`.
+
+Next: merge under existing John shadow-only approval, verify merged hashes/gate,
+and confirm the first durable official record. Merge enables collection; that
+first record starts the period, even if disabled/fallback. Frozen changes after
+start need a new identity/period. No production forecast/alert wind correction.
 
 ## Approved wind scope and prior research
 
