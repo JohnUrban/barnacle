@@ -119,3 +119,30 @@ with the intended diff verified file by file before committing.
 2. Independent verification of `ce2f898c8` against the checklist: owed (Codex).
 3. John's promotion DECISION: owed; then the promoting merge with pages
    regenerated on updated main and a fresh gate/CI.
+
+## Addendum 2026-09-24 ~01:00 EDT — the October 30 peak is a reconstruction
+
+Raised by John after this reply was written; appended, the text above is
+unchanged. Part C scored the 2025-10-30 event against +20.8 in over the SW
+grate as if measured. It is not: that event has no tape measurement, and
++20.8 in (5.25 ft NAVD88) is a 1:1 tide-decay extrapolation from one photo
+anchor at 15:41 (about 4.66 ft NAVD88, +13.5 in), the only true bound. The
+event file's "lower bound" label is inverted: slower or lagged recession at
+the house implies a lower peak, faster rain drainage a higher one. Corrected
+append-only in the event README, the observation ledger (ERRATUM row) and
+BACKLOG.
+
+Effect on R6 part C:
+- The **bay-error** comparison uses the tide gauge, not the photo estimate,
+  and stands: on Oct 30 the decay under-predicted the building bay by about
+  0.3 ft more than the constant rule.
+- The **tank-peak** comparison depends on the unmeasured peak. Both rules
+  predicted 14.6-15.8 in; the decay is the closer rule only if the true peak
+  was below about 15 in (15.6 / 15.1 / 14.8 in at 6 / 12 / 24 h lead).
+- On the **five tape-measured events** alone the two rules tie: bay error
+  0.41 vs 0.42 ft, tank-peak error 1.34 vs 1.34 in.
+
+So the sentence "on this small storm-selected sample the constant rule did
+slightly better" rests on one unmeasured storm. What survives is narrower:
+the gauge shows the decay under-predicting a surge that kept building, the
+case a forecast-wind term targets. The rain-peak half is unresolved.

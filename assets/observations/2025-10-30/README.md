@@ -263,3 +263,32 @@ hill-box max of 4.18 in/hr is the strongest cell measured over the
 catchment in any event to date (7/6/2026 maxed at 3.06). "The same
 convective cell at a 7+ ft tide = another Oct 30" — Oct 30 literally
 was that scenario.
+
+---
+
+## Addendum 2026-09-24: the 5.25 ft NAVD88 peak is not a lower bound
+
+Appended (the text above is left as written). Raised by John while reviewing
+the v0.10.6 rain comparison (`audits/2026-09-24-a1/02-repairs-reply-claude.md`).
+
+The only anchored water level this event has is Photo 2 at 15:41, about
+4.66 ft NAVD88 (an inch above the lawn step), 47 minutes after the Sandy
+Hook peak. The peak was reconstructed as 4.66 + 0.59 = 5.25 ft by assuming
+the water at 342 Bay fell exactly as much as the gauge did in those 47
+minutes. The reconstruction section calls this a "floor" because street
+water "might recede slightly slower" than the gauge. That direction is
+inverted:
+
+- If the water at 342 fell MORE SLOWLY than the gauge, or lagged it, it fell
+  less than 0.59 ft between its peak and 15:41, so the peak was BELOW 5.25.
+- If the rain-driven street water drained FASTER than the bay after the
+  1.45 in/hr peak (plausible once the rain eased), it fell more than 0.59
+  ft, so the peak was ABOVE 5.25.
+
+What is certain: the peak was at least 4.66 ft NAVD88 (+13.5 in over the SW
+grate, from the photo itself). The 5.25 ft (+20.8 in) value is a 1:1
+extrapolation, neither a floor nor a ceiling. John's memories ("water at the
+first porch step", about +18.7 in, and "about 12 in at the curb", about +19.7
+in) remain consistent evidence, not measurements. Uses of +20.8 as an
+observed peak (the v0.7 rain-term check, the 2026-09-23 rain-flood
+retrospective, the v0.10.6 rain comparison) inherit this uncertainty.
