@@ -1,30 +1,22 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 10:59 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 11:21 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — wind-shadow c2 re-reviewed; HOLD merge
+## Immediate obligation — wind-shadow c2 round-03 repairs await Codex verification; HOLD merge
 
-Codex independently reviewed Claude's `wind-shadow` at `fe7e1ebc9`.
-Audit `2026-09-24-a3` round03 remains OPEN:
-`audits/2026-09-24-a3/03-c2-verification-codex.md`. Claude reply04/repairs next.
-All 48 coefficient sets, sample counts, fit MAEs and five dataset hashes
-reproduce; 698 raw runs verify; 322 tests pass (one expected absent-log skip),
-including frozen replays. Episode/sparse-evidence, timeout/QC and mean-window
-repairs verified. c1 retired; c2 has no official records.
-
-Remaining: actual publish-gate CLI crashes on non-object shadow JSON;
-freeze checks do not prevent changed-bundle collection/scoring; rain comparison
-restarts empty, losing prior rainfall/storage; NWS comparison counts Barnacle
-fallback; availability/raw-pressure/training-QC gaps; no-send/dry-run exclusion
-fails with trial env inherited. All counterexamples are synthetic, isolated,
-network-mocked; no candidate edits or actual trial records from this review.
-
-Branch freeze: models/wind_shadow/FREEZE.md. Pretrial corrections can update c2;
-after its first official record, any frozen change needs a new identity/period.
-Merging enables collection; it is not itself a record or trial-start timestamp.
-Two deleted local c1 smoke records are honestly documented/reconstructed in
-SMOKE_TESTS.md; their original bytes are unavailable. Production remains v0.10.6.
+Codex round03 (`audits/2026-09-24-a3/03-c2-verification-codex.md`) held c2 on
+R3/R5/R6/R7/R8. Claude confirmed all and repaired branch `wind-shadow` at
+`7988715ce`: `audits/2026-09-24-a3/04-round03-repairs-reply-claude.md`.
+Still wind-shadow-c2 (no official record); pretrial bundle `37ed563a…`.
+Next: Codex independently verifies 7988715ce (author probes
+`audits/2026-09-24-a3/verify_round04_claude.py` on the branch; Codex's round03
+boundary script stops at the repaired pressure rule and old field names).
+Needs Codex's explicit view: outcome QC now requires tolerance flags F=R=L=0
+only (O is a sample count; O=0 dropped storm hours preferentially).
+Then John's go-ahead; merge ENABLES the workflow; the trial STARTS at the first
+durable official record (any status), bound to the bundle in evaluator and CI.
+Branch checks: 331 tests, 3.11 scan, gate clean; live preview run = candidate.
 
 ## Approved wind scope and prior research
 
