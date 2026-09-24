@@ -1,0 +1,659 @@
+{
+  "candidate": "da06d511d",
+  "tests": {
+    "run": 388,
+    "result": "OK",
+    "skips": 1,
+    "required_grib": true
+  },
+  "gate": "clean",
+  "cases": {
+    "bay_string": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "status": "invalid published input",
+          "invalid_bay_values": 1,
+          "rule_problems": []
+        },
+        {
+          "status": "not replayable",
+          "reason": "invalid published values {'bay': 1}"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "mean_string": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "status": "invalid published input",
+          "invalid_bay_values": 0,
+          "rule_problems": [
+            "decay mean_ft not a finite number"
+          ]
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "37/37",
+          "first_point_hour_covered": true,
+          "max_abs_diff_ft": 0.0,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 0,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "invalid published input",
+          "rule_problems": [
+            "decay mean_ft not a finite number"
+          ]
+        }
+      ]
+    },
+    "tau_string": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "status": "invalid published input",
+          "invalid_bay_values": 0,
+          "rule_problems": [
+            "decay tau_h not a positive finite number"
+          ]
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "37/37",
+          "first_point_hour_covered": true,
+          "max_abs_diff_ft": 0.0,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 0,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "invalid published input",
+          "rule_problems": [
+            "decay tau_h not a positive finite number"
+          ]
+        }
+      ]
+    },
+    "reading_bad_time": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "status": "invalid published input",
+          "invalid_bay_values": 0,
+          "rule_problems": [
+            "decay observation_utc not a parseable time"
+          ]
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "37/37",
+          "first_point_hour_covered": true,
+          "max_abs_diff_ft": 0.0,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 0,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "invalid published input",
+          "rule_problems": [
+            "decay observation_utc not a parseable time"
+          ]
+        }
+      ]
+    },
+    "reading_string": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "status": "invalid published input",
+          "invalid_bay_values": 0,
+          "rule_problems": [
+            "decay surge_obs_ft not a finite number"
+          ]
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "37/37",
+          "first_point_hour_covered": true,
+          "max_abs_diff_ft": 0.0,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 0,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "invalid published input",
+          "rule_problems": [
+            "decay surge_obs_ft not a finite number"
+          ]
+        }
+      ]
+    },
+    "combined_nan": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 0,
+      "B0_cells": {},
+      "B0_unscorable": {
+        "published line invalid or missing at the observation time": 1
+      },
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "37/37",
+          "first_point_hour_covered": true,
+          "max_abs_diff_ft": 0.0,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 0,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "combined_string": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 0,
+      "B0_cells": {},
+      "B0_unscorable": {
+        "published line invalid or missing at the observation time": 1
+      },
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "37/37",
+          "first_point_hour_covered": true,
+          "max_abs_diff_ft": 0.0,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 0,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "combined_plus5": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "hit": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "37/37",
+          "first_point_hour_covered": true,
+          "max_abs_diff_ft": 0.0,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 0,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "pluvial_nan": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "not replayable",
+          "reason": "invalid published values {'pluvial': 1}"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "pluvial_string": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "not replayable",
+          "reason": "invalid published values {'pluvial': 1}"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "rain_negative": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "not replayable",
+          "reason": "invalid archived rain values (40)"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "rain_nan": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "not replayable",
+          "reason": "invalid archived rain values (40)"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "rain_null": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "0/37",
+          "first_point_hour_covered": false,
+          "max_abs_diff_ft": 0.0,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 0,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "time_bad": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 0,
+      "B0_cells": {},
+      "B0_unscorable": {
+        "published line invalid or missing at the observation time": 1
+      },
+      "fidelity": [
+        {
+          "points": 72,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "37/37",
+          "first_point_hour_covered": true,
+          "max_abs_diff_ft": 0.0,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 0,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "baseline": {
+      "class_counts": {
+        "EXACT": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "37/37",
+          "first_point_hour_covered": true,
+          "max_abs_diff_ft": 0.0,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 0,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "exact_wet": {
+      "class_counts": {
+        "EXACT": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "37/37",
+          "first_point_hour_covered": true,
+          "max_abs_diff_ft": 0.0005,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 13,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "near_wet": {
+      "class_counts": {
+        "NEAR": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "replayed",
+          "rain_source": "replay record qpf_hourly",
+          "rain_hours_covered": "36/37",
+          "first_point_hour_covered": false,
+          "max_abs_diff_ft": 0.0005,
+          "presence_mismatches": 0,
+          "published_pluvial_points": 12,
+          "tank_fingerprint": "c4bb702b2c5d37422bc7415eda7a1c392c052a03865744216d8c39648f9faf0e"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "published_only": {
+      "class_counts": {
+        "APPROX-TIDE": 1
+      },
+      "strict_json": "passed",
+      "B0_point_pairs": 1,
+      "B0_cells": {
+        "miss": 1
+      },
+      "B0_unscorable": {},
+      "fidelity": [
+        {
+          "points": 73,
+          "stale_tides_flag": false,
+          "rule": "decay",
+          "max_abs_vs_rule": 0.0005
+        },
+        {
+          "status": "not replayable",
+          "reason": "hourly rain as used not archived"
+        },
+        {
+          "status": "no raw NWPS archived"
+        },
+        {
+          "status": "no published gauge levels"
+        }
+      ]
+    },
+    "published_only_wet": {
+      "class_counts": {
+        "EXCLUDED": 1
+      },
+      "B0_point_pairs": 1,
+      "strict_json": "passed"
+    }
+  },
+  "frozen_files": [
+    {
+      "path": "models/wind_shadow/manifest.json",
+      "matches": true
+    },
+    {
+      "path": "models/wind_shadow/DESIGN.md",
+      "matches": true
+    },
+    {
+      "path": "forecast/wind_shadow.py",
+      "matches": true
+    },
+    {
+      "path": "history/scripts/evaluate_wind_shadow.py",
+      "matches": true
+    },
+    {
+      "path": "history/scripts/fit_wind_shadow_c2.py",
+      "matches": true
+    },
+    {
+      "path": "models/wind_shadow/rain_ref.py",
+      "matches": true
+    },
+    {
+      "path": "models/wind_shadow/stage_storage_curve.csv",
+      "matches": true
+    }
+  ],
+  "syntax_311_files": 13
+}

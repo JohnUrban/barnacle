@@ -71,18 +71,20 @@ looks stale, trust this file. Ledger lines are append-only:
       requires matched observations and issuance-time inputs; radar hindcasts
       and partial-input sensitivities remain separate. No production changes
       or edits to the now-frozen wind trial. Accepted release limits stand.
-      Codex round05 (`audits/2026-09-24-a4/05-round04-verification-codex.md`)
-      verifies Heron c9b898616: earlier admission probes repaired; R6 CLOSED.
-      382 tests pass; all r3 outputs reproduce. R1 remains OPEN through the full
-      path: malformed inputs can crash before validation, and excluded NaN P
-      enters B0 metrics/threshold cells. Synthetic probes, not live failures.
-      Heron round06 must cover evaluate → event report → strict JSON and
-      fidelity entry points. Correct protocol clock estimate. Own row erratum:
-      Sep13 two primary 0–6 h pairs are rows 183/185 (not 182/183 in round03).
-      Research unmerged. 235 total = 224 primary + 11 sensitivity; no EXACT/NEAR.
-      Logging-only schema-2 provenance patch integrated under existing archive
-      approval; QPF rates unchanged, no model/alert/frozen-wind changes. No new
-      owner choice needed. Scientific evaluation awaits informative events.
+      Codex round07 (`audits/2026-09-24-a4/07-round06-verification-codex.md`)
+      verifies Heron da06d511d: 388 tests OK (one expected skip), gate, all r4
+      outputs reproduced, prior boundary/positive controls pass. Invalid P is
+      unscorable; valid published-only B0 remains. Clock erratum C1 CLOSED.
+      R1 remains OPEN narrowly: absent/null decay tau bypasses validation and
+      crashes F1/full evaluator. Independent probe and bounded Heron prompt in
+      round07; repair + final verification deferred to next session. This is
+      offline robustness, not a demonstrated live incident. No owner choice.
+      R2–R6 resolved. Research unmerged. 235 pairs = 224 primary + 11 sensitivity;
+      no EXACT/NEAR; A/B1/B2 NOT YET EVALUABLE. Prior row erratum stands:
+      Sep13 primary 0–6 h rows 183/185 (not 182/183 in round03).
+      Logging-only schema-2 provenance patch already integrated; no logging,
+      model/alert/social/frozen-wind changes needed. Scientific evaluation
+      awaits informative events and matched issuance-time inputs/outcomes.
 - [x] **Wind research corrections — audit 2026-09-24-a2 CLOSED (2026-09-24).**
       Claude reply02 confirmed R1-R5 and repaired the studies in `142907573`.
       Codex round03 reproduces all three revised reports, verifies canonical
@@ -698,3 +700,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 
 2026-09-24 | FACT | social-doc24-verification | Codex local review 3d264ae37 verifies Tern 4a44a6e3c: doc21 R1–R3 CLOSED; 428 tests, gate, 74 practice cases (72 eligible)/zero errors, 14 delivery scenarios and coverage/legend probe pass. Sampled visual review; final phone/copy approval and expiry remain open. No production adoption or posting. [VERIFIED: sibling social doc24 and 24-verification.json]
 2026-09-24 | DECISION | social-regional-depth-caption-direction | John requests two levels: Bay & Central detail plus town-map caption beginning with wet-street depth range across selected town coverage, then reference intersection range and a few regional ranges (Snug Harbor–Huddy, Washington–Sea Drift, Miller–Veterans Park examples). Codex doc24 records next offline implementation brief; boundaries are drafts, ranges use actual colored streets at the displayed time/scenario, not uniform neighborhood depth or independently forecast regional peaks. No final strings, expiry or launch approval. [STATED: owner session; implementation constraints are Codex recommendations]
+
+2026-09-24 | FACT | as-issued-round07-stopping-point | Codex verifies Heron da06d511d/d7ed15d4b: 388 tests OK (one expected skip), gate, r4 archive reproduction and earlier full-path controls pass; invalid published values no longer score; clock erratum C1 closed. Independent missing/null-tau probes still crash F1/full evaluator; R1 remains narrowly OPEN, R2–R6 resolved. Exact next-session repair prompt and receipts in audits/2026-09-24-a4/07-round06-verification-codex.md. Research stays unmerged; no live changes or urgent owner decision. A/B1/B2 remain NOT YET EVALUABLE; collection continues. [VERIFIED: round07 receipts]

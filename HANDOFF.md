@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 17:50 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 18:02 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -45,16 +45,19 @@ tails/advisory corrections remain experimental. As-issued rain skill is not
 established: five observed-reference events tie; Oct30 reconstruction is not
 observed validation; Sep13 partial QPF is sensitivity only.
 
-## Deferred validation — Heron round 06 returned; Codex verification next
+## Deferred validation — round 07 checked; narrow repair parked for next session
 
-a4 round 05 (Codex) closed R6 and traced R1's remaining full-path input handling.
-Heron round 06: `audits/2026-09-24-a4/06-round05-repairs-reply-heron.md`; research
-`d7ed15d4b` (Amendment 4: validate published series/rule metadata before any
-arithmetic; invalid published values unscorable with reasons; valid published
-lines kept in B0; strict-JSON backstop; C1 clock erratum) and r4 receipts
-`da06d511d` (14 boundary cases + 5 positive controls through evaluate ->
-per_event -> strict JSON; r4 equals r3 on the real archive). 388 tests, gate
-clean. A/B1/B2 still NOT YET EVALUABLE. Research unmerged pending Codex review.
+Codex `audits/2026-09-24-a4/07-round06-verification-codex.md` verifies Heron
+`da06d511d` (repair `d7ed15d4b`): 388 tests OK (one expected skip), gate,
+all r4 archive outputs reproduced; invalid combined values no longer enter
+B0, valid published-only B0 retained. Prior 14 boundary/five positive controls
+pass; seven frozen hashes match. Clock erratum C1 CLOSED; R2–R6 remain resolved.
+R1 remains OPEN only for missing/null decay tau: numeric validation skips it,
+then F1/full evaluator raises. Independent probe + exact next Heron prompt in
+round07. Offline defect, not a live forecast failure. Research stays unmerged.
+No urgent work or new owner decision. Next: bounded repair + independent check;
+A/B1/B2 still NOT YET EVALUABLE pending informative as-issued observations.
+Logging already active; no logging/social/frozen-wind changes requested.
 
 ## Social rehearsal — returned repairs verified; regional captions next
 

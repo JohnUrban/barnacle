@@ -1,0 +1,63 @@
+{
+  "tau_null": {
+    "rule_problems": [],
+    "error": "TypeError: unsupported operand type(s) for /: 'float' and 'NoneType'",
+    "f1_error": "TypeError: unsupported operand type(s) for /: 'float' and 'NoneType'"
+  },
+  "tau_missing": {
+    "rule_problems": [],
+    "error": "KeyError: 'tau_h'",
+    "f1_error": "KeyError: 'tau_h'"
+  },
+  "tau_zero": {
+    "rule_problems": [
+      "decay tau_h not a positive finite number"
+    ],
+    "classes": {
+      "EXCLUDED": 1
+    },
+    "strict_json": "passed",
+    "B0_point_pairs": 1,
+    "B0_unscorable": {},
+    "f1": {
+      "status": "invalid published input",
+      "invalid_bay_values": 0,
+      "rule_problems": [
+        "decay tau_h not a positive finite number"
+      ]
+    }
+  },
+  "tau_negative": {
+    "rule_problems": [
+      "decay tau_h not a positive finite number"
+    ],
+    "classes": {
+      "EXCLUDED": 1
+    },
+    "strict_json": "passed",
+    "B0_point_pairs": 1,
+    "B0_unscorable": {},
+    "f1": {
+      "status": "invalid published input",
+      "invalid_bay_values": 0,
+      "rule_problems": [
+        "decay tau_h not a positive finite number"
+      ]
+    }
+  },
+  "baseline": {
+    "rule_problems": [],
+    "classes": {
+      "EXACT": 1
+    },
+    "strict_json": "passed",
+    "B0_point_pairs": 1,
+    "B0_unscorable": {},
+    "f1": {
+      "points": 73,
+      "stale_tides_flag": false,
+      "rule": "decay",
+      "max_abs_vs_rule": 0.0005
+    }
+  }
+}
