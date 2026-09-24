@@ -1,0 +1,110 @@
+{
+  "bundle": {
+    "ok": true,
+    "bundle_sha256": "37ed563a5399b1a920128ab050ed6db58b05daf009bda85f9cd294c6ba8822dc",
+    "table": {
+      "models/wind_shadow/manifest.json": "6bc231b43e26a6ecfe4b0c917ea2f6af2cfa1f0bf7eb3f55e2fcb96f71841822",
+      "models/wind_shadow/DESIGN.md": "1eff1f7d99a46d80d2990682c5e0e8b9bc2ea2c0aec6b081a24daa85435db271",
+      "forecast/wind_shadow.py": "6fe6a0996629c61082e67e344aae5683d945b623bd65d05a8b49fd1bc9978250",
+      "history/scripts/evaluate_wind_shadow.py": "ef2cf2c8d0fa8b70e2f28862f850c7018438ac4624197debd1ed962a392aae47",
+      "history/scripts/fit_wind_shadow_c2.py": "6bf76222dd7deb9dab2fa0f8033197645bb53e68ebd4e42ee46500f72326279b",
+      "models/wind_shadow/rain_ref.py": "ea66d9a6731455befd073401df409ef01bb2fc2f2ff32b7c1f55e65bc519d65b",
+      "models/wind_shadow/stage_storage_curve.csv": "3cd2a0e58d238a227b84dc200b1f595a8ea7c950154485181b62e04bd6ba119d"
+    },
+    "problems": []
+  },
+  "quality_semantics": [
+    {
+      "input": {
+        "t": "2026-09-01 00:00",
+        "v": "5.5",
+        "f": "1,0,0,0",
+        "q": "p"
+      },
+      "output": {
+        "pred": 4.0,
+        "obs": 5.5,
+        "surge": 1.5,
+        "valid": true,
+        "reason": null,
+        "outlier_samples": 1
+      }
+    },
+    {
+      "input": {
+        "t": "2026-09-01 01:00",
+        "v": "5.5",
+        "f": "1,0,0,0",
+        "q": "v"
+      },
+      "output": {
+        "pred": 4.0,
+        "obs": 5.5,
+        "surge": 1.5,
+        "valid": true,
+        "reason": null,
+        "outlier_samples": 1
+      }
+    },
+    {
+      "input": {
+        "t": "2026-09-01 02:00",
+        "v": "5.5",
+        "f": "1,0,0,0"
+      },
+      "output": {
+        "pred": 4.0,
+        "obs": 5.5,
+        "surge": 1.5,
+        "valid": true,
+        "reason": null,
+        "outlier_samples": 1
+      }
+    },
+    {
+      "input": {
+        "t": "2026-09-01 03:00",
+        "v": "5.5",
+        "f": "1,0,0,0",
+        "q": "unknown"
+      },
+      "output": {
+        "pred": 4.0,
+        "obs": 5.5,
+        "surge": 1.5,
+        "valid": true,
+        "reason": null,
+        "outlier_samples": 1
+      }
+    }
+  ],
+  "frozen_rain": {
+    "points": 14600,
+    "max_difference_ft": 0.0,
+    "presence_mismatches": 0,
+    "landmarks": 16
+  },
+  "raw_guidance": {
+    "nwps_first": 1.0,
+    "petss_first": 0.6,
+    "nwps_beyond_coverage": null,
+    "shared_preissuance_bay": true
+  },
+  "outcome_provenance": {
+    "raw_reparsed": true,
+    "tampered_body_rejected": true
+  },
+  "disabled_start": {
+    "trial": {
+      "start": "2026-09-24 09:00:00+00:00",
+      "first_record_bundle_sha256": "37ed563a5399b1a920128ab050ed6db58b05daf009bda85f9cd294c6ba8822dc"
+    },
+    "attempts": {
+      "2026-09-24 09:00:00+00:00": [
+        "disabled (bundle check failed at collection)"
+      ]
+    },
+    "evaluable_slots": 1
+  },
+  "production_main_ast_unchanged_except_holder": true
+}

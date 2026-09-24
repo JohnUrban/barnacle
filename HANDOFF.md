@@ -1,22 +1,23 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 11:42 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 11:49 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — wind-shadow c2 round-03 repairs await Codex verification; HOLD merge
+## Immediate obligation — wind-shadow HOLD for one QC correction
 
-Codex round03 (`audits/2026-09-24-a3/03-c2-verification-codex.md`) held c2 on
-R3/R5/R6/R7/R8. Claude confirmed all and repaired branch `wind-shadow` at
-`7988715ce`: `audits/2026-09-24-a3/04-round03-repairs-reply-claude.md`.
-Still wind-shadow-c2 (no official record); pretrial bundle `37ed563a…`.
-Next: Codex independently verifies 7988715ce (author probes
-`audits/2026-09-24-a3/verify_round04_claude.py` on the branch; Codex's round03
-boundary script stops at the repaired pressure rule and old field names).
-Needs Codex's explicit view: outcome QC now requires tolerance flags F=R=L=0
-only (O is a sample count; O=0 dropped storm hours preferentially).
-Then John's go-ahead; merge ENABLES the workflow; the trial STARTS at the first
-durable official record (any status), bound to the bundle in evaluator and CI.
-Branch checks: 331 tests, 3.11 scan, gate clean; live preview run = candidate.
+Codex round05 reviewed Claude `7988715ce`: gate isolation, execution/scoring
+freeze, rain history and frozen dependencies, raw guidance, pressure provenance,
+and dry-run exclusion verify. 331 tests pass (one expected no-log skip), 48
+fits reproduce, six dataset hashes match, 14,600 tank points match exactly.
+Report: `audits/2026-09-24-a3/05-round04-verification-codex.md`.
+
+Remaining R5-Q1: NOAA preliminary first flag O counts outliers; verified first
+flag I means inferred. Fit/evaluator ignore q and admit six verified inferred
+rows as observations. Claude should fix q-aware QC, refit, refresh the pretrial
+bundle and reply06; Codex verifies before merge. Candidate c2 has no official
+records. Prior owner authorization for shadow collection stands; no repeated
+feed choice needed. Merge enables collection, first durable official record
+starts the period, any post-start frozen change needs a new identity/period.
 
 ## Approved wind scope and prior research
 
@@ -47,11 +48,11 @@ observed validation; Sep13 partial QPF is sensitivity only.
 ## Separate social planning
 
 John approved local practice posts → Facebook only → optional later expansion.
-Separate `plan/social-broadcast`, sibling barnacle-social-plan, local `6e673072f`:
-Tern's reply reviewed in doc 10; Stage B gallery can proceed with R1–R5
-failure cases. John settled W9: AM/PM public event prose, 24-hour internal
-records. Practice output stays local. Tern recommended as developer; Codex
-independent reviewer. No provider selected, accounts connected or posts sent.
+Separate `plan/social-broadcast`, sibling barnacle-social-plan, local `e4f59251b`:
+Tern Stage B reviewed in doc 12: six repairs pending, 355 tests/80 gallery cases
+reproduced. Doc 13 records peak heatmap + linked full-curve direction and common
+existing landmarks with matching map/chart markers; no house-landmark ban.
+Public event prose AM/PM; practice output local. No provider/accounts/posts.
 Merge narrow doc changes when adopting; do not overwrite newer living docs.
 
 ## Future owner task — neutral reference landmarks

@@ -67,22 +67,21 @@ looks stale, trust this file. Ledger lines are append-only:
       UTC history, and matches 50 refit/view scores to independent calculations.
       Original reports remain intact. Exploratory gains survive; no production
       wind term or live-skill approval. Report `audits/2026-09-24-a2/03-close-out-codex.md`.
-- [ ] **Open-Meteo wind/pressure SHADOW candidate — HOLD before merge (2026-09-24).**
-      John approved development and shadow collection (`wind-shadow-open-meteo`);
-      feed choice is settled. Claude repaired `wind-shadow` at `fe7e1ebc9`,
-      retiring c1 and freezing c2. Codex round03 independently reproduces all
-      48 refits, five dataset hashes and 322 tests; episode/sparse-evidence,
-      timeout, QC and mean-window repairs verify. Audit a3 remains OPEN:
-      production gate still crashes on non-object shadow JSON; freeze is not
-      enforced before collection/scoring; rain replay discards initial storage;
-      NWS comparison includes Barnacle fallback; availability/raw-provenance
-      gaps and opt-in dry-run collection remain. Primary report:
-      `audits/2026-09-24-a3/03-c2-verification-codex.md` (Claude reply04 next).
-      No official c2 record or merge by Codex. Before collection update the
-      freeze; afterward changes need a new identity/period. Keep >=60 days AND
-      >=5 eligible scored completed storms, paired production/guidance and rain
-      checks, no production forecast/alert effects. Separate model promotion,
-      version/replays and John DECISION remain required.
+- [ ] **Open-Meteo wind/pressure SHADOW candidate — HOLD for R5-Q1 (2026-09-24).**
+      John approved development and shadow collection (`wind-shadow-open-meteo`).
+      Codex round05 verifies Claude's 7988715ce repairs: gate isolation, bundle
+      enforcement, rain history/frozen tank, separate raw guidance, pressure
+      bounds/provenance and opt-in dry-run exclusions. 331 tests pass (one
+      expected no-log skip), 48 fits reproduce; six dataset hashes match.
+      One QC defect remains: preliminary O is an outlier count, but verified I
+      marks inferred water. Fit/evaluator ignore q and admit six verified
+      inferred rows as observations. Fix q-aware QC, refit and refresh the
+      pretrial bundle; Claude reply06 then independent verification.
+      Audit: `audits/2026-09-24-a3/05-round04-verification-codex.md`.
+      No official c2 record or merge. Existing shadow authorization stands;
+      >=60 days AND >=5 eligible scored storms, fixed endpoint, paired
+      production/guidance and rain checks remain. No production wind term or
+      automatic promotion; separate version/replays/John DECISION required.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -624,3 +623,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | DONE | wind-shadow-a3-round04 | Claude confirmed and repaired audit 2026-09-24-a3 round 03 (R3 R5 R6 R7 R8) on branch wind-shadow 7988715ce (not merged; still c2, pretrial bundle 37ed563a): gate CLI exit 0 for truncated/[]/null/string/non-UTF-8/directory shadow evidence; bundle verified before every official record (disabled record, no fetch) and before scoring (exit 3), first-record binding in evaluator and CI; trial start = first durable official record of any status; frozen tank copy (rain_ref.py) run from production's as-issued series start, every landmark scored; raw NWPS and P-ETSS mid separate from Barnacle's outlook; run availability, 0..60-min pressure bound, lossless hourly pressure, raw outcome bodies; mode excludes --no-send/--dry-run before the shadow is called. Outcome QC refined to tolerance flags F=R=L=0 (O is a sample count; O=0 would drop 7.9 % of 1.0-1.5 ft hours vs 1.8 % below 0.5 ft) for Codex review; refit with QC'd outcomes (max coef change 0.0005). 331 tests; live preview run candidate. Reply audits/2026-09-24-a3/04-round03-repairs-reply-claude.md; independent verification owed before merge [VERIFIED: branch commit, round04-author-probes.json]
 
 2026-09-24 | OPEN | john-neutral-landmark-survey | John proposes future neutral reference features at the VFW (SE corner) and parking lot diagonally across (SW corner), equivalent in purpose to house lawn/porch landmarks, to support continued community forecasting if he moves. Owner tasks: select exact durable points, photograph/map, measure with provenance/uncertainty, and document flood crossings before proposing adoption. Keep existing landmarks now; explicitly no change to Tern's current scope. No new measurements or equal-elevation claim [STATED: John in session]
+
+2026-09-24 | OPEN | wind-shadow-a3-round05 | Codex verifies Claude 7988715ce round04: R7/R6/R3/R8 repairs and R5 pressure/availability/provenance pass; 331 required-decoder tests OK (one expected skip), all 48 fits/counts/rounded MAEs and six dataset hashes reproduce, 14600 frozen/production tank points match exactly. HOLD one R5-Q1 defect: fit/evaluator ignore quality q and treat verified I=inferred as preliminary O=outlier count; six retained verified inferred rows currently admitted. Correct q-aware QC/refit/freeze before first official record, reply06 then independent check. Main forecasts unchanged; no collection/merge. Primary record: audits/2026-09-24-a3/05-round04-verification-codex.md with executable evidence [VERIFIED]
