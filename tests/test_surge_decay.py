@@ -324,3 +324,174 @@ class GoldenTests(unittest.TestCase):
         spec.loader.exec_module(mod)
         golden = mod.verify()
         self.assertEqual(golden["constants"]["tau_h"], 36.0)
+
+
+class ReviewRound01Tests(unittest.TestCase):
+    """audits/2026-09-24-a1 R1-R5 regressions (Codex's probes, inverted)."""
+
+    def _outlook(self, obs_reading, persisted=None):
+        try:
+            from tests import test_outlook as to
+        except ImportError:
+            import test_outlook as to
+        data = to._fixture_data(); data["nwps"] = None; data["petss"] = None
+        ol = outlook.build_outlook_7d(to.NOW, data, to._health(data), [], persisted, None,
+                                      ff.classify_regime_from_water,
+                                      lambda p: ff.predict_landmark_depths(p, 0.0, False),
+                                      ff.MLLW_TO_NAVD88_OFFSET, "v0.10.6", surge_mean_ft=0.54,
+                                      obs_reading=obs_reading)
+        return to, ol
+
+    def test_r1_table_uses_the_estimator_on_every_fallback_rung(self):
+        sg_line = lambda p: p["tide_navd88"] - ff.LOCAL_ENHANCEMENT_FT - ff.MLLW_TO_NAVD88_OFFSET - p["astro_mllw"]
+        try:
+            from tests import test_outlook as to
+        except ImportError:
+            import test_outlook as to
+        cases = {"no reading": (None, "typical_offset"),
+                 "stale 10 h": ((2.5, to.NOW - dt.timedelta(hours=10)), "persist_decay"),
+                 "fresh 50 min": ((2.5, to.NOW - dt.timedelta(minutes=50)), "persist_decay"),
+                 "state 40 h": ((2.0, to.NOW - dt.timedelta(hours=40)), "persist_decay")}
+        for name, (reading, rung) in cases.items():
+            _, ol = self._outlook(reading)
+            first = ol["tides"][0]
+            self.assertEqual(first["outlook_source"], rung, name)
+            tu = outlook._utc(first["utc"])
+            if reading is None:
+                expect = 0.54
+            else:
+                age = (tu - reading[1]).total_seconds() / 3600
+                expect = 0.54 + (reading[0] - 0.54) * math.exp(-age / 36)   # from the READING's time
+            self.assertAlmostEqual(first["outlook_mllw"] - first["astro_mllw"], expect, delta=0.011, msg=name)
+            # table vs line vs map payload at that tide: same estimator (<= 1 h of decay apart)
+            S = {p["time"][:13]: p for p in ol["series"]}
+            p = S[first["time"][:13]]
+            self.assertLessEqual(abs(sg_line(p) - expect), abs(expect) * (1 - math.exp(-1 / 36)) + 0.011, name)
+            card = next(d for d in ol["days"] if d["date"] == first["time"][:10])
+            self.assertIsNotNone(card["outlook_max_mllw"])
+
+    def test_r3_old_formula_rows_cannot_qualify_the_new_formula(self):
+        rows, obs = [], {}
+        for i in range(28):
+            t = f"2026-08-{1 + i // 2:02d} {6 + 12 * (i % 2):02d}:00-04:00"
+            obs[t] = 5.0
+            rows.append(dict(target_tide_time=t, lead_h="12", outlook_mllw="5.0", production_mllw="6.0",
+                             persist_decay_mllw="5.0", persist_flat_mllw="6.0", model_version="v0.10.5"))
+        rows.append(dict(target_tide_time="2026-09-25 06:00-04:00", lead_h="12", outlook_mllw="9.0",
+                         production_mllw="5.0", persist_decay_mllw="9.0", persist_flat_mllw="5.0",
+                         model_version="v0.10.6"))
+        obs["2026-09-25 06:00-04:00"] = 5.0
+        sc = outlook.score_shadow(rows, obs)
+        r = sc["readiness"]["outlook_vs_production_le72h"]
+        self.assertEqual(r["n"], 1)
+        self.assertTrue(r["verdict"].startswith("NOT YET (1/28"))
+        self.assertEqual(r["mae_candidate"], 4.0)
+        self.assertEqual(sc["readiness"]["decay_vs_flat_persistence_le168h"]["n"], 1)
+        self.assertIn("persist_decay_mllw", sc["cohorts"])
+        # unchanged sources keep their whole history
+        self.assertEqual(outlook._in_cohort("nwps_mllw", {"model_version": "v0.10.4"}), True)
+
+    def test_r4_malformed_mean_timestamp_falls_back_through_the_whole_build(self):
+        bad = {"mean_ft": 0.54, "n_hours": 8000, "computed_utc": "2026-09-23T00:00:00"}
+        m, src, h = sd.resolve_mean(T0, bad)
+        self.assertEqual((m, h["status"]), (sd.SURGE_MEAN_FALLBACK_FT, "degraded"))
+        with patch.object(ff._surge_mean, "load", return_value=bad):
+            f = rec.build(surge=1.0)
+        self.assertEqual(f["input_health"]["surge_mean"]["status"], "degraded")
+        self.assertIn("surge_mean", f["degraded_inputs"])
+        self.assertTrue(f["water_series"])
+        def get(params, timeout):
+            hours = [(T0 - dt.timedelta(hours=h)).strftime("%Y-%m-%d %H:%M") for h in range(1, 7300)]
+            if params["product"] == "hourly_height":
+                return {"data": [{"t": t, "v": "5.6"} for t in hours]}
+            return {"predictions": [{"t": t, "v": "nan"} for t in hours]}
+        with self.assertRaises(ValueError):                   # all predictions non-finite -> no record
+            surge_mean.compute(T0, get=get)
+
+    def test_r5_provenance_describes_the_selected_reading(self):
+        state = (1.8, rec.NOW.astimezone(UTC) - dt.timedelta(hours=10))
+        with patch.object(ff, "_load_surge_state", return_value=state):
+            f = rec.build(surge=None)
+        si = f["water_series_input"]
+        self.assertEqual(si["decay"]["rung"], "stale-state")
+        self.assertAlmostEqual(si["age_min"], 600.0, delta=1.0)             # the USED reading
+        self.assertEqual(si["live_fetch"]["age_min"], 90)                    # the attempted fetch, kept separately
+        self.assertEqual(si["observation_time"],
+                         ff.station_time_storage_key(ff.utc_to_station_local(state[1])))
+        self.assertIn("surge_state", f["input_health"])
+
+    def test_r5_state_file_problems_are_visible(self):
+        with tempfile.TemporaryDirectory() as d, patch.object(ff, "_load_surge_state", _REAL_LOAD_STATE):
+            path = os.path.join(d, "s.json")
+            with open(path, "w") as fh:
+                fh.write('{"surge_ft": 1.0, "observation_utc": "2026-09-23T00:00:00"}')   # naive time
+            self.assertIsNone(ff._load_surge_state(path))
+            self.assertEqual(ff._SURGE_STATE_META["status"], "degraded")
+
+    def test_r2_assumed_rungs_are_triangles_and_markers_snap_to_nearest(self):
+        from forecast import outlook_page
+        import re
+        try:
+            from tests import test_outlook as to
+        except ImportError:
+            import test_outlook as to
+        ol = to._build()
+        html = outlook_page.render_outlook_page({"generated_utc": "x", "forecast_schema_version": "1.0",
+                                                 "model_version": "v0.10.6", "outlook_7d": ol, "input_health": {}})
+        self.assertIn("var ASSUMED = ['guidance_decay', 'persist_decay', 'typical_offset'];", html)
+        self.assertIn("triangle = ASSUMED", html)
+        self.assertNotIn("this hour's surge decayed", html)
+        D = json.loads(re.search(r"var D = (\{.*?\});", outlook_page._chart(ol), re.S).group(1))
+        S = ol["series"]
+        for t in ol["tides"]:
+            if (t.get("guidance") or {}).get("nws_product") is None:
+                continue
+            tu = outlook._utc(t["utc"])
+            i = min(range(len(S)), key=lambda k: abs((outlook._utc(S[k]["utc"]) - tu).total_seconds()))
+            self.assertIsNotNone(D["advisory"][i], t["time"])
+
+
+class ReplayArchiveTests(unittest.TestCase):
+    """Items 2 and 5 (owner decision 2026-09-24): the prospective archive."""
+
+    def test_record_keeps_raw_inputs_and_marks_unavailable(self):
+        from forecast import replay_archive as ra
+        try:
+            from tests import test_outlook as to
+        except ImportError:
+            import test_outlook as to
+        f = rec.build(surge=1.2)
+        f["outlook_7d"] = to._build()
+        data = to._fixture_data()
+        health = {"nwps": {"status": "ok", "fetched_at": "2026-09-23T11:00:00Z"}}
+        r = ra.build_record(f, data, health, [(T0, 0.1234567)])
+        self.assertEqual(r["model_version"], ff.CURRENT_MODEL_VERSION)
+        self.assertEqual(r["nwps"]["issued"], data["nwps"]["issued"])
+        back = ra.expand(r["nwps"]["hourly"])
+        self.assertEqual(len(back), len(data["nwps"]["series"]))
+        self.assertEqual(back[0][0], outlook._utc(data["nwps"]["series"][0]["utc"]))     # lossless round trip
+        self.assertEqual(back[0][1]["ft"], round(data["nwps"]["series"][0]["ft"], 2))
+        self.assertTrue(r["advisory"]["rows"])
+        self.assertTrue(ra.expand(r["outlook_hourly"]))
+        self.assertEqual(ra.expand(r["qpf_hourly"]), [(T0, {"in_hr": 0.1235})])
+        self.assertEqual(r["surge"]["decay"]["rung"], "fresh")
+        r2 = ra.build_record(f, {}, {"nwps": {"detail": "fetch failed"}}, None)
+        self.assertIsNone(r2["nwps"]); self.assertIsNone(r2["qpf_hourly"])
+        self.assertEqual(r2["unavailable"]["nwps"], "fetch failed")
+        self.assertIn("qpf_hourly", r2["unavailable"])
+
+    def test_append_only_file_passes_the_gate_and_bad_lines_fail(self):
+        from forecast import replay_archive as ra
+        with tempfile.TemporaryDirectory() as d:
+            base = {k: None for k in ra.REQUIRED_KEYS}
+            p = ra.append(dict(base, v=1, generated_utc="2026-09-24T01:00:00Z", model_version="v0.10.6"), d)
+            ra.append(dict(base, v=1, generated_utc="2026-09-24T02:00:00Z", model_version="v0.10.6"), d)
+            self.assertTrue(p.endswith("2026-09.jsonl"))
+            self.assertEqual(ra.validate_file(p), [])
+            with open(p, "a") as fh:
+                fh.write('{"v": 1, "generated_utc": "2026-09-24T00:00:00Z"}\n')
+            bad = ra.validate_file(p)
+            self.assertTrue(any("missing" in b for b in bad))
+            self.assertTrue(any("before the previous line" in b for b in bad))
+            with self.assertRaises(ValueError):
+                ra.append(dict(base, v=1, generated_utc="2026-09-24T03:00:00Z", model_version="v", x=float("nan")), d)

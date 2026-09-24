@@ -232,7 +232,8 @@ def validate_csv_semantics(path, relpath, now_utc=None):
                 failures.append(f"row {logical_row}: invalid confidence_level")
 
     elif relpath == "data/outlook_log.csv":
-        allowed_sources = {"nws_product", "nwps", "petss_mid", "guidance_decay", "persist_decay", "astro"}
+        allowed_sources = {"nws_product", "nwps", "petss_mid", "guidance_decay", "persist_decay",
+                           "typical_offset", "astro"}
         allowed_prod = {"", "nws-coastal-flood-product", "surge-persistence",
                         "astronomical-only-degraded", "typical-offset-degraded"}
         allowed_rain = {"", "nws_grid", "nbm", "wpc_24h"}
@@ -713,6 +714,17 @@ def check_artifacts(root=ROOT):
     alert_path = os.path.join(root, "data", "alert_state.json")
     for why in validate_alert_state(alert_path):
         bad.append((alert_path, why))
+    # v0.10.6 prospective replay-input archive (append-only JSON lines)
+    try:
+        from . import replay_archive as _ra
+    except ImportError:
+        import replay_archive as _ra
+    rdir = os.path.join(root, "data", "replay_inputs")
+    if os.path.isdir(rdir):
+        for fn in sorted(os.listdir(rdir)):
+            if fn.endswith(".jsonl"):
+                for why in _ra.validate_file(os.path.join(rdir, fn)):
+                    bad.append((os.path.join(rdir, fn), why))
     bad.extend(validate_surface_stamps(root))
     bad.extend(validate_current_surfaces(root))
     for relpath in ("docs/index.html", "docs/details.html", "docs/outlook.html",

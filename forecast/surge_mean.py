@@ -50,13 +50,19 @@ def compute(now_utc, timeout=60, get=_get):
     for r in prd.get("predictions") or []:
         if r.get("t") in o:
             try:
-                diffs.append(o[r["t"]] - float(r["v"]))
-                times.append(r["t"])
+                pv = float(r["v"])
             except (TypeError, ValueError):
                 continue
+            if not math.isfinite(pv):
+                continue                    # R4: a non-finite prediction never enters the mean
+            diffs.append(o[r["t"]] - pv)
+            times.append(r["t"])
     if len(diffs) < 24 * 300:
         raise ValueError(f"only {len(diffs)} paired hours in the trailing window")
-    return {"mean_ft": round(sum(diffs) / len(diffs), 4), "n_hours": len(diffs),
+    mean = sum(diffs) / len(diffs)
+    if not (math.isfinite(mean) and -2.0 < mean < 3.0):
+        raise ValueError(f"implausible trailing mean {mean!r}")   # keeps the previous good record
+    return {"mean_ft": round(mean, 4), "n_hours": len(diffs),
             "window_start": min(times)[:10], "window_end": max(times)[:10],
             "computed_utc": now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "method": "mean of verified hourly_height minus hourly predictions, last 364 days"}

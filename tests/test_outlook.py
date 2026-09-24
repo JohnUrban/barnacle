@@ -270,9 +270,11 @@ class LadderTests(unittest.TestCase):
         ol = outlook.build_outlook_7d(NOW, data, _health(data), [], None, None,
                                       ff.classify_regime_from_water,
                                       lambda p: ff.predict_landmark_depths(p, 0.0, False),
-                                      ff.MLLW_TO_NAVD88_OFFSET, "v0.10.4")
-        self.assertTrue(all(t["outlook_source"] == "astro" for t in ol["tides"]))
-        self.assertTrue(all(t["outlook_mllw"] == t["astro_mllw"] for t in ol["tides"]))
+                                      ff.MLLW_TO_NAVD88_OFFSET, "v0.10.4", surge_mean_ft=0.54)
+        # v0.10.6: no surge information at all -> astronomy + the labeled typical
+        # offset (never a zero surge presented as a forecast)
+        self.assertTrue(all(t["outlook_source"] == "typical_offset" for t in ol["tides"]))
+        self.assertTrue(all(abs(t["outlook_mllw"] - (t["astro_mllw"] + 0.54)) <= 0.011 for t in ol["tides"]))
 
     def test_rain_source_switches_from_grid_to_nbm_beyond_grid_reach(self):
         ol = _build()
@@ -497,7 +499,8 @@ class AuditRepairBTests(unittest.TestCase):
     def test_r2_one_tide_many_issuances_is_one_observation(self):
         target = "2026-09-24 06:47-04:00"
         rows = [dict(target_tide_time=target, lead_h=str(40 - i), nwps_mllw="6.5",
-                     persist_flat_mllw="7.5", outlook_mllw="6.5", generated_utc=f"run-{i}") for i in range(28)]
+                     persist_flat_mllw="7.5", outlook_mllw="6.5", generated_utc=f"run-{i}",
+                     model_version="v0.10.6") for i in range(28)]
         sc = outlook.score_shadow(rows, {target: 6.5})
         r = sc["readiness"]["nwps_vs_persistence_le72h"]
         self.assertEqual(r["n"], 1)

@@ -134,9 +134,11 @@ def resolve_mean(now_utc, warm):
         mean = float(warm["mean_ft"])
         computed = dt.datetime.fromisoformat(str(warm["computed_utc"]).replace("Z", "+00:00"))
         n = int(warm.get("n_hours") or 0)
-    except (KeyError, TypeError, ValueError):
+        if computed.tzinfo is None:          # review 2026-09-24-a1 R4: never subtract naive from aware
+            raise ValueError("computed_utc has no UTC offset")
+        age_h = (now_utc - computed).total_seconds() / 3600.0
+    except (KeyError, TypeError, ValueError, OverflowError):
         return fallback[0], fallback[1], {"status": "degraded", "detail": "malformed trailing-mean record; using the fallback constant"}
-    age_h = (now_utc - computed).total_seconds() / 3600.0
     if not (math.isfinite(mean) and -2.0 < mean < 3.0) or n < 24 * 300 or age_h < -1:
         return fallback[0], fallback[1], {"status": "degraded", "detail": f"implausible trailing mean {mean!r} (n={n}); using the fallback constant"}
     if age_h > SURGE_MEAN_MAX_AGE_D * 24:

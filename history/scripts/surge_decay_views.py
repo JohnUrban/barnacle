@@ -30,6 +30,8 @@ obs_navd = df.observed_mllw.values + MLLW_TO_NAVD88
 # high tides: local maxima of the astronomical prediction
 hi = np.zeros(len(pred), bool)
 hi[1:-1] = (pred[1:-1] > pred[:-2]) & (pred[1:-1] >= pred[2:])
+lo = np.zeros(len(pred), bool)            # astronomical low tides (review 2026-09-24-a1 R6)
+lo[1:-1] = (pred[1:-1] < pred[:-2]) & (pred[1:-1] <= pred[2:])
 LAGS = [3, 6, 12, 24, 30, 48]
 TAUS = [12, 24, 36, 48, 72, 96, 1e9]      # 1e9 = constant (no decay)
 
@@ -56,6 +58,7 @@ storm = S >= 1.0
 score(allmask, None, "VIEW 1 all hours (curve + rain tank)")
 score(hi, None, "VIEW 2 high-tide hours (per-tide peaks)")
 score(plug, None, "VIEW 3 target hours with the bay near the plug band (2.5-3.8 ft NAVD88)")
+score(lo, None, "VIEW 4 low-tide hours (astronomical lows)")
 score(allmask, storm, "storm starts (reading >= +1 ft), all target hours")
 # John's hypothesis: surge that has already persisted keeps persisting
 roll_min = pd.Series(S).rolling(24, min_periods=20).min().values     # lowest surge over the prior 24 h

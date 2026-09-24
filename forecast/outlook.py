@@ -42,7 +42,11 @@ REGIME_RANK = {"dry": 0, "cold_lockout": 0, "unknown": 0, "street": 1, "light": 
 READINESS_MIN_N = 28               # distinct observed tides (~two weeks at two per day)
 PAIRINGS = (("nwps_mllw", "persist_flat_mllw"), ("nws_product_mllw", "persist_flat_mllw"),
             ("persist_decay_mllw", "persist_flat_mllw"), ("outlook_mllw", "production_mllw"))
-LADDER = ("nws_product", "nwps", "petss_mid", "guidance_decay", "persist_decay")
+LADDER = ("nws_product", "nwps", "petss_mid", "guidance_decay", "persist_decay", "typical_offset")
+# estimator source -> per-tide rung (review 2026-09-24-a1 R1: the table uses the
+# SAME estimator as the hourly line for every fallback rung)
+EST_TO_RUNG = {"guidance_decay": "guidance_decay", "observed_decay": "persist_decay",
+               "typical_offset": "typical_offset"}
 
 OUTLOOK_LOG_FIELDS = [
     "generated_utc", "target_tide_time", "lead_h", "astro_mllw",
@@ -177,11 +181,19 @@ def build_tides(now_utc, data, all_tides, persisted_surge, classify_fn,
                 g["petss_p90"] = astro_mllw + hi
                 g["petss_mid"] = astro_mllw + (lo + hi) / 2.0
         if est is not None and not ({"nws_product", "nwps", "petss_mid"} & set(g)):
+            # every fallback rung comes from the one estimator the hourly line uses
             sg, esrc = est(t_utc)
-            if esrc == "guidance_decay":       # same value the chart line shows at this hour
-                g["guidance_decay"] = astro_mllw + sg
+            rung = EST_TO_RUNG.get(esrc)
+            if rung:
+                g[rung] = astro_mllw + sg
         if persisted_surge is not None:
             g["persist_flat"] = astro_mllw + persisted_surge
+        # shadow column: the observed reading decayed from ITS OWN time (R1), also
+        # when the reading is stale; legacy callers without an estimator keep lead
+        obs = est.observed(t_utc) if est is not None else None
+        if obs is not None:
+            g.setdefault("persist_decay", astro_mllw + obs)
+        elif est is None and persisted_surge is not None:
             g["persist_decay"] = astro_mllw + surge_mean_ft + (persisted_surge - surge_mean_ft) * math.exp(
                 -max(lead, 0.0) / PERSISTENCE_DECAY_TAU_H)
         central, central_src = astro_mllw, "astro"
@@ -538,7 +550,17 @@ def hourly_surge_estimator(now_utc, data, all_tides, surge_mean_ft=0.0, obs_read
                 return float(s0), "observed_decay"
             return surge_mean_ft + (s0 - surge_mean_ft) * math.exp(-age / tau_h), "observed_decay"
         return surge_mean_ft, "typical_offset"
+
+    def observed(t_utc):
+        """The observed reading decayed from its own time (None without one)."""
+        if not (obs_reading and obs_reading[0] is not None and obs_reading[1] is not None):
+            return None
+        s0, t0 = obs_reading
+        age = (t_utc - t0).total_seconds() / 3600.0
+        return float(s0) if age <= 0 else surge_mean_ft + (s0 - surge_mean_ft) * math.exp(-age / tau_h)
     est.anchors = anchors
+    est.observed = observed
+    est.mean = surge_mean_ft
     return est
 
 
@@ -872,6 +894,28 @@ def _lead_bucket(lead):
     return None
 
 
+# review 2026-09-24-a1 R3: a column whose FORMULA changed at a version is scored
+# only on rows written by that version or later; unchanged sources keep their
+# whole history. Rows are never rewritten; the cohort is reported.
+FORMULA_SINCE = {"persist_decay_mllw": "v0.10.6", "outlook_mllw": "v0.10.6",
+                 "production_mllw": "v0.10.6"}
+
+
+def _version_key(v):
+    try:
+        return tuple(int(x) for x in str(v).lstrip("v").split("."))
+    except ValueError:
+        return None
+
+
+def _in_cohort(col, row):
+    since = FORMULA_SINCE.get(col)
+    if since is None:
+        return True
+    k = _version_key(row.get("model_version"))
+    return k is not None and k >= _version_key(since)
+
+
 def score_shadow(rows, observed_by_time):
     """MAE / bias per source per lead bucket, plus promotion readiness.
 
@@ -900,7 +944,7 @@ def score_shadow(rows, observed_by_time):
         errs = {}
         for col in SCORED_COLUMNS:
             v = r.get(col)
-            if v in (None, ""):
+            if v in (None, "") or not _in_cohort(col, r):
                 continue
             try:
                 errs[col] = float(v) - obs
@@ -961,6 +1005,7 @@ def score_shadow(rows, observed_by_time):
         "scored_tides": scored_tides,
         "sampling": ("unit = one issued forecast of one tide; absolute errors averaged within a tide, "
                      "then across tides; candidate and baseline paired on the same issuance row"),
+        "cohorts": {col: f"rows from {since} on (formula changed)" for col, since in FORMULA_SINCE.items()},
         "buckets": buckets,
         "readiness": {
             "nwps_vs_persistence_le72h": pairwise("nwps_mllw", "persist_flat_mllw", 72),
