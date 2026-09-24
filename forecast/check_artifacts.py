@@ -725,6 +725,9 @@ def check_artifacts(root=ROOT):
             if fn.endswith(".jsonl"):
                 for why in _ra.validate_file(os.path.join(rdir, fn)):
                     bad.append((os.path.join(rdir, fn), why))
+    # (the wind-shadow trial log is NOT part of the publication gate: a shadow
+    # problem must never block production publishing; see shadow_log_report(),
+    # printed as a warning here and enforced by tests/test_wind_shadow.py in CI)
     bad.extend(validate_surface_stamps(root))
     bad.extend(validate_current_surfaces(root))
     for relpath in ("docs/index.html", "docs/details.html", "docs/outlook.html",
@@ -736,7 +739,42 @@ def check_artifacts(root=ROOT):
     return bad
 
 
+def shadow_log_report(root=None):
+    """Non-fatal problems in the SHADOW-ONLY wind trial log (audit 2026-09-24-a3
+    R7; round 03). The WHOLE diagnostic path is contained: import, directory
+    listing, reads and validator exceptions become report items, never a gate
+    failure. The evidence is left in place; CI (tests/test_wind_shadow.py)
+    enforces the log's validity separately."""
+    root = ROOT if root is None else root
+    wdir = os.path.join(root, "data", "wind_shadow")
+    out = []
+    try:
+        try:
+            from . import wind_shadow as _wsh
+        except ImportError:
+            import wind_shadow as _wsh
+        if not os.path.isdir(wdir):
+            return out
+        for fn in sorted(os.listdir(wdir)):
+            if not fn.endswith(".jsonl"):
+                continue
+            path = os.path.join(wdir, fn)
+            try:
+                out += [(path, why) for why in _wsh.validate_file(path)]
+            except Exception as e:  # noqa: BLE001
+                out.append((path, f"shadow validator failed ({type(e).__name__}: {e})"))
+    except Exception as e:  # noqa: BLE001
+        out.append((wdir, f"shadow report failed ({type(e).__name__}: {e})"))
+    return out
+
+
 def main():
+    try:
+        shadow = shadow_log_report(ROOT)
+    except Exception as e:  # noqa: BLE001 — belt and braces: never fatal
+        shadow = [(os.path.join(ROOT, "data", "wind_shadow"), f"shadow report failed ({type(e).__name__})")]
+    for path, why in shadow:
+        print(f"SHADOW LOG WARNING (non-fatal): {path} — {why}")
     bad = check_artifacts()
     for path, why in bad:
         print(f"PUBLISH GATE FAIL: {os.path.relpath(path, ROOT)} — {why}")

@@ -1,0 +1,33 @@
+# NDFD archive feasibility probe (plan item 3, bounded), 2026-09-24 ~13:45Z
+Source: s3://noaa-ndfd-pds (NOAA Open Data), wmo/<element>/YYYY/MM/DD/<WMO header>_KWBN_<issuance>
+
+NDFD feasibility probe 2026-09-24T13:45Z
+API cell PHI 87,105 (the house, Bay & Central) centroid 40.4005, -73.9898; API updateTime 2026-09-24T08:10:23+00:00
+archive file wmo/wspd/.../YCUZ98_KWBN_202609241316 (CONUS days 1-3, 52 MB, Lambert 2.5 km); nearest point 40.4002 -73.9896
+common 44 valid hours; archive minus API (m/s): mean -5.54, MAE 5.54, max 9.73
+elements archived 2020..2026: wspd, wdir, wgust (no MSL pressure element in NDFD); CONUS day1-3 file ~52 MB per hourly issuance
+SAME-ISSUANCE check (API updateTime 2026-09-24T08:10:23+00:00): common 46 h; archive minus API m/s: mean -6.452, MAE 6.452, max 10.332
+neighbourhood of the nearest NDFD point (row, col offsets), MAE vs API m/s, best five:
+  offset (+1,+0) at 40.4219, -73.9851: MAE 0.667
+  offset (+3,-1) at 40.4688, -74.0048: MAE 0.675
+  offset (-1,+1) at 40.3751, -73.9655: MAE 0.743
+  offset (+1,-3) at 40.4321, -74.0707: MAE 0.767
+  offset (-3,+1) at 40.3317, -73.9745: MAE 0.838
+  offset (+0,+0) (nearest): MAE 6.452
+
+Findings:
+- Archive exists 2020..2026 for wspd, wdir, wgust (and many other elements); NO mean-sea-level
+  pressure element, so a pressure input would need a second source.
+- CONUS day 1-3 wind speed (YCUZ98) ~52 MB per hourly issuance (Lambert 2.5 km grid, ~3M points);
+  a multi-year extraction is feasible with byte-range or sector strategies but heavy.
+- Decodes with eccodes. At an INLAND cell (NWS gridpoint PHI 61,102, near 40.42N 74.74W) the archive
+  reproduced the live gridpoint API exactly (MAE 0.03 m/s).
+- At the HOUSE's cell (PHI 87,105, the cell production uses), from the SAME issuance, no archived cell
+  reproduced the API: nearest cell MAE 6.45 m/s, best neighbour 0.67 m/s. The coastal mapping between
+  the national mosaic and the gridpoint API is unresolved (land/water cell, mosaic or service
+  processing). Resolving it needs a closer look before NDFD could be a like-for-like training source.
+- Conclusion: feasible as an ARCHIVE, not yet as a like-for-like substitute for the live gridpoint wind
+  at the house; not substituted into candidate c1. Prospective NWS inputs are archived by the replay
+  archive going forward.
+Side finding: "PHI 61,102" in the v0.10.5/v0.10.6 specs and a test-fixture name is a documentation
+error; production requests the cell the points endpoint returns for the house (PHI 87,105).

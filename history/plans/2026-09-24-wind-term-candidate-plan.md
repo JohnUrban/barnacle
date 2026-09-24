@@ -56,8 +56,12 @@ manifest, fitted coefficients and the evaluator. It must freeze:
    Keep unknown publication time unknown. Fit on forecasts demonstrably
    available by simulated issuance, with a documented latency rule; nominal
    initialization alone is insufficient. Preserve raw responses and hashes.
-3. The production mean policy: cached 364-day verified window ending roughly
-   three weeks back, not the research t-1 trailing mean. Retain input health,
+3. The production mean policy (corrected 2026-09-24 per audit a3 R4; the
+   earlier wording "364-day verified window ending roughly three weeks back"
+   was wrong): forecast/surge_mean.py averages verified hourly_height minus
+   predictions over the LAST 364 CALENDAR DAYS as returned, which ends at the
+   verified-data end (~3 weeks before the run); cached by the warm job. Not
+   the research t-1 trailing mean. Retain input health,
    observation age, state/fallback rung and production version per issuance.
 4. Reading time versus issuance time, treatment of the interval already elapsed
    since a stale reading, wind-window coverage and pressure-anomaly history.
@@ -161,3 +165,49 @@ Any proposed production promotion must explicitly address low-tide/drain/rain
 behavior and material operational regressions. Failing or inconclusive is a
 valid result. Sixty days and five episodes are minimum evidence, not a
 calendar promise to ship.
+
+## Reconciliation with candidate c2 (appended 2026-09-24 after audit 2026-09-24-a3)
+Candidate c1 (d82a82970) was retired before any official record; its only
+records were two local smoke tests (models/wind_shadow/SMOKE_TESTS.md,
+excluded). The candidate for the trial is **wind-shadow-c2**; its frozen
+bundle is listed in models/wind_shadow/FREEZE.md. The requirements below are
+frozen in `history/scripts/evaluate_wind_shadow.py` (declared rules in its
+docstring) and supersede any looser reading of this plan:
+- Official records only from the production workflow with
+  BARNACLE_WIND_SHADOW_TRIAL=1; records bound to c2's manifest and runtime
+  hashes; other identities, previews and hash mismatches excluded and counted.
+- Opportunities: one per UTC hour; missing, error, fallback and immature
+  counts reported per lead; fallback hours keep the frozen baseline.
+- Episodes use CONSECUTIVE valid hours for both the 6-h onset and the 48-h
+  quiet tail; the endpoint uses each episode's actual completion time.
+- FINAL requires coverage (candidate or fallback slots / opportunities) >=
+  0.80 and >= 5 SCORABLE completed episodes at 24 h and at 30 h (>= 6 matured
+  valid pairs covering >= 50 % of the episode's valid hours); otherwise the
+  verdict is INCONCLUSIVE.
+- Comparators: frozen v0.10.6 baseline (primary), the actual production curve
+  within its ~30-h reach (cohorts by production version), NWS/P-ETSS by
+  source; leads beyond 30 h compare with an OFFLINE 48-h baseline extension.
+- Rain-tank sensitivity joins the replay archive's as-issued hourly QPF and
+  astronomy; descriptive with fewer than 3 wet events.
+- Observation QC: finite value and exactly four zero flags; raw responses
+  saved with hashes; offline replay via --obs-json.
+
+## Round-03 update (appended 2026-09-24 after audit 2026-09-24-a3 round 03)
+Supersedes the reconciliation bullets above where they differ; the frozen
+rules live in the evaluator docstring and models/wind_shadow/DESIGN.md.
+- Merge enables the workflow; the trial STARTS at the first durable official
+  c2 record, whatever its status. --no-send/--dry-run are never official.
+- Every official record is gated on the frozen bundle (disabled record on any
+  mismatch) and carries its bundle identity; the evaluator scores only when all
+  bundle files match and the log's first record binds the same bundle.
+- Observation QC: finite, four integer flags, tolerance flags F = R = L = 0;
+  O (a count of 1-s outlier samples) is kept but does not invalidate an hour.
+- Guidance comparators: RAW NWPS and the P-ETSS hourly mid, stored per record
+  with provenance; Barnacle's final outlook is a separate comparator.
+- Rain-tank sensitivity no longer joins the replay archive: each record stores
+  production's as-issued tank inputs from its series start, and the evaluator
+  runs a frozen copy of the tank (models/wind_shadow/rain_ref.py) and scores
+  every flood-window landmark.
+- Round-05 correction: water-level flags are read by quality status —
+  preliminary [O,F,R,L] valid iff F = R = L = 0; verified [I,F,R,T] valid iff
+  all 0 (I = inferred, excluded); missing/unknown status invalid.

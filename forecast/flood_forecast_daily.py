@@ -7863,6 +7863,39 @@ def _render_heatmap(out_path, water_navd88, title):
 
 
 def main():
+    """Production entry point. The wind-shadow candidate (SHADOW ONLY) runs in a
+    `finally` AFTER every production output and alert decision, only when the
+    forecast JSON was written, and only with an explicit opt-in environment
+    variable (audit 2026-09-24-a3 R8: BARNACLE_WIND_SHADOW_TRIAL=1 in the
+    production workflow, or BARNACLE_WIND_SHADOW_PREVIEW_DIR for a
+    non-official preview). Local runs collect nothing by default. The parsed
+    execution mode is passed on: --no-send/--dry-run are never official even
+    with the opt-in (a3 round 03, R8). The as-issued outlook guidance and QPF
+    are passed read-only for the shadow's comparator and rain inputs (R3)."""
+    holder = {}
+    try:
+        _main_core(holder)
+    finally:
+        if holder.get("json_written") and holder.get("forecast") is not None and (
+                os.environ.get("BARNACLE_WIND_SHADOW_TRIAL") == "1"
+                or os.environ.get("BARNACLE_WIND_SHADOW_PREVIEW_DIR")):
+            try:
+                import copy as _copy
+                try:
+                    from . import wind_shadow as _ws
+                except ImportError:
+                    import wind_shadow as _ws
+                _coll, _dir, _why = _ws.collection_target(holder.get("mode"))
+                if _coll is None:
+                    print(f"wind shadow: not collected ({_why})", flush=True)
+                else:
+                    print(_ws.run(_copy.deepcopy(holder["forecast"]), collection=_coll, directory=_dir,
+                                  mode=holder.get("mode"), context=_copy.deepcopy(_LAST_REPLAY_INPUTS)), flush=True)
+            except Exception as e:  # never let the shadow affect the run's outcome
+                print(f"wind shadow: skipped ({type(e).__name__})", flush=True)
+
+
+def _main_core(holder):
     import argparse
     parser = argparse.ArgumentParser(
         description="Bay Ave Barnacle — daily flood forecast for 342 Bay Ave, Highlands NJ.",
@@ -7891,6 +7924,7 @@ def main():
                         help="Skip email sending even if SMTP env vars are set. "
                              "Useful when only writing HTML.")
     args = parser.parse_args()
+    holder["mode"] = {"dry_run": bool(args.dry_run), "no_send": bool(args.no_send)}
 
     try:
         forecast = build_forecast()
@@ -8065,6 +8099,7 @@ def main():
         _atomic_write_text(out_path, json.dumps(
             forecast, indent=2, default=str))
         print(f"Wrote JSON: {args.write_json}")
+        holder["forecast"], holder["json_written"] = forecast, True
 
     if args.dry_run:
         print("=" * 60)
