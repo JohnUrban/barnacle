@@ -108,13 +108,22 @@ def rule_problems(f):
             return ["decay metadata is not an object"]
         if not num(dec.get("mean_ft")):
             out.append("decay mean_ft not a finite number")
-        if dec.get("tau_h") is not None and not (num(dec.get("tau_h")) and dec["tau_h"] > 0):
-            out.append("decay tau_h not a positive finite number")
-        if dec.get("surge_obs_ft") is not None or dec.get("observation_utc") is not None:
+        has_reading = dec.get("surge_obs_ft") is not None or dec.get("observation_utc") is not None
+        if has_reading:
             if not num(dec.get("surge_obs_ft")):
                 out.append("decay surge_obs_ft not a finite number")
             if not _time_ok(dec.get("observation_utc")):
                 out.append("decay observation_utc not a parseable time")
+            # a decaying reading NEEDS its published timescale; it is never filled in from
+            # the current constant (a4 round 07)
+            if "tau_h" not in dec or dec.get("tau_h") is None:
+                out.append("decay tau_h missing or null for a decaying reading")
+            elif not (num(dec["tau_h"]) and dec["tau_h"] > 0):
+                out.append("decay tau_h not a positive finite number")
+        elif dec.get("tau_h") is not None and not (num(dec["tau_h"]) and dec["tau_h"] > 0):
+            # declared exception: the mean-only rung (no reading) uses no timescale, so a
+            # missing/null tau is acceptable there; a PRESENT tau must still be valid
+            out.append("decay tau_h not a positive finite number")
     elif wsi.get("surge_ft") is not None:
         if not num(wsi.get("surge_ft")):
             out.append("published reading surge_ft not a finite number")
@@ -132,7 +141,7 @@ def decay_surge(decay, t, tau=None):
     age = (t - A.parse_utc(decay["observation_utc"])).total_seconds() / 3600.0
     if age <= 0:
         return decay["surge_obs_ft"]
-    return mean + (decay["surge_obs_ft"] - mean) * math.exp(-age / (tau or decay["tau_h"]))
+    return mean + (decay["surge_obs_ft"] - mean) * math.exp(-age / (tau if tau is not None else decay["tau_h"]))
 
 
 def declared_rule(f):

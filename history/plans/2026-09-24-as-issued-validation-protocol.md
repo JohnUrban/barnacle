@@ -329,3 +329,15 @@ predeclared; r1-r3 outputs are kept unchanged and revised outputs carry `-r4`.
   exception.
 - **A4.4 Outputs** are written as strict JSON (non-finite numbers refused) as a
   final backstop, not as the admission mechanism.
+
+## Amendment 5 — POST-REVIEW (audit a4 round 07); dated by its commit
+Not predeclared; r1-r4 outputs kept, revised outputs carry `-r5`.
+- **A5.1 Decay timescale.** When the published decay metadata carries a reading
+  (value or time), its `tau_h` must be present, non-null, finite and > 0; a
+  missing or null timescale is a counterfactual exclusion with the reason
+  "decay tau_h missing or null for a decaying reading". It is NEVER filled in
+  from the current 36-h constant (the control replay previously did so).
+- **A5.2 Declared exception.** The mean-only rung (no reading value or time)
+  uses no timescale, so an absent/null `tau_h` is accepted there; a present
+  `tau_h` must still be valid. Its control replay is the mean alone.
+- Valid published lines remain scorable for B0 after these exclusions.

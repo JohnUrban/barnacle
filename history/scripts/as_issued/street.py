@@ -236,9 +236,12 @@ def arms(ctx, s):
     res["facts"]["control_combined_max_diff_ft"] = round(comb, 5)
     if comb > TANK_TOL_FT:
         gates.append(f"control combined output mismatch ({comb:.4f} ft)")
-    if dec:
+    if dec and dec.get("surge_obs_ft") is None:
+        ctrl_surge = lambda t: dec["mean_ft"]            # declared mean-only rung: no reading, no timescale
+        rule = "mean only (no reading)"
+    elif dec:
         ctrl_surge = lambda t: decay(dec["surge_obs_ft"], A.parse_utc(dec["observation_utc"]), dec["mean_ft"], t,
-                                     dec.get("tau_h") or TAU_H)
+                                     dec["tau_h"])      # validated; never the current constant
         rule = "decay (published metadata)"
     else:
         const = control_constant(f, ctx.p30, pts)

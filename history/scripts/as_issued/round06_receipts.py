@@ -2,8 +2,8 @@
 positive controls (evaluate -> per_event -> strict JSON), fidelity entry points,
 and r3-vs-r4 equality on the real archive with only the NEW fields removed
 ('unscorable' summaries and per-pair '*_why' reasons, plus run stamps).
-Run: python3 history/scripts/as_issued/round06_receipts.py  (writes
-history/reports/as_issued/round06-receipts.json, strict JSON)."""
+Run: python3 history/scripts/as_issued/round06_receipts.py [OLD NEW OUT]
+(defaults r3 r4 round06-receipts.json; round 08 used: r4 r5 round08-receipts.json)."""
 import importlib.util
 import json
 import math
@@ -60,12 +60,13 @@ def main():
            "fidelity_entry_points": {c: fidelity_case(c) for c in T.MALFORMED + ("time_bad",)}}
     rep = os.path.join(ROOT, "history", "reports", "as_issued")
     eq = {}
-    for a, b in (("study-a-advisory-r3.json", "study-a-advisory-r4.json"), ("study-b-street-r3.json", "study-b-street-r4.json"),
-                 ("study-b-events-r3.json", "study-b-events-r4.json"), ("readiness-summary-r3.json", "readiness-summary-r4.json")):
+    old, new = (sys.argv[1], sys.argv[2]) if len(sys.argv) > 2 else ("r3", "r4")
+    for a, b in ((f"study-a-advisory-{old}.json", f"study-a-advisory-{new}.json"), (f"study-b-street-{old}.json", f"study-b-street-{new}.json"),
+                 (f"study-b-events-{old}.json", f"study-b-events-{new}.json"), (f"readiness-summary-{old}.json", f"readiness-summary-{new}.json")):
         with open(os.path.join(rep, a)) as fa, open(os.path.join(rep, b)) as fb:
             eq[f"{a} == {b}"] = strip(json.load(fa)) == strip(json.load(fb))
-    out["r3_vs_r4_without_new_fields"] = eq
-    path = os.path.join(rep, "round06-receipts.json")
+    out[f"{old}_vs_{new}_without_new_fields"] = eq
+    path = os.path.join(rep, sys.argv[3] if len(sys.argv) > 3 else "round06-receipts.json")
     with open(path, "w") as f:
         json.dump(out, f, indent=1, sort_keys=True, allow_nan=False)
         f.write("\n")

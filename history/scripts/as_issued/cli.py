@@ -78,7 +78,7 @@ def advisory():
     _write(f"study-a-advisory-{REVISION}.json", {"report": rep, "pairs": pairs})
 
 
-REVISION = "r4"   # audit 2026-09-24-a4 round 05 completion; r1 (no suffix), r2 and r3 outputs are preserved unchanged
+REVISION = "r5"   # audit 2026-09-24-a4 round 07 timescale repair; r1 (no suffix) and r2-r4 outputs are preserved unchanged
 
 
 def load_normalized():

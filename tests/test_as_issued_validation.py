@@ -447,6 +447,16 @@ def _mutate(case):
     if case == "bay_string": ws[10]["tide_navd88"] = "bad"
     if case == "mean_string": dec["mean_ft"] = "bad"
     if case == "tau_string": dec["tau_h"] = "bad"
+    if case == "tau_null": dec["tau_h"] = None
+    if case == "tau_missing": del dec["tau_h"]
+    if case == "tau_zero": dec["tau_h"] = 0
+    if case == "tau_negative": dec["tau_h"] = -1.0
+    if case == "mean_only":                       # declared exception: no reading, no timescale needed
+        mean = dec["mean_ft"]
+        dec.clear(); dec.update(rung="typical-offset", mean_ft=mean, surge_obs_ft=None, observation_utc=None)
+        for q in ws:
+            t = F.parse_station_local_time(q["time"]).astimezone(UTC)
+            q["tide_navd88"] = q["water_navd88"] = round(a[t] - 2.82 + mean, 3)
     if case == "reading_bad_time": dec["observation_utc"] = "bad"
     if case == "reading_string": dec["surge_obs_ft"] = "bad"
     if case == "combined_nan":
@@ -470,7 +480,8 @@ def _mutate(case):
     return f, r, a
 
 
-MALFORMED = ("bay_string", "mean_string", "tau_string", "reading_bad_time", "reading_string", "combined_nan",
+MALFORMED = ("bay_string", "mean_string", "tau_string", "tau_null", "tau_missing", "tau_zero", "tau_negative",
+             "reading_bad_time", "reading_string", "combined_nan",
              "combined_string", "combined_plus5", "pluvial_nan", "pluvial_string", "rain_negative", "rain_nan", "rain_null")
 
 
@@ -525,6 +536,32 @@ class FullPathTests(unittest.TestCase):
         self.assertEqual(b0["point_pairs"], 1); self.assertTrue(math.isfinite(b0["mae_ft"]))
         rep, pairs, _e, _t = _full_chain("published_only", dry=True)
         self.assertEqual(rep["class_counts"], {"APPROX-TIDE": 1})
+
+    def test_missing_or_null_timescale_round07(self):
+        """a4 round 07: absent/null tau crashed F1 and the full evaluator; now a reasoned
+        exclusion that keeps the valid published line in B0 and is never filled in with 36 h."""
+        p30 = _v106()[2]
+        for case in ("tau_null", "tau_missing"):
+            f, r, a = _mutate(case)
+            self.assertIn("decay tau_h missing or null for a decaying reading", F.rule_problems(f))
+            self.assertEqual(F.f1_astronomy(f, a)["status"], "invalid published input")
+            self.assertEqual(F.f4_reading(f, a)["status"], "invalid published input")
+            rep, pairs, _e, _t = _full_chain(case)
+            self.assertEqual(rep["class_counts"], {"EXCLUDED": 1})
+            self.assertIn("tau_h missing or null", pairs[0]["class_note"])
+            b0 = rep["B0_published_by_version"]["v0.10.6"]["(0,6]"]
+            self.assertEqual(b0["point_pairs"], 1); self.assertTrue(math.isfinite(b0["mae_ft"]))
+
+    def test_mean_only_rung_needs_no_timescale_round07(self):
+        f, r, a = _mutate("mean_only")
+        self.assertNotIn("tau_h", f["water_series_input"]["decay"])
+        self.assertEqual(F.rule_problems(f), [])
+        self.assertLessEqual(F.f1_astronomy(f, a)["max_abs_vs_rule"], 0.0006)   # replays the mean-only line
+        rep, pairs, _e, _t = _full_chain("mean_only")                              # no reading: excluded, not a crash
+        self.assertEqual(rep["class_counts"], {"EXCLUDED": 1}); self.assertIn("reading unavailable", pairs[0]["class_note"])
+        self.assertEqual(rep["B0_published_by_version"]["v0.10.6"]["(0,6]"]["point_pairs"], 1)
+        f["water_series_input"]["decay"]["tau_h"] = "bad"                          # a PRESENT tau must still be valid
+        self.assertIn("decay tau_h not a positive finite number", F.rule_problems(f))
 
     def test_fidelity_entry_points_do_not_raise(self):
         p30 = _v106()[2]
