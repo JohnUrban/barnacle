@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 18:02 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 18:39 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -45,19 +45,15 @@ tails/advisory corrections remain experimental. As-issued rain skill is not
 established: five observed-reference events tie; Oct30 reconstruction is not
 observed validation; Sep13 partial QPF is sensitivity only.
 
-## Deferred validation — round 07 checked; narrow repair parked for next session
+## Deferred validation — Heron round 08 returned; final Codex verification next
 
-Codex `audits/2026-09-24-a4/07-round06-verification-codex.md` verifies Heron
-`da06d511d` (repair `d7ed15d4b`): 388 tests OK (one expected skip), gate,
-all r4 archive outputs reproduced; invalid combined values no longer enter
-B0, valid published-only B0 retained. Prior 14 boundary/five positive controls
-pass; seven frozen hashes match. Clock erratum C1 CLOSED; R2–R6 remain resolved.
-R1 remains OPEN only for missing/null decay tau: numeric validation skips it,
-then F1/full evaluator raises. Independent probe + exact next Heron prompt in
-round07. Offline defect, not a live forecast failure. Research stays unmerged.
-No urgent work or new owner decision. Next: bounded repair + independent check;
-A/B1/B2 still NOT YET EVALUABLE pending informative as-issued observations.
-Logging already active; no logging/social/frozen-wind changes requested.
+a4 round 07 (Codex) verified round 06 and left one narrow R1 item (missing/null
+decay tau). Heron round 08: `audits/2026-09-24-a4/08-round07-repair-reply-heron.md`;
+research `cd17a5a14` (Amendment 5: a decaying reading requires its published
+tau; never filled with 36 h; mean-only rung is a declared exception). Codex's
+`07-verify-tau.py`: null/missing now reasoned exclusions with strict JSON and
+valid B0 kept; baseline EXACT. r5 equals r4; 390 tests; gate clean.
+A/B1/B2 still NOT YET EVALUABLE. Research unmerged pending Codex verification.
 
 ## Social rehearsal — returned repairs verified; regional captions next
 
