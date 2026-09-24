@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 12:21 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 12:31 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -57,9 +57,10 @@ Do not edit frozen wind files or production behavior; Codex review before merge.
 ## Separate social planning
 
 John approved local practice posts → Facebook only → optional later expansion.
-Separate `plan/social-broadcast`, sibling barnacle-social-plan, local `6955519bb`:
-Tern has replied to doc 12 S1-S6 in doc 14 and built map+curve cards; this new
-reply awaits Codex review. Doc 13 records peak heatmap + linked full curve and common
+Separate `plan/social-broadcast`, sibling barnacle-social-plan, local `a716b2b60`:
+Codex doc 15 verifies original S1–S6 repaired; 376 tests and full gallery pass.
+Tern follow-up R1 peak-map/chart bounds, R2 conditional timing; C1 text hash
+recommended. No new owner decision for repairs. Doc 13: full curve and common
 existing landmarks with matching map/chart markers; no house-landmark ban.
 Public event prose AM/PM; practice output local. No provider/accounts/posts.
 Merge narrow doc changes when adopting; do not overwrite newer living docs.

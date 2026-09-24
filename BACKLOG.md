@@ -95,6 +95,15 @@ looks stale, trust this file. Ledger lines are append-only:
       guidance, low-tide/plug/underprediction and rain checks. Production stays
       v0.10.6; no displayed or alert wind term, no automatic promotion. Any live
       adoption needs separate version/replays/review and John DECISION.
+- [ ] **Social offline rehearsal — Tern repair follow-up.** Independent Codex
+      doc 15 on local `plan/social-broadcast` at a716b2b60 verifies original
+      S1–S6 repaired (Tern 6955519bb), 376 tests/gate and 71 gallery cases.
+      Required R1: radar map should show the selected conditional peak and
+      chart limits must include it. Required R2: do not place future peaks at
+      the current estimate time or invent an impact window. Recommended C1:
+      recompute actual staged caption/alt hashes. No owner decision needed
+      for repairs; offline only, production unchanged. Full report/probes in
+      sibling barnacle-social-plan/history/plans/2026-09-24-social-broadcast/.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -646,3 +655,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 
 2026-09-24 | DONE | wind-shadow-first-official-record | Codex verified hourly bot commit 5d281b19c/run 36025879659: first official wind-shadow-c2 record, issuance 16:14:12Z, written 16:14:26Z, candidate status, frozen bundle 82d156a63089…; file validator, all bundle hashes and evaluator identity admission pass (one slot, no exclusions). Frozen trial start is nominal 16:00Z. No Claude implementation repair remains; collection/monitoring and eventual 60-day plus five-eligible-storm evaluation remain [VERIFIED: data/wind_shadow/2026-09.jsonl line 1; history/reports/2026-09-24-validation-archive-readiness.json]
 2026-09-24 | OPEN | as-issued-validation-handoff | John requested resuming accepted v0.10.6 items 2/5. Codex prepared history/plans/2026-09-24-as-issued-validation-handoff.md and reproducible readiness census: 12 v0.10.6 input records from 05:46:59Z to 16:14:12Z, 10.454 h, no nonzero advisory anchors. Separate offline advisory ablation and street rain/tide evaluation; first prove replay/observation eligibility, commit method before scoring, preserve prior evidence corrections, propose logging repairs if needed. No production change, wind-trial change or skill claim [VERIFIED/STATED: census and owner request]
+2026-09-24 | FACT | social-stage-b-round15-review | Codex verified Tern 6955519bb on separate local branch; review committed a716b2b60. S1–S6 resolved, 376 tests pass, gate clean, full gallery 71 cases/0 failures and counterfactual 59 posts reproduced. Radar map peak/bounds R1 and conditional timing R2 remain; text-checksum validation C1 recommended. No production implementation or posting; Tern can repair without new owner decisions [VERIFIED: sibling social branch doc 15 and probes]
