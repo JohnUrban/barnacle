@@ -725,6 +725,17 @@ def check_artifacts(root=ROOT):
             if fn.endswith(".jsonl"):
                 for why in _ra.validate_file(os.path.join(rdir, fn)):
                     bad.append((os.path.join(rdir, fn), why))
+    # wind-shadow log (SHADOW ONLY, append-only JSON lines)
+    try:
+        from . import wind_shadow as _wsh
+    except ImportError:
+        import wind_shadow as _wsh
+    wdir = os.path.join(root, "data", "wind_shadow")
+    if os.path.isdir(wdir):
+        for fn in sorted(os.listdir(wdir)):
+            if fn.endswith(".jsonl"):
+                for why in _wsh.validate_file(os.path.join(wdir, fn)):
+                    bad.append((os.path.join(wdir, fn), why))
     bad.extend(validate_surface_stamps(root))
     bad.extend(validate_current_surfaces(root))
     for relpath in ("docs/index.html", "docs/details.html", "docs/outlook.html",

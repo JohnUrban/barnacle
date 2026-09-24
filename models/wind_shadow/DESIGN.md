@@ -48,3 +48,17 @@ equivalent for this purpose and route (B) is used (more storms, winter
 included), fitted with the replayed production mean and purged split, and
 applied to single-run features live. Otherwise route (A) is used. The
 outcome and numbers are recorded in `manifest.json`.
+
+## As built (appended after the fit; the rule above was applied unchanged)
+- Route outcome: NOT equivalent (W_12 r = 0.943; W_30 r = 0.857, slope
+  1.47), so route A: coefficients fitted on single runs only (issuances
+  2026-04-02 .. 2026-09-20, 4,098 hours; spring and summer only, no winter
+  storms: a stated limitation). Numbers in `manifest.json`.
+- Forecast hours requested: 0..60 (a run chosen with the 6-h rule can be up to
+  11 h older than the issuance hour, and leads reach 48 h).
+- Observed pressure at issuance: the 6-min `air_pressure` value AT the
+  issuance hour, else the latest value <= issuance and <= 60 min old (the
+  hourly product publishes the top-of-hour value too late for the run). The
+  30-day anomaly uses the hourly product's values in [t - 30 d, t).
+- A non-fresh reading, any incomplete window, missing pressure, or a feed
+  error -> the record carries the baseline and the reason (never zeros).

@@ -7863,6 +7863,27 @@ def _render_heatmap(out_path, water_navd88, title):
 
 
 def main():
+    """Production entry point. The wind-shadow candidate (SHADOW ONLY) runs in a
+    `finally` AFTER every production output and alert decision, and only when
+    the forecast JSON was written; it cannot change any published byte."""
+    holder = {}
+    try:
+        _main_core(holder)
+    finally:
+        if holder.get("json_written") and holder.get("forecast") is not None \
+                and os.environ.get("BARNACLE_WIND_SHADOW", "1") != "0":
+            try:
+                import copy as _copy
+                try:
+                    from . import wind_shadow as _ws
+                except ImportError:
+                    import wind_shadow as _ws
+                print(_ws.run(_copy.deepcopy(holder["forecast"])), flush=True)
+            except Exception as e:  # never let the shadow affect the run's outcome
+                print(f"wind shadow: skipped ({type(e).__name__})", flush=True)
+
+
+def _main_core(holder):
     import argparse
     parser = argparse.ArgumentParser(
         description="Bay Ave Barnacle — daily flood forecast for 342 Bay Ave, Highlands NJ.",
@@ -8065,6 +8086,7 @@ def main():
         _atomic_write_text(out_path, json.dumps(
             forecast, indent=2, default=str))
         print(f"Wrote JSON: {args.write_json}")
+        holder["forecast"], holder["json_written"] = forecast, True
 
     if args.dry_run:
         print("=" * 60)

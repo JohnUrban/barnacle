@@ -2,7 +2,7 @@
 """Archive Open-Meteo `gfs_seamless` SINGLE RUNS at Sandy Hook for the
 wind-shadow candidate (plan history/plans/2026-09-24-wind-term-candidate-plan.md,
 item 1). One request per GFS cycle (00/06/12/18Z): hourly wind_speed_10m (kn),
-wind_direction_10m (deg FROM), pressure_msl (hPa) for forecast hours 0..54.
+wind_direction_10m (deg FROM), pressure_msl (hPa) for forecast hours 0..60 (a run chosen with the 6-h latency rule can be up to 11 h older than the issuance hour, and leads reach 48 h: 59 h needed).
 Each raw response is saved verbatim with its SHA-256 and retrieval time
 (history/data/gfs_single_runs/raw/<run>.json, git-ignored), then combined into
 history/data/gfs_single_runs/runs.parquet (run_init_utc, valid_utc, lead_h, vars).
@@ -23,7 +23,7 @@ VARS = "wind_speed_10m,wind_direction_10m,pressure_msl"
 
 def fetch(run):
     q = {"latitude": LAT, "longitude": LON, "hourly": VARS, "models": "gfs_seamless",
-         "run": run.strftime("%Y-%m-%dT%H:%M"), "forecast_hours": 55, "wind_speed_unit": "kn", "timezone": "GMT"}
+         "run": run.strftime("%Y-%m-%dT%H:%M"), "forecast_hours": 61, "wind_speed_unit": "kn", "timezone": "GMT"}
     req = urllib.request.Request(URL + "?" + urllib.parse.urlencode(q), headers={"User-Agent": UA})
     for i in range(5):
         try:
