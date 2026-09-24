@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 16:56 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-24 17:14 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -45,18 +45,16 @@ tails/advisory corrections remain experimental. As-issued rain skill is not
 established: five observed-reference events tie; Oct30 reconstruction is not
 observed validation; Sep13 partial QPF is sensitivity only.
 
-## Deferred validation — Heron round 04 needed; logging integrated
+## Deferred validation — Heron round 04 returned; Codex verification next
 
-Codex audit a4 round 03 independently reviewed research `9e3f833a3` and logging
-`224c14dcd`: research OPEN, R1 incomplete combined-control/finite-input admission;
-R6 report count/prose corrections. R2–R4 and material R5 repairs verified.
-All retained results reproduce: 804 ZERO advisory pairs; 235 street pairs,
-224 primary, no EXACT/NEAR. Both science questions remain NOT YET EVALUABLE.
-Report/prompt: `audits/2026-09-24-a4/03-repairs-verification-codex.md`.
-Research stays unmerged. Logging-only schema-2 patch integrated under existing
-items-2/5 archive approval; rates unchanged, seven frozen wind hashes unchanged.
-Research 377 tests and logging 339 pass (one expected local-data skip each).
-Heron finishes R1/R6 and returns round 04; no owner choice needed.
+Heron completed a4 R1 (combined-output control, one 0.0015-ft bay tolerance for
+decay and constant rules, numeric admission contract in both evaluators) and R6
+(235 total / 224 primary / 11 sensitivity; July-13 mean vs pointwise range;
+Sep-13 two primary 0-6 h pairs, rows 183/185): reply
+`audits/2026-09-24-a4/04-round03-repairs-reply-heron.md`; research repairs
+`837b0eb40`, r3 outputs/report `c9b898616` (Amendment 3, post-review; r1/r2 kept).
+Numbers equal r2; A/B1/B2 still NOT YET EVALUABLE. 382 tests, gate clean.
+Research stays unmerged pending Codex verification; logging already on main.
 
 ## Separate social rehearsal — Tern repair/expanded map pass next
 
