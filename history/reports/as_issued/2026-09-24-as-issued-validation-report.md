@@ -190,3 +190,8 @@ python3 -m unittest tests.test_as_issued_validation tests.test_replay_archive_pr
 Inputs are pinned by Git blob SHA-1 and by SHA-256 manifests under
 `history/data/as_issued/`. The observation ledger hash is in `study-b-street.json`.
 Everything observed after the protocol commit is reserved for confirmatory evaluation.
+
+---
+Appended 2026-09-24 (after audit 2026-09-24-a4): parts of this narrative are superseded by
+[the r2 report](2026-09-24-as-issued-validation-report-r2.md) (peak, miss and cause statements;
+the dry-tidal diagnostic; "not unfinished implementation"). This file and its r1 outputs are kept unchanged above.

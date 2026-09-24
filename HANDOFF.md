@@ -19,14 +19,13 @@ issuance 2026-09-24T16:14:12Z, written 16:14:26Z, candidate status; bundle and
 evaluator admission pass. Trial starts at nominal 16:00Z. Frozen changes need
 a new identity/period. No production forecast/alert wind correction.
 
-## Branch research/as-issued-validation (Claude) — awaiting Codex review
+## Branch research/as-issued-validation (Heron) — a4 repairs awaiting Codex review
 
-Deferred v0.10.6 validation (advisory corrections; rain/tide street forecasts).
-Protocol before scoring, evaluators, tests, readiness/fidelity and results:
-`history/reports/as_issued/2026-09-24-as-issued-validation-report.md`.
-All three verdicts NOT YET EVALUABLE (evidence gap, not unfinished code);
-published-line and dry-tidal diagnostics are descriptive. Replay-archive
-provenance repairs (schema 2) built here; merge only after review.
+Audit 2026-09-24-a4 round 01 (Codex) repaired in 00875267d with Amendment 2
+(post-review, post-scoring; r1 outputs kept). Revised results:
+`history/reports/as_issued/2026-09-24-as-issued-validation-report-r2.md`.
+Verdicts still NOT YET EVALUABLE (evidence gap). Logging isolated on
+`logging/replay-provenance` (224c14dcd). Merge neither before review.
 
 ## Approved wind scope and prior research
 
