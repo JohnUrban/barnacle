@@ -191,3 +191,24 @@ descriptive only, by version cohort.
 - B2: >= 3 (descriptive) or >= 5 (verdict) observed wet street events with
   archived as-issued rain.
 Insufficient evidence is a result, distinct from unfinished implementation.
+
+## Amendment 1 (2026-09-24, before any scoring; commit precedes the evaluator's first outcome run)
+Why: implementing 4.2/4.3 mechanically (ledger read-through, no forecast
+compared) misclassified wording that the rules did not anticipate: "WATER OVER
+... GRATES", "CROWN COVERED" and "water over the sidewalk" are LOWER bounds,
+not upper bounds; "water at bottom of first porch step", "street full up to
+~sidewalk TOP", "just APPEARING at NE+NW corners" and "back LEVEL with" are
+points; and 4.3 read the NOTES, which often mention a separate hindcast, so
+genuine observations were labeled reconstructions. Replacement rules:
+- 4.2' Level type for depth 0 or blank, first match in the QUALITATIVE text:
+  (1) UPPER BOUND (level <= elevation): "at/below", "no water", "dry",
+  "receded", "exposed", "driveable"; (2) POINT at the elevation: "level",
+  "at bottom", "at the bottom", "at base", "hit", "up to", "appearing";
+  (3) LOWER BOUND (level >= elevation): "over ", "covered", "covering";
+  (4) otherwise depth 0 = UPPER BOUND (README), blank = EXCLUDED. Nonzero
+  depths are unchanged (POINT at elevation + depth/12).
+- 4.3' Evidence type from the QUALITATIVE text only: RECONSTRUCTION ("inferred",
+  "backcast", "hindcast", "reconstruct"); PHOTO ("photo", "exif"); SECOND
+  OBSERVER (observer field or "second observer"); else OBSERVER ESTIMATE.
+- 4.6' LOWER BOUND metric: deficit = max(0, elevation - forecast) (a missed wet
+  call if > 0); threshold: observed wet.
