@@ -20,7 +20,6 @@ evaluator admission pass. Trial starts at nominal 16:00Z. Frozen changes need
 a new identity/period. No production forecast/alert wind correction.
 
 ## Approved wind scope and prior research
-
 John approved Open-Meteo gfs_seamless wind AND pressure for shadow only:
 BACKLOG DECISION `wind-shadow-open-meteo`, plan
 `history/plans/2026-09-24-wind-term-candidate-plan.md`.
@@ -57,7 +56,9 @@ Heron repair or owner decision required for audit close-out. Preserve newer
 main coordination when integrating; no production/model/alert changes here.
 A/B1/B2 still NOT YET EVALUABLE; B0 descriptive. Archive logging is already
 live. Await informative correction/rain events and matched as-issued outcomes;
-scientific follow-up remains OPEN despite evaluator audit closure.
+scientific follow-up remains OPEN. Revisit 2026-10-09, or after an informative
+event with available outcomes; checkpoint/message in
+history/plans/2026-09-25-heron-validation-checkpoint.md. No automatic reminder.
 
 ## Social rehearsal — regional calculations verified; Tern return needed
 
@@ -79,7 +80,6 @@ merge or push; social branch stays local-only. Never overwrite main living docs
 with its old snapshots. Heron is separate; integration step remains above.
 
 ## Future owner task — neutral reference landmarks
-
 John will identify/map/measure candidate features at the VFW (SE) and parking
 lot (SW), serving the same role as house steps if he later moves. Details in
 BACKLOG `john-neutral-landmark-survey`; no elevations or equivalence established.

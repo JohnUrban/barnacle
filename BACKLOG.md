@@ -83,6 +83,11 @@ looks stale, trust this file. Ledger lines are append-only:
       no EXACT/NEAR, all 804 advisory pairs zero-correction; A/B1/B2 remain
       NOT YET EVALUABLE. B0 descriptive. Logging schema 2 already live; await
       informative events and matched issuance-time inputs/street outcomes.
+      Next evidence checkpoint 2026-10-09; earlier after informative events
+      once outcomes mature. Check archive health/eligibility, not a promised
+      verdict; if sparse, revisit two weeks later. Integration need not wait.
+      Message: history/plans/2026-09-25-heron-validation-checkpoint.md.
+      Calendar import supplied; no automatic message scheduled.
       Prior row erratum stands: Sep13 primary 0–6 h rows 183/185.
 - [x] **Wind research corrections — audit 2026-09-24-a2 CLOSED (2026-09-24).**
       Claude reply02 confirmed R1-R5 and repaired the studies in `142907573`.
@@ -704,3 +709,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 
 2026-09-25 | FACT | social-regional-codex-doc26 | Codex reviewed Tern 91ef31995 on local social branch; review c256f3661/doc26. 440 tests OK, gate clean, 74 cases/0 errors, 14 delivery scenarios/six correction checks; direct town arithmetic, polygon membership and independent intersection mask match all 73 available cases. OPEN R1 park/Shrewsbury boundary, R2 phone-size summary/caption layout; C1 active public-zone instruction/outline wrap/stale status. Next Tern prompt written, no production adoption or posting [VERIFIED: sibling doc26, portable probe and receipt]
 2026-09-25 | FACT | heron-status-confirmed | Research candidate remains cd17a5a14 with clean worktree; a4 round09 CLOSED and no Heron repair outstanding. Separate integration into main remains for Codex; A/B1/B2 scientific evaluation still awaits informative archived events/outcomes. No merge or new scientific conclusion in this social-review turn [VERIFIED: candidate HEAD/status, a4/09 and main HANDOFF]
+
+2026-09-25 | OPEN | heron-validation-checkpoint | John requested when to raise the waiting scientific evaluation again. Codex recommends first evidence/health checkpoint 2026-10-09, earlier after informative events with available/matured outcomes, then fortnightly if sparse. Existing independent-event adequacy rules unchanged; no promised verdict date. Evaluator integration remains a separate pending Codex task; logging already live. Checkpoint message recorded and calendar import supplied, no connected notification scheduled [STATED/VERIFIED: owner request, protocol at cd17a5a14, checkpoint note]
