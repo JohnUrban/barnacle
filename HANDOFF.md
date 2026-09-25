@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-24 18:42 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-25.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Wind-shadow c2 audit CLOSED — official trial collecting
@@ -59,25 +59,24 @@ A/B1/B2 still NOT YET EVALUABLE; B0 descriptive. Archive logging is already
 live. Await informative correction/rain events and matched as-issued outcomes;
 scientific follow-up remains OPEN despite evaluator audit closure.
 
-## Social rehearsal — returned repairs verified; regional captions next
+## Social rehearsal — regional calculations verified; Tern return needed
 
-Local `plan/social-broadcast`, sibling barnacle-social-plan, review `3d264ae37`.
-Codex doc 24 verifies Tern `4a44a6e3c`: doc21 R1–R3 CLOSED (drawn legends,
-unavailable-vs-dry styles, complete two-image corrections). 428 tests, gate,
-74 practice cases/zero errors, 14 delivery scenarios; coverage probe reproduced.
-Doc22 warning-first/LIVE and references retained; no public house framing;
-MLLW/local-grate dual chart scales. Bayside crop recommended, adds 377 pieces
-and retains all 510 old-corridor pieces. Sampled visuals checked; final phone
-and copy acceptance remain open. John has not exhaustively reviewed strings.
-John requests town wet-street depth range, Bay & Central reference range,
-then regional ranges (Snug Harbor–Huddy, Washington–Sea Drift,
-Miller–Veterans Park as draft examples). Doc24 is Tern's next offline brief:
-reviewable boundaries, exact wet street masks, same map time/scenario,
-no invented regional peak; town drainage extrapolation remains explicit.
-Existing eligibility accepted; final strings and queued-post expiry remain open.
-Offline → Facebook only → optional later expansion. No accounts/posts,
-production copy/model changes or merge; social branch stays local-only.
-Never overwrite main living docs with the branch snapshots. Heron stays separate.
+Local `plan/social-broadcast`, sibling barnacle-social-plan, review `c256f3661`.
+Codex doc26 reviews Tern `91ef31995` plus map decision `b33fe98f7`:
+440 tests/gate, 74 cases/zero errors, 14 delivery scenarios, six correction
+checks pass. Independent town/region/intersection calculations match all
+73 available cases. Warning-first/LIVE, explicit references, no public house
+framing and dual chart scales remain. John chose bayside; borough is alternate.
+OPEN R1: Miller–Veterans Park currently extends to bridge; source and correct
+park/Shrewsbury boundary, retain whole map. OPEN R2: enlarge new town-card
+range summary at phone size; split caption into readable blocks. C1 cleanup:
+active timezone instruction, clipped outline explanation and stale branch docs.
+Doc26 contains next Tern prompt. Keep Route36→water strips and min–max ranges
+as working recommendations, not new owner decisions. Final copy/phone and
+queued-post expiry acceptance remain open. Existing eligibility accepted.
+Offline → Facebook only. No accounts/posts, production copy/model changes,
+merge or push; social branch stays local-only. Never overwrite main living docs
+with its old snapshots. Heron is separate; integration step remains above.
 
 ## Future owner task — neutral reference landmarks
 

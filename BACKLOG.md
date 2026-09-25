@@ -108,24 +108,21 @@ looks stale, trust this file. Ledger lines are append-only:
       guidance, low-tide/plug/underprediction and rain checks. Production stays
       v0.10.6; no displayed or alert wind term, no automatic promotion. Any live
       adoption needs separate version/replays/review and John DECISION.
-- [ ] **Social offline rehearsal — repairs verified; regional caption prototype next.**
-      Codex local review `3d264ae37` (doc24) verifies Tern `4a44a6e3c`:
-      doc21 R1–R3 CLOSED; 428 tests, gate, 74 practice cases/zero errors,
-      14 delivery scenarios; coverage and legend checks reproduce. Warning-first,
-      active/fresh LIVE radar, explicit references and dual chart scales retained.
-      Public house framing removed. Bayside crop recommended within John's scope;
-      all 510 old corridor pieces kept, 377 added. Final phone/copy review open.
-      John requests second caption level: wet-street depth range across selected
-      town map, Bay & Central reference range, then regional ranges. Suggested
-      regions: Snug Harbor–Huddy, Washington–Sea Drift, Miller–Veterans Park.
-      Tern next: doc24 offline brief with reviewable polygons and street masks,
-      exact shared time/scenario/depth semantics and explicit town drainage
-      extrapolation. No invented region-specific peak, uniform curb depth,
-      or missing-as-dry claim. Final strings and expiry remain undecided;
-      existing eligibility and offline → Facebook-only sequence already accepted.
-      No provider/accounts/posts or live changes. Brief on sibling social branch:
-      history/plans/2026-09-24-social-broadcast/
-      `24-codex-verification-and-regional-captions.md`.
+- [ ] **Social offline rehearsal — regional calculations verified; Tern return needed.**
+      Codex local review `c256f3661` (doc26) verifies Tern `91ef31995`:
+      440 tests/gate, 74 cases/zero errors, 14 delivery scenarios, six correction
+      checks. Independent town/region/intersection aggregation matches 73
+      available cases. OPEN R1 sourced park/Shrewsbury boundary (currently
+      Miller–Veterans Park extends to bridge); R2 phone-size range summary
+      and caption blocks; C1 timezone instruction/outline wrap/stale status.
+      John chose bayside and added Marina–Miller (Tern doc23 addendum/doc25).
+      Whole borough kept as alternate. Keep Route36→water and min–max as
+      working recommendations; final region/copy/phone acceptance remains.
+      Doc21 repairs CLOSED; warning-first/LIVE and references retained.
+      Final expiry undecided; existing eligibility and offline → Facebook-only
+      accepted. No provider/accounts/posts, production changes, merge or push.
+      Brief on sibling social branch: history/plans/2026-09-24-social-broadcast/
+      `26-codex-regional-review.md`. Heron integration is separate.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -704,3 +701,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-24 | DONE | as-issued-validation-a4-round08 | Heron repaired audit 2026-09-24-a4 round 07's remaining R1 item on research/as-issued-validation (cd17a5a14; Amendment 5 post-review; r1-r4 kept): a decaying reading requires a present, non-null, positive finite published tau_h (missing/null = reasoned exclusion before use; the control replay no longer fills in the 36-h constant); mean-only rung is a declared, tested exception. Codex 07-verify-tau.py: null/missing excluded with strict JSON and valid B0 kept, baseline EXACT. r5 equals r4 on the real archive; 19 boundary cases + 5 controls pass (round08-receipts.json); 390 tests. Reply audits/2026-09-24-a4/08-round07-repair-reply-heron.md; final Codex verification owed; research unmerged [VERIFIED: branch commit, receipts]
 
 2026-09-24 | DONE | as-issued-evaluator-audit-closeout | Codex round09 independently verifies Heron cd17a5a14; audit 2026-09-24-a4 CLOSED, R1–R6/C1 resolved. Missing/null tau and mean-only controls pass; 390 tests OK (one expected skip), gate, all r5 archive outputs reproduced, seven frozen hashes match. Research unmerged and ready for separate integration; no additional repair requested from Heron. A/B1/B2 still NOT YET EVALUABLE; scientific follow-up and collection remain open. No production change. [VERIFIED: audits/2026-09-24-a4/09-close-out-codex.md and receipts]
+
+2026-09-25 | FACT | social-regional-codex-doc26 | Codex reviewed Tern 91ef31995 on local social branch; review c256f3661/doc26. 440 tests OK, gate clean, 74 cases/0 errors, 14 delivery scenarios/six correction checks; direct town arithmetic, polygon membership and independent intersection mask match all 73 available cases. OPEN R1 park/Shrewsbury boundary, R2 phone-size summary/caption layout; C1 active public-zone instruction/outline wrap/stale status. Next Tern prompt written, no production adoption or posting [VERIFIED: sibling doc26, portable probe and receipt]
+2026-09-25 | FACT | heron-status-confirmed | Research candidate remains cd17a5a14 with clean worktree; a4 round09 CLOSED and no Heron repair outstanding. Separate integration into main remains for Codex; A/B1/B2 scientific evaluation still awaits informative archived events/outcomes. No merge or new scientific conclusion in this social-review turn [VERIFIED: candidate HEAD/status, a4/09 and main HANDOFF]
