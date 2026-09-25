@@ -2,6 +2,7 @@ import unittest
 from unittest import mock
 
 from forecast import flood_forecast_daily as ff
+from forecast import rendering
 
 
 class AccuracyReportingTests(unittest.TestCase):
@@ -64,10 +65,20 @@ class AccuracyReportingTests(unittest.TestCase):
                 "regime": "street",
             },
         ]
+        # Classifier metrics read through the facade; the renderer holds its
+        # own imported bindings. Patch both lookup sites so this unit test
+        # cannot fetch NOAA observations or update the production cache.
         with mock.patch.object(ff, "_load_accuracy_rows", return_value=rows), \
-             mock.patch.object(ff, "_load_outcome_depth_rows", return_value=[]), \
-             mock.patch.object(ff, "_compute_leadtime_accuracy", return_value=None):
+             mock.patch.object(rendering, "_load_accuracy_rows", return_value=rows), \
+             mock.patch.object(rendering, "_load_outcome_depth_rows", return_value=[]), \
+             mock.patch.object(rendering, "_compute_leadtime_accuracy", return_value=None) as leadtime, \
+             mock.patch.object(ff, "_fetch_actual_peak_around", side_effect=AssertionError("unexpected NOAA fetch")) as fetch, \
+             mock.patch.object(ff, "_save_observed_peaks_cache", side_effect=AssertionError("unexpected cache write")) as save:
             html = ff._render_accuracy_html({"accuracy_summary": summary})
+
+        leadtime.assert_called_once_with()
+        fetch.assert_not_called()
+        save.assert_not_called()
 
         self.assertIn("Flood recall", html)
         self.assertIn("Alert precision", html)

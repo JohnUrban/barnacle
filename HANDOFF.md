@@ -58,24 +58,20 @@ scientific follow-up remains OPEN. Revisit 2026-10-09, or after an informative
 event with available outcomes; checkpoint/message in
 history/plans/2026-09-25-heron-validation-checkpoint.md. No automatic reminder.
 
-## Social rehearsal — regional calculations verified; Tern return needed
+## Social rehearsal — doc28 closes requested repairs; local-only
 
-Local `plan/social-broadcast`, sibling barnacle-social-plan, review `c256f3661`.
-Codex doc26 reviews Tern `91ef31995` plus map decision `b33fe98f7`:
-440 tests/gate, 74 cases/zero errors, 14 delivery scenarios, six correction
-checks pass. Independent town/region/intersection calculations match all
-73 available cases. Warning-first/LIVE, explicit references, no public house
-framing and dual chart scales remain. John chose bayside; borough is alternate.
-OPEN R1: Miller–Veterans Park currently extends to bridge; source and correct
-park/Shrewsbury boundary, retain whole map. OPEN R2: enlarge new town-card
-range summary at phone size; split caption into readable blocks. C1 cleanup:
-active timezone instruction, clipped outline explanation and stale branch docs.
-Doc26 contains next Tern prompt. Keep Route36→water strips and min–max ranges
-as working recommendations, not new owner decisions. Final copy/phone and
-queued-post expiry acceptance remain open. Existing eligibility accepted.
+Codex reviewed Tern db2070ff7; local review commit 1ca80d9a0.
+Doc26 R1/R2/C1 CLOSED.
+442 required-decoder tests, gate, fresh 74-case gallery/zero failures,
+14 delivery scenarios; independent ranges match all 73 available cases.
+Park/Shrewsbury proxy corrected (approximate sampled junction, not parcel
+survey); key ranges enlarged, caption split, active timezone rule repaired.
+Review: sibling barnacle-social-plan/history/plans/2026-09-24-social-broadcast/
+28-codex-repair-closeout.md. No further Tern repair requested for this round.
+John's final copy/phone/geography and queued-post expiry acceptance remain open.
+Bayside chosen; Route36→water strips/min–max are working recommendations.
 Offline → Facebook only. No accounts/posts, production copy/model changes,
-merge or push; social branch stays local-only. Never overwrite main living docs
-with its old snapshots. Heron is separate; integration step remains above.
+merge or push of social branch. Preserve newer main living docs on integration.
 
 ## Future owner task — neutral reference landmarks
 John will identify/map/measure candidate features at the VFW (SE) and parking
@@ -86,8 +82,10 @@ Existing landmarks stay; this adds no requirement to Tern's current work.
 ## Operations
 Storm check 2026-09-25: NWS/tide tables show serious weekend flooding; core
 Saturday curve ~1 ft lower. Offline email TODAY LIGHT vs day_worst MODERATE.
-Sanitized weekend-assessment report in history/reports/ lists prioritized
-headline/guidance/rain/SMS proposals. No live fix or policy/model promotion.
+Sanitized weekend-assessment report in history/reports/ has evidence. Actionable
+plan: history/plans/2026-09-25-storm-followup-handoff.md (arms, tests, order).
+Next: day-headline parity including widget; guidance-first candidate and SMS
+policy are separate reviews. Test-isolation fix only; no production change.
 18 landmarks; hourly site/JSON; ~10-min radar nowcast; widget v7.29a re-copy
 planned by John, completion unconfirmed. Only widget change since 7.28a removes
 driveway proxy; forecast curves arrive through JSON. SMS imminent impact;

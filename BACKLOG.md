@@ -18,7 +18,9 @@ looks stale, trust this file. Ledger lines are append-only:
       history/reports/2026-09-25-weekend-assessment.md + JSON. Prioritized
       proposals there: shared headlines/source labels, guidance-first candidate,
       rain/low-tide/surface replay, separate SMS-policy review, parallel scoring.
-      No live fix or model/alert-policy approval implied.
+      Implementation order/arm inventory/tests and safe stopping point:
+      history/plans/2026-09-25-storm-followup-handoff.md. Owner permits starting
+      work; no live fix or model/alert-policy promotion approval implied.
 
 - [x] **v0.10.6 promoted; audit 2026-09-24-a1 CLOSED (2026-09-24).**
       Reviewed candidate `1053eb436`, promotion `75a9933ff`, owner decision
@@ -125,21 +127,20 @@ looks stale, trust this file. Ledger lines are append-only:
       guidance, low-tide/plug/underprediction and rain checks. Production stays
       v0.10.6; no displayed or alert wind term, no automatic promotion. Any live
       adoption needs separate version/replays/review and John DECISION.
-- [ ] **Social offline rehearsal — regional calculations verified; Tern return needed.**
-      Codex local review `c256f3661` (doc26) verifies Tern `91ef31995`:
-      440 tests/gate, 74 cases/zero errors, 14 delivery scenarios, six correction
-      checks. Independent town/region/intersection aggregation matches 73
-      available cases. OPEN R1 sourced park/Shrewsbury boundary (currently
-      Miller–Veterans Park extends to bridge); R2 phone-size range summary
-      and caption blocks; C1 timezone instruction/outline wrap/stale status.
-      John chose bayside and added Marina–Miller (Tern doc23 addendum/doc25).
-      Whole borough kept as alternate. Keep Route36→water and min–max as
-      working recommendations; final region/copy/phone acceptance remains.
-      Doc21 repairs CLOSED; warning-first/LIVE and references retained.
-      Final expiry undecided; existing eligibility and offline → Facebook-only
-      accepted. No provider/accounts/posts, production changes, merge or push.
-      Brief on sibling social branch: history/plans/2026-09-24-social-broadcast/
-      `26-codex-regional-review.md`. Heron integration is separate.
+- [ ] **Social offline rehearsal — doc28 repairs closed; owner acceptance next.**
+      Codex verifies Tern db2070ff7: doc26 R1/R2/C1 CLOSED; 442 required-decoder
+      tests/gate, 74 cases/zero failures, 14 delivery scenarios, six correction
+      checks. Independent ranges match all 73 available surfaces. Park-area
+      edge is an approximate sampled junction proxy, not a surveyed boundary.
+      Key range text enlarged; captions split; active timezone rule repaired.
+      John chose bayside and Marina–Miller; whole borough stays alternate.
+      Route36→water strips/min–max are working recommendations. Final owner
+      copy/phone/geography and queued-post expiry acceptance remain open.
+      Existing eligibility and offline → Facebook-only direction accepted.
+      No provider/accounts/posts, production changes, merge or push.
+      Sibling social branch review and exact resume steps:
+      history/plans/2026-09-24-social-broadcast/28-codex-repair-closeout.md.
+      No further Tern repair requested for this round. Heron is separate.
 - [x] **Outlook scoreboard cohort explanation (2026-09-24).** Page now renders
       the scorer's cohort metadata and identifies the headline as the outlook
       line's count. Unchanged sources retain earlier rows; pairings use the same
@@ -725,3 +726,7 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-25 | OPEN | heron-validation-checkpoint | John requested when to raise the waiting scientific evaluation again. Codex recommends first evidence/health checkpoint 2026-10-09, earlier after informative events with available/matured outcomes, then fortnightly if sparse. Existing independent-event adequacy rules unchanged; no promised verdict date. Evaluator integration remains a separate pending Codex task; logging already live. Checkpoint message recorded and calendar import supplied, no connected notification scheduled [STATED/VERIFIED: owner request, protocol at cd17a5a14, checkpoint note]
 
 2026-09-25 | FACT | weekend-storm-operational-review | Public 10:13 forecast and NWS guidance support a serious coastal/wind event. NWS peaks 7.5/8.0/7.8/7.8 ft Fri evening–Sun morning; core Saturday 7.035 ft. Offline email reproduction labels TODAY LIGHT vs day_worst MODERATE. Shared-headline repair and reviewed guidance-first candidate proposed; no live change. Owner requested privacy scrub/publication; report and unpublished commit omit private communications, delivery metadata and residential details [VERIFIED: history/reports/2026-09-25-weekend-assessment.md and JSON]
+
+2026-09-25 | FACT | social-doc28-closeout | Codex verifies Tern db2070ff7: doc26 R1/R2/C1 CLOSED; 442 required-decoder tests, artifact gate, 74-case fresh gallery/0 failures, 14 delivery scenarios, independent ranges match 73 available cases. Park boundary remains an approximate sampled-street proxy; final owner copy/phone/geography and expiry acceptance open. Local-only, no posting/merge/push [VERIFIED: sibling doc28 and receipt]
+2026-09-25 | DONE | accuracy-render-test-isolation | Tern correctly found live NOAA/cache side effects but named the wrong test. HTML accuracy test mocked facade aliases while rendering used imported bindings; patch actual lookup sites and assert no fetch/save. Four accuracy tests pass. Production code/data unchanged [VERIFIED: tests/test_accuracy_reporting.py, doc28 attribution correction]
+2026-09-25 | OPEN | storm-followup-implementation | Owner permits starting work and requests recorded plans. Concrete arm inventory, test criteria and ordered headline/source/guidance/rain/SMS work recorded in history/plans/2026-09-25-storm-followup-handoff.md. Test hygiene repaired; production work remains pending. Heron integration separate; frozen wind c2 unchanged [STATED/VERIFIED]
