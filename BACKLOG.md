@@ -8,6 +8,18 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
+- [ ] **Storm communication parity — reproduced 2026-09-25.** Public 10:13
+      forecast rendered offline: email TODAY LIGHT vs day_worst/tide MODERATE.
+      Saturday NWS tide forecast 8.0 ft vs core curve 7.035 ft MLLW
+      at 10:13 snapshot. Email uses core `today_regime`; daily worst includes
+      product tides. Fix shared headline meaning across relevant arms without
+      silently changing curve physics/SMS scope. Source-method disagreement
+      is separate model research; no observed skill verdict yet. Evidence:
+      history/reports/2026-09-25-weekend-assessment.md + JSON. Prioritized
+      proposals there: shared headlines/source labels, guidance-first candidate,
+      rain/low-tide/surface replay, separate SMS-policy review, parallel scoring.
+      No live fix or model/alert-policy approval implied.
+
 - [x] **v0.10.6 promoted; audit 2026-09-24-a1 CLOSED (2026-09-24).**
       Reviewed candidate `1053eb436`, promotion `75a9933ff`, owner decision
       recorded before promotion in `b999ea1d0`. R1-R6 resolved; 298 tests,
@@ -711,3 +723,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-25 | FACT | heron-status-confirmed | Research candidate remains cd17a5a14 with clean worktree; a4 round09 CLOSED and no Heron repair outstanding. Separate integration into main remains for Codex; A/B1/B2 scientific evaluation still awaits informative archived events/outcomes. No merge or new scientific conclusion in this social-review turn [VERIFIED: candidate HEAD/status, a4/09 and main HANDOFF]
 
 2026-09-25 | OPEN | heron-validation-checkpoint | John requested when to raise the waiting scientific evaluation again. Codex recommends first evidence/health checkpoint 2026-10-09, earlier after informative events with available/matured outcomes, then fortnightly if sparse. Existing independent-event adequacy rules unchanged; no promised verdict date. Evaluator integration remains a separate pending Codex task; logging already live. Checkpoint message recorded and calendar import supplied, no connected notification scheduled [STATED/VERIFIED: owner request, protocol at cd17a5a14, checkpoint note]
+
+2026-09-25 | FACT | weekend-storm-operational-review | Public 10:13 forecast and NWS guidance support a serious coastal/wind event. NWS peaks 7.5/8.0/7.8/7.8 ft Fri evening–Sun morning; core Saturday 7.035 ft. Offline email reproduction labels TODAY LIGHT vs day_worst MODERATE. Shared-headline repair and reviewed guidance-first candidate proposed; no live change. Owner requested privacy scrub/publication; report and unpublished commit omit private communications, delivery metadata and residential details [VERIFIED: history/reports/2026-09-25-weekend-assessment.md and JSON]

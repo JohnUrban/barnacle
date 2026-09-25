@@ -2,7 +2,6 @@
 
 **Snapshot: 2026-09-25.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
-
 ## Wind-shadow c2 audit CLOSED — official trial collecting
 
 Codex round07 independently verified Claude `83919dbdf`; all R1–R8 resolved.
@@ -18,7 +17,6 @@ first durable official record is now verified in bot commit 5d281b19c:
 issuance 2026-09-24T16:14:12Z, written 16:14:26Z, candidate status; bundle and
 evaluator admission pass. Trial starts at nominal 16:00Z. Frozen changes need
 a new identity/period. No production forecast/alert wind correction.
-
 ## Approved wind scope and prior research
 John approved Open-Meteo gfs_seamless wind AND pressure for shadow only:
 BACKLOG DECISION `wind-shadow-open-meteo`, plan
@@ -86,7 +84,10 @@ BACKLOG `john-neutral-landmark-survey`; no elevations or equivalence established
 Existing landmarks stay; this adds no requirement to Tern's current work.
 
 ## Operations
-
+Storm check 2026-09-25: NWS/tide tables show serious weekend flooding; core
+Saturday curve ~1 ft lower. Offline email TODAY LIGHT vs day_worst MODERATE.
+Sanitized weekend-assessment report in history/reports/ lists prioritized
+headline/guidance/rain/SMS proposals. No live fix or policy/model promotion.
 18 landmarks; hourly site/JSON; ~10-min radar nowcast; widget v7.29a re-copy
 planned by John, completion unconfirmed. Only widget change since 7.28a removes
 driveway proxy; forecast curves arrive through JSON. SMS imminent impact;
