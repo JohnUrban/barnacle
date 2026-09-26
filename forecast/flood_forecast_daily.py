@@ -7659,6 +7659,17 @@ def send_email(subject, text_body, html_body, inline_png=None):
         s.send_message(msg)
 
 
+def _ntfy_header_text(text):
+    """HTTP headers must be latin-1. Fold the inch/prime marks and arrows
+    used in live labels to ASCII (2026-09-26, event #10: a U+2033 in the
+    radar label crashed the ntfy rail, failed the hourly run, and stopped
+    forecast publication mid-flood)."""
+    folded = (str(text).replace("\u2033", '"').replace("\u2032", "'")
+              .replace("\u2192", "->").replace("\u2014", "-")
+              .replace("\u2013", "-").replace("\u00b1", "+/-"))
+    return folded.encode("latin-1", "replace").decode("latin-1")
+
+
 def deliver_alert(forecast, subject, text, html, inline_png=None,
                   channels=None, sms_text=None):
     """Attempt every configured alert rail and report each outcome.
@@ -7684,7 +7695,7 @@ def deliver_alert(forecast, subject, text, html, inline_png=None,
                 f"https://ntfy.sh/{ntfy_topic}",
                 data=sms.encode(),
                 headers={
-                    "Title": f"Barnacle flood alert ({label})",
+                    "Title": _ntfy_header_text(f"Barnacle flood alert ({label})"),
                     "Priority": "urgent" if rank >= 3 else "high",
                     "Tags": "ocean" if rank < 3 else "rotating_light",
                     "Click": "https://johnurban.github.io/barnacle/?a="

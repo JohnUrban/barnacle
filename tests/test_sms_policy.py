@@ -175,3 +175,37 @@ class ChannelSelectionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NtfyHeaderEncodingTests(unittest.TestCase):
+    def test_live_label_title_is_latin1_safe(self):
+        # 2026-09-26 event #10: this exact label crashed the ntfy rail
+        label = "LIVE radar: street +22.9″ now → +23.0″ projected (severe)"
+        title = ff._ntfy_header_text(f"Barnacle flood alert ({label})")
+        title.encode("latin-1")  # must not raise
+        self.assertIn('+22.9"', title)
+        self.assertIn("->", title)
+
+    def test_ntfy_request_headers_encode(self):
+        from unittest import mock
+        import os
+        sent = {}
+
+        def fake_urlopen(req, timeout=0):
+            for k, v in req.header_items():
+                v.encode("latin-1")
+            sent["ok"] = True
+
+            class R:
+                def read(self):
+                    return b""
+            return R()
+
+        fc = {}
+        with mock.patch.dict(os.environ, {"NTFY_TOPIC": "t"}, clear=False), \
+                mock.patch.object(ff, "compute_alert_level",
+                                  return_value=(4, "street +22.9″ → severe", "s")), \
+                mock.patch.object(ff, "build_sms_text", return_value="x"), \
+                mock.patch.object(ff, "urlopen", fake_urlopen):
+            r = ff.deliver_alert(fc, "s", "t", None, channels={"ntfy"})
+        self.assertEqual(r["succeeded"], ["ntfy"])
