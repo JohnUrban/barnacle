@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta name="barnacle-generated-utc" content="2026-09-26T06:19:34Z">
+<meta name="barnacle-generated-utc" content="2026-09-26T07:12:03Z">
 <meta name="barnacle-schema-version" content="1.0">
 <meta name="barnacle-model-version" content="v0.10.6">
 <title>Bay Ave Barnacle — details &amp; reference</title>
@@ -14,7 +14,7 @@
 <main>
   <header>
     <h1><a href="index.html" style="text-decoration:none;color:inherit">Bay Ave Barnacle</a> — details</h1>
-    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated Sat Sep 26, 02:19 AM ET</p>
+    <p class="subtitle"><a href="index.html">&larr; back to the forecast</a> &middot; reference &amp; model internals &middot; generated Sat Sep 26, 03:12 AM ET</p>
   </header>
 
   <div id="how"></div>
@@ -570,7 +570,7 @@
   <p class="note">Positive mean error = model over-predicts on average. Each point is one archived daily forecast (since the JSON archive started). x = predicted Sandy Hook peak, y = actual NOAA observed peak. The dashed diagonal is perfect prediction (y=x); points above the line = model under-predicted, below = over-predicted. Raw data: <code>data/forecast_accuracy.csv</code>.</p><p class="note">Scope: this scores the <b>tide-keyed input</b> — each day's predicted vs observed peak at the Sandy Hook gauge, as the forecast actually ran that day (an append-only record; rows are never recomputed under newer models). It cannot see rain-driven street floods (the gauge is 4 miles away and tide-only): pluvial skill is tracked separately against the spot-check log in <code>data/labeled_observations.csv</code>. The evidence registry currently has six measured flood-peak anchors; the v0.10.1 fit set is two full tape-measured hydrographs, with the other events used as independent peak, recession, or out-of-sample checks.</p>
 </section>
 
-  <p class="note">Radar cadence (ops, last 14 d, active periods): median 7 min between runs, p90 10, worst 468 (67 gaps / 544 runs). Requested cadence is 10 min; GitHub scheduling is BEST EFFORT — this line is the measured truth of it.</p>
+  <p class="note">Radar cadence (ops, last 14 d, active periods): median 7 min between runs, p90 10, worst 468 (67 gaps / 542 runs). Requested cadence is 10 min; GitHub scheduling is BEST EFFORT — this line is the measured truth of it.</p>
   <div id="glossary"></div>
 
   <section class="reference">
