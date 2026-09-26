@@ -30,6 +30,7 @@ magnitude (+25–28 in) matched the crest; timing ran ~1 h early.
 | 10:50 / 10:59 / 11:10 / 11:21 / 11:42 / 12:06 | +8 / +7 / +6.2 / +5.2 / +3.2 / +1 (under first step) | 5.35 → 4.76 |
 | 12:42 | level with lawn-step bottom | 4.33 |
 | 12:52 | ~1 cm under the curb top | ~4.13 |
+| 12:52 | roads virtually clear, intersection clear, safe to drive | — |
 
 ## Findings to carry into the study
 - **Gauge vs corner:** Sandy Hook (NOAA-revised) peaked 5.83 at 08:54; corner
