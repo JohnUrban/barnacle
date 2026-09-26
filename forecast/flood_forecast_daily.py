@@ -5574,13 +5574,14 @@ def _render_water_series_section(forecast):
                     w = elev_by_key[key] + float(r["observed_depth_in"]) / 12.0
                 except (TypeError, ValueError):
                     continue
-                # snap to nearest series label index
-                idx = min(range(len(series)),
-                          key=lambda i: abs(
-                              parse_station_local_time(
-                                  series[i]["time"]).replace(tzinfo=None)
-                              - dt.datetime.strptime(ts, "%Y-%m-%d %H:%M")))
-                tape_pts.append((idx, to_in(w)))
+                # exact position: fractional index on the slot axis
+                # (every reading plotted at its true time — user 2026-09-26)
+                obs_t = dt.datetime.strptime(ts, "%Y-%m-%d %H:%M")
+                s0 = parse_station_local_time(series[0]["time"]).replace(tzinfo=None)
+                s1 = parse_station_local_time(series[1]["time"]).replace(tzinfo=None)
+                step_s = (s1 - s0).total_seconds() or 1800.0
+                frac = (obs_t - s0).total_seconds() / step_s
+                tape_pts.append((round(frac, 3), to_in(w), ts[11:16]))
     except Exception:
         tape_pts = []
     has_rain_layer = any(v is not None for v in pluv)
@@ -5601,7 +5602,7 @@ def _render_water_series_section(forecast):
     all_vals = ([v for v in tide if v is not None]
                 + [v for v in pluv if v is not None]
                 + [v for v in observed if v is not None]
-                + [v for _i, v in tape_pts]
+                + [v for _f, v, _t in tape_pts]
                 + ([to_in(potential)] if potential else []))
     y_min = min(-60, (min(all_vals) - 3) if all_vals else -60)
     y_max = max(36, (max(all_vals) + 3) if all_vals else 36)
@@ -5624,17 +5625,19 @@ def _render_water_series_section(forecast):
              "fill": False, "spanGaps": False,
              "pointRadius": 0, "borderWidth": 2.5, "tension": 0.3})
     if tape_pts:
-        tape_data = [None] * len(labels)
-        for idx, v in tape_pts:
-            tape_data[idx] = (max(tape_data[idx], v)
-                              if tape_data[idx] is not None else v)
+        # EVERY reading at its true time, small markers, on a hidden
+        # linear axis aligned to the slot axis (user 2026-09-26, event
+        # #10: the old one-dot-per-half-hour max rule drew every dot too
+        # high on both limbs and hid most readings).
         tide_idx += 1
         datasets.insert(0,
-            {"label": "MEASURED (tape)", "data": tape_data,
+            {"type": "scatter", "xAxisID": "xtape",
+             "label": "MEASURED (tape)",
+             "data": [{"x": f, "y": v, "t": t} for f, v, t in tape_pts],
              "borderColor": "#0b3d6b",
              "backgroundColor": "rgba(217,119,6,0.9)",
-             "pointStyle": "rectRot", "pointRadius": 6,
-             "pointBorderWidth": 2, "showLine": False})
+             "pointStyle": "rectRot", "pointRadius": 3.5,
+             "pointBorderWidth": 1, "showLine": False})
     # v0.10.6 (seven-day review item 6): the NWS advisory's OWN high-tide
     # numbers as markers, so any gap between them and the persistence curve
     # is visible and labeled, never hidden by blending.
@@ -5766,6 +5769,9 @@ def _render_water_series_section(forecast):
                                 "text": "inches vs SW grate (± = above/below)"},
                       "min": y_min, "max": y_max},
                 "x": {"ticks": {"maxTicksLimit": 9, "font": {"size": 10}}},
+                # hidden linear twin of the slot axis for true-time tape dots
+                "xtape": {"type": "linear", "display": False,
+                          "min": 0, "max": max(len(labels) - 1, 1)},
             },
         },
     }
@@ -5779,7 +5785,7 @@ def _render_water_series_section(forecast):
             "is the OBSERVED bay (despiked gauge — a true observation, "
             "and via the drains' proven bay-coupling, the tide-pathway "
             "street water); it stops at the now-line where forecast "
-            "takes over. Orange diamonds are tape measurements. The "
+            "takes over. Small orange diamonds are tape measurements, each at its true time. The "
             "blue/amber model lines across the past show the CURRENT "
             "model's view, not what was predicted at the time — past "
             "rain floods can exceed them (that gap is the point).")
