@@ -155,6 +155,8 @@ agent ships (commit AND push). Thinking-out-loud ≠ a directive —
 he'll say "you don't need to do anything yet." Report failures with
 evidence; don't over-caveat; don't oversell. His field observations
 are data — log them immediately, verbatim where possible.
+Each distinct episode gets a stable date-scoped ID and `eNN/` home; preserve
+storm aliases and original paths. See PLAYBOOK and `assets/observations/EPISODES.md`.
 
 ## Living-documents registry (a change isn't done until these reflect it)
 

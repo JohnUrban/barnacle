@@ -114,3 +114,9 @@ of any event, from live narration alone.
 4. WEA/FFW comparison: official warning landed ~30 min after this
    corner peaked. Barnacle's morning risk call + live radar strip is
    the coverage that exists before official products.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-08-03-e01](e01/README.md): Rain flood.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

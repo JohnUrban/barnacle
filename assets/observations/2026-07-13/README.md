@@ -44,3 +44,9 @@ No `analysis/` directory by design (noted 2026-09-03): the
 PLAYBOOK step-7 standard plots (hydrograph, model test, all-anchors
 refresh) target pluvial flood events; this was a measured TIDE
 event — its record is the grate table above + ledger rows.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-07-13-e01](e01/README.md): Minor tidal street flooding.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

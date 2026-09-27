@@ -75,3 +75,9 @@ fastest recorded, on the LOWEST bay of any measured event.
   `history/scripts/event_hindcast.py` recipe.
 - Photo 14–16: hydrant/driveway/sidewalk extent documents the Central
   Ave arm at peak — candidate edge_20260901 map points.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-09-01-e01](e01/README.md): Evening rain flood.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

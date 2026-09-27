@@ -54,3 +54,9 @@ seen on every other moderate-SH event.)
 - `gutter-at-walkway/` — post-event evidence at the gutter/curb edge
 
 (No measurements; no measurements file.)
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-06-13-e01](e01/README.md): Post-peak tidal photo evidence.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

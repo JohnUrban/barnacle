@@ -89,3 +89,10 @@ rather than a fix-it-now bug.
   min post-AM-peak).
 
 (PM tide had no photos.)
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-05-30-e01](e01/README.md): AM high-tide dry check.
+- [2026-05-30-e02](e02/README.md): PM high-tide post-peak report.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

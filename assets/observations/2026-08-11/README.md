@@ -7,3 +7,9 @@ brackets the despiked gauge reading (agreement ≤ ~0.1 ft). Ledger
 rows + cross-day table: data/labeled_observations.csv (2026-08-11)
 and the 2026-08-10 row's notes. Photos: images-in-dir; annotations in
 the ledger rows (user-provided 2026-08-20).
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-08-11-e01](e01/README.md): Evening spring-tide photo observations.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

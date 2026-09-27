@@ -215,3 +215,9 @@ back-to-back pair.
   `assets/observations/2026-06-14/README.md`
 - Previous storm-condition photo anchor:
   `assets/observations/2025-10-30/README.md`
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-06-15-e01](e01/README.md): Evening storm-tide flood.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

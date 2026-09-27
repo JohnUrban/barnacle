@@ -10,8 +10,10 @@ looks stale, trust this file. Ledger lines are append-only:
 
 - [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1).**
       Independent reply required: audits/2026-09-27-a1/01-event-records-and-repo-audit-codex.md.
-      Round02 is Codex's owner-clarification/history supplement, not a reply;
-      next independent responder uses index03. Original notes offered, pending.
+      Rounds02/03 are Codex supplements, not independent replies; use index04
+      next. Owner originals received/reconciled; 27-record source registry and
+      eNN folders implemented. R3 downstream display/scoring integration remains
+      open; descriptive all_anchors figure updated, coastal hindcasts pending.
       R1 raw-note capture/provenance; R2 qualify rain/gate/garage inferences;
       R3 stable storm + episode identities and downstream coverage; R4 gauge
       versions/Battery QC/lag consistency; R5 bay-versus-street source meaning
@@ -777,3 +779,7 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | FACT | witnessed-flood-benchmark | John explicitly confirms Sep26 AM and Sep27 AM both exceeded Oct30 2025: first two witnessed garage-entry floods, entire garage Sep26 and ~90% Sep27 [STATED]. Exact report assets/observations/2026-09-27/owner-ranking-followup.txt; existing tape crests separately support 5.701 / 5.618 NAVD88. Oct30 remains reconstructed calibration reference, no longer the worst witnessed benchmark. Current archive index and all three event READMEs updated; no frozen model changes.
 2026-09-27 | FACT | historical-multiple-episodes | May30 README explicitly separates AM and PM high tides in one date folder (AM dry, PM post-peak flooding evidence); Sep13 notes separate rain and compound flood rounds. Date-scoped episode IDs and historical consumer coverage remain proposed under audit R3; original owner notes offered but not yet received. Existing paths retained.
 2026-09-27 | FACT | owner-followup-time-erratum | Codex's retrospective ranking row initially omitted offset because _station_local_now returns naive datetime; append-only metadata correction supplies 2026-09-27T15:26:00-04:00 via station parser. Both key=none rows describe the follow-up, not a new flood/crest time. R6 applies to this recording path too.
+
+2026-09-27 | DECISION | episode-ids-and-homes | John approves unique date-scoped episode IDs and e01/e02 subfolders; existing dates/source links remain valid, historical storm/round names remain aliases. IDs do not redefine independent-storm counting or frozen wind evaluation.
+2026-09-27 | FACT | oct30-memory-quality | Owner clarifies Oct30 evidence was memory and post-peak pictures from the first flood experience; surprise influenced remembered magnitude. Similar ballpark, definitely below the measured Sep26/27 morning floods [STATED, exact wording owner-ranking-followup.txt]. No exact October crest inferred.
+2026-09-27 | DONE | originals-episode-index-comparison | Three owner raw-note files preserved byte-for-byte and reconciled (80 nonempty lines; no unmatched explicitly timed entries after documented normalization). 27 archive records assigned stable IDs/eNN homes; registry associates 257 non-metadata ledger rows once and excludes correction metadata, with validator. Updated Sep27 analysis/all_anchors.png + PDF and source receipt retain 9 historical references and add 4 episodes; reconstructed/inferred levels distinguished, no invented new hindcasts. Audit round03 is author supplement, independent reply still due. Photographs pending; production display/evaluator grouping repairs remain OPEN.

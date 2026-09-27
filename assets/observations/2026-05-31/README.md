@@ -134,3 +134,9 @@ surge-dependent.
   7.jpeg). Tape reading: ~5″.
 - `grate-SW-distal/` — 2 photos (barnacle_20260531 - 8.jpeg,
   9.jpeg). Tape reading: ~4″.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-05-31-e01](e01/README.md): Evening tide: below-grate measurements.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

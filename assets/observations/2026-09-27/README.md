@@ -1,5 +1,10 @@
 # 2026-09-27 — Event #10, round 3: morning surge tide (gate closed)
 
+**Original owner notes received 2026-09-27:** see [rawnotes/](rawnotes/).
+The existing `flood-measurements.txt` is a retrospectively assembled transcript;
+original wording and explicit normalization are preserved separately in the
+[reconciliation](../2026-09-27/analysis/README.md). Photos remain pending.
+
 Part of Event #10 (nor'easter coastal surge, 2026-09-25 → 27). Rounds 0–2,
 the tide-gate discovery, rain attribution and the cross-tide figure live in
 [`../2026-09-26/`](../2026-09-26/README.md). Verbatim reports:
@@ -41,3 +46,15 @@ matches the bay. Surge ROSE through the morning (+2.1 → +3.1 ft by 10:30).
 
 Figure: [`../2026-09-26/analysis/corner_vs_gauge.png`](../2026-09-26/analysis/corner_vs_gauge.png)
 (panel 4). Pending: rain check for this morning; the event-wide study.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-09-27-e01](e01/README.md): Morning coastal flood.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.
+
+## Updated historical comparison
+
+![Recorded flood levels](analysis/all_anchors.png)
+
+[Data, method and qualifications](analysis/README.md).

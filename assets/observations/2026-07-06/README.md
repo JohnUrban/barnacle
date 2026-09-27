@@ -311,3 +311,9 @@ Findings:
   during the 39-min rise. The bluffs supplied the rest.
 - Water appeared (~10:55) after ~0.5″ had accumulated with rates
   crossing ~1 in/hr — a first empirical onset threshold.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-07-06-e01](e01/README.md): Rain flash flood.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

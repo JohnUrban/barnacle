@@ -100,3 +100,10 @@ descriptions in `barnacle-2026091-descriptions.txt`). All-anchors
 refreshed to NINE. Remaining: edge_20260913 map points require the
 user's pick_coords selection; photo GPS alone is only ±few m and does
 not identify the intended visible water edge.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-09-13-e01](e01/README.md): Dawn rain flood.
+- [2026-09-13-e02](e02/README.md): Later morning compound flood.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

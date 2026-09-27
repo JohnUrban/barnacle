@@ -99,3 +99,9 @@ mean, revised 4.4+) is the **2nd-highest rate on record** (after #4's
    1:23/2:18 AM texts about a next-evening minor tide; the 1:23 AM
    email also exposed that emails lacked the warning-first fix —
    subject/body now lead with the alert label.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-08-07-e01](e01/README.md): Rain flood; crest bracketed.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

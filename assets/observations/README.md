@@ -41,22 +41,35 @@ Existing convention is one date directory with separately identified episodes:
   two separate high tides.
 - September 26: morning and evening floods in one dated folder.
 
-Proposed refinement, pending the open audit response: keep existing date paths,
-add stable date-scoped IDs such as `2026-09-26-e01` and `2026-09-26-e02`, and
-link their explicit windows/source rows in an episode registry. If separate
-episode directories become useful, nest `e01/` and `e02/` under the date.
-The ordinal is per date, not the historical storm number. Preserve “Event #10,
-round 1/2/3” as aliases. Keep storm grouping distinct from episode counts.
-**No directory migration or registry has been implemented yet.**
+John approved stable date-scoped episode IDs and subfolders on 2026-09-27.
+[The episode index](EPISODES.md) and [machine-readable registry](episodes.json)
+now cover the existing dated field archives, the December historical ledger
+observation, and the September 25 negative window: **27 registered episodes**,
+including dry checks and reconstructed/unmeasured events, not 27 measured floods.
 
-For originals offered by the owner, convenient locations are
-`2026-09-26/rawnotes/morning-original.txt`,
-`2026-09-26/rawnotes/evening-original.txt`, and
-`2026-09-27/rawnotes/morning-original.txt`. These are proposed destinations,
-not a claim that the originals have been received. Preserve wording, dates,
-AM/PM labels and uncertain times; annotate interpretations separately. Original
-file format is also welcome. Review personal information before committing
-owner-supplied originals to this public repository.
+Each episode has an `e01/`, `e02/`, etc. home under its date. IDs are
+`YYYY-MM-DD-eNN`; never renumber an assigned ID. A later-discovered earlier
+flood gets the next unused ID and its true time in metadata. The ordinal is
+not a severity ranking or historical storm number. Keep storm grouping separate.
+Existing images and raw notes remain at their original paths, linked from the
+new episode homes. New episode-specific material belongs under that episode;
+date-level analysis can compare multiple episodes. Register row associations
+using content hashes; leave the append-only ledger unchanged. Run
+`python3 history/scripts/check_observation_episodes.py` to check coverage.
+This is an offline source index; production and research consumers have not
+silently switched their grouping rules.
+
+Original notes supplied by John are preserved byte-for-byte at
+`2026-09-26/rawnotes/01-morning.txt`, `2026-09-26/rawnotes/02-evening.txt`, and
+`2026-09-27/rawnotes/01-morning.txt`. See the
+[reconciliation](2026-09-27/analysis/README.md). Interpretation and time
+normalization are recorded separately. Photos for these episodes are pending;
+use their `eNN/photos/` folders, following the existing privacy rule before
+publication. A date directory can contain multiple independent records while
+still belonging to one correlated storm.
+
+[Updated all-anchors comparison](2026-09-27/analysis/all_anchors.png): measured
+September crests distinguished from the reconstructed October reference.
 
 Outstanding propagation problems (daily-max displays, scoring identities and
 timestamp handling) are tracked in [audit 2026-09-27-a1](../../audits/2026-09-27-a1/01-event-records-and-repo-audit-codex.md).

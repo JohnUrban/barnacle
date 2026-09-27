@@ -1,5 +1,10 @@
 # 2026-09-26 — Event #10: nor'easter coastal-surge flood (first major surge event)
 
+**Original owner notes received 2026-09-27:** see [rawnotes/](rawnotes/).
+The existing `flood-measurements.txt` is a retrospectively assembled transcript;
+original wording and explicit normalization are preserved separately in the
+[reconciliation](../2026-09-27/analysis/README.md). Photos remain pending.
+
 Verbatim reports (rounds 0–2): [`flood-measurements.txt`](flood-measurements.txt).
 Round 3 (9/27 AM): [`../2026-09-27/`](../2026-09-27/README.md).
 Figure — all four surge tides, corner vs Sandy Hook, gate state: [`analysis/corner_vs_gauge.png`](analysis/corner_vs_gauge.png) (script `analysis/event10_corner_vs_gauge.py`, gauge cached in `analysis/gauge_cache.json`).
@@ -94,3 +99,10 @@ the gap to the bay closes only when the bay stays high long enough.
 **User insight (policy, not model):** closing the gate is right for tidal
 floods, but for rain floods it must be OPEN — rainwater needs somewhere to go.
 A closed gate plus heavy rain traps runoff at the corner.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-09-26-e01](e01/README.md): Morning coastal flood.
+- [2026-09-26-e02](e02/README.md): Evening coastal flood.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

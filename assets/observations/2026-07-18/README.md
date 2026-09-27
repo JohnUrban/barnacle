@@ -132,3 +132,9 @@ Fix shipped to nowcast.py, nowcast_tank.py, mrms_point_rain.py
 (cached pre-7/18 box rows not comparable; point values unaffected).
 Instrument ranking revised: observer >> radar-with-right-box >>
 radar-with-wrong-box >> QPF.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-07-18-e01](e01/README.md): Rain flood.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

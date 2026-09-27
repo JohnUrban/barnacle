@@ -298,3 +298,9 @@ first porch step", about +18.7 in, and "about 12 in at the curb", about +19.7
 in) remain consistent evidence, not measurements. Uses of +20.8 as an
 observed peak (the v0.7 rain-term check, the 2026-09-23 rain-flood
 retrospective, the v0.10.6 rain comparison) inherit this uncertainty.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2025-10-30-e01](e01/README.md): Historical compound-flood reconstruction.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

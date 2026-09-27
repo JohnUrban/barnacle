@@ -323,3 +323,9 @@ someone else picks this up — no project-specific lookup needed.
 Note (2026-09-03): the 2026-05-19 ledger rows' photos live under
 `pocket-SE-retention/2026-05-19/` in THIS directory — there is no
 top-level `2026-05-19/` event directory.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-05-18-e01](e01/README.md): Evening tide spot-check and next-morning retention.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

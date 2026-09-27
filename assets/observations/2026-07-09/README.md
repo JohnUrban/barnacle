@@ -94,3 +94,9 @@ floor = true drainage knee) parked in HANDOFF.
 - NWS gauge data for 7/9 will remain garbage in the 15:12–15:48
   window even in the verified product — the despike filter and this
   README are the record of why local numbers disagree.
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-07-09-e01](e01/README.md): Rain flood on high tide.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

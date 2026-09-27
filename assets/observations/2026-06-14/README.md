@@ -269,3 +269,9 @@ The 6/14 event was supposed to be the high-surge unblocker for v0.8
   `bay-ave-farther-upstream/` — documentary flood-extent photos
   (no tape measurements, but locations + concurrent water-level
   measurements imply ground elevation at each edge point)
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-06-14-e01](e01/README.md): Evening tidal flood measurements.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

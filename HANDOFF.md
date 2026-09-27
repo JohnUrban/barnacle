@@ -1,15 +1,16 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 15:28 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-27 15:49 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Immediate obligation — independent event/operations audit reply
 
 Codex audit **2026-09-27-a1 OPEN**, main reviewed at `10ea6c2a2`:
 `audits/2026-09-27-a1/01-event-records-and-repo-audit-codex.md`.
-A different agent must answer R1–R7. Round02 is an owner-clarification
-supplement by Codex, NOT the independent reply; use index03 next. This ship
-adds documentation and retrospective observation metadata, no production change.
+A different agent must answer R1–R7. Rounds02/03 are Codex supplements,
+NOT independent replies; use index04 next. Owner originals received, 27-record
+episode index and eNN homes added, source-backed all_anchors PNG/PDF refreshed.
+This ship changes archive organization/docs only; production behavior unchanged.
 77 new observation rows preserved; all three ledgers append-only. 342 tests OK
 (one absent-local-training skip), three frozen replays pass, seven frozen wind
 hashes match. Passing checks do not establish scientific accuracy or close this audit.
@@ -18,14 +19,16 @@ hashes match. Passing checks do not establish scientific accuracy or close this 
 
 Records: `assets/observations/2026-09-26/` and `2026-09-27/`, ledger, four-panel
 plot. Raw-note files were retrospectively assembled Sep27 after prompting;
-ledger batches generally were appended promptly on receipt. Existing PLAYBOOK
+ledger batches generally were appended promptly on receipt. Owner originals now
+reconciled in Sep27 analysis/rawnotes-reconciliation.json; photos pending. PLAYBOOK
 already required immediate raw notes and post-event plots/analysis.
 - John confirms BOTH AM floods exceeded Oct30: first garage-entry floods,
   entire garage Sep26, ~90% Sep27. Current benchmark: assets/observations/README.md.
 - Three floods: Sep26 AM ~5.701 NAVD88, Sep26 PM ~4.223, Sep27 AM ~5.618;
   Sep25 PM is a reported dry observation window, not another measured flood.
-  Keep Event #10 as storm alias; proposed stable episode registry is NOT built.
-  Daily-max chart hides smaller same-day flood; Heron groups storm separately.
+  Stable IDs: Sep26-e01/e02, Sep27-e01 (full IDs include year); Event #10 alias
+  retained. Registry assets/observations/episodes.json maps sources by row hash.
+  Daily-max chart and Heron still require separate episode-aware integration.
 - Gate closure reported directly Sep26 18:19; ~21:58 and Sep27 ~08:30 are
   "almost certainly" reports; preceding closure/causation inferred. Gate is
   reportedly police-operated. Delayed fill/recession supports a restriction;

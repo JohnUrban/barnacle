@@ -116,3 +116,9 @@ The user was in California; evidence assembled 2026-09-02:
 Ledger rows: `data/labeled_observations.csv` 2026-08-29 (residue) —
 the flood itself has no observation row (nothing was directly
 observed at the corner).
+
+## Stable episode IDs (assigned 2026-09-27)
+
+- [2026-08-27-e01](e01/README.md): Unmeasured rain flood; retrospective evidence.
+
+[Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.

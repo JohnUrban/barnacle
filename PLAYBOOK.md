@@ -106,6 +106,15 @@ in order; every step has been needed at least once:**
 
 
 ## Live-support mode (agent, during the event — added 2026-08-03, event #6)
+- Episode identity (John, 2026-09-27): register each distinct episode in
+  `assets/observations/episodes.json` and give it a stable `YYYY-MM-DD-eNN`
+  ID plus `YYYY-MM-DD/eNN/` home. Preserve old source paths and storm/round
+  aliases. Dry checks are separate records, not counted floods; multiple
+  floods in one storm are not automatically independent statistical events.
+  New episode-specific notes/photos go in that home; date-level summaries
+  may compare episodes. Original owner notes remain unedited, with separate
+  interpretation and time normalization. Update row-hash associations and run
+  `python3 history/scripts/check_observation_episodes.py` at handoff.
 - Log every user report IMMEDIATELY: ledger row (strict CSV — run
   tests/test_csv_ledgers) + a line in the event's
   flood-measurements.txt. Timestamps: run `date` first; NOAA stamps
