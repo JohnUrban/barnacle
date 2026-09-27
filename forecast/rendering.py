@@ -123,6 +123,35 @@ def _clock_hhmm(time_str):
     return value[11:16] if len(value) >= 16 else value
 
 
+def _lookback_phrase(lb, html=False, short=False):
+    """One phrase for the "so far today" value on EVERY arm (rule 8; owner
+    DECISION 2026-09-27, audit 2026-09-27-a1 reply 04 option 3): the
+    headline is the empirical daily max — tape, else the bay peak labeled
+    as bay — and a model claim at an unmeasured time is appended, never
+    promoted. `evidence` ∈ measured | bay | modeled (legacy dicts without it
+    are read from `source`)."""
+    inch = "&Prime;" if html else '\u2033'
+    ev = lb.get("evidence") or (
+        "measured" if "tape" in (lb.get("source") or "") else "modeled")
+    val = f"{lb['rel_grate_in']:+.1f}{inch}"
+    when = lb.get("time_local") or ""
+    if ev == "measured":
+        head = f"MEASURED {val} at {when}" + (
+            "" if short else f" (tape, {regime_display(lb.get('regime') or '')})")
+    elif ev == "bay":
+        head = f"BAY PEAK {val} at {when}" + (
+            " (gauge)" if short else " (gauge; corner not measured)")
+    else:
+        head = f"MODELED {val} at {when}" + (
+            "" if short else " (bay + radar tank; unverified)")
+    mc = lb.get("model_claim")
+    if mc:
+        head += (f"; model claims {mc['rel_grate_in']:+.1f}{inch} at "
+                 f"{mc.get('time_local') or '?'}"
+                 + ("" if short else " (unmeasured then)"))
+    return head
+
+
 def _render_day_cards_html(forecast):
     """DAY CARDS (user redesign 2026-07-20): the 72-h window organized
     by calendar day - TODAY / TOMORROW / day-3 - each card holding its
@@ -264,9 +293,7 @@ def _render_day_cards_html(forecast):
             if _lb and (_lb.get("rel_grate_in") or 0) > 0:
                 extra = (
                     '<div class="regime-summary dc-sofar"><b>SO FAR:</b> '
-                    + regime_display(_lb.get("regime") or "").upper()
-                    + f' &mdash; peak {_lb["rel_grate_in"]:+.1f}&Prime; at '
-                    + _lb["time_local"] + ", " + _lb["source"] + ".</div>")
+                    + _lookback_phrase(_lb, html=True) + ".</div>")
         html_cards.append(
             '<section class="regime regime-' + c["badge_cls"] + ' day-card'
             + (" day-card-today" if is_today else "")
@@ -1259,8 +1286,7 @@ def render_email(forecast):
     _today_head, _ = headline_for(forecast, _tr)
     _lb = forecast.get("today_lookback")
     if _lb and (_lb.get("rel_grate_in") or 0) > 0:
-        _today_head += (f" (so far: {regime_display(_lb.get('regime') or '').upper()}"
-                        f" {_lb['rel_grate_in']:+.1f}\")")
+        _today_head += " (so far: " + _lookback_phrase(_lb, short=True) + ")"
     # audit R7 / rule 6: WORST 72H is the worst PATHWAY across the three days,
     # not the tide-keyed peak; the tide peak stays as the detail.
     headline = worst_72h_headline(forecast, headline)
@@ -1341,9 +1367,7 @@ def render_email(forecast):
     _lbt = forecast.get("today_lookback")
     _lb_text = ""
     if _lbt and (_lbt.get("rel_grate_in") or 0) > 0:
-        _lb_text = (f" | so far: "
-                    f"{regime_display(_lbt.get('regime') or '').upper()} "
-                    f"{_lbt['rel_grate_in']:+.1f}\" at {_lbt['time_local']}")
+        _lb_text = " | so far: " + _lookback_phrase(_lbt)
     text = f"""\
 TODAY: {_today_head_text}{_lb_text}
 WORST 72H: {headline}: {peak_ft:.2f} ft at {format_time_short(peak_t)}
@@ -1442,10 +1466,7 @@ Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = ta
         _lb_html = (
             f'<div style="border-top:1px solid rgba(0,0,0,0.15);'
             f'margin-top:6px;padding-top:6px;font-size:14px">'
-            f'<b>SO FAR TODAY:</b> '
-            f'{regime_display(_lb.get("regime") or "").upper()} — peak '
-            f'water {_lb["rel_grate_in"]:+.1f}&Prime; vs SW grate at '
-            f'{_lb["time_local"]}, {_lb["source"]}.</div>')
+            f'<b>SO FAR TODAY:</b> {_lookback_phrase(_lb, html=True)}.</div>')
     _today_sub = (f'Tide peak today {forecast.get("today_rel_grate_sw_in", 0) or 0:+.1f}&Prime; '
                   f'vs SW grate'
                   + (f' at {_clock_hhmm(forecast["today_peak_time"])}'
@@ -3069,13 +3090,11 @@ def render_html_page(forecast):
     _lb = forecast.get("today_lookback")
     lookback_html = ""
     if _lb and (_lb.get("rel_grate_in") or 0) > 0:
-        _lb_reg = regime_display(_lb.get("regime") or "").upper()
         lookback_html = (
             f'\n    <div class="regime-summary" style="margin-top:6px;'
             f'border-top:1px solid rgba(0,0,0,0.12);padding-top:6px">'
-            f'<b>SO FAR TODAY:</b> {_lb_reg} — peak water '
-            f'{_lb["rel_grate_in"]:+.1f}&Prime; vs SW grate at '
-            f'{_lb["time_local"]}, {_lb["source"]}.</div>')
+            f'<b>SO FAR TODAY:</b> {_lookback_phrase(_lb, html=True)} '
+            f'(vs SW grate).</div>')
     _pr_b = forecast.get("pluvial_risk") or {}
     rain_later_note = ""
     if _pr_b.get("level"):

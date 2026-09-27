@@ -60,11 +60,14 @@ the branch. **Owner DECISION needed:** may a modeled value ever outrank a
 same-day tape crest on that line? (code = max wins; docstring = modeled only
 when nothing better).
 
-Reply addendum (18:25): the same "so far today" code also shows the BAY peak
-as the corner's ("observed (gauge)") and labels the bay+tank model "live
-radar"; both fixes wait on the ranking DECISION. A cadence-gap claim was
-retracted (publishes were continuous). Ledger metadata rows 264–268 need a
-separate clarifications file going forward.
+Owner DECISION 18:20/18:24 (option 3): the "so far today" line is chosen by
+EVIDENCE CLASS — tape, else bay peak labeled as bay, else model — and a higher
+model day max at an unmeasured time is appended as a claim, never promoted.
+Implemented on this branch across all five arms via `_lookback_phrase`
+(widget prints the winner only; no bump). Cadence-gap claim retracted.
+Ledger metadata rows 264–268 need a separate clarifications file.
+LIVE 2026-09-27 evening: 18:18 report logged (c001052d5 on main), NE/NW
+grates jetting, rain + rising tide; proposed episode 2026-09-27-e02.
 Still pending: Codex review/merge; Heron episode-aware evaluator; verified
 NOAA series (archive beside, not over); episode photos; Borough gate history.
 ## Production — v0.10.6 live; release audit CLOSED
@@ -78,9 +81,8 @@ dots) stand; this branch supersedes the tape-dot boundary handling.
 
 ## Wind-shadow c2 — CLOSED implementation audit; trial collecting
 
-`audits/2026-09-24-a3/07-close-out-codex.md`; frozen bundle 82d156a6… (hashes
-re-verified on this branch). Shadow only. Minimum 60 days AND five eligible
-completed storms; three flood episodes = ONE storm.
+`audits/2026-09-24-a3/07-close-out-codex.md`; frozen bundle 82d156a6…, hashes
+re-verified here. Shadow only; 60 days AND five storms; this storm counts ONCE.
 
 ## Heron — evaluator closed; research unmerged; science awaits evidence
 

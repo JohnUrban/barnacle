@@ -5479,17 +5479,29 @@ def _today_lookback():
     """What actually happened at the corner SO FAR today (user design
     2026-07-09, post-event-#4: an hour after a top-3 flood the widget
     said only 'RAIN FLOOD RISK' — true forward-looking, but reads as
-    amnesia to a casual user). Sources, best wins:
-      (a) today's spot-check rows in labeled_observations.csv (tape —
-          the only source that sees RAIN floods), max implied water;
-      (b) today's despiked gauge peak (tide floods, converted local).
-    Returns {navd88, rel_grate_in, time_local, regime, source} or
-    None when nothing measured/observed above the SW grate today."""
+    amnesia to a casual user).
+
+    Owner DECISION 2026-09-27 (audit 2026-09-27-a1 reply 04, option 3):
+    when an empirical value and a model guess compete for the same window,
+    empirical wins. The headline is therefore chosen by EVIDENCE CLASS,
+    never by height:
+      (a) today's spot-check rows (tape — the only source that sees rain
+          floods): max implied water, evidence "measured";
+      (b) else today's despiked Sandy Hook peak, evidence "bay" — a BAY
+          level labeled as such, never presented as a corner regime;
+      (c) else the nowcast's carried day max, evidence "modeled" (bay base
+          + radar tank; a rejected day max is skipped).
+    A model day max that exceeds the empirical headline and falls at a time
+    with NO tape row within an hour is APPENDED as `model_claim`, never
+    promoted; a model claim inside a measured hour is discarded.
+    Returns {navd88, rel_grate_in, time_local, regime, source, evidence,
+    model_claim?} or None when nothing sits above the SW grate today."""
     try:
-        today = _station_local_now().date().isoformat()
+        now_local = _station_local_now()
     except Exception:
         return None
-    best = None
+    today = now_local.date().isoformat()
+    tape, tape_instants = None, []
     # (a) tape
     try:
         elev_by_key = {k: e for k, _lbl, e, _sh in LANDMARKS}
@@ -5497,34 +5509,36 @@ def _today_lookback():
                                 "labeled_observations.csv")
         with open(obs_path) as f:
             for r in csv.DictReader(f):
-                ts = (r.get("observation_time_local") or "")
-                if not ts.startswith(today):
+                ts = (r.get("observation_time_local") or "").strip()
+                try:
+                    t = parse_station_local_time(ts)
+                except (TypeError, ValueError):
+                    continue
+                if t.date().isoformat() != today:
                     continue
                 key = (r.get("landmark_key") or "").strip()
                 if "pocket" in key or key not in elev_by_key:
                     continue
+                tape_instants.append(t.astimezone(dt.timezone.utc))
                 try:
                     w = elev_by_key[key] + float(r["observed_depth_in"]) / 12.0
                 except (TypeError, ValueError, KeyError):
                     continue
-                if best is None or w > best[0]:
-                    best = (w, ts[11:16], "measured (tape)")
+                if tape is None or w > tape[0]:
+                    tape = (w, t.strftime("%H:%M"))
     except OSError:
         pass
-    # (b) gauge (despiked upstream)
+    # (b) gauge (despiked upstream) — the bay, not the corner
+    bay = None
     try:
         peak, peak_t = _fetch_actual_peak_around(
-            _station_local_now().strftime("%Y-%m-%d %H:%M"),
-            window_hours=12)
+            now_local.strftime("%Y-%m-%d %H:%M"), window_hours=12)
         if peak is not None and (peak_t or "").startswith(today):
-            w = peak + MLLW_TO_NAVD88_OFFSET
-            if best is None or w > best[0]:
-                best = (w, (peak_t or "")[11:16], "observed (gauge)")
+            bay = (peak + MLLW_TO_NAVD88_OFFSET, (peak_t or "")[11:16])
     except Exception:
         pass
-    # (c) the nowcast's own day-max — the AUTOMATIC witness (2026-07-18,
-    # user: Barnacle must look right with nobody home). Weakest source:
-    # only used when tape and gauge have nothing higher.
+    # (c) the nowcast's own day max — bay base stage + radar tank
+    model = None
     try:
         with open(os.path.join(_REPO_ROOT, "docs", "nowcast.json")) as f:
             nc = json.load(f)
@@ -5535,30 +5549,47 @@ def _today_lookback():
         # e.g. 2026-09-27 02:40's 39.0 in from a phantom 6.68-ft bay) must
         # not become "today's peak" on any surface
         rejected = (nc_day, nc.get("day_max_utc")) in _daymax_rejections()
-        if nc_day == today and not rejected:
-            dmx = nc.get("day_max_street_in") or 0
-            if dmx > 0:
-                w_nc = GRATE_SW + dmx / 12.0
-                try:
-                    t_nc = utc_to_station_local(
-                        nc.get("day_max_utc")
-                    ).strftime("%H:%M")
-                except Exception:
-                    t_nc = ""
-                if best is None or w_nc > best[0]:
-                    best = (w_nc, t_nc, "modeled (live radar)")
+        dmx = nc.get("day_max_street_in") or 0
+        if nc_day == today and not rejected and dmx > 0:
+            try:
+                t_inst = utc_to_station_local(nc.get("day_max_utc"))
+                t_nc = t_inst.strftime("%H:%M")
+            except Exception:
+                t_inst, t_nc = None, ""
+            model = (GRATE_SW + dmx / 12.0, t_nc, t_inst)
     except (OSError, ValueError):
         pass
-    if best is None or best[0] <= GRATE_SW:
+    if tape and tape[0] > GRATE_SW:
+        w, t = tape
+        out = {"evidence": "measured", "source": "measured (tape)",
+               "regime": classify_regime_from_water(w)}
+    elif bay and bay[0] > GRATE_SW:
+        w, t = bay
+        out = {"evidence": "bay",
+               "source": "bay peak (gauge; corner not measured)",
+               "regime": "bay"}
+    elif model and model[0] > GRATE_SW:
+        w, t = model[0], model[1]
+        out = {"evidence": "modeled",
+               "source": "modeled (bay + radar tank; unverified)",
+               "regime": classify_regime_from_water(w)}
+    else:
         return None
-    w, t, src = best
-    return {
-        "navd88": round(w, 3),
-        "rel_grate_in": round((w - GRATE_SW) * 12, 1),
-        "time_local": t,
-        "regime": classify_regime_from_water(w),
-        "source": src,
-    }
+    out.update({"navd88": round(w, 3),
+                "rel_grate_in": round((w - GRATE_SW) * 12, 1),
+                "time_local": t})
+    if model and out["evidence"] != "modeled" and model[0] > w:
+        m_inst = model[2].astimezone(dt.timezone.utc) if model[2] else None
+        covered = m_inst is not None and any(
+            abs((ti - m_inst).total_seconds()) <= 3600 for ti in tape_instants)
+        if not covered:
+            out["model_claim"] = {
+                "navd88": round(model[0], 3),
+                "rel_grate_in": round((model[0] - GRATE_SW) * 12, 1),
+                "time_local": model[1],
+                "note": "model day max at a time with no measurement; "
+                        "not promoted over the empirical value"}
+    return out
 
 
 def classify_regime_from_water(water_navd88):

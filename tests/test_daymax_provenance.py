@@ -142,7 +142,7 @@ class TodayLookbackRejectionTests(unittest.TestCase):
     def test_unrejected_day_max_still_reports(self):
         lb = self._lookback([])
         self.assertEqual(lb["rel_grate_in"], 39.0)
-        self.assertEqual(lb["source"], "modeled (live radar)")
+        self.assertEqual(lb["evidence"], "modeled")
 
 
 if __name__ == "__main__":

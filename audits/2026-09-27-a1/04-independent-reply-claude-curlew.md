@@ -396,3 +396,22 @@ between 16:41 and 17:31 local today. There was not: commits and
 17:00, 17:17, 17:20, 17:29 and on (longest interval 17 min). The "78.6 min
 source age" I saw came from my worktree's stale copy of `docs/nowcast.json`
 during the offline render, not from production. Withdrawn.
+
+## Addendum 2 — owner decision on the "so far today" line, implemented (18:35 EDT)
+
+John clarified that the line is a daily maximum whose candidates come from
+different times, and chose **option 3**: the headline is the empirical daily
+max — tape if any exists today, otherwise the bay peak labeled as bay and
+never as a corner regime; a model day max that is higher and falls at a time
+with no tape row within an hour is appended as "model claims +X″ at HH:MM
+(unmeasured then)", never promoted; the model stands alone only when nothing
+empirical exists. Implemented in `_today_lookback` (`evidence`,
+`model_claim`) and `rendering._lookback_phrase`, which now feeds all five
+arms (site day card and banner, email subject, text and HTML); the widget
+prints the winning value only (it would show "BAY +14.8″" for a gauge-only
+day) and carries no claim clause — no widget edit, no re-copy. This also
+closes the erratum above (bay presented as corner). Tests:
+`tests/test_today_lookback.py`. The 02:40 value John asked about is a model
+output (02:40 **AM**), not an observation; under option 3 it could never have
+been the headline once the 09:44 tape reading existed, and the rejection
+record removes it entirely.
