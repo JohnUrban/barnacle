@@ -109,3 +109,14 @@ The expanded figure now plots likely lawn-step level (~13.7 inches above SW)
 as an open reconstruction marker: [owner account and limits](../../2026-04-18/README.md).
 It may have been higher; this is recollection plus historical gauge evidence,
 not a tape measurement. Original all_anchors files remain unchanged.
+
+## Additional lowest-to-highest vertical view
+
+[Sorted vertical PNG](expanded_events_sorted.png) · [PDF](expanded_events_sorted.pdf) ·
+[renderer](expanded_events_sorted_figure.py) · [render manifest](expanded_events_sorted_manifest.json).
+Uses the same expanded_events_data.json without edits: 24 numeric references
+sorted by displayed level, with vertical stems, landmark lines, evidence markers
+and historical hindcasts. Six records without numeric heights remain listed
+in the notes. All existing figures are retained unchanged.
+
+Rebuild: `~/.barnacle/venv/bin/python assets/observations/2026-09-27/analysis/expanded_events_sorted_figure.py`.

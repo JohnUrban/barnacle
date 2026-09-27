@@ -791,3 +791,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | FACT | owner-midday-clarification | John confirmed Sep26 12:06 am was midday and corrected original to pm; source+previous hash retained, existing event-time ledger row unchanged. August2025 exact date/height remains unconfirmed; Apr18 guest-stranding account recorded. One retrospective key=none metadata row appended [STATED]
 
 2026-09-27 | DECISION | april18-likely-height | Owner confirms recollection of lawn-step level or higher; guests stepped into water to reach car. Plot representative ~4.66 NAVD88 /13.7in above SW as recollection+historical-gauge reconstruction, not direct measurement; upper bound/exact street crest time unknown. Source assets/observations/2026-04-18/owner-recollection.txt. Original all_anchors unchanged [STATED/INFERRED]
+
+2026-09-27 | DONE | expanded-sorted-view | Added expanded_events_sorted PNG/PDF + standalone renderer: all24 numeric expanded references sorted low-to-high as vertical stems, six nonnumeric records listed in notes. Same data and evidence classes, no prior plot/data/code overwritten. Owner requested additional view [VERIFIED]
