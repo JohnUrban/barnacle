@@ -29,7 +29,7 @@ TIDES = [  # (title, start, end, gate note)
      "crest 5.70 @ 09:06-09:13; garage flooded"),
     ("Sat 9/26 PM — gate CLOSED (seen 18:19, ~21:58)", "2026-09-26 17:30", "2026-09-27 00:00",
      "dry through the bay peak; late small crest ~4.22"),
-    ("Sun 9/27 AM — gate closed (almost certainly)", "2026-09-27 04:00", "2026-09-27 11:00",
+    ("Sun 9/27 AM — gate closed (almost certainly)", "2026-09-27 04:00", "2026-09-27 13:30",
      "crest 5.62 @ 09:44-10:06; garage ~90%"),
 ]
 CACHE = HERE / "gauge_cache.json"

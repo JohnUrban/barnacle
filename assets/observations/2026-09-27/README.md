@@ -16,7 +16,10 @@ Sandy Hook peaked 5.71 at 09:06: corner −0.09 ft, ~40–60 min later.
 Water reached the garage mouth at 09:12 exactly as it reached the first
 porch step top (5.41) → **first porch step top = garage entry**. Inside by
 09:14 (waves pushing it in and out); ~1/3 of the length 09:24, ~2/3 09:33,
-~90% (to the back-wall refrigerator) 09:44–10:06; receding to ~1/3 by 10:38.
+~90% (to the back-wall refrigerator) 09:44–10:06; receding to ~1/3 by 10:38. Out of the garage by 10:54 (wet; water at the mouth but not over the lip → garage lip ≈ 5.36–5.41 NAVD88).
+
+## Recession
+10:54 +8.2 in (5.36) · 11:20 +6 (5.18) · 12:01 +2 (4.85) · 12:48 ~0.5–1 in over the curb (~4.22): Bay Ave no longer crossed, Central still crossed at both grate pairs. ~6 in/hr, like 9/26 AM.
 
 ## Gate
 User at the beach ~08:30: water extremely high, no sign it was open — almost
