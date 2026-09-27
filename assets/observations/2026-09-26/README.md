@@ -58,3 +58,28 @@ magnitude (+25–28 in) matched the crest; timing ran ~1 h early.
 - **Ops:** SMS imminent pipeline fired for real (06:40); ntfy latin-1 header
   crash fixed live (11:09Z run failed, fixed before 13:09Z); nowcast day_max
   (34.5 in) inflated by gauge spikes.
+
+## Round 2 — evening tide, gate CLOSED (user field record)
+Tide gate at Snug Harbor beach **visually confirmed closed at 18:19**
+(photo taken) and almost certainly still closed at ~21:58 (submerged; would be
+strapped up if open). User believes it has been closed since Friday.
+
+| EDT | Corner | Sandy Hook (NAVD88) |
+|---|---|---|
+| 19:28 → 21:10 (6 checks) | **no flooding** | 4.43 → peak **4.90 @ 20:42** → 4.72 |
+| 21:20–21:40 | first water: SE↔SW across Central; north side only puddles at grates | ~4.6–4.7, falling |
+| 21:54 | <1 cm under curb; over curb at upstream grate | 4.43 |
+| 22:11 / 22:29 | **+0.5–1 in over curb (~4.22) — crest window**; NE–NW, NW–SW connected; Bay Ave crossed upstream | 4.16 / 3.83 |
+| 22:39 | ~+0.5 in, receding | ~3.7 |
+
+**Reading:** with the gate closed the corner stayed dry through the bay's
+entire rise and peak, first wetted ~40–60 min AFTER the bay peaked, and crested
+~1.5 h after it at ~0.7 ft below the bay's peak — ending up ABOVE the falling
+bay. Together with the morning (bay above ~4.9 for hours, peak 5.83 → corner
+5.70, −0.13) and 9/25 (bay 4.75 briefly → corner dry while observed), the
+corner's response to a closed gate is a slow, duration-dependent leak/overtop:
+the gap to the bay closes only when the bay stays high long enough.
+
+**User insight (policy, not model):** closing the gate is right for tidal
+floods, but for rain floods it must be OPEN — rainwater needs somewhere to go.
+A closed gate plus heavy rain traps runoff at the corner.
