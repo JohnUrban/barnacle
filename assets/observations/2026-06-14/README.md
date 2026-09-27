@@ -275,3 +275,9 @@ The 6/14 event was supposed to be the high-surge unblocker for v0.8
 - [2026-06-14-e01](e01/README.md): Evening tidal flood measurements.
 
 [Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.
+
+## Reproducible analysis added 2026-09-27
+
+[Field hydrograph, bay comparison, methods and limitations](analysis/README.md).
+Historical narrative above is retained; the new analysis separates tape evidence
+from gauge-derived levels and does not fit a production correction.

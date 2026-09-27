@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 15:49 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-27 16:21 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Immediate obligation — independent event/operations audit reply
@@ -8,8 +8,11 @@
 Codex audit **2026-09-27-a1 OPEN**, main reviewed at `10ea6c2a2`:
 `audits/2026-09-27-a1/01-event-records-and-repo-audit-codex.md`.
 A different agent must answer R1–R7. Rounds02/03 are Codex supplements,
-NOT independent replies; use index04 next. Owner originals received, 27-record
-episode index and eNN homes added, source-backed all_anchors PNG/PDF refreshed.
+NOT independent replies; use index04 next. Owner originals received; 30-record
+episode index now includes recovered Apr17/18 and tentative Aug2025 history.
+Separate expanded_events figure + June14/15 hydrographs added; all_anchors files
+retained unchanged. See history/reports/2026-09-27-expanded-flood-records.md.
+Owner confirmed Sep26 12:06 as midday; source corrected, old hash retained.
 This ship changes archive organization/docs only; production behavior unchanged.
 77 new observation rows preserved; all three ledgers append-only. 342 tests OK
 (one absent-local-training skip), three frozen replays pass, seven frozen wind

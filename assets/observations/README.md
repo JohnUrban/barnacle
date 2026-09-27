@@ -73,3 +73,12 @@ September crests distinguished from the reconstructed October reference.
 
 Outstanding propagation problems (daily-max displays, scoring identities and
 timestamp handling) are tracked in [audit 2026-09-27-a1](../../audits/2026-09-27-a1/01-event-records-and-repo-audit-codex.md).
+
+## Expanded historical coverage — 2026-09-27
+
+[Expanded comparison](2026-09-27/analysis/expanded_events.png) covers the
+30-record episode inventory, including recovered Apr17/18 and tentative
+Aug2025/Aug21 history, June14/15 tape sessions, July13, Aug10–13 and Aug27.
+[Evidence/source report](../../history/reports/2026-09-27-expanded-flood-records.md).
+Unknown local heights remain unknown; the original all_anchors files remain
+unchanged. Counts include dry checks and uncertain-date records, not just floods.

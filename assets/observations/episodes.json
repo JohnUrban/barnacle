@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "created_local": "2026-09-27T15:45:11-04:00",
-  "scope": "All dated assets/observations archives present on 2026-09-27, plus December 19 historical ledger observations and September 25 negative window. Not a census of all Highlands floods or every modeled historical storm.",
+  "scope": "Dated observation archive and recovered historical local reports through 2026-09-27; includes negative checks and one tentative-date August2025 association. Not a census of Highlands floods.",
   "id_policy": "YYYY-MM-DD-eNN; ordinals per date, never renumber after assignment; historical Event #N/round labels are aliases. Date folders and original source paths remain valid.",
   "statistical_policy": "Episode counts are not independent storm counts. No wind/evaluator grouping rule changed. null storm_id means unassigned, not independent.",
   "ledger_file": "data/labeled_observations.csv",
-  "indexed_through_csv_row": 266,
+  "indexed_through_csv_row": 267,
   "row_identity": "SHA256 of UTF-8 JSON of parsed CSV row with sorted keys, ensure_ascii=false and separators comma/colon. csv_row is a locator, not identity.",
   "association_notes": [
     "May19 retention rows belong to May18 evening, per their notes.",
@@ -15,6 +15,21 @@
     "Excluded key=none rows remain in ledger; new rows after indexed cutoff require explicit registration."
   ],
   "episodes": [
+    {
+      "episode_id": "2025-08-21-e01",
+      "date": "2025-08-21",
+      "ordinal": 1,
+      "label": "August remembered flood; August21 association tentative",
+      "record_kind": "tentative_date_historical_flood",
+      "storm_id": null,
+      "aliases": [],
+      "directory": "assets/observations/2025-08-21/e01",
+      "source_paths": [
+        "assets/observations/2025-08-21/README.md",
+        "history/reports/2026-09-27-expanded-flood-records.md"
+      ],
+      "ledger_rows": []
+    },
     {
       "episode_id": "2025-10-30-e01",
       "date": "2025-10-30",
@@ -60,6 +75,36 @@
           "sha256": "7df661f5aa0cd021ffccfb72b610ea3b9c2985fe0b63d806aeab60d28286d6c6"
         }
       ]
+    },
+    {
+      "episode_id": "2026-04-17-e01",
+      "date": "2026-04-17",
+      "ordinal": 1,
+      "label": "Historical light flood, unanchored depth memory",
+      "record_kind": "historical_qualitative_flood",
+      "storm_id": null,
+      "aliases": [],
+      "directory": "assets/observations/2026-04-17/e01",
+      "source_paths": [
+        "assets/observations/2026-04-17/README.md",
+        "history/reports/2026-09-27-expanded-flood-records.md"
+      ],
+      "ledger_rows": []
+    },
+    {
+      "episode_id": "2026-04-18-e01",
+      "date": "2026-04-18",
+      "ordinal": 1,
+      "label": "Evening flood that stranded guests; unanchored depth memory",
+      "record_kind": "historical_qualitative_flood",
+      "storm_id": null,
+      "aliases": [],
+      "directory": "assets/observations/2026-04-18/e01",
+      "source_paths": [
+        "assets/observations/2026-04-18/README.md",
+        "history/reports/2026-09-27-expanded-flood-records.md"
+      ],
+      "ledger_rows": []
     },
     {
       "episode_id": "2026-05-18-e01",
@@ -1516,6 +1561,11 @@
     {
       "csv_row": 266,
       "sha256": "ea6f9a0718d3ffadf6fe4d11f8ea4e48b20d16c42c53b1ce7e0ef43abed74712",
+      "reason": "metadata/correction; not a flood-time measurement"
+    },
+    {
+      "csv_row": 267,
+      "sha256": "f665e2b6dfe1d1f60d42d988ecdf184253cce7d7efe106b946e3af924ade9b19",
       "reason": "metadata/correction; not a flood-time measurement"
     }
   ]

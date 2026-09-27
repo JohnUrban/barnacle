@@ -91,3 +91,14 @@ Photographs remain pending. Add episode-specific photographs to the new
 rule. Source originals, interpreted transcripts and numerical observations are
 separate layers. This work partially addresses audit R1/R3; R2–R7 and the
 required independent response are not declared closed.
+
+## Separate expanded inventory (2026-09-27)
+
+[Expanded PNG](expanded_events.png) · [PDF](expanded_events.pdf) ·
+[data and evidence notes](expanded_events_data.json) ·
+[source recovery report](../../../../history/reports/2026-09-27-expanded-flood-records.md).
+30 registered episodes/windows, with missing heights explicitly retained.
+The original all_anchors renderer/data/PNG/PDF are unchanged by this expansion.
+The owner subsequently corrected Sep26 12:06 am to pm and confirmed midday;
+reconciliation tracks that revision. Original all_anchors source hashes and
+verification.json describe the earlier snapshot, not this later source edit.

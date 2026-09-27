@@ -221,3 +221,9 @@ back-to-back pair.
 - [2026-06-15-e01](e01/README.md): Evening storm-tide flood.
 
 [Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.
+
+## Reproducible analysis added 2026-09-27
+
+[Field hydrograph, bay comparison, methods and limitations](analysis/README.md).
+Historical narrative above is retained; the new analysis separates tape evidence
+from gauge-derived levels and does not fit a production correction.

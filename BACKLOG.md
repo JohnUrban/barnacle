@@ -11,9 +11,12 @@ looks stale, trust this file. Ledger lines are append-only:
 - [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1).**
       Independent reply required: audits/2026-09-27-a1/01-event-records-and-repo-audit-codex.md.
       Rounds02/03 are Codex supplements, not independent replies; use index04
-      next. Owner originals received/reconciled; 27-record source registry and
+      next. Owner originals received/reconciled; 30-record source registry and
       eNN folders implemented. R3 downstream display/scoring integration remains
-      open; descriptive all_anchors figure updated, coastal hindcasts pending.
+      open; all_anchors retained plus expanded_events inventory and June14/15
+      analyses added. Apr18/Aug2025 evidence recovered with uncertainty explicit;
+      coastal hindcasts pending. Historical negative controls Oct13/Feb22–23
+      still need source-backed episode records before claiming a complete census.
       R1 raw-note capture/provenance; R2 qualify rain/gate/garage inferences;
       R3 stable storm + episode identities and downstream coverage; R4 gauge
       versions/Battery QC/lag consistency; R5 bay-versus-street source meaning
@@ -783,3 +786,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | DECISION | episode-ids-and-homes | John approves unique date-scoped episode IDs and e01/e02 subfolders; existing dates/source links remain valid, historical storm/round names remain aliases. IDs do not redefine independent-storm counting or frozen wind evaluation.
 2026-09-27 | FACT | oct30-memory-quality | Owner clarifies Oct30 evidence was memory and post-peak pictures from the first flood experience; surprise influenced remembered magnitude. Similar ballpark, definitely below the measured Sep26/27 morning floods [STATED, exact wording owner-ranking-followup.txt]. No exact October crest inferred.
 2026-09-27 | DONE | originals-episode-index-comparison | Three owner raw-note files preserved byte-for-byte and reconciled (80 nonempty lines; no unmatched explicitly timed entries after documented normalization). 27 archive records assigned stable IDs/eNN homes; registry associates 257 non-metadata ledger rows once and excludes correction metadata, with validator. Updated Sep27 analysis/all_anchors.png + PDF and source receipt retain 9 historical references and add 4 episodes; reconstructed/inferred levels distinguished, no invented new hindcasts. Audit round03 is author supplement, independent reply still due. Photographs pending; production display/evaluator grouping repairs remain OPEN.
+
+2026-09-27 | DONE | expanded-flood-records | Separate 30-entry expanded_events figure + June14/15 field hydrographs; all_anchors renderer/data/PNG/PDF byte-preserved. Recovered Apr17/18 and tentative August2025/Aug21 source archives; NOAA6min peaks Apr18 7.473, Aug21 7.666 MLLW supersede conflicting prose. No production change; report history/reports/2026-09-27-expanded-flood-records.md [VERIFIED]
+2026-09-27 | FACT | owner-midday-clarification | John confirmed Sep26 12:06 am was midday and corrected original to pm; source+previous hash retained, existing event-time ledger row unchanged. August2025 exact date/height remains unconfirmed; Apr18 guest-stranding account recorded. One retrospective key=none metadata row appended [STATED]

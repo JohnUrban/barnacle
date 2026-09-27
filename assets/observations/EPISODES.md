@@ -1,13 +1,16 @@
 # Episode index
 
-All dated assets/observations archives present on 2026-09-27, plus December 19 historical ledger observations and September 25 negative window. Not a census of all Highlands floods or every modeled historical storm.
+Dated observation archive and recovered historical local reports through 2026-09-27; includes negative checks and one tentative-date August2025 association. Not a census of Highlands floods.
 
-Stable IDs identify episodes; they do not count independent storms. Sources remain at their historical paths.
+IDs identify episodes, not independent storms. Historical sources remain at their original paths.
 
 | Episode | Description | Record type | Historical alias |
 |---|---|---|---|
+| [2025-08-21-e01](2025-08-21/e01/README.md) | August remembered flood; August21 association tentative | tentative_date_historical_flood | — |
 | [2025-10-30-e01](2025-10-30/e01/README.md) | Historical compound-flood reconstruction | historical_flood_reconstruction | — |
 | [2025-12-19-e01](2025-12-19/e01/README.md) | Historical compound-flood observation | historical_landmark_observation | — |
+| [2026-04-17-e01](2026-04-17/e01/README.md) | Historical light flood, unanchored depth memory | historical_qualitative_flood | — |
+| [2026-04-18-e01](2026-04-18/e01/README.md) | Evening flood that stranded guests; unanchored depth memory | historical_qualitative_flood | — |
 | [2026-05-18-e01](2026-05-18/e01/README.md) | Evening tide spot-check and next-morning retention | flood_or_tide_observation | — |
 | [2026-05-30-e01](2026-05-30/e01/README.md) | AM high-tide dry check | negative_observation_window | — |
 | [2026-05-30-e02](2026-05-30/e02/README.md) | PM high-tide post-peak report | flood_or_tide_observation | — |
