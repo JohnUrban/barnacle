@@ -71,6 +71,7 @@ strapped up if open). User believes it has been closed since Friday.
 | 21:54 | <1 cm under curb; over curb at upstream grate | 4.43 |
 | 22:11 / 22:29 | **+0.5–1 in over curb (~4.22) — crest window**; NE–NW, NW–SW connected; Bay Ave crossed upstream | 4.16 / 3.83 |
 | 22:39 | ~+0.5 in, receding | ~3.7 |
+| 23:12 | receded completely (from door window; cleared sometime after 22:39) | — |
 
 **Reading:** with the gate closed the corner stayed dry through the bay's
 entire rise and peak, first wetted ~40–60 min AFTER the bay peaked, and crested
