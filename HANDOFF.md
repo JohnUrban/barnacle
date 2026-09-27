@@ -84,18 +84,16 @@ dots) stand; this branch supersedes the tape-dot boundary handling.
 `audits/2026-09-24-a3/07-close-out-codex.md`; frozen bundle 82d156a6…, hashes
 re-verified here. Shadow only; 60 days AND five storms; this storm counts ONCE.
 
-## Heron — evaluator closed; research unmerged; science awaits evidence
+## Heron — evaluator closed; research unmerged (`cd17a5a14`, untouched)
 
-`audits/2026-09-24-a4/09-close-out-codex.md`, candidate `cd17a5a14`, not
-modified here; interface/gap note above. Revisit 2026-10-09 or earlier.
+`audits/2026-09-24-a4/09-close-out-codex.md`; interface/gap note above. Revisit 2026-10-09.
 
 ## Social, storm follow-up and owner work
 
-Tern rehearsal local-only; owner copy/geography acceptance open; no
-accounts/posts, merge or push of the social branch. Neutral landmark survey is
-John's future task. `history/plans/2026-09-25-storm-followup-handoff.md`:
-email/day-worst headline parity open; guidance-first stays an offline candidate.
+Tern rehearsal local-only; owner copy/geography acceptance open; no posts,
+merge or push of the social branch. Neutral landmark survey is John's task.
+Storm follow-up (`history/plans/2026-09-25-storm-followup-handoff.md`) open.
 
-Read PLAYBOOK before event support (three-clocks rule + handoff checklist
-added). Log ledger AND raw notes on receipt. Explicit staging; commit → gate →
-push; rejected push → rebase/abort → gate. Never overwrite newer work.
+Read PLAYBOOK before event support (three-clocks rule + handoff checklist).
+Log ledger AND raw notes on receipt. Explicit staging; commit → gate → push;
+rejected push → rebase/abort → gate. Never overwrite newer work.
