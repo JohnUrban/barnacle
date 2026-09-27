@@ -44,7 +44,7 @@ Existing convention is one date directory with separately identified episodes:
 John approved stable date-scoped episode IDs and subfolders on 2026-09-27.
 [The episode index](EPISODES.md) and [machine-readable registry](episodes.json)
 now cover the existing dated field archives, the December historical ledger
-observation, and the September 25 negative window: **27 registered episodes**,
+observation, and the September 25 negative window: **30 registered episodes** (27 at first indexing on 2026-09-27; Apr 17, Apr 18 and Aug 2025 were added later that day),
 including dry checks and reconstructed/unmeasured events, not 27 measured floods.
 
 Each episode has an `e01/`, `e02/`, etc. home under its date. IDs are

@@ -338,3 +338,61 @@ delivered.
   ship ritual (commit → gate → push, rebase-with-gate). The Sep 27 rejection
   entry is moot by the time of merge but documents the case. Do not close the
   audit on tests alone; the scientific items above stay open.
+
+## Addendum — additional observations and one retraction (added 2026-09-27 18:25 EDT, same author)
+
+John asked what else looked off and what the "radar vs my measurements"
+inconsistency actually is. Recorded here so the reviewer sees the same list.
+
+**What the "so far today" line really compares.** The nowcast's street number
+is the bay level converted to a base stage at the corner PLUS the radar-rain
+tank on top; `_today_lookback` labels it "modeled (live radar)". Today's
++39.0 in at 02:40 was almost entirely the bay term from the phantom 6.68-ft
+input; radar rain that morning was 0.23 in. The label misattributes the
+source. Live at 22:12Z: light rain 0.34 in/hr, bay 1.78 ft rising, model
+claims +4.6 in at the corner rising to +6.5 (STREET); no owner report since
+12:48. A "no water" observation at such a moment is calibration data.
+
+**Erratum to the R5 arm table above (my miss).** The same `_today_lookback`
+has a gauge branch that converts the Sandy Hook peak to the corner and labels
+it "observed (gauge)"; the site strip and the widget "so far" line then show
+a BAY level as the corner's peak. On Sep 25 evening that line would have read
+about +14.8 in while the corner was dry. It is the R5 meaning on an arm I did
+not enumerate. Fix belongs with the ranking decision below.
+
+**Recommendation on the ranking rule (owner decision).** Tape measurements
+should win the "so far today" line whenever any exist for the day; gauge and
+model values only as fallbacks, labeled "bay (gauge)" / "modeled (bay + radar
+tank)", never as corner water. Not implemented on this branch pending John's
+answer (rule 8: site strip + widget line + email if it carries it).
+
+**Other items seen while working, ranked:**
+
+1. Metadata rows in the observation ledger: rows 264–268 (`landmark_key =
+   none`, retrospective clarifications, three by Codex and two recording
+   John's statements) force every consumer to special-case them and made the
+   registry exclude them explicitly. Keep them (append-only); future
+   clarifications belong in a separate append-only file.
+2. Production gauge ingestion (`nowcast.current_bay`, surge reads) takes the
+   single latest despiked sample with no Battery cross-check; a run of bad
+   samples at the end of the 3-h window passes the median filter, which is
+   what happened 01:31–03:21 today. Any fix is an input-policy change (class
+   (b) bump, review, DECISION); not touched here.
+3. The first phantom value, 4.633 ft NAVD88, equals Sep 26's 09:30Z
+   preliminary sample (7.453 MLLW) exactly. Unexplained; not concluded.
+4. `assets/observations/README.md` said "27 registered episodes" while the
+   registry holds 30 (Apr 17/18 and Aug 2025 were added later the same day).
+   Corrected in this addendum's commit.
+5. The two scheduler arms disagreed on `active` within minutes on
+   2026-09-27 21:17–21:46Z (GitHub Actions 0, local launchd 1): the radar
+   rate was sitting at the 0.3-in/hr activity threshold. Threshold flapping,
+   not a fault; the day-max merge tolerates it.
+6. The Sep 26 18:19 gate photo and the three episodes' photos are still not
+   in the repo (rule 9 applies before publishing).
+
+**Retraction.** I told John there was a ~50-minute nowcast publish gap
+between 16:41 and 17:31 local today. There was not: commits and
+`data/nowcast_heartbeats.csv` show publishes at 16:41, 16:48, 16:50, 16:55,
+17:00, 17:17, 17:20, 17:29 and on (longest interval 17 min). The "78.6 min
+source age" I saw came from my worktree's stale copy of `docs/nowcast.json`
+during the offline render, not from production. Withdrawn.

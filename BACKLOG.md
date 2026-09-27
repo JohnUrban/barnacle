@@ -30,6 +30,13 @@ looks stale, trust this file. Ledger lines are append-only:
       archive later beside, not over, the preliminary files; Sep26 14:24Z MRMS
       frame missing; gate photo (rule 9) and episode photos pending; Borough
       gate-operation history pending. Do not close on tests alone.
+      ADDENDUM (reply 04, 18:25): `_today_lookback` also presents the Sandy
+      Hook peak as the corner's peak ("observed (gauge)") on the site strip
+      and widget "so far" line, and labels the bay+tank model "live radar";
+      ranking rule (tape wins?) + both labels await John's DECISION. Ledger
+      metadata rows (264–268) need a separate clarifications file going
+      forward. Production gauge reads have no Battery cross-check (class (b)
+      change if pursued). Cadence-gap claim retracted (see ledger line).
 
 
 - [ ] **Storm communication parity — reproduced 2026-09-25.** Public 10:13
@@ -801,3 +808,8 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | FACT | tape-window-dst-defect | Beyond the audit's boundary-drop probe: aware datetimes sharing one tzinfo compare/subtract by wall time and ignore fold, so the near-term chart would have collapsed 01:30 EDT and 01:30 EST on the fall-back night. Chart now compares UTC instants; regression tests cover both edges, naive/offset mixes and 2026-11-01 [VERIFIED: tests/test_tape_boundary_offsets.py]
 2026-09-27 | OPEN | sofar-line-ranking-decision | John: may a modeled (live radar) value ever outrank a same-day tape crest on the "so far today" line? Code takes the max by height; the docstring says modeled is used only when tape/gauge have nothing higher. Display-policy choice under rule 8, not taken by the responder [STATED question]
 2026-09-27 | FACT | r7-historical-incident | Hourly run 36237940041 (11:09Z Sep26) exited 2 on the ntfy Latin-1 failure and forecast.json stayed at 10:40Z until 13:09Z mid-flood. Branch reserves exit 2 for delivery-only failure; workflow publishes validated artifacts then fails the job after push; data/alert_delivery_health.json records ok/partial/failed; sent-state untouched on failure [VERIFIED: tests/test_publication_vs_delivery.py, test_workflow_contracts.py]
+2026-09-27 | FACT | sofar-line-bay-as-corner | `_today_lookback` gauge branch converts the Sandy Hook peak to the corner and labels it "observed (gauge)"; site strip and widget "so far" show a BAY level as the corner peak (Sep25 PM would have read ~+14.8 in while dry). Same R5 meaning on an arm the reply's first pass missed; recorded as an erratum in reply 04. Model branch label "modeled (live radar)" misattributes a bay-driven number. Fix with the ranking DECISION [VERIFIED: code read]
+2026-09-27 | OPEN | ledger-metadata-rows | Rows 264–268 of data/labeled_observations.csv are retrospective clarifications (landmark_key=none) that every consumer must special-case and the registry excludes explicitly. Keep (append-only); future clarifications belong in a separate append-only file [STATED recommendation]
+2026-09-27 | OPEN | gauge-ingest-no-battery-check | nowcast.current_bay and surge reads take the single latest despiked sample; a bad run at the window tail (Sep27 01:31–03:21) passes the median filter. A Battery cross-check or plateau test is an input-policy change: class (b) bump, review, DECISION [VERIFIED behavior; INFERRED remedy]
+2026-09-27 | FACT | nowcast-cadence-retraction | Curlew told John of a ~50-min nowcast publish gap 16:41–17:31 local 2026-09-27. Wrong: commits + heartbeats show publishes at 16:41, 16:48, 16:50, 16:55, 17:00, 17:17, 17:20, 17:29 (max 17 min). The 78.6-min source age came from the worktree's stale docs/nowcast.json during an offline render. Withdrawn [VERIFIED]
+2026-09-27 | DONE | episode-count-doc-fix | assets/observations/README.md said 27 registered episodes; registry has 30. Corrected with the history (27 at first indexing) [VERIFIED]

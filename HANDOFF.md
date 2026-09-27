@@ -60,6 +60,11 @@ the branch. **Owner DECISION needed:** may a modeled value ever outrank a
 same-day tape crest on that line? (code = max wins; docstring = modeled only
 when nothing better).
 
+Reply addendum (18:25): the same "so far today" code also shows the BAY peak
+as the corner's ("observed (gauge)") and labels the bay+tank model "live
+radar"; both fixes wait on the ranking DECISION. A cadence-gap claim was
+retracted (publishes were continuous). Ledger metadata rows 264–268 need a
+separate clarifications file going forward.
 Still pending: Codex review/merge; Heron episode-aware evaluator; verified
 NOAA series (archive beside, not over); episode photos; Borough gate history.
 ## Production — v0.10.6 live; release audit CLOSED
@@ -79,20 +84,15 @@ completed storms; three flood episodes = ONE storm.
 
 ## Heron — evaluator closed; research unmerged; science awaits evidence
 
-`audits/2026-09-24-a4/09-close-out-codex.md`, candidate `cd17a5a14`. Not
-modified here. Interface/gap note above; issuance coverage for the storm
-unchecked. Revisit 2026-10-09 or earlier.
+`audits/2026-09-24-a4/09-close-out-codex.md`, candidate `cd17a5a14`, not
+modified here; interface/gap note above. Revisit 2026-10-09 or earlier.
 
-## Social and remaining owner work
+## Social, storm follow-up and owner work
 
-Tern rehearsal local-only; owner copy/geography acceptance open. No
-accounts/posts, no production copy change, no merge/push of the social branch.
-Neutral landmark survey remains John's future task.
-
-## Prior storm follow-up remains open
-
-`history/plans/2026-09-25-storm-followup-handoff.md`: email/day-worst headline
-parity. Guidance-first is an offline candidate. SMS-policy review separate.
+Tern rehearsal local-only; owner copy/geography acceptance open; no
+accounts/posts, merge or push of the social branch. Neutral landmark survey is
+John's future task. `history/plans/2026-09-25-storm-followup-handoff.md`:
+email/day-worst headline parity open; guidance-first stays an offline candidate.
 
 Read PLAYBOOK before event support (three-clocks rule + handoff checklist
 added). Log ledger AND raw notes on receipt. Explicit staging; commit → gate →
