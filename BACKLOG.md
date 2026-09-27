@@ -8,6 +8,22 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
+- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1).**
+      Independent reply required: audits/2026-09-27-a1/01-event-records-and-repo-audit-codex.md.
+      R1 raw-note capture/provenance; R2 qualify rain/gate/garage inferences;
+      R3 stable storm + episode identities and downstream coverage; R4 gauge
+      versions/Battery QC/lag consistency; R5 bay-versus-street source meaning
+      and daily-max provenance; R6 timestamp/interval handling; R7 prevent
+      alert-transport failure from blocking validated forecast publication.
+      77 observations retained, ledgers append-only, 342 tests OK (one skip),
+      three frozen replays pass, seven wind hashes unchanged. These checks do
+      not close the event analysis. Retain Event #10 storm alias, represent
+      three floods plus the Sep25 negative window separately; do not count
+      three independent storms in the frozen wind trial. Complete rainfall,
+      gauge and as-issued evaluation before promoting a gate model. Heron's
+      evidence checkpoint can be revisited early; social remains local-only.
+      Audit changed documentation only, not production behavior or constants.
+
 - [ ] **Storm communication parity — reproduced 2026-09-25.** Public 10:13
       forecast rendered offline: email TODAY LIGHT vs day_worst/tide MODERATE.
       Saturday NWS tide forecast 8.0 ft vs core curve 7.035 ft MLLW
@@ -750,3 +766,8 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | PREF | garage-intrusion-warning | user: "the first porch step is basically level with garage entry, and breaches over first porch step should carry garage intrusion warnings." => porch_step1_top (5.41) doubles as the garage-entry threshold; every arm that names the first-porch-step class should say garage water. Implement post-event across all arms (rule 8), not mid-storm [STATED by user]
 2026-09-27 | DONE | event-#10-folders | user caught that the usual event folders were missing: added verbatim flood-measurements.txt for 2026-09-26 (rounds 0-2 incl. the 9/25 account and gate quotes) and 2026-09-27 (round 3), a 2026-09-27 README, and the four-tide figure assets/observations/2026-09-26/analysis/corner_vs_gauge.png (script + cached NOAA gauge series). Pending: rain check for 9/27 AM, full event study [VERIFIED files]
 2026-09-27 | FACT | event-#10-9-25-confirmed | user confirms: Friday 9/25 night was DRY at Bay/Central "as far as I can tell" (flooding elsewhere in town); Saturday 9/26 night was delayed and minor, NOT dry. Figure label now "dry as far as observed" [STATED by user]
+
+2026-09-27 | FACT | event-10-owner-update | John reports the Snug Harbor Beach tide gate prevented apparent local flooding Sep25 PM, nearly prevented it Sep26 PM, and delayed Sep26/27 AM flooding; requests independent full-repo/event-record audit. Gate causation is the owner's explanation [STATED], not a newly fitted hydraulic model.
+2026-09-27 | FACT | event-10-evidence-qualification | Erratum/qualification to event-#10-rain, round2-gate-closed and round3 summaries: ~2.4-in rain lift is a fixed-base/zero-drain model sensitivity [INFERRED], not measured attribution; ~21:58 Sep26 and ~08:30 Sep27 gate reports are "almost certainly" rather than confirmed; first-water report times may be bounds, not exact onset. Committed gauge cache peaks Sep26 at 5.852 NAVD88 08:36, inconsistent with narrative 5.83 at 08:54; source-version reconciliation required. Historical rows/prose retained. Evidence: audit 2026-09-27-a1 R2/R4 and probe-results.json.
+2026-09-27 | OPEN | event-10-episode-propagation | Recommend stable episode IDs for Sep26 AM, Sep26 PM, Sep27 AM plus separate Sep25 PM negative window under Event #10 storm alias. Production measured-peak view collapses by calendar day; unmerged Heron evaluator groups all eligible new rows into one 12h-gap cluster; no new rows have paired model-depth predictions. Preserve per-episode outcomes and storm-level statistical grouping separately [VERIFIED probes; proposed registry not implemented].
+2026-09-27 | DONE | event-10-independent-audit | Codex audited main 10ea6c2a2 against fa3e041c5: seven findings, reproducible probes/receipt/notebook, public-source excerpts, documentation handoff. 342 tests OK (one absent-local-training skip), three replay goldens PASS, artifact gate clean, all seven wind frozen hashes match, prior ledger rows intact. Report audits/2026-09-27-a1/01-event-records-and-repo-audit-codex.md OPEN awaiting independent reply; no production/model changes or blanket rollback.
