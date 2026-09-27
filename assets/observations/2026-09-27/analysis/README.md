@@ -120,3 +120,21 @@ and historical hindcasts. Six records without numeric heights remain listed
 in the notes. All existing figures are retained unchanged.
 
 Rebuild: `~/.barnacle/venv/bin/python assets/observations/2026-09-27/analysis/expanded_events_sorted_figure.py`.
+
+## Independent-reply artifacts — 2026-09-27 (audit 2026-09-27-a1, Claude Fable 5.1 "Curlew")
+
+Reproducible, offline after the archived pulls; no model constant changed.
+
+| Artifact | What it is | Rebuild |
+|---|---|---|
+| [`gauge-sources/`](gauge-sources/) | Raw NOAA responses, GMT transport, MLLW, all fields incl. `q`/`f` flags, with request receipts and retrieval time (Sandy Hook + Battery, 2026-09-25 12:00Z → 09-27 22:00Z). All rows were `p` (preliminary) at retrieval. | `fetch_event_gauges.py` (writes NEW dated files) |
+| [`gauge_qc.json`](gauge_qc.json) | Per-tide gauge peak **intervals** (flat top within 0.03 ft), Battery peaks, corner-vs-gauge lag intervals, ≥1 ft step screen, comparison with the committed `gauge_cache.json`, and the Sep 27 nowcast bay-input trace behind the 39.0-in day max. | `event10_gauge_qc.py` |
+| [`rain_scenarios.json`](rain_scenarios.json) | MRMS coverage and totals for all four tides; production tank driven by the box-mean rate under four **explicit** base/drain assumptions (A fixed crest base + zero drain = the "~2.4 in" figure, reproduced at 2.45 in; B bay-tracking + zero drain; C bay-tracking + head-dependent drain; D low base + full drain). Sensitivities, not attribution. | `event10_rain_scenarios.py` |
+| [`observation_intervals.json`](observation_intervals.json) | Additive per-row sidecar (row hash identity) recording time kind (exact / approximate / window / surrogate / already-present / upper-bound) and depth kind (point / range / bound / qualitative) for the 77 Sep 25–27 rows; ledger unchanged. | `history/scripts/build_observation_intervals.py` |
+| [`event10_hydrographs.png`](event10_hydrographs.png) / PDF | Corrected four-tide standard hydrographs: rain panel, separate report strip (dry / water-not-measured / gate, surrogate times hollow with their window), street tape with ranges and bounds, raw + despiked Sandy Hook, Battery, landmark lines, per-panel gate confidence. Supersedes `../../2026-09-26/analysis/corner_vs_gauge.png` (kept as forensic record). | `event10_hydrographs.py` |
+
+Findings that change earlier statements are recorded as errata in the two
+event READMEs; the original prose stands. Rain scenario B (bay-tracking base,
+zero drain) produces its largest lifts at low bay levels where a zero-drain
+assumption is unphysical — that is why the scenarios are shown side by side
+rather than one being promoted.

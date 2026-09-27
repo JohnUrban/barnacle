@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
-"""Event #10 (2026-09-25..27 nor'easter): corner readings vs the Sandy Hook
+"""SUPERSEDED 2026-09-27 (audit 2026-09-27-a1 R5/R6; Claude Fable 5.1 "Curlew").
+Retained unchanged, with its PNG, as the forensic record of the first
+four-tide figure. Known defects: (1) every qualitative report was drawn as a
+tick ON the SW-grate line whatever it said (a "water over the curb" report
+looked like a dry check); (2) the title asserted "gate closed" for all four
+tides although only Sep 26 18:19 was a direct report; (3) the ledger filter
+compared NAIVE window bounds with parsed times, which raises TypeError on an
+offset-bearing row; (4) the gauge cache used lst_ldt transport, dropped
+NOAA's quality flags and kept no retrieval time. The corrected figure is
+../../2026-09-27/analysis/event10_hydrographs.py (rain panel, report strip,
+raw+despiked+Battery gauge, per-panel gate confidence, UTC comparisons).
+
+Event #10 (2026-09-25..27 nor'easter): corner readings vs the Sandy Hook
 gauge for all four surge tides, gate state annotated.
 
 Corner water = landmark NAVD88 + observed_depth_in/12 from

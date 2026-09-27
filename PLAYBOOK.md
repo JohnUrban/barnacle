@@ -79,8 +79,12 @@ in order; every step has been needed at least once:**
    the measured peak — that's forecast skill; (b) what
    `estimate_pluvial_water(true_rate, true_bay)` produces — that's
    model physics. Rate convention: ~1-h-equivalent sustained rate
-   (a 30-min burst at 3.4 ≈ 2.5 hour-equivalent); duration is not
-   yet explicit in the model (V = C·(R−D)·T is the queued upgrade).
+   (a 30-min burst at 3.4 ≈ 2.5 hour-equivalent). Duration IS explicit
+   since v0.10: the dynamic tank integrates rate minus drain over time
+   (`simulate_pluvial_series`), so score (b) with the actual rate
+   series, not a single equivalent rate. (Wording corrected 2026-09-27,
+   audit 2026-09-27-a1 R1; the old "V = C·(R−D)·T is queued" line
+   predated the tank.)
 7. **MAKE THE PLOTS — standard practice (user request 2026-07-09),
    save to `assets/observations/YYYY-MM-DD/analysis/*.png`:**
    (1) event hydrograph: rain-rate panel above, water panel below —
@@ -118,7 +122,27 @@ in order; every step has been needed at least once:**
 - Log every user report IMMEDIATELY: ledger row (strict CSV — run
   tests/test_csv_ledgers) + a line in the event's
   flood-measurements.txt. Timestamps: run `date` first; NOAA stamps
-  are 24-hour station-local (10:18 = AM).
+  are 24-hour station-local (10:18 = AM). `bin/append_observation.py`
+  stores an explicit UTC offset (naive input is normalized, fold=0).
+- THREE CLOCKS, kept distinct (audit 2026-09-27-a1 R1/R6): the
+  OBSERVATION time the owner states, the RECEIPT time the message
+  reached the agent, and the ASSEMBLY time a note file was written.
+  The ledger row carries the observation time; put receipt time in
+  `notes` when it differs materially, and head every notes file with
+  its assembly date and source ("relayed live" vs "retrospectively
+  assembled from chat on <date>"). Ranges ("0.5–1 in", "between 9:20
+  and 9:40") stay ranges in the text; a midpoint stored in the CSV is
+  a storage convenience, and untimed reports get a surrogate time
+  that is LABELED as such. Owner-supplied original files are kept
+  byte-for-byte under `rawnotes/`, never edited.
+- HANDOFF CHECKLIST at the end of live support (do not hand off
+  without it): (1) every report in the ledger AND the notes file;
+  (2) episode registered in `episodes.json` with row hashes
+  (`check_observation_episodes.py` clean); (3) gauge pull archived
+  raw with flags and retrieval time (GMT transport) for SH and
+  Battery; (4) rain forcing pulled for the whole window; (5) the
+  standard plots (step 7) or an explicit "PENDING" line naming what
+  is missing; (6) HANDOFF rewritten.
 - Check the radar nowcast is publishing (docs/nowcast.json
   generated_utc); if the cron is in a gap, run forecast/nowcast.py
   manually and push each cycle (~6 min) until it recovers.

@@ -106,3 +106,37 @@ A closed gate plus heavy rain traps runoff at the corner.
 - [2026-09-26-e02](e02/README.md): Evening coastal flood.
 
 [Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.
+
+## Erratum and gauge-provenance correction — 2026-09-27 (audit 2026-09-27-a1 R4/R5, Claude Fable 5.1 "Curlew")
+
+The prose above is retained as written on 2026-09-26. Corrections, with the
+primary records in [`../2026-09-27/analysis/gauge_qc.json`](../2026-09-27/analysis/gauge_qc.json):
+
+- **"Sandy Hook (NOAA-revised) peaked 5.83 at 08:54; corner ~15 min later"** —
+  the retained NOAA series (still quality `p`, preliminary, as archived
+  2026-09-27 21:45Z with flags) has its maximum **5.847 ft NAVD88 at 08:36**,
+  with a flat top (within 0.03 ft) from **08:12 to 08:54**; 08:54 is one
+  sample on that plateau, not the peak. Against the corner crest window
+  09:06–09:13 the lag is an **interval of 12–61 min** (30–37 min against the
+  single maximum). The corner crest sits **0.146 ft below** the gauge
+  maximum. The committed `analysis/gauge_cache.json` agrees with the
+  archived series to a uniform 0.005 ft (NOAA's own NAVD datum offset).
+- The "live sensor spikes (06:42, 08:18–08:42)" are **not in the retained
+  series**; the spike screen finds no 6-min step ≥ 1 ft. They existed only
+  in what the live system saw; the as-seen record is the nowcast history
+  (`bay_navd88` per commit) and Codex's preserved excerpt. A later download
+  is not automatically the verified observation.
+- The four-tide figure `analysis/corner_vs_gauge.png` is **superseded** by
+  [`../2026-09-27/analysis/event10_hydrographs.png`](../2026-09-27/analysis/event10_hydrographs.png):
+  the old figure drew every qualitative report on the SW-grate line and
+  titled all four tides "gate closed". Gate state per tide: Sep 26 18:19
+  **seen closed (photo)**; ~21:58 and Sep 27 ~08:30 **"almost certainly"**,
+  untimed in the originals; Sep 25 PM and Sep 26 AM **inferred**.
+- **Rain "≈ tide 23.8 + rain 2.4"** is a fixed-base (5.7 ft), zero-drain tank
+  sensitivity, reproduced at 2.45 in at 09:02 in
+  [`../2026-09-27/analysis/rain_scenarios.json`](../2026-09-27/analysis/rain_scenarios.json)
+  beside three other explicit assumptions (bay-tracking base with and
+  without head-dependent drain; low base). None is a measured partition of
+  the crest. MRMS coverage 04:00–13:00 local: 90 of 91 frames (14:24Z missing).
+- "First porch step top = garage entry" (Sep 27) is an observed association
+  at one flood, a proxy, not a surveyed elevation.

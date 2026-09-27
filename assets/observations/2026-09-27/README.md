@@ -58,3 +58,28 @@ Figure: [`../2026-09-26/analysis/corner_vs_gauge.png`](../2026-09-26/analysis/co
 ![Recorded flood levels](analysis/all_anchors.png)
 
 [Data, method and qualifications](analysis/README.md).
+
+## Erratum and provenance notes — 2026-09-27 (audit 2026-09-27-a1, Claude Fable 5.1 "Curlew")
+
+- "Sandy Hook peaked 5.71 at 09:06: corner −0.09 ft, ~40–60 min later" —
+  the archived preliminary series has its maximum **5.703 ft at 09:06** with a
+  flat top **08:48–09:24**; against the corner crest 09:44–10:06 the lag is
+  **20–78 min** (38–60 min against the single maximum); corner −0.085 ft.
+  See [`analysis/gauge_qc.json`](analysis/gauge_qc.json).
+- "Gate: almost certainly CLOSED" is the owner's stated confidence for an
+  untimed visit between the 08:24 and 08:36 entries; the ledger's 08:30 is a
+  surrogate. Not visual confirmation.
+- Rain this morning: MRMS catchment box mean **0.23 in** over 04:00–13:00
+  local (91 of 91 frames), peak 6-min rate 0.35 in/hr at 05:26 local, before
+  the flood. The fixed-base zero-drain sensitivity lifts at most 0.9 in and
+  peaks before first water; see [`analysis/rain_scenarios.json`](analysis/rain_scenarios.json).
+  This morning's flood is not materially rain-assisted under any of the four
+  explicit assumptions.
+- The public nowcast's retained day maximum of **39.0 in at 02:40 local** is
+  a model output driven by a bay input of 6.68 ft NAVD88 stamped "observed"
+  while the archived series had the bay at 0.2 ft
+  ([`analysis/gauge_qc.json` → `nowcast_bay_input_trace`](analysis/gauge_qc.json)).
+  It is not a street measurement; the tape crest was 5.62 ft (+25.2 in).
+  Recorded for rejection in `data/nowcast_daymax_rejections.json`.
+- Corrected four-tide figure with rain forcing and a separate report strip:
+  [`analysis/event10_hydrographs.png`](analysis/event10_hydrographs.png).
