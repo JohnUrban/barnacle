@@ -102,3 +102,10 @@ The original all_anchors renderer/data/PNG/PDF are unchanged by this expansion.
 The owner subsequently corrected Sep26 12:06 am to pm and confirmed midday;
 reconciliation tracks that revision. Original all_anchors source hashes and
 verification.json describe the earlier snapshot, not this later source edit.
+
+### April18 recollection refinement
+
+The expanded figure now plots likely lawn-step level (~13.7 inches above SW)
+as an open reconstruction marker: [owner account and limits](../../2026-04-18/README.md).
+It may have been higher; this is recollection plus historical gauge evidence,
+not a tape measurement. Original all_anchors files remain unchanged.

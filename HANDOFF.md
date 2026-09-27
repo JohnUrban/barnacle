@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 16:21 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-27 16:39 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Immediate obligation — independent event/operations audit reply
@@ -12,7 +12,8 @@ NOT independent replies; use index04 next. Owner originals received; 30-record
 episode index now includes recovered Apr17/18 and tentative Aug2025 history.
 Separate expanded_events figure + June14/15 hydrographs added; all_anchors files
 retained unchanged. See history/reports/2026-09-27-expanded-flood-records.md.
-Owner confirmed Sep26 12:06 as midday; source corrected, old hash retained.
+Owner confirmed Sep26 12:06 as midday. Apr18 now plotted at likely lawn-step
+level (~13.7in above SW), recollection + gauge, possibly higher; not direct tape.
 This ship changes archive organization/docs only; production behavior unchanged.
 77 new observation rows preserved; all three ledgers append-only. 342 tests OK
 (one absent-local-training skip), three frozen replays pass, seven frozen wind

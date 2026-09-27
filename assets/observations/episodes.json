@@ -5,7 +5,7 @@
   "id_policy": "YYYY-MM-DD-eNN; ordinals per date, never renumber after assignment; historical Event #N/round labels are aliases. Date folders and original source paths remain valid.",
   "statistical_policy": "Episode counts are not independent storm counts. No wind/evaluator grouping rule changed. null storm_id means unassigned, not independent.",
   "ledger_file": "data/labeled_observations.csv",
-  "indexed_through_csv_row": 267,
+  "indexed_through_csv_row": 268,
   "row_identity": "SHA256 of UTF-8 JSON of parsed CSV row with sorted keys, ensure_ascii=false and separators comma/colon. csv_row is a locator, not identity.",
   "association_notes": [
     "May19 retention rows belong to May18 evening, per their notes.",
@@ -95,14 +95,15 @@
       "episode_id": "2026-04-18-e01",
       "date": "2026-04-18",
       "ordinal": 1,
-      "label": "Evening flood that stranded guests; unanchored depth memory",
-      "record_kind": "historical_qualitative_flood",
+      "label": "Evening flood; likely lawn-step level from recollection + gauge",
+      "record_kind": "historical_flood_reconstruction",
       "storm_id": null,
       "aliases": [],
       "directory": "assets/observations/2026-04-18/e01",
       "source_paths": [
         "assets/observations/2026-04-18/README.md",
-        "history/reports/2026-09-27-expanded-flood-records.md"
+        "history/reports/2026-09-27-expanded-flood-records.md",
+        "assets/observations/2026-04-18/owner-recollection.txt"
       ],
       "ledger_rows": []
     },
@@ -1567,6 +1568,11 @@
       "csv_row": 267,
       "sha256": "f665e2b6dfe1d1f60d42d988ecdf184253cce7d7efe106b946e3af924ade9b19",
       "reason": "metadata/correction; not a flood-time measurement"
+    },
+    {
+      "csv_row": 268,
+      "sha256": "ec0666812520a61760a482c8e6fe9bbdf9d29fcb4dffcb14bab614a7c2f8da48",
+      "reason": "retrospective April18 reconstruction metadata; not a flood-time measurement"
     }
   ]
 }

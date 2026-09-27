@@ -1,18 +1,34 @@
-# 2026-04-18 — recovered historical record
+# 2026-04-18 — evening flood, likely lawn-step level
 
-[STATED] Evening flood stranded and surprised visiting guests (owner follow-up,
-2026-09-27). Early model specs describe “moderate, ~10 inches” but do not establish
-a secure surveyed reference. This is not a tape-measured crest.
+**Likely local flood height: approximately lawn-step level — 4.66 ft NAVD88,
+or 13.68 inches above the SW grate (shown as ~13.7 inches).**
 
-[VERIFIED] NOAA Sandy Hook six-minute peak: **7.473 ft MLLW at
-2026-04-18T21:36:00-04:00**. This is bay water, not measured street water.
-Earlier hourly7.322 is a different product; v0.1's6.25 observed-peak claim is
-superseded. No local depth is manufactured from either value.
+[STATED] On 2026-09-27 John recalled water “level with the lawn step or at least
+as high as that”; guests had to step off into floodwater to reach their car.
+[Verbatim owner account](owner-recollection.txt).
 
-[Full source inventory and qualifications](../../../history/reports/2026-09-27-expanded-flood-records.md).
-[Archived NOAA sources and request metadata](../2026-09-27/analysis/historical-gauge-sources/).
-[Owner follow-up](../2026-09-27/analysis/owner-history-followup.txt).
+[INFERRED] The plotted point uses the surveyed lawn-step elevation as a useful
+representative height, supported by that recollection and historical gauge data.
+It is **not a direct measurement or a precise crest**. Water may have been higher;
+no supported upper bound or numeric uncertainty interval is available. The point
+is an open reconstruction marker, not a tape point or a hard measured lower bound.
+
+[VERIFIED: archived NOAA response] Sandy Hook six-minute peak was **7.473 ft
+MLLW at 2026-04-18T21:36:00-04:00**. Subtracting Barnacle's 2.82-ft datum offset
+puts the bay reference at4.653 NAVD88, ~0.08 inch below the surveyed lawn step.
+That close agreement supports the reconstruction; it does not establish the
+street's exact crest time or height. John's recollection was supplied after
+viewing this comparison, so it is not independent validation of bay-to-street skill.
+
+Earlier descriptions of “moderate, ~10 inches” lacked a secure reference.
+The new recollection provides a named landmark and supersedes leaving the local
+height entirely unplotted. Earlier hourly7.322 is a different gauge product;
+v0.1's6.25 observed-peak claim remains superseded.
+
+[Full source inventory](../../../history/reports/2026-09-27-expanded-flood-records.md).
+[Archived NOAA sources](../2026-09-27/analysis/historical-gauge-sources/).
+[Expanded figure](../2026-09-27/analysis/expanded_events.png).
 [Episode home](e01/README.md) · [All episodes](../EPISODES.md).
 
-Recovered 2026-09-27 by Codex (GPT-6). No photos or exact flood-time ledger
-measurements were invented. The original specs remain historical records.
+Recorded by Codex (GPT-6), 2026-09-27. No production model, historical ledger
+row, or original all_anchors artifact was changed by this reconstruction.

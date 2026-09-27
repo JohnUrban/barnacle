@@ -45,7 +45,7 @@ def expanded():
    '2025-10-30-e01':'20.8 reconstruction; post-peak photo floor ~13.5',
    '2025-12-19-e01':'08:12 landmark bracket; not a measured crest',
    '2026-04-17-e01':'Light / ~2-inch memory; height reference unknown',
-   '2026-04-18-e01':'Guests stranded; ~10-inch memory, reference unknown',
+   '2026-04-18-e01':'Likely lawn-step level; recollection + gauge; may be higher',
    '2026-05-18-e01':'SE/SW overflowed; no standardized crest point',
    '2026-05-30-e01':'Dry check', '2026-05-30-e02':'SE grate overtopped; post-peak report',
    '2026-05-31-e01':'Below-grate readings; dry roadway',

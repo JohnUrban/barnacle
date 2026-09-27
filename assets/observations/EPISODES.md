@@ -10,7 +10,7 @@ IDs identify episodes, not independent storms. Historical sources remain at thei
 | [2025-10-30-e01](2025-10-30/e01/README.md) | Historical compound-flood reconstruction | historical_flood_reconstruction | — |
 | [2025-12-19-e01](2025-12-19/e01/README.md) | Historical compound-flood observation | historical_landmark_observation | — |
 | [2026-04-17-e01](2026-04-17/e01/README.md) | Historical light flood, unanchored depth memory | historical_qualitative_flood | — |
-| [2026-04-18-e01](2026-04-18/e01/README.md) | Evening flood that stranded guests; unanchored depth memory | historical_qualitative_flood | — |
+| [2026-04-18-e01](2026-04-18/e01/README.md) | Evening flood; likely lawn-step level from recollection + gauge | historical_flood_reconstruction | — |
 | [2026-05-18-e01](2026-05-18/e01/README.md) | Evening tide spot-check and next-morning retention | flood_or_tide_observation | — |
 | [2026-05-30-e01](2026-05-30/e01/README.md) | AM high-tide dry check | negative_observation_window | — |
 | [2026-05-30-e02](2026-05-30/e02/README.md) | PM high-tide post-peak report | flood_or_tide_observation | — |

@@ -68,11 +68,20 @@ The repo's source chain is:
 The earlier 7.322/6.758 figures are hourly-product values, while v0.1's 6.25/6.41
 were erroneous observed-peak references. Do not mix these quantities.
 
-The expanded figure therefore retains Apr18 with its qualitative description
-but no invented local SW-grate height. The recalled “~10 inches” lacks a secure
-landmark. Converting it to “17.68 inches above SW” would silently assume a curb
-reference. The NOAA-converted bay peak is 4.653 NAVD88 under Barnacle's offset;
-that is **not** a recovered street measurement.
+**Owner clarification later on 2026-09-27:** John recalls water level with the
+lawn step or at least that high, and guests stepping into water to reach their
+car. [Verbatim source](../../assets/observations/2026-04-18/owner-recollection.txt).
+The expanded figure now plots **~13.7 inches above SW /4.66 NAVD88**, using
+lawn-step elevation as the likely representative level. It is an open
+reconstruction marker, not direct measurement. Water may have been higher;
+no numeric upper bound is established. The earlier ~10-inch memory was not
+securely referenced; the new named-landmark recollection makes a useful plotted
+estimate possible without treating it as tape data.
+
+The gauge-equivalent bay peak4.653 NAVD88 is close to that landmark. This is
+supporting evidence, not an independent street measurement. The owner supplied
+the recollection after seeing the gauge comparison; do not score it as blind
+validation of the gauge-to-street transfer. Exact street crest time is unknown.
 
 [April18 archive](../../assets/observations/2026-04-18/README.md) now exists, as
 does an Apr17 companion. Neither is inserted into the frozen rain classifier.
