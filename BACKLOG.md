@@ -8,28 +8,29 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1).**
-      Independent reply required: audits/2026-09-27-a1/01-event-records-and-repo-audit-codex.md.
-      Rounds02/03 are Codex supplements, not independent replies; use index04
-      next. Owner originals received/reconciled; 30-record source registry and
-      eNN folders implemented. R3 downstream display/scoring integration remains
-      open; all_anchors retained plus expanded_events inventory and June14/15
-      analyses added. Apr18/Aug2025 evidence recovered with uncertainty explicit;
-      coastal hindcasts pending. Historical negative controls Oct13/Feb22–23
-      still need source-backed episode records before claiming a complete census.
-      R1 raw-note capture/provenance; R2 qualify rain/gate/garage inferences;
-      R3 stable storm + episode identities and downstream coverage; R4 gauge
-      versions/Battery QC/lag consistency; R5 bay-versus-street source meaning
-      and daily-max provenance; R6 timestamp/interval handling; R7 prevent
-      alert-transport failure from blocking validated forecast publication.
-      77 observations retained, ledgers append-only, 342 tests OK (one skip),
-      three frozen replays pass, seven wind hashes unchanged. These checks do
-      not close the event analysis. Retain Event #10 storm alias, represent
-      three floods plus the Sep25 negative window separately; do not count
-      three independent storms in the frozen wind trial. Complete rainfall,
-      gauge and as-issued evaluation before promoting a gate model. Heron's
-      evidence checkpoint can be revisited early; social remains local-only.
-      Audit changed documentation only, not production behavior or constants.
+- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1) — independent reply 04 filed; Codex verification pending.**
+      Reply: audits/2026-09-27-a1/04-independent-reply-claude-curlew.md
+      (Claude Fable 5.1 "Curlew"). R1–R7 all CONFIRMED against primary
+      records; repairs on branch `audit/2026-09-27-a1-reply` (worktree
+      ../barnacle-a1reply), UNMERGED: R7 publish-on-delivery-failure workflow
+      + delivery-health file; R6 station-parser/UTC tape window + offset-bearing
+      appends + interval sidecar; R3 per-episode production peaks (Sep26 shows
+      both floods) + Heron interface doc; R5 landing/details wording, nowcast
+      day-max provenance + rejection record (39.0 in @02:40 traced to a phantom
+      6.68-ft "observed" bay input; it was the public "so far today" line all
+      day), figure superseded; R4 raw GMT gauge archive with flags, QC/lag
+      intervals, Battery; R2 rain scenarios for all four tides (Sep27 AM
+      0.23 in, not rain-assisted; the ~2.4 in is scenario A only). 374 tests
+      OK (one skip), gate clean, replays PASS, frozen wind hashes unchanged.
+      STILL OPEN: Codex independent review + merge via ship ritual; owner
+      DECISION whether a modeled value may outrank a same-day tape crest on
+      the "so far today" line; Heron episode-aware/interval-preserving
+      evaluator (history/plans/2026-09-27-heron-episode-interface.md); no gate
+      threshold/leakage model (none authorized); verified (q=v) NOAA series to
+      archive later beside, not over, the preliminary files; Sep26 14:24Z MRMS
+      frame missing; gate photo (rule 9) and episode photos pending; Borough
+      gate-operation history pending. Do not close on tests alone.
+
 
 - [ ] **Storm communication parity — reproduced 2026-09-25.** Public 10:13
       forecast rendered offline: email TODAY LIGHT vs day_worst/tide MODERATE.
@@ -793,3 +794,10 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | DECISION | april18-likely-height | Owner confirms recollection of lawn-step level or higher; guests stepped into water to reach car. Plot representative ~4.66 NAVD88 /13.7in above SW as recollection+historical-gauge reconstruction, not direct measurement; upper bound/exact street crest time unknown. Source assets/observations/2026-04-18/owner-recollection.txt. Original all_anchors unchanged [STATED/INFERRED]
 
 2026-09-27 | DONE | expanded-sorted-view | Added expanded_events_sorted PNG/PDF + standalone renderer: all24 numeric expanded references sorted low-to-high as vertical stems, six nonnumeric records listed in notes. Same data and evidence classes, no prior plot/data/code overwritten. Owner requested additional view [VERIFIED]
+2026-09-27 | DONE | audit-a1-independent-reply | Claude Fable 5.1 "Curlew" filed audits/2026-09-27-a1/04-independent-reply-claude-curlew.md: R1–R7 CONFIRMED against ledger, owner originals, nowcast/forecast git history, fresh NOAA pull with flags, MRMS archive. Repairs on branch audit/2026-09-27-a1-reply (unmerged; three commits). 374 tests OK/one skip, gate clean, three replays PASS, seven frozen wind hashes match, offline render verified. Audit stays OPEN pending Codex verification [VERIFIED]
+2026-09-27 | FACT | daymax-39in-traced | Public nowcast day max 39.0 in @2026-09-27T06:40Z (02:40 local) came from runs 62a848d5f/a5020b395/5f80bcf04/e5c15508c whose bay input read 4.633/5.667/6.677/6.625 ft NAVD88 "observed"; the archived NOAA series (still q=p) has 0.79/0.17/0.20/0.23 ft and The Battery ebbing smoothly. Max-wins merge carried it all day and _today_lookback published it as "so far today: SEVERE +39.0 @02:40 modeled (live radar)" above the 25.2-in tape crest. Not a street measurement. Recorded in data/nowcast_daymax_rejections.json (branch); provenance fields + rejection guard implemented [VERIFIED: gauge_qc.json nowcast_bay_input_trace]
+2026-09-27 | FACT | gauge-peak-intervals | Sandy Hook Sep26 AM max 5.847 @08:36 with a flat top 08:12–08:54 (±0.03 ft): the README's "5.83 @08:54" is a plateau sample, not the peak; corner lag 12–61 min, corner −0.146 ft. Sep27 AM max 5.703 @09:06, flat 08:48–09:24, lag 20–78 min, corner −0.085. Sep26 PM lag 83–125 min, corner −0.676. Committed gauge_cache.json differs from the fresh archive by a uniform −0.005 ft (datum request) with no revised samples; the spikes seen live are absent from the retained series [VERIFIED: gauge_qc.json]
+2026-09-27 | FACT | event-10-rain-scenarios | Production tank driven by MRMS box-mean under four explicit assumptions per tide: Sep26 AM scenario A (crest base 5.703, zero drain) 2.45 in @09:02 reproduces the "~2.4 in" as a sensitivity; B/C/D differ by inches and B peaks where zero drain is unphysical. Sep27 AM rain total 0.23 in (91/91 frames), peak 0.35 in/hr @05:26 before first water: not materially rain-assisted under any assumption. No gate formula fitted [VERIFIED: rain_scenarios.json]
+2026-09-27 | FACT | tape-window-dst-defect | Beyond the audit's boundary-drop probe: aware datetimes sharing one tzinfo compare/subtract by wall time and ignore fold, so the near-term chart would have collapsed 01:30 EDT and 01:30 EST on the fall-back night. Chart now compares UTC instants; regression tests cover both edges, naive/offset mixes and 2026-11-01 [VERIFIED: tests/test_tape_boundary_offsets.py]
+2026-09-27 | OPEN | sofar-line-ranking-decision | John: may a modeled (live radar) value ever outrank a same-day tape crest on the "so far today" line? Code takes the max by height; the docstring says modeled is used only when tape/gauge have nothing higher. Display-policy choice under rule 8, not taken by the responder [STATED question]
+2026-09-27 | FACT | r7-historical-incident | Hourly run 36237940041 (11:09Z Sep26) exited 2 on the ntfy Latin-1 failure and forecast.json stayed at 10:40Z until 13:09Z mid-flood. Branch reserves exit 2 for delivery-only failure; workflow publishes validated artifacts then fails the job after push; data/alert_delivery_health.json records ok/partial/failed; sent-state untouched on failure [VERIFIED: tests/test_publication_vs_delivery.py, test_workflow_contracts.py]
