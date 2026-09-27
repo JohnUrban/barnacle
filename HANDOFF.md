@@ -1,13 +1,15 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 15:15 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-27 15:28 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Immediate obligation — independent event/operations audit reply
 
 Codex audit **2026-09-27-a1 OPEN**, main reviewed at `10ea6c2a2`:
 `audits/2026-09-27-a1/01-event-records-and-repo-audit-codex.md`.
-A different agent must answer R1–R7. This ship is documentation/audit only.
+A different agent must answer R1–R7. Round02 is an owner-clarification
+supplement by Codex, NOT the independent reply; use index03 next. This ship
+adds documentation and retrospective observation metadata, no production change.
 77 new observation rows preserved; all three ledgers append-only. 342 tests OK
 (one absent-local-training skip), three frozen replays pass, seven frozen wind
 hashes match. Passing checks do not establish scientific accuracy or close this audit.
@@ -18,6 +20,8 @@ Records: `assets/observations/2026-09-26/` and `2026-09-27/`, ledger, four-panel
 plot. Raw-note files were retrospectively assembled Sep27 after prompting;
 ledger batches generally were appended promptly on receipt. Existing PLAYBOOK
 already required immediate raw notes and post-event plots/analysis.
+- John confirms BOTH AM floods exceeded Oct30: first garage-entry floods,
+  entire garage Sep26, ~90% Sep27. Current benchmark: assets/observations/README.md.
 - Three floods: Sep26 AM ~5.701 NAVD88, Sep26 PM ~4.223, Sep27 AM ~5.618;
   Sep25 PM is a reported dry observation window, not another measured flood.
   Keep Event #10 as storm alias; proposed stable episode registry is NOT built.

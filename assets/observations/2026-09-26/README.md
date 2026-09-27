@@ -9,6 +9,12 @@ BACKLOG `event-#10-study`, `event-#10-rain-attribution`,
 `event-#10-infrastructure-inquiry`). Primary record: every reading below is a
 row in `data/labeled_observations.csv` (observer john), appended live.
 
+**Owner ranking clarification (2026-09-27):** this morning flood and the other
+September 26/27 morning flood both exceeded October 30, 2025. These were the
+first two witnessed garage-entry floods: the whole garage September 26 and
+about 90% September 27 `[STATED]`. [Exact owner statement](../2026-09-27/owner-ranking-followup.txt);
+[current benchmark and episode organization](../README.md).
+
 ## Crest
 **+12.25 in over porch_step_base = 5.70 ft NAVD88 (+26.2 in vs SW grate),
 ~3.5 in over the first porch step top, 09:06–09:13 EDT** [VERIFIED user

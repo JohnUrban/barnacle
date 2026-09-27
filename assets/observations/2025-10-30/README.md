@@ -1,6 +1,12 @@
 # 2025-10-30 — Compound flood event (tide + rain), photo evidence
 
-**The biggest 342 Bay flood event in our records.** Compound event:
+**Historical description — superseded benchmark:** the September 26 and
+September 27, 2026 morning floods both exceeded this event in John's witnessed
+experience. See the [current archive benchmark](../README.md) and
+[owner's confirmation](../2026-09-27/owner-ranking-followup.txt). October 30
+remains a calibration reference; its crest is reconstructed, not tape-measured.
+
+Original description, retained for history: **The biggest 342 Bay flood event in our records.** Compound event:
 high tide + heavy rain. User commentary 2026-06-15: *"The major major
 take home is that the flooding was far more expansive that day than
 any I've seen since. The only one close-ish was the April 18th flood
