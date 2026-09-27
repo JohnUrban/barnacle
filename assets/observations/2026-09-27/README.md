@@ -50,6 +50,7 @@ Figure: [`../2026-09-26/analysis/corner_vs_gauge.png`](../2026-09-26/analysis/co
 ## Stable episode IDs (assigned 2026-09-27)
 
 - [2026-09-27-e01](e01/README.md): Morning coastal flood.
+- [2026-09-27-e02](e02/README.md): Evening rain-plus-rising-tide flooding (registered live 18:40 EDT).
 
 [Full episode index](../EPISODES.md). Historical source paths and storm/round aliases are retained.
 

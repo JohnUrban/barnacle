@@ -1,1578 +1,1608 @@
 {
-  "schema_version": 1,
-  "created_local": "2026-09-27T15:45:11-04:00",
-  "scope": "Dated observation archive and recovered historical local reports through 2026-09-27; includes negative checks and one tentative-date August2025 association. Not a census of Highlands floods.",
-  "id_policy": "YYYY-MM-DD-eNN; ordinals per date, never renumber after assignment; historical Event #N/round labels are aliases. Date folders and original source paths remain valid.",
-  "statistical_policy": "Episode counts are not independent storm counts. No wind/evaluator grouping rule changed. null storm_id means unassigned, not independent.",
-  "ledger_file": "data/labeled_observations.csv",
-  "indexed_through_csv_row": 268,
-  "row_identity": "SHA256 of UTF-8 JSON of parsed CSV row with sorted keys, ensure_ascii=false and separators comma/colon. csv_row is a locator, not identity.",
-  "association_notes": [
-    "May19 retention rows belong to May18 evening, per their notes.",
-    "Aug29 residue row belongs to Aug27 flood, per its notes.",
-    "May30 before/after noon; Sep13 before/after09:00; Sep26 before/after17:00 are source-selection partitions, NOT inferred flood-onset times.",
-    "September gate reports remain infrastructure observations associated with an episode, not water measurements.",
-    "Excluded key=none rows remain in ledger; new rows after indexed cutoff require explicit registration."
-  ],
-  "episodes": [
+ "schema_version": 1,
+ "created_local": "2026-09-27T15:45:11-04:00",
+ "scope": "Dated observation archive and recovered historical local reports through 2026-09-27; includes negative checks and one tentative-date August2025 association. Not a census of Highlands floods.",
+ "id_policy": "YYYY-MM-DD-eNN; ordinals per date, never renumber after assignment; historical Event #N/round labels are aliases. Date folders and original source paths remain valid.",
+ "statistical_policy": "Episode counts are not independent storm counts. No wind/evaluator grouping rule changed. null storm_id means unassigned, not independent.",
+ "ledger_file": "data/labeled_observations.csv",
+ "indexed_through_csv_row": 271,
+ "row_identity": "SHA256 of UTF-8 JSON of parsed CSV row with sorted keys, ensure_ascii=false and separators comma/colon. csv_row is a locator, not identity.",
+ "association_notes": [
+  "May19 retention rows belong to May18 evening, per their notes.",
+  "Aug29 residue row belongs to Aug27 flood, per its notes.",
+  "May30 before/after noon; Sep13 before/after09:00; Sep26 before/after17:00 are source-selection partitions, NOT inferred flood-onset times.",
+  "September gate reports remain infrastructure observations associated with an episode, not water measurements.",
+  "Excluded key=none rows remain in ledger; new rows after indexed cutoff require explicit registration.",
+  "2026-09-27-e02 registered live at 18:40 EDT with its first row (18:18 report); later rows of the evening need explicit registration at handoff."
+ ],
+ "episodes": [
+  {
+   "episode_id": "2025-08-21-e01",
+   "date": "2025-08-21",
+   "ordinal": 1,
+   "label": "August remembered flood; August21 association tentative",
+   "record_kind": "tentative_date_historical_flood",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2025-08-21/e01",
+   "source_paths": [
+    "assets/observations/2025-08-21/README.md",
+    "history/reports/2026-09-27-expanded-flood-records.md"
+   ],
+   "ledger_rows": []
+  },
+  {
+   "episode_id": "2025-10-30-e01",
+   "date": "2025-10-30",
+   "ordinal": 1,
+   "label": "Historical compound-flood reconstruction",
+   "record_kind": "historical_flood_reconstruction",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2025-10-30/e01",
+   "source_paths": [
+    "assets/observations/2025-10-30/README.md"
+   ],
+   "ledger_rows": [
     {
-      "episode_id": "2025-08-21-e01",
-      "date": "2025-08-21",
-      "ordinal": 1,
-      "label": "August remembered flood; August21 association tentative",
-      "record_kind": "tentative_date_historical_flood",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2025-08-21/e01",
-      "source_paths": [
-        "assets/observations/2025-08-21/README.md",
-        "history/reports/2026-09-27-expanded-flood-records.md"
-      ],
-      "ledger_rows": []
+     "csv_row": 49,
+     "sha256": "3d442d7104158afaeccf84461599a6aeb506baed4ede60c9d5004ed8c7c6050f"
     },
     {
-      "episode_id": "2025-10-30-e01",
-      "date": "2025-10-30",
-      "ordinal": 1,
-      "label": "Historical compound-flood reconstruction",
-      "record_kind": "historical_flood_reconstruction",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2025-10-30/e01",
-      "source_paths": [
-        "assets/observations/2025-10-30/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 49,
-          "sha256": "3d442d7104158afaeccf84461599a6aeb506baed4ede60c9d5004ed8c7c6050f"
-        },
-        {
-          "csv_row": 50,
-          "sha256": "4ef238c68d18601f1edc8dd67b8a67787b73f5a762e1fa0fc1b5f81fc88e109b"
-        }
-      ]
-    },
-    {
-      "episode_id": "2025-12-19-e01",
-      "date": "2025-12-19",
-      "ordinal": 1,
-      "label": "Historical compound-flood observation",
-      "record_kind": "historical_landmark_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2025-12-19/e01",
-      "source_paths": [
-        "assets/observations/2025-12-19/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 51,
-          "sha256": "4837b16df1469842a04df21a756aa0224f83dd54f0ac7d8c6b7fa39dccfc1911"
-        },
-        {
-          "csv_row": 52,
-          "sha256": "7df661f5aa0cd021ffccfb72b610ea3b9c2985fe0b63d806aeab60d28286d6c6"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-04-17-e01",
-      "date": "2026-04-17",
-      "ordinal": 1,
-      "label": "Historical light flood, unanchored depth memory",
-      "record_kind": "historical_qualitative_flood",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-04-17/e01",
-      "source_paths": [
-        "assets/observations/2026-04-17/README.md",
-        "history/reports/2026-09-27-expanded-flood-records.md"
-      ],
-      "ledger_rows": []
-    },
-    {
-      "episode_id": "2026-04-18-e01",
-      "date": "2026-04-18",
-      "ordinal": 1,
-      "label": "Evening flood; likely lawn-step level from recollection + gauge",
-      "record_kind": "historical_flood_reconstruction",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-04-18/e01",
-      "source_paths": [
-        "assets/observations/2026-04-18/README.md",
-        "history/reports/2026-09-27-expanded-flood-records.md",
-        "assets/observations/2026-04-18/owner-recollection.txt"
-      ],
-      "ledger_rows": []
-    },
-    {
-      "episode_id": "2026-05-18-e01",
-      "date": "2026-05-18",
-      "ordinal": 1,
-      "label": "Evening tide spot-check and next-morning retention",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-05-18/e01",
-      "source_paths": [
-        "assets/observations/2026-05-18/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 2,
-          "sha256": "67c527c70d7043aeadb682f361620565f9e8be2e65874f1b1129467149a540f5"
-        },
-        {
-          "csv_row": 3,
-          "sha256": "9906d558b96e2de6596e25a7a1c4c446be1c4256a195da543d57b05577849f6e"
-        },
-        {
-          "csv_row": 4,
-          "sha256": "36fde2b77164b779ceacb1104b2f6e2921e3cf8a3122bcdacad154220fcd4ac7"
-        },
-        {
-          "csv_row": 5,
-          "sha256": "afadd977e6084eb735942c81cb5bbe70dc9cff32040e761cff79be756f1a2951"
-        },
-        {
-          "csv_row": 6,
-          "sha256": "beb3ac248a41e2d2a0a3ea4ace26f05edc4214ce728cb3c9e8585bb2ac1c58e9"
-        },
-        {
-          "csv_row": 7,
-          "sha256": "50290ac21ada894e5cfb8e43e9f2065106af39ad2f16fe5649c500999dc45388"
-        },
-        {
-          "csv_row": 8,
-          "sha256": "3f4ddc99248389bdf116ea89631c8be03e7136e58da8073c2fcb93b03500ef54"
-        },
-        {
-          "csv_row": 9,
-          "sha256": "44c3f9a610fd07d130c4408b1e8a37d50017e0bd9bcd389463d7c7809d04915d"
-        },
-        {
-          "csv_row": 10,
-          "sha256": "fcf97296d94766020428a7b5df8923a4480c6b946a4781efbcf3d9ac088b9a22"
-        },
-        {
-          "csv_row": 11,
-          "sha256": "c2a2011213ef76594fb9686b5107525f7fd402a352ae4bb66c3ad380890e24d9"
-        },
-        {
-          "csv_row": 12,
-          "sha256": "76f310323faddbc44e0dda0e2475b867a5958a8d71246780f40e89e487346c2a"
-        },
-        {
-          "csv_row": 13,
-          "sha256": "11e0952b6c358669ad093ee90bb0bb0b881f928ef14a2921a25ae3d5fe8f510f"
-        },
-        {
-          "csv_row": 14,
-          "sha256": "28c698d2d1b997e8b8d5fd026fa27649fcc457610e439cf4deb7da89e080587c"
-        },
-        {
-          "csv_row": 15,
-          "sha256": "0bf275f30abb4f0e941a9a538852067beac628de37a92738187bbaf2eb785c2f"
-        },
-        {
-          "csv_row": 16,
-          "sha256": "2ef9c1872c8bc5cbfae2ec58fd6eb52976ea865964d6bb9d219394c767b4ee7e"
-        },
-        {
-          "csv_row": 17,
-          "sha256": "c7ade30bbd0268581dd841c057abf91435d2b38ddbb23a48ca3f15ae96357066"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-05-30-e01",
-      "date": "2026-05-30",
-      "ordinal": 1,
-      "label": "AM high-tide dry check",
-      "record_kind": "negative_observation_window",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-05-30/e01",
-      "source_paths": [
-        "assets/observations/2026-05-30/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 18,
-          "sha256": "bcfa1af6e021442dd518827308822887b24a1a38a5eb738d047750b7e852b856"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-05-30-e02",
-      "date": "2026-05-30",
-      "ordinal": 2,
-      "label": "PM high-tide post-peak report",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-05-30/e02",
-      "source_paths": [
-        "assets/observations/2026-05-30/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 19,
-          "sha256": "de9ae3251c8cfaa61215347287a8cfbc1ec6fc4222ca951d499baade976a78c8"
-        },
-        {
-          "csv_row": 20,
-          "sha256": "d71c8b4d39ab3a28420270c52deafaa877b5e33b93c82e6dda7922dbc9fd58c5"
-        },
-        {
-          "csv_row": 21,
-          "sha256": "b47be8f13fb21f68ee34053b74acfd28e6499ccf6fd11a1d74f4b0ffe9ae5989"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-05-31-e01",
-      "date": "2026-05-31",
-      "ordinal": 1,
-      "label": "Evening tide: below-grate measurements",
-      "record_kind": "negative_observation_window",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-05-31/e01",
-      "source_paths": [
-        "assets/observations/2026-05-31/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 22,
-          "sha256": "86c01dcf545c2810b67bb2836ae2e42e543b7fd7b91749414bb7b3e398a93cb8"
-        },
-        {
-          "csv_row": 23,
-          "sha256": "cc5487a5dc882f3bc9d313e1a35943ca40ddaa0a616a929f499abd3290898d91"
-        },
-        {
-          "csv_row": 24,
-          "sha256": "d4736abc5dba996dc5da2dd14dec815a86988baf051a85d16b5a14099588c22d"
-        },
-        {
-          "csv_row": 25,
-          "sha256": "e8c627f1255ec8aeeb2f8dae2342425731b0d6348ca76e3046df49b42f0f3a0e"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-06-13-e01",
-      "date": "2026-06-13",
-      "ordinal": 1,
-      "label": "Post-peak tidal photo evidence",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-06-13/e01",
-      "source_paths": [
-        "assets/observations/2026-06-13/README.md"
-      ],
-      "ledger_rows": []
-    },
-    {
-      "episode_id": "2026-06-14-e01",
-      "date": "2026-06-14",
-      "ordinal": 1,
-      "label": "Evening tidal flood measurements",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-06-14/e01",
-      "source_paths": [
-        "assets/observations/2026-06-14/README.md",
-        "assets/observations/2026-06-14/flood-measurements.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 26,
-          "sha256": "df33915d7ec270b35cdabf2302e1b06a12f1a6d37741ab054e765ce35c926a89"
-        },
-        {
-          "csv_row": 27,
-          "sha256": "8f175e43b2c27e7e5db31e1b811a10fd5a2fb18fef85126b44eea201f2244134"
-        },
-        {
-          "csv_row": 28,
-          "sha256": "997f111e7e9fa98226b6b7608cef393444577ebb1a64968afb285c40133a2ff2"
-        },
-        {
-          "csv_row": 29,
-          "sha256": "310133c7f9ef956e68fa13390f95b4dfa2a97ba802d82eb738d705ac3603e55d"
-        },
-        {
-          "csv_row": 30,
-          "sha256": "9821536a2e9afc4133aefcbe2b4cc3845ea87759f14acbfe23b1bfaafdd52cc3"
-        },
-        {
-          "csv_row": 31,
-          "sha256": "93efbdab41a79029301714c481a34c571fb3bbe4a4203923fe0c3f576b349513"
-        },
-        {
-          "csv_row": 32,
-          "sha256": "e3bb12d500e484a4ab93bcb486894e51a5ee24a04735907d918623576eeeb4a0"
-        },
-        {
-          "csv_row": 33,
-          "sha256": "1aef129767dcebfb2bc042cb4e09a6be8df771a69b6242e783b330d91e1427d0"
-        },
-        {
-          "csv_row": 34,
-          "sha256": "e51c82e31ca91b8513af8f108094e9d9acc25ac716e29e894d18c8f93d6fa32f"
-        },
-        {
-          "csv_row": 35,
-          "sha256": "b470ed872ac9b1a93257dbad3ab9ebe6ad307b06bc4182f601df1d4b4576052f"
-        },
-        {
-          "csv_row": 36,
-          "sha256": "b36e6d38434e617c843e74a5b08e7370daa0421ae9c4452289309b5547102507"
-        },
-        {
-          "csv_row": 37,
-          "sha256": "24473f92d3aa2ba8a6ec6be5dd227503b7b6a4268411c1d6c155c96e021ea0d4"
-        },
-        {
-          "csv_row": 38,
-          "sha256": "86d094fd3cccc181a822dbb9fdf41488ac198a65923bad9fb988f5d22971b2ae"
-        },
-        {
-          "csv_row": 39,
-          "sha256": "d4d5abcd04ffe7f8a78374d0ee289390ff38370a5b913f3959caee8c807d417d"
-        },
-        {
-          "csv_row": 40,
-          "sha256": "fe17a247226017fdc80d4b7350de16890f5117a607d47593b649b414e5fce106"
-        },
-        {
-          "csv_row": 41,
-          "sha256": "a73d51aa3af6ff803a1984384137ac778a6ac639313a47f51e56a4e6119e5da0"
-        },
-        {
-          "csv_row": 42,
-          "sha256": "e96e7c40b8f1e0059b05b61ec82c96acf7b9438bee51391afcfa89d4142e0bf3"
-        },
-        {
-          "csv_row": 43,
-          "sha256": "db03f60b245d59a3d827848482d2efd0f992739b9fe63ea389c238ece1cd6403"
-        },
-        {
-          "csv_row": 44,
-          "sha256": "f993bfb6f3adce926cccc7d14fd2590862e0caaafaae1490dc1f60cb2e3aed76"
-        },
-        {
-          "csv_row": 45,
-          "sha256": "2c7f661bf3adf57ac6b7a667af3c3b19f57d706703cdddf9c7ae0b7b35e2069e"
-        },
-        {
-          "csv_row": 46,
-          "sha256": "eaa040682e5f74ece969f6c0df3eb319009740bc23e224b83d9f67a1e2dbbe48"
-        },
-        {
-          "csv_row": 47,
-          "sha256": "661f60ae0da72c3989185b37aa5fbf344cebc6c75cfdae8e949796c2a7226efa"
-        },
-        {
-          "csv_row": 48,
-          "sha256": "c41331bbc209f2a3854e9f51c15edf234f703f63b6717667c0bec5ccee4abb64"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-06-15-e01",
-      "date": "2026-06-15",
-      "ordinal": 1,
-      "label": "Evening storm-tide flood",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-06-15/e01",
-      "source_paths": [
-        "assets/observations/2026-06-15/README.md",
-        "assets/observations/2026-06-15/flood-measurements.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 53,
-          "sha256": "4c1f2151351d302876349589e77678d8bd54cb9b85f80ba338e9e5b3b8dee592"
-        },
-        {
-          "csv_row": 54,
-          "sha256": "41a8ceff7306e40cf35cad166e69fd125e345fef1e7d2b01d68f21fd09f60c8f"
-        },
-        {
-          "csv_row": 55,
-          "sha256": "95689da41980c242ee59675734967aa9471b9326c27c9e90a63eb1730dd7f8bc"
-        },
-        {
-          "csv_row": 56,
-          "sha256": "2c974969314cd575ab6bc3eafc0ecf408595a93b93d7d6c814bdc01a1a2fcdcc"
-        },
-        {
-          "csv_row": 57,
-          "sha256": "ad7ebfaf4c34f1ce0a495db978d87cc60c3eb2d9a64f1d484aa8a6b39468e920"
-        },
-        {
-          "csv_row": 58,
-          "sha256": "fa06f74a4b686b6710b33278efec92aab74dfb6d4c370c43fee6c838768ae8de"
-        },
-        {
-          "csv_row": 59,
-          "sha256": "098333f7dc9e84de8381569b18ff78eec212453d7d1052606afc118d007977a4"
-        },
-        {
-          "csv_row": 60,
-          "sha256": "0722f416976c8f9925cbb4578180d8031f6095a76137b31d819356dbbadb7fec"
-        },
-        {
-          "csv_row": 61,
-          "sha256": "3ec9889ea9678340ebe20624a54b6dd8291a368ad017d414dcca356d8e16c0a3"
-        },
-        {
-          "csv_row": 62,
-          "sha256": "ad5e4a31657bde5dd0758469ceef8a5ac7b6a9d915d9aa6a7be3258d4cafc76b"
-        },
-        {
-          "csv_row": 63,
-          "sha256": "596a19b3f177c10c3ae772e2859cfa4a9b3be44eeb9b22f81153c0df6d3e793d"
-        },
-        {
-          "csv_row": 64,
-          "sha256": "e2934234efc40687960a6dfc28662343d3d266daf2925f83ae5ccf81659ad33b"
-        },
-        {
-          "csv_row": 65,
-          "sha256": "16223f2b2bdec50a184447f2e9ba8ba23a0318efc28cc5a698aab68756d576d8"
-        },
-        {
-          "csv_row": 66,
-          "sha256": "02abaec13243cb1768737fa747a8fabd7ee4e53906b465c95ba2ab79b406b62e"
-        },
-        {
-          "csv_row": 67,
-          "sha256": "c8fdcfa471b052fe904a6c1d93c5e1a955157f8e7a5b955d873fab93f85180bc"
-        },
-        {
-          "csv_row": 68,
-          "sha256": "781b9a52ec5b4840b105d5af7c973c20a68bb4db89635f0361444558d5508c93"
-        },
-        {
-          "csv_row": 69,
-          "sha256": "ca9d0ed481e412ecf29fdf9606bbe099d279c7faf4fedb5c76faf163d7488ddc"
-        },
-        {
-          "csv_row": 70,
-          "sha256": "6e1847b61d50f326a557094263d9bcc07dc10a5ce6fe5528bc94a0fe5ae44e55"
-        },
-        {
-          "csv_row": 71,
-          "sha256": "a677407e982c9de45dffcaabeabcec772324f99b7704a824f598a8773393368a"
-        },
-        {
-          "csv_row": 72,
-          "sha256": "99d2c7b0a5c440c7357842991ad9c5e8eacb093aa4684dc5ed122ec60b1429ca"
-        },
-        {
-          "csv_row": 73,
-          "sha256": "c16e7ab6dc0d9749b1cbf0426de7eed3cc2b452c918186299684b7310c596736"
-        },
-        {
-          "csv_row": 74,
-          "sha256": "b45c726a2ece8752f2dfb50e8fdcaf4903cc26d4e83133f069df15d0c9945d3b"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-07-06-e01",
-      "date": "2026-07-06",
-      "ordinal": 1,
-      "label": "Rain flash flood",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-07-06/e01",
-      "source_paths": [
-        "assets/observations/2026-07-06/README.md",
-        "assets/observations/2026-07-06/flood-measurements.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 75,
-          "sha256": "e165c5be0f0a775e3dc9011fc27262407ea0b7204e10785de4d19fce0e809fce"
-        },
-        {
-          "csv_row": 76,
-          "sha256": "31d19f7e69556e02aa471fd480c86c7880d3d3c1a9dfab0ea219240860a7a289"
-        },
-        {
-          "csv_row": 77,
-          "sha256": "87df57740b66a8a54b87934262d1bb1e074acedd04f929ddc23567be18a36533"
-        },
-        {
-          "csv_row": 78,
-          "sha256": "2ee6a90504c34a6815f1387dc5a9ba67030adf62da59d42f2fb24af96dc5320e"
-        },
-        {
-          "csv_row": 79,
-          "sha256": "91cedfb01f9ebcdd14f502e15c1d66b8c29e091d9ccbae080901c3dbaabc11c1"
-        },
-        {
-          "csv_row": 80,
-          "sha256": "833e0e147d83e96639ea06320bc852cea23e1ac02d89bc3b81f16039a1d453b1"
-        },
-        {
-          "csv_row": 81,
-          "sha256": "5e40e9297d2ba8654e2bd643e64d08c0e38a2d4aab03ce92820839e2adac88a0"
-        },
-        {
-          "csv_row": 82,
-          "sha256": "5bd529984ed2ac68cf24774f7980068295c7b6eca7cb8c68806e50ca8df1a572"
-        },
-        {
-          "csv_row": 83,
-          "sha256": "5e40b229908203a225170f16a7e6a8ccb2d2fe87e8aa98bf0fd2b4864e274b10"
-        },
-        {
-          "csv_row": 84,
-          "sha256": "faf9cd7103c69aabdb9ce06b30d5e99daa53d6bddc334676ece32bb78397d138"
-        },
-        {
-          "csv_row": 85,
-          "sha256": "ccacd19d0bd10fa975a9c1d76bed8fdf4e22bad6638a677aac43448324768594"
-        },
-        {
-          "csv_row": 86,
-          "sha256": "89c76c7db809b589f4da0da34e87bad220df723d05e80dcd5e9a65f1ea74a508"
-        },
-        {
-          "csv_row": 87,
-          "sha256": "5fa34bd286a34f6a5312c48895ff2450336b1f2d0e64d6f2fbe79c751fcb37c7"
-        },
-        {
-          "csv_row": 88,
-          "sha256": "471d72d1a30e3b049a8c81b55dc31438af3b04a901e80ac9120881aa7fc39d0d"
-        },
-        {
-          "csv_row": 89,
-          "sha256": "0cdc43d52ee25d5d710297a0207b57f723f8f42205e9caec83f7f476e9197462"
-        },
-        {
-          "csv_row": 90,
-          "sha256": "43abdbf2cdea3b09d4a302072f7a22dc0657b7590b11419d3cefcfb37918766a"
-        },
-        {
-          "csv_row": 91,
-          "sha256": "e5f8223b5e64058894f6edcb50335463791dfd263f460750ede270b9592bb849"
-        },
-        {
-          "csv_row": 92,
-          "sha256": "0c47c23f462d467a1dfb26b22924a76188987a1b66ac1c0b2f2dfec87054ebcb"
-        },
-        {
-          "csv_row": 93,
-          "sha256": "0cad2a42b3ef10be20c7e455e7f962b508ad5676172dc213deb7bb7f0de83cbf"
-        },
-        {
-          "csv_row": 94,
-          "sha256": "e82488600bc8e1ce2e896a4e4a29c59236eb128fb1ee09426b7ef8ec8458e492"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-07-09-e01",
-      "date": "2026-07-09",
-      "ordinal": 1,
-      "label": "Rain flood on high tide",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-07-09/e01",
-      "source_paths": [
-        "assets/observations/2026-07-09/README.md",
-        "assets/observations/2026-07-09/flood-measurements.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 95,
-          "sha256": "1e6e4c9b62b67880b8751e4dc0b7843950709b20955bf35398afc866973e7d24"
-        },
-        {
-          "csv_row": 96,
-          "sha256": "563c5092a914f85023d92f0fb7b750a9efad904831b666124661fb8d85af11b9"
-        },
-        {
-          "csv_row": 97,
-          "sha256": "31372d3de4c24c72bd29a6f15d5f683be376b7989e349d9c25dc55710a7ffafa"
-        },
-        {
-          "csv_row": 98,
-          "sha256": "8315c5b5095e46af5004722dccca3b312a37091820604583ba5d44af7d56b977"
-        },
-        {
-          "csv_row": 99,
-          "sha256": "5dd3842eb317b85f91af59f91279f81ae0d027354d48566c61ba4a240f6cdcf3"
-        },
-        {
-          "csv_row": 100,
-          "sha256": "672f40838f2cf792f005a7c44de90a2e9735e447a624750e05d8f7cc9448bc75"
-        },
-        {
-          "csv_row": 101,
-          "sha256": "a85ed334e6a56108e719660fa8ad2ac186e52076e87c9a7744a724b3f3afebf0"
-        },
-        {
-          "csv_row": 102,
-          "sha256": "6124d2b804f7bbc5bf798ff6cec5e61f8bb47ab52149159ef175a441c772c85b"
-        },
-        {
-          "csv_row": 103,
-          "sha256": "40b32e2f13b64d45776811273c24fcb20c9facec2699c53299e5b0cee70902a0"
-        },
-        {
-          "csv_row": 104,
-          "sha256": "13dffb21f6f0856e8ba934b2876a923fc056aff9b1317807d9ce0a4beeb430ca"
-        },
-        {
-          "csv_row": 105,
-          "sha256": "1d477f98f13461a6b4cd6685d5584fa066b3c40b9f8742adba859290b6118762"
-        },
-        {
-          "csv_row": 106,
-          "sha256": "81a24e4c6d439295c93bc7fe3165bbdf8e81f7a56dd596b7960f05421eea1303"
-        },
-        {
-          "csv_row": 107,
-          "sha256": "9294c1228887301b502f320487ac49163896702cf9993e26be83cf299fe63968"
-        },
-        {
-          "csv_row": 108,
-          "sha256": "b2fafabc9d110505c35193c2aa6a5cad88febdc73e4a36af010fdf357b0e09fe"
-        },
-        {
-          "csv_row": 109,
-          "sha256": "5bddd2f4364b2dfd6ddad3d82aa5dff4362645a7e505e5ad128cbc0135d738b1"
-        },
-        {
-          "csv_row": 110,
-          "sha256": "baba39662c99809653a5da23ece36b666e8bfa7af270654412ae273060a6982e"
-        },
-        {
-          "csv_row": 111,
-          "sha256": "e95b480801273046f61d3bff56c444dbd6173bed41fcb67ebc7f4b7b56d360fd"
-        },
-        {
-          "csv_row": 112,
-          "sha256": "851e71bcfee4760c127f86d41e419156d36d862f274d0272902979f536563520"
-        },
-        {
-          "csv_row": 113,
-          "sha256": "5c6968612f4462c2381558fe522ac4b58092c79390468c27ce50b8e0493fd29a"
-        },
-        {
-          "csv_row": 114,
-          "sha256": "7a4cf64f363cda2ff7acec4b23035769fd982af2e71e7c7c4b15bb58149c0188"
-        },
-        {
-          "csv_row": 115,
-          "sha256": "bcd8759030715c03188590a5d17a12f88e1b79318726502919001eed096bd86a"
-        },
-        {
-          "csv_row": 116,
-          "sha256": "758139a647469ddef076f4c1bb08be8e77c65a94d3d092dbb4126898d1120a17"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-07-13-e01",
-      "date": "2026-07-13",
-      "ordinal": 1,
-      "label": "Minor tidal street flooding",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-07-13/e01",
-      "source_paths": [
-        "assets/observations/2026-07-13/README.md",
-        "assets/observations/2026-07-13/flood-measurements.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 117,
-          "sha256": "dd434be45a591fd2a8b893e630b2383dfcfba66ecb40216e54671a6e671faec5"
-        },
-        {
-          "csv_row": 118,
-          "sha256": "28332227cbee1b618773d49670fe410970b1827758707737137f222c0d42abcc"
-        },
-        {
-          "csv_row": 119,
-          "sha256": "554294a67c5fa98ab5d2cbd57372c577dbbf43b45af83b5de46fcb49ef16d603"
-        },
-        {
-          "csv_row": 120,
-          "sha256": "0e3c3427de421f3262a66136256ffb4fd65930c94dfbc63393e2fb330fddb733"
-        },
-        {
-          "csv_row": 121,
-          "sha256": "9e516a809d79442a055fce3378fbfd4169748c159a0389d460ac042ea632fd6f"
-        },
-        {
-          "csv_row": 122,
-          "sha256": "dc70da2bcf2e41ab84324936b2e03ecb331bcd530d7c1bd5e668282b7711cdb1"
-        },
-        {
-          "csv_row": 123,
-          "sha256": "8d7b325f8c5e85ca64b81b371b022070fe42fadc646b3ba48eeffc2dbf346953"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-07-18-e01",
-      "date": "2026-07-18",
-      "ordinal": 1,
-      "label": "Rain flood",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-07-18/e01",
-      "source_paths": [
-        "assets/observations/2026-07-18/README.md",
-        "assets/observations/2026-07-18/flood-measurements.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 124,
-          "sha256": "50f7456852e15a5616a5076f541eb14ea9f3f355f84ecd7a0d34ff276254a30c"
-        },
-        {
-          "csv_row": 125,
-          "sha256": "95e933cba5d24f8a5405899141f2dab0c3271dd7eb63336064243ea880a80abb"
-        },
-        {
-          "csv_row": 126,
-          "sha256": "42c9dc1d956045c34ad6a16fec5f0e4a55cc954051b8a5c07413b2a9d294f444"
-        },
-        {
-          "csv_row": 127,
-          "sha256": "f7b123138ea5ffeb91d93f6172be27c2b7829ac3683355c4d350bda0d9ee8568"
-        },
-        {
-          "csv_row": 128,
-          "sha256": "97d65e5e4294579c93c3b23c210cfa197cbd84965bf956ad2efbb94738055268"
-        },
-        {
-          "csv_row": 129,
-          "sha256": "8a7086c77f6541003448495b143499843a28dd53d03904d25776e80cdd7fed60"
-        },
-        {
-          "csv_row": 130,
-          "sha256": "7e7d10587fae7380145f2cf474341e42db06c92542220939974abc341b535e35"
-        },
-        {
-          "csv_row": 131,
-          "sha256": "b6cbe272f9fb44712f8e4edb504c0a9a0061309d0c04933f23c1afb634e6426e"
-        },
-        {
-          "csv_row": 132,
-          "sha256": "cf3376be0a24eac97c30be9d68265f0331245e76f163bef27add3cc1c6343826"
-        },
-        {
-          "csv_row": 133,
-          "sha256": "78cf50a66becae1e1399b4322983d4f283cb8b515c605ae3352fdc1b08e167f7"
-        },
-        {
-          "csv_row": 134,
-          "sha256": "4a70f4252596683d0297c6e33c9911852e5be2e3d8bb6619fe1b53b8dac20948"
-        },
-        {
-          "csv_row": 135,
-          "sha256": "e39837f47ccf4e1820bdc8b4d15b789cdfa3ebddfcc88013f92a39c6cd33f240"
-        },
-        {
-          "csv_row": 136,
-          "sha256": "6e10f02463ee5af8e1c0932108fa2d961afaaba5c3f8631c4748802a3fe9806a"
-        },
-        {
-          "csv_row": 137,
-          "sha256": "ab061a1526cb24e4748aead5256334d00e81090f23d94cfe3deb7c22b0304785"
-        },
-        {
-          "csv_row": 138,
-          "sha256": "bbea822520f864262940b0dcf841694311c63c7d5589ddd66140e2fe17bb50bc"
-        },
-        {
-          "csv_row": 139,
-          "sha256": "af3a2eb50ba2efd8115e478e866962ee68e854f356e61644fc09b4cb2790cc57"
-        },
-        {
-          "csv_row": 140,
-          "sha256": "8a690fe984596ecd35d2af575aa121584d661f8a80da4bd4e4f2955a6155567f"
-        },
-        {
-          "csv_row": 141,
-          "sha256": "11338af2079cf10c5307bf0cb9c6fa31908931d20376469d4bcc768b25978ce4"
-        },
-        {
-          "csv_row": 142,
-          "sha256": "1130b55bcc5c0e734ab9972d7308d583dec45912682f3f93799223f1e1fde33f"
-        },
-        {
-          "csv_row": 143,
-          "sha256": "2f7e2a68db7c94b86e21c394837ea3121a5b145a333fa56c40c5b81ccf19081a"
-        },
-        {
-          "csv_row": 144,
-          "sha256": "6fb310158691d7e14e4c34b9aa6ca9fdeeac43c233451a5f9424079322b54555"
-        },
-        {
-          "csv_row": 145,
-          "sha256": "9fc4096e4b3cd4b8b64a78b372bbbbd2eaa41bee6564091e6f88ee5f3efeff8c"
-        },
-        {
-          "csv_row": 146,
-          "sha256": "5e89743d776dd147bce3b25c6fae141c9216e316089c231fa38afd3eb2a61fd1"
-        },
-        {
-          "csv_row": 147,
-          "sha256": "812929a1aaf95a22f577c8d0db7bf9d42898fcbc96f5749fd6a5b89108ae4a36"
-        },
-        {
-          "csv_row": 148,
-          "sha256": "ff090bf7c5af6ebd87282c008c5c0cdba2380fa0aeed5c0b7bcc49afbad94c5c"
-        },
-        {
-          "csv_row": 149,
-          "sha256": "297c1483c8e0601ecf6dd88683037012100f60dfd20223fff8a33943e53fbce9"
-        },
-        {
-          "csv_row": 150,
-          "sha256": "6f05c43124c5586dbb331a16b35de687dbe40bb954efeac80afe95a08d9d1f00"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-08-03-e01",
-      "date": "2026-08-03",
-      "ordinal": 1,
-      "label": "Rain flood",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-08-03/e01",
-      "source_paths": [
-        "assets/observations/2026-08-03/README.md",
-        "assets/observations/2026-08-03/flood-measurements.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 151,
-          "sha256": "c3a5e84d5fd19354fcd3aab5d962c9c24683a1160ff4e7cc32acce367fdb0a41"
-        },
-        {
-          "csv_row": 152,
-          "sha256": "ea4f8e14ecff46b8e228596ca522daca7d5148039fe3a7a2ade48a28074f5057"
-        },
-        {
-          "csv_row": 153,
-          "sha256": "a0a306160b7b644e506492fa265f9080163a408a8d991d209bff086899cf056f"
-        },
-        {
-          "csv_row": 154,
-          "sha256": "a3502567260d3673e2ac9daed56e1367639689f62a22e9be970ad47f44a9f95d"
-        },
-        {
-          "csv_row": 155,
-          "sha256": "0458721ed7e9636acc71edc5f44b5bde951dde7dadef4ce371d603ddc7f56cbc"
-        },
-        {
-          "csv_row": 156,
-          "sha256": "d962fc73cb909b372dbc75d98ad74686a7a63f6bd8889b092ef56a33933dc1b7"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-08-07-e01",
-      "date": "2026-08-07",
-      "ordinal": 1,
-      "label": "Rain flood; crest bracketed",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-08-07/e01",
-      "source_paths": [
-        "assets/observations/2026-08-07/README.md",
-        "assets/observations/2026-08-07/flood-measurements.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 159,
-          "sha256": "1b89ee22024a10202fd2cf43ea0ef95847209076d9877cf494055d1a16f3ee72"
-        },
-        {
-          "csv_row": 160,
-          "sha256": "5bde17a3e6b1bbef5f780d4f8f4457167e82716807e60d1da97d3a6a2dfe2cad"
-        },
-        {
-          "csv_row": 161,
-          "sha256": "3f9f2dee0f7c4fd50f329698bfaef306ae6756b6f041a73c5591dc4219aa60b6"
-        },
-        {
-          "csv_row": 162,
-          "sha256": "623e4438c6ad98075b9cd3079801131eafcfef33e1211c1b8626f67ae2727b9d"
-        },
-        {
-          "csv_row": 163,
-          "sha256": "62ac191d9243db8e48e6e7f7a8f7c545f06f50b004e67a58413ec8937426dbb1"
-        },
-        {
-          "csv_row": 164,
-          "sha256": "122ff2a87eaeef83a40681614b5735f95c23d7872e458b935bbc8e007cea94c5"
-        },
-        {
-          "csv_row": 165,
-          "sha256": "7d566dd95defb7eec0efa027e3a6790b7e0889d83954787a3f2fce3317c3e1b0"
-        },
-        {
-          "csv_row": 166,
-          "sha256": "5cd98fec2e1a2fe01b32c1a94acac759ec5282082465319afdb492a9d7b330c0"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-08-10-e01",
-      "date": "2026-08-10",
-      "ordinal": 1,
-      "label": "Evening spring-tide photo observations",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-08-10/e01",
-      "source_paths": [
-        "assets/observations/2026-08-10/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 167,
-          "sha256": "58fe435508c35d95146514690ef4f28fa1b34b9f6d2c399ea751527e72050b50"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-08-11-e01",
-      "date": "2026-08-11",
-      "ordinal": 1,
-      "label": "Evening spring-tide photo observations",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-08-11/e01",
-      "source_paths": [
-        "assets/observations/2026-08-11/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 168,
-          "sha256": "d92c96f836d7b95386a29adf2fcaee34482a20951ba5de3840f482bad3829174"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-08-12-e01",
-      "date": "2026-08-12",
-      "ordinal": 1,
-      "label": "Evening spring-tide photo observations",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-08-12/e01",
-      "source_paths": [
-        "assets/observations/2026-08-12/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 169,
-          "sha256": "0bf5615be0144b57606c941a3d8dd5bc301c01e40537fe24e9849bad1f6c236b"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-08-13-e01",
-      "date": "2026-08-13",
-      "ordinal": 1,
-      "label": "Evening spring-tide photo observations",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-08-13/e01",
-      "source_paths": [
-        "assets/observations/2026-08-13/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 170,
-          "sha256": "88e517c7b8bbabaafb3df9f368869b48bc77f306962b25a94a989e901d1b2477"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-08-27-e01",
-      "date": "2026-08-27",
-      "ordinal": 1,
-      "label": "Unmeasured rain flood; retrospective evidence",
-      "record_kind": "unmeasured_flood_evidence",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-08-27/e01",
-      "source_paths": [
-        "assets/observations/2026-08-27/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 175,
-          "sha256": "4d41e7469bbb3357e4eb098e28954634c6ed183ee4c998ff0a0bcb92f67f3262"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-09-01-e01",
-      "date": "2026-09-01",
-      "ordinal": 1,
-      "label": "Evening rain flood",
-      "record_kind": "flood_or_tide_observation",
-      "storm_id": null,
-      "aliases": [],
-      "directory": "assets/observations/2026-09-01/e01",
-      "source_paths": [
-        "assets/observations/2026-09-01/README.md",
-        "assets/observations/2026-09-01/flood-measurements.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 171,
-          "sha256": "f62bc383d67508ef1e000231d58159576cfe411c3809d589e8933981676e5124"
-        },
-        {
-          "csv_row": 172,
-          "sha256": "2de601f242d20699010351d959565854e2105753193e7cbbe73143c6f439664a"
-        },
-        {
-          "csv_row": 173,
-          "sha256": "24dc5c89170cb4a3a4d8a49581a2b078f08e11c786ebda3de102bed00d42a1fa"
-        },
-        {
-          "csv_row": 174,
-          "sha256": "6f7b84307369323ab00116a2d44b7f9b64a349f1c43ad42fa0e8cdca55f9e748"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-09-13-e01",
-      "date": "2026-09-13",
-      "ordinal": 1,
-      "label": "Dawn rain flood",
-      "record_kind": "flood_episode",
-      "storm_id": "2026-09-13-rain-and-tide",
-      "aliases": [
-        "Event #9 round 1"
-      ],
-      "directory": "assets/observations/2026-09-13/e01",
-      "source_paths": [
-        "assets/observations/2026-09-13/README.md",
-        "assets/observations/2026-09-13/flood-measurements.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 178,
-          "sha256": "f50ececcc0d08cbb4efd8cbe40f7d060173610825c5ba6779126f34d9daec58c"
-        },
-        {
-          "csv_row": 179,
-          "sha256": "77ad0c085889ac0b5f14fef4b7c6ab1b0ba5dfd8b8a438a91f27a761b3347fae"
-        },
-        {
-          "csv_row": 180,
-          "sha256": "a30d38c2791897d7e1bd4a5644f91dea6e5ffe09b52ad668251a7d60dfe099e9"
-        },
-        {
-          "csv_row": 181,
-          "sha256": "ac5b1ddfcdd0a6b9f1ae5a0fd63865a16452d75f96ebc8c59b5d78af64611b25"
-        },
-        {
-          "csv_row": 182,
-          "sha256": "400850f1fcdd2bd85e384d874620a9ae047f36293402fb5c22b9b5110bc3bf2c"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-09-13-e02",
-      "date": "2026-09-13",
-      "ordinal": 2,
-      "label": "Later morning compound flood",
-      "record_kind": "flood_episode",
-      "storm_id": "2026-09-13-rain-and-tide",
-      "aliases": [
-        "Event #9 round 2"
-      ],
-      "directory": "assets/observations/2026-09-13/e02",
-      "source_paths": [
-        "assets/observations/2026-09-13/README.md",
-        "assets/observations/2026-09-13/flood-measurements.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 183,
-          "sha256": "342b0f2e77574822946db7a281ccf9623a3781f294a6c26b01d4b557ca30ae5c"
-        },
-        {
-          "csv_row": 184,
-          "sha256": "c782b2f7b16a945e1d6776cf8597669e4e0d5f8d27ff7128e92e7e886e68c82f"
-        },
-        {
-          "csv_row": 185,
-          "sha256": "b539e22366c62279531965ba00fc476de60f69a7169ba7b19913effc98618025"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-09-25-e01",
-      "date": "2026-09-25",
-      "ordinal": 1,
-      "label": "Evening negative flood report",
-      "record_kind": "negative_observation_window",
-      "storm_id": "2026-09-25-coastal",
-      "aliases": [
-        "Event #10 round 0"
-      ],
-      "directory": "assets/observations/2026-09-25/e01",
-      "source_paths": [
-        "assets/observations/2026-09-25/README.md"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 191,
-          "sha256": "dc1941278ab9d9482764f3e81fcf1c4135aa3fac3a35aea29d0b06eb3ead2cc9"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-09-26-e01",
-      "date": "2026-09-26",
-      "ordinal": 1,
-      "label": "Morning coastal flood",
-      "record_kind": "flood_episode",
-      "storm_id": "2026-09-25-coastal",
-      "aliases": [
-        "Event #10 round 1"
-      ],
-      "directory": "assets/observations/2026-09-26/e01",
-      "source_paths": [
-        "assets/observations/2026-09-26/README.md",
-        "assets/observations/2026-09-26/flood-measurements.txt",
-        "assets/observations/2026-09-26/rawnotes/01-morning.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 187,
-          "sha256": "a2d9e4db4937c298a35338a4ebbed2cb6bbeec3dc78a1cea7a720c1d1fba0259"
-        },
-        {
-          "csv_row": 188,
-          "sha256": "6bca5b3215f9e32412b5455adbec96043f3e6f3effe7473c95b9b53d4183cd09"
-        },
-        {
-          "csv_row": 189,
-          "sha256": "41309bb56e8e68f4ab410b73325fe0de574e66faf343bb3df361fa74411bf49d"
-        },
-        {
-          "csv_row": 190,
-          "sha256": "870fe02b78aa5dbc753fa725c3f8df9f4e6d42807886f1480a74a1b28562aa71"
-        },
-        {
-          "csv_row": 192,
-          "sha256": "8ad6d585cba9434f4fa653018523bc51ea5924ec873cf408c0558d91219b1a7a"
-        },
-        {
-          "csv_row": 193,
-          "sha256": "9ef66f624531f01d936e2b10aea3aa4a41a35ee26cacd364d1fa482e4f848b7c"
-        },
-        {
-          "csv_row": 194,
-          "sha256": "fc53285a4870a6898b5429450d015e669c78159d3c5e4b9ab2236e49aeeaec22"
-        },
-        {
-          "csv_row": 195,
-          "sha256": "7d83fd90de513181b63913eed9fdf422eafd6399d8497dadbcdb72c41f4c4e85"
-        },
-        {
-          "csv_row": 196,
-          "sha256": "19f88f42ac2d3cdd5289d4c81b6b339ed5e38425bbe9a86dce045dfa66ca80d8"
-        },
-        {
-          "csv_row": 197,
-          "sha256": "ba35c19eb9a2c6b892546324a1676fc779386c7ce47511ff8a1c1d107cd6ccb3"
-        },
-        {
-          "csv_row": 198,
-          "sha256": "dbbe42bf1173111016fdc9bbf273fca7361c547383e41e89870cbe75906aa8ec"
-        },
-        {
-          "csv_row": 199,
-          "sha256": "5ed6e1fa8fd0bf526b20ba4bf0ea89fee47e4ebb3f98f328b9bdd1e080c48615"
-        },
-        {
-          "csv_row": 200,
-          "sha256": "a1fffda3cff76253d44a116d4c3b2a97d15fd523378a2d617b208c8568cc063b"
-        },
-        {
-          "csv_row": 201,
-          "sha256": "f2772d6839a6c02fe5caceeb25cdfc1d944de64a70ef078978e7e02c0560b01d"
-        },
-        {
-          "csv_row": 202,
-          "sha256": "79f407a87458ff20d772a3702ff4cc2578852f09046cf9e74d3bd7dd495419f3"
-        },
-        {
-          "csv_row": 203,
-          "sha256": "5c2868af25bc33e4cf139c3af7d887fd36cb9b7ef615942a930f9b19f15d0a63"
-        },
-        {
-          "csv_row": 204,
-          "sha256": "dcbcf77f2c53fe91921eeed241adde5aa5cdd4e947966a42db2769dd8037f5df"
-        },
-        {
-          "csv_row": 205,
-          "sha256": "ba4803911fe5da2df0290349e5efe01ba9db90f6f57b0772117110ddd7901225"
-        },
-        {
-          "csv_row": 206,
-          "sha256": "c7eb8a44578f9a0fbdde9839002f310dd38edd23333d4604463992e401bc5ff6"
-        },
-        {
-          "csv_row": 207,
-          "sha256": "b80ab4bdb259c89de1259329a6fbe3322d72d555628571fa1a00877fa2205323"
-        },
-        {
-          "csv_row": 208,
-          "sha256": "63f102e06bf36aaa6330e7076a5c1cff66f2093918e6b93e17df9448119b6465"
-        },
-        {
-          "csv_row": 209,
-          "sha256": "5b67837799b4a83a773023dee387d99ca24d47dc8785facde6766d1c5d0044de"
-        },
-        {
-          "csv_row": 210,
-          "sha256": "66ea10fec4f689b4b82e7cc7746962cd27fcc9c6f9d4b2bbba0dc73e6a1925a9"
-        },
-        {
-          "csv_row": 211,
-          "sha256": "3328c5fa8166be5d1ced2f7d76bbcf7e3bdd03997902d6af9a2df397761104f3"
-        },
-        {
-          "csv_row": 212,
-          "sha256": "8d1cbf0978f13dd8906778b9259537d767a5439a6ab278e4fdd6fefeb2b8b011"
-        },
-        {
-          "csv_row": 213,
-          "sha256": "40b35980806ea056daa88e1a3e1ed49b759bd0d743cb4142e9f5c00354a1b717"
-        },
-        {
-          "csv_row": 214,
-          "sha256": "7250744bbd12777c174189af2a15a5164712b871f11742bf0230e5b18922491f"
-        },
-        {
-          "csv_row": 215,
-          "sha256": "bbb3b86bd0de9a601442be6f1bdf9fadf9ee5ec8fbb4c017d6ae4f7916d2eacc"
-        },
-        {
-          "csv_row": 216,
-          "sha256": "992181a73a88d7c69664ba3d39ce5b1badbbb8b39ee23d2817e5f6341c9529dc"
-        },
-        {
-          "csv_row": 217,
-          "sha256": "99859e22000721ae4d7ca2b3ef28a083eda4a075857d52e80081173bfb741c1d"
-        },
-        {
-          "csv_row": 218,
-          "sha256": "ef0440f53c1324cb3bd581ce0a60b326f6d075a366349a863836d3c1fb794647"
-        },
-        {
-          "csv_row": 219,
-          "sha256": "2a942de60d1f61f39cde8828aa76ba6949f065789ba7084aad558cd7cb90dd8a"
-        },
-        {
-          "csv_row": 220,
-          "sha256": "11bb420378eb8ac92f56976f480bb5aaebd2e1a3b4860b4b19bdafffa0777e60"
-        },
-        {
-          "csv_row": 221,
-          "sha256": "6629981eeec3ba9d259da2d7b12a6116454d824aa52ba9ff63604cf2a97cf35f"
-        },
-        {
-          "csv_row": 222,
-          "sha256": "930efb1346dde70337497a8ea6e90deaedb73e36d3eeb3503da9948b1b3376ef"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-09-26-e02",
-      "date": "2026-09-26",
-      "ordinal": 2,
-      "label": "Evening coastal flood",
-      "record_kind": "flood_episode",
-      "storm_id": "2026-09-25-coastal",
-      "aliases": [
-        "Event #10 round 2"
-      ],
-      "directory": "assets/observations/2026-09-26/e02",
-      "source_paths": [
-        "assets/observations/2026-09-26/README.md",
-        "assets/observations/2026-09-26/flood-measurements.txt",
-        "assets/observations/2026-09-26/rawnotes/02-evening.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 223,
-          "sha256": "a1a01ca32b4a3ae42f890ec27a57a4ed2f398b924c1e1251daa72e935286bcf1"
-        },
-        {
-          "csv_row": 224,
-          "sha256": "c9ab8b8de2212cc927482f0484e7d33e002a9c5b4ff74264b9d3716dcd689ee9"
-        },
-        {
-          "csv_row": 225,
-          "sha256": "bbaca6781a418b9256c15ac067b58c395f3caaefe0e37077ef99864ecaff6b73"
-        },
-        {
-          "csv_row": 226,
-          "sha256": "ff0674cb8493d31eb88e971aff182effbce388f57e739607b7fb95fe1996c96d"
-        },
-        {
-          "csv_row": 227,
-          "sha256": "010cfaced91acf850b1031b7dda4767779a93ca1d3459bab7e961d5a753f2bcc"
-        },
-        {
-          "csv_row": 228,
-          "sha256": "b7fe797b35da2b21fcb7d80bd729abe87af722af621bf1c32bfc37fba8dec12a"
-        },
-        {
-          "csv_row": 229,
-          "sha256": "0f3d649530df86158e87210c9a42273f0d71df9bfd7136580f0327328b40d5fd"
-        },
-        {
-          "csv_row": 230,
-          "sha256": "952c0fef7d825fa2d351521feb4b43804f89a234f3b4536778689362c0afb330"
-        },
-        {
-          "csv_row": 231,
-          "sha256": "59ef46e8dfbb614db7dfd1d7a7ff1725c8f74a2959b338d9e530dd2d570dae98"
-        },
-        {
-          "csv_row": 232,
-          "sha256": "eba547cd97fdb7a578c1cdccfe69c400dca8cf734c355738e2dc0a64786df4f2"
-        },
-        {
-          "csv_row": 233,
-          "sha256": "0c84939672b4ede6365ec6689c1acabcd744eb148dd936d655a423fdc6eb89c9"
-        },
-        {
-          "csv_row": 234,
-          "sha256": "84aa5142ca54188cf777e614aba378044be3508f6a4be25fe8e911a049235426"
-        },
-        {
-          "csv_row": 235,
-          "sha256": "c5afd0f729cdb7693ad469ea0d9c565ddd3b2b5b038df573f3b79bf0607c06eb"
-        },
-        {
-          "csv_row": 236,
-          "sha256": "724fa4d18fddd67186d7ceb4672cdbc86f982f16b403dd10ab6fb8d51a870291"
-        }
-      ]
-    },
-    {
-      "episode_id": "2026-09-27-e01",
-      "date": "2026-09-27",
-      "ordinal": 1,
-      "label": "Morning coastal flood",
-      "record_kind": "flood_episode",
-      "storm_id": "2026-09-25-coastal",
-      "aliases": [
-        "Event #10 round 3"
-      ],
-      "directory": "assets/observations/2026-09-27/e01",
-      "source_paths": [
-        "assets/observations/2026-09-27/README.md",
-        "assets/observations/2026-09-27/flood-measurements.txt",
-        "assets/observations/2026-09-27/rawnotes/01-morning.txt"
-      ],
-      "ledger_rows": [
-        {
-          "csv_row": 237,
-          "sha256": "a445dca7a18ae4ae24803c9b475caa85251eb94f549f46639a716fa7a39ccb33"
-        },
-        {
-          "csv_row": 238,
-          "sha256": "4ca9fe678b4f5970fa0278e08f273ac221e819f8620d31b4cd85bb878d0492ef"
-        },
-        {
-          "csv_row": 239,
-          "sha256": "0934f449cccfeb51feac7a12881af5da42c2d15f4782491bd0374f686fd6f41d"
-        },
-        {
-          "csv_row": 240,
-          "sha256": "841f01bef4f6f6b84acf0e94d741904a88918cb65ba211fdcf8b155d13775f5e"
-        },
-        {
-          "csv_row": 241,
-          "sha256": "551b718a717673c2649d3f051f22143127cbaedbd4496e5c5c8570010167b368"
-        },
-        {
-          "csv_row": 242,
-          "sha256": "ac74be8173fa6d409aa087bc31fc8becde4acbed4194c62cf2cac26ce5262b67"
-        },
-        {
-          "csv_row": 243,
-          "sha256": "0143dde341748f14137b2dc91f792d4d856993f1e50e48b486e043a13d2d2987"
-        },
-        {
-          "csv_row": 244,
-          "sha256": "b94668f0f6279f935bb975c247ba4575b4ac1cc346754c2881c1b84900f257ba"
-        },
-        {
-          "csv_row": 245,
-          "sha256": "3c4aeff585c6b2beb02d78ca80278b5bc05c8318eef9d1e519852cf4cd485c70"
-        },
-        {
-          "csv_row": 246,
-          "sha256": "7aa00dc9638725193cd6b12fb20a05e3105e8c0819cfc45a37fdebfc5c34544e"
-        },
-        {
-          "csv_row": 247,
-          "sha256": "19007d2bc6f27759481b205acd9866c6c94f09391e83cfb349086c6bf738ec24"
-        },
-        {
-          "csv_row": 248,
-          "sha256": "23210755f7c2719054b50ca2eadc050a9eb8898c13e908cf406130556adccec9"
-        },
-        {
-          "csv_row": 249,
-          "sha256": "c0fdf458ed80cfe93fd0eaf28e13235c976a9f12f96c5cb32b52dbb756d90ac5"
-        },
-        {
-          "csv_row": 250,
-          "sha256": "96893e22a7fcfea37d9ce070aea79570790f567f0b6be1aa984095ddd3df8fdc"
-        },
-        {
-          "csv_row": 251,
-          "sha256": "85869109696dfe495c5014b47fc0c392b8b1f75b37efc1733882b5665aa313ce"
-        },
-        {
-          "csv_row": 252,
-          "sha256": "78ec3674b93065d3663fed2d3b9ccf7dac75d3ad24ba895cfc64f82ac9466226"
-        },
-        {
-          "csv_row": 253,
-          "sha256": "45e0b770cd580d8cd86e9903c2b79b44c2088ba59820e719d319fe2e2e8eeea5"
-        },
-        {
-          "csv_row": 254,
-          "sha256": "7f1771bfeee944aca9a79d6afb4d70d50990d7c1d77124cfe2712bb7db8c8238"
-        },
-        {
-          "csv_row": 255,
-          "sha256": "2eba672b5f4328626946d387b10d31c1d277fc81504cd2add3e1ebdf8d6dd0f8"
-        },
-        {
-          "csv_row": 256,
-          "sha256": "7f9588da3981cb710c61aa6f3ef75376ce171d65f814d2958abe1985442de7f3"
-        },
-        {
-          "csv_row": 257,
-          "sha256": "e80ec55bb7597fbbd33dea1fc74b33bc4919ed15b4f408ee241106a762b0e421"
-        },
-        {
-          "csv_row": 258,
-          "sha256": "53ecc7dfb1b770e17393a835e9040b8c3fe13b4e6ee17de72a5bd24a1c0e7408"
-        },
-        {
-          "csv_row": 259,
-          "sha256": "01681da6d6d6b93753250cbdb10b2d81813d13805add4417df32fa6e4d09b004"
-        },
-        {
-          "csv_row": 260,
-          "sha256": "a2721638269f0c6771feaa64dfedb804faf1010d8b421f472cf6170436b4bafb"
-        },
-        {
-          "csv_row": 261,
-          "sha256": "5abf63b2b100b96a11ebc6c8e9fbc5993a17e80cb0d8d09ea913b7e97c304bb3"
-        },
-        {
-          "csv_row": 262,
-          "sha256": "3cb29a2695ceaa4b06cef3c4a337de8581eedb1fce82a51b07f04e2ca3c6b1ab"
-        },
-        {
-          "csv_row": 263,
-          "sha256": "c618fda4be15f06df7ccd5e8b32615534b9e631fd3f960ce0f895346050348eb"
-        }
-      ]
+     "csv_row": 50,
+     "sha256": "4ef238c68d18601f1edc8dd67b8a67787b73f5a762e1fa0fc1b5f81fc88e109b"
     }
-  ],
-  "excluded_ledger_rows": [
+   ]
+  },
+  {
+   "episode_id": "2025-12-19-e01",
+   "date": "2025-12-19",
+   "ordinal": 1,
+   "label": "Historical compound-flood observation",
+   "record_kind": "historical_landmark_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2025-12-19/e01",
+   "source_paths": [
+    "assets/observations/2025-12-19/README.md"
+   ],
+   "ledger_rows": [
     {
-      "csv_row": 157,
-      "sha256": "cdc8e182976a58b376a758eee7f339a6f7c1b4dd32990c602adace6785726170",
-      "reason": "metadata/correction; not a flood-time measurement"
+     "csv_row": 51,
+     "sha256": "4837b16df1469842a04df21a756aa0224f83dd54f0ac7d8c6b7fa39dccfc1911"
     },
     {
-      "csv_row": 158,
-      "sha256": "74047d56fcb40e3c05df0e45a7660962e7fcd7c2ba4f20b64272f6e48fe75bc5",
-      "reason": "metadata/correction; not a flood-time measurement"
-    },
-    {
-      "csv_row": 176,
-      "sha256": "069cb749336b18c35231301695ab7b5debce132ddf7756d6886723b74eacac23",
-      "reason": "metadata/correction; not a flood-time measurement"
-    },
-    {
-      "csv_row": 177,
-      "sha256": "036be6b6ffcd7b8f9d74e99de810868aadb7f8b22b67bb79f2c57c3c4ad3e751",
-      "reason": "metadata/correction; not a flood-time measurement"
-    },
-    {
-      "csv_row": 186,
-      "sha256": "3fc9b5daa15dc7a5896955f1f5dcb959e6fdf6307be78602c2306726b104814b",
-      "reason": "metadata/correction; not a flood-time measurement"
-    },
-    {
-      "csv_row": 264,
-      "sha256": "80222d55d3ccf64bbb9bc671f2175b476f77a68f33a04e8b466cb318d5b1c660",
-      "reason": "metadata/correction; not a flood-time measurement"
-    },
-    {
-      "csv_row": 265,
-      "sha256": "e679c9d3b4a72fa586f9218fdd667d8c28b959b6db7f667f7c2b26c99567bff0",
-      "reason": "metadata/correction; not a flood-time measurement"
-    },
-    {
-      "csv_row": 266,
-      "sha256": "ea6f9a0718d3ffadf6fe4d11f8ea4e48b20d16c42c53b1ce7e0ef43abed74712",
-      "reason": "metadata/correction; not a flood-time measurement"
-    },
-    {
-      "csv_row": 267,
-      "sha256": "f665e2b6dfe1d1f60d42d988ecdf184253cce7d7efe106b946e3af924ade9b19",
-      "reason": "metadata/correction; not a flood-time measurement"
-    },
-    {
-      "csv_row": 268,
-      "sha256": "ec0666812520a61760a482c8e6fe9bbdf9d29fcb4dffcb14bab614a7c2f8da48",
-      "reason": "retrospective April18 reconstruction metadata; not a flood-time measurement"
+     "csv_row": 52,
+     "sha256": "7df661f5aa0cd021ffccfb72b610ea3b9c2985fe0b63d806aeab60d28286d6c6"
     }
-  ]
+   ]
+  },
+  {
+   "episode_id": "2026-04-17-e01",
+   "date": "2026-04-17",
+   "ordinal": 1,
+   "label": "Historical light flood, unanchored depth memory",
+   "record_kind": "historical_qualitative_flood",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-04-17/e01",
+   "source_paths": [
+    "assets/observations/2026-04-17/README.md",
+    "history/reports/2026-09-27-expanded-flood-records.md"
+   ],
+   "ledger_rows": []
+  },
+  {
+   "episode_id": "2026-04-18-e01",
+   "date": "2026-04-18",
+   "ordinal": 1,
+   "label": "Evening flood; likely lawn-step level from recollection + gauge",
+   "record_kind": "historical_flood_reconstruction",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-04-18/e01",
+   "source_paths": [
+    "assets/observations/2026-04-18/README.md",
+    "history/reports/2026-09-27-expanded-flood-records.md",
+    "assets/observations/2026-04-18/owner-recollection.txt"
+   ],
+   "ledger_rows": []
+  },
+  {
+   "episode_id": "2026-05-18-e01",
+   "date": "2026-05-18",
+   "ordinal": 1,
+   "label": "Evening tide spot-check and next-morning retention",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-05-18/e01",
+   "source_paths": [
+    "assets/observations/2026-05-18/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 2,
+     "sha256": "67c527c70d7043aeadb682f361620565f9e8be2e65874f1b1129467149a540f5"
+    },
+    {
+     "csv_row": 3,
+     "sha256": "9906d558b96e2de6596e25a7a1c4c446be1c4256a195da543d57b05577849f6e"
+    },
+    {
+     "csv_row": 4,
+     "sha256": "36fde2b77164b779ceacb1104b2f6e2921e3cf8a3122bcdacad154220fcd4ac7"
+    },
+    {
+     "csv_row": 5,
+     "sha256": "afadd977e6084eb735942c81cb5bbe70dc9cff32040e761cff79be756f1a2951"
+    },
+    {
+     "csv_row": 6,
+     "sha256": "beb3ac248a41e2d2a0a3ea4ace26f05edc4214ce728cb3c9e8585bb2ac1c58e9"
+    },
+    {
+     "csv_row": 7,
+     "sha256": "50290ac21ada894e5cfb8e43e9f2065106af39ad2f16fe5649c500999dc45388"
+    },
+    {
+     "csv_row": 8,
+     "sha256": "3f4ddc99248389bdf116ea89631c8be03e7136e58da8073c2fcb93b03500ef54"
+    },
+    {
+     "csv_row": 9,
+     "sha256": "44c3f9a610fd07d130c4408b1e8a37d50017e0bd9bcd389463d7c7809d04915d"
+    },
+    {
+     "csv_row": 10,
+     "sha256": "fcf97296d94766020428a7b5df8923a4480c6b946a4781efbcf3d9ac088b9a22"
+    },
+    {
+     "csv_row": 11,
+     "sha256": "c2a2011213ef76594fb9686b5107525f7fd402a352ae4bb66c3ad380890e24d9"
+    },
+    {
+     "csv_row": 12,
+     "sha256": "76f310323faddbc44e0dda0e2475b867a5958a8d71246780f40e89e487346c2a"
+    },
+    {
+     "csv_row": 13,
+     "sha256": "11e0952b6c358669ad093ee90bb0bb0b881f928ef14a2921a25ae3d5fe8f510f"
+    },
+    {
+     "csv_row": 14,
+     "sha256": "28c698d2d1b997e8b8d5fd026fa27649fcc457610e439cf4deb7da89e080587c"
+    },
+    {
+     "csv_row": 15,
+     "sha256": "0bf275f30abb4f0e941a9a538852067beac628de37a92738187bbaf2eb785c2f"
+    },
+    {
+     "csv_row": 16,
+     "sha256": "2ef9c1872c8bc5cbfae2ec58fd6eb52976ea865964d6bb9d219394c767b4ee7e"
+    },
+    {
+     "csv_row": 17,
+     "sha256": "c7ade30bbd0268581dd841c057abf91435d2b38ddbb23a48ca3f15ae96357066"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-05-30-e01",
+   "date": "2026-05-30",
+   "ordinal": 1,
+   "label": "AM high-tide dry check",
+   "record_kind": "negative_observation_window",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-05-30/e01",
+   "source_paths": [
+    "assets/observations/2026-05-30/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 18,
+     "sha256": "bcfa1af6e021442dd518827308822887b24a1a38a5eb738d047750b7e852b856"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-05-30-e02",
+   "date": "2026-05-30",
+   "ordinal": 2,
+   "label": "PM high-tide post-peak report",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-05-30/e02",
+   "source_paths": [
+    "assets/observations/2026-05-30/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 19,
+     "sha256": "de9ae3251c8cfaa61215347287a8cfbc1ec6fc4222ca951d499baade976a78c8"
+    },
+    {
+     "csv_row": 20,
+     "sha256": "d71c8b4d39ab3a28420270c52deafaa877b5e33b93c82e6dda7922dbc9fd58c5"
+    },
+    {
+     "csv_row": 21,
+     "sha256": "b47be8f13fb21f68ee34053b74acfd28e6499ccf6fd11a1d74f4b0ffe9ae5989"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-05-31-e01",
+   "date": "2026-05-31",
+   "ordinal": 1,
+   "label": "Evening tide: below-grate measurements",
+   "record_kind": "negative_observation_window",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-05-31/e01",
+   "source_paths": [
+    "assets/observations/2026-05-31/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 22,
+     "sha256": "86c01dcf545c2810b67bb2836ae2e42e543b7fd7b91749414bb7b3e398a93cb8"
+    },
+    {
+     "csv_row": 23,
+     "sha256": "cc5487a5dc882f3bc9d313e1a35943ca40ddaa0a616a929f499abd3290898d91"
+    },
+    {
+     "csv_row": 24,
+     "sha256": "d4736abc5dba996dc5da2dd14dec815a86988baf051a85d16b5a14099588c22d"
+    },
+    {
+     "csv_row": 25,
+     "sha256": "e8c627f1255ec8aeeb2f8dae2342425731b0d6348ca76e3046df49b42f0f3a0e"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-06-13-e01",
+   "date": "2026-06-13",
+   "ordinal": 1,
+   "label": "Post-peak tidal photo evidence",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-06-13/e01",
+   "source_paths": [
+    "assets/observations/2026-06-13/README.md"
+   ],
+   "ledger_rows": []
+  },
+  {
+   "episode_id": "2026-06-14-e01",
+   "date": "2026-06-14",
+   "ordinal": 1,
+   "label": "Evening tidal flood measurements",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-06-14/e01",
+   "source_paths": [
+    "assets/observations/2026-06-14/README.md",
+    "assets/observations/2026-06-14/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 26,
+     "sha256": "df33915d7ec270b35cdabf2302e1b06a12f1a6d37741ab054e765ce35c926a89"
+    },
+    {
+     "csv_row": 27,
+     "sha256": "8f175e43b2c27e7e5db31e1b811a10fd5a2fb18fef85126b44eea201f2244134"
+    },
+    {
+     "csv_row": 28,
+     "sha256": "997f111e7e9fa98226b6b7608cef393444577ebb1a64968afb285c40133a2ff2"
+    },
+    {
+     "csv_row": 29,
+     "sha256": "310133c7f9ef956e68fa13390f95b4dfa2a97ba802d82eb738d705ac3603e55d"
+    },
+    {
+     "csv_row": 30,
+     "sha256": "9821536a2e9afc4133aefcbe2b4cc3845ea87759f14acbfe23b1bfaafdd52cc3"
+    },
+    {
+     "csv_row": 31,
+     "sha256": "93efbdab41a79029301714c481a34c571fb3bbe4a4203923fe0c3f576b349513"
+    },
+    {
+     "csv_row": 32,
+     "sha256": "e3bb12d500e484a4ab93bcb486894e51a5ee24a04735907d918623576eeeb4a0"
+    },
+    {
+     "csv_row": 33,
+     "sha256": "1aef129767dcebfb2bc042cb4e09a6be8df771a69b6242e783b330d91e1427d0"
+    },
+    {
+     "csv_row": 34,
+     "sha256": "e51c82e31ca91b8513af8f108094e9d9acc25ac716e29e894d18c8f93d6fa32f"
+    },
+    {
+     "csv_row": 35,
+     "sha256": "b470ed872ac9b1a93257dbad3ab9ebe6ad307b06bc4182f601df1d4b4576052f"
+    },
+    {
+     "csv_row": 36,
+     "sha256": "b36e6d38434e617c843e74a5b08e7370daa0421ae9c4452289309b5547102507"
+    },
+    {
+     "csv_row": 37,
+     "sha256": "24473f92d3aa2ba8a6ec6be5dd227503b7b6a4268411c1d6c155c96e021ea0d4"
+    },
+    {
+     "csv_row": 38,
+     "sha256": "86d094fd3cccc181a822dbb9fdf41488ac198a65923bad9fb988f5d22971b2ae"
+    },
+    {
+     "csv_row": 39,
+     "sha256": "d4d5abcd04ffe7f8a78374d0ee289390ff38370a5b913f3959caee8c807d417d"
+    },
+    {
+     "csv_row": 40,
+     "sha256": "fe17a247226017fdc80d4b7350de16890f5117a607d47593b649b414e5fce106"
+    },
+    {
+     "csv_row": 41,
+     "sha256": "a73d51aa3af6ff803a1984384137ac778a6ac639313a47f51e56a4e6119e5da0"
+    },
+    {
+     "csv_row": 42,
+     "sha256": "e96e7c40b8f1e0059b05b61ec82c96acf7b9438bee51391afcfa89d4142e0bf3"
+    },
+    {
+     "csv_row": 43,
+     "sha256": "db03f60b245d59a3d827848482d2efd0f992739b9fe63ea389c238ece1cd6403"
+    },
+    {
+     "csv_row": 44,
+     "sha256": "f993bfb6f3adce926cccc7d14fd2590862e0caaafaae1490dc1f60cb2e3aed76"
+    },
+    {
+     "csv_row": 45,
+     "sha256": "2c7f661bf3adf57ac6b7a667af3c3b19f57d706703cdddf9c7ae0b7b35e2069e"
+    },
+    {
+     "csv_row": 46,
+     "sha256": "eaa040682e5f74ece969f6c0df3eb319009740bc23e224b83d9f67a1e2dbbe48"
+    },
+    {
+     "csv_row": 47,
+     "sha256": "661f60ae0da72c3989185b37aa5fbf344cebc6c75cfdae8e949796c2a7226efa"
+    },
+    {
+     "csv_row": 48,
+     "sha256": "c41331bbc209f2a3854e9f51c15edf234f703f63b6717667c0bec5ccee4abb64"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-06-15-e01",
+   "date": "2026-06-15",
+   "ordinal": 1,
+   "label": "Evening storm-tide flood",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-06-15/e01",
+   "source_paths": [
+    "assets/observations/2026-06-15/README.md",
+    "assets/observations/2026-06-15/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 53,
+     "sha256": "4c1f2151351d302876349589e77678d8bd54cb9b85f80ba338e9e5b3b8dee592"
+    },
+    {
+     "csv_row": 54,
+     "sha256": "41a8ceff7306e40cf35cad166e69fd125e345fef1e7d2b01d68f21fd09f60c8f"
+    },
+    {
+     "csv_row": 55,
+     "sha256": "95689da41980c242ee59675734967aa9471b9326c27c9e90a63eb1730dd7f8bc"
+    },
+    {
+     "csv_row": 56,
+     "sha256": "2c974969314cd575ab6bc3eafc0ecf408595a93b93d7d6c814bdc01a1a2fcdcc"
+    },
+    {
+     "csv_row": 57,
+     "sha256": "ad7ebfaf4c34f1ce0a495db978d87cc60c3eb2d9a64f1d484aa8a6b39468e920"
+    },
+    {
+     "csv_row": 58,
+     "sha256": "fa06f74a4b686b6710b33278efec92aab74dfb6d4c370c43fee6c838768ae8de"
+    },
+    {
+     "csv_row": 59,
+     "sha256": "098333f7dc9e84de8381569b18ff78eec212453d7d1052606afc118d007977a4"
+    },
+    {
+     "csv_row": 60,
+     "sha256": "0722f416976c8f9925cbb4578180d8031f6095a76137b31d819356dbbadb7fec"
+    },
+    {
+     "csv_row": 61,
+     "sha256": "3ec9889ea9678340ebe20624a54b6dd8291a368ad017d414dcca356d8e16c0a3"
+    },
+    {
+     "csv_row": 62,
+     "sha256": "ad5e4a31657bde5dd0758469ceef8a5ac7b6a9d915d9aa6a7be3258d4cafc76b"
+    },
+    {
+     "csv_row": 63,
+     "sha256": "596a19b3f177c10c3ae772e2859cfa4a9b3be44eeb9b22f81153c0df6d3e793d"
+    },
+    {
+     "csv_row": 64,
+     "sha256": "e2934234efc40687960a6dfc28662343d3d266daf2925f83ae5ccf81659ad33b"
+    },
+    {
+     "csv_row": 65,
+     "sha256": "16223f2b2bdec50a184447f2e9ba8ba23a0318efc28cc5a698aab68756d576d8"
+    },
+    {
+     "csv_row": 66,
+     "sha256": "02abaec13243cb1768737fa747a8fabd7ee4e53906b465c95ba2ab79b406b62e"
+    },
+    {
+     "csv_row": 67,
+     "sha256": "c8fdcfa471b052fe904a6c1d93c5e1a955157f8e7a5b955d873fab93f85180bc"
+    },
+    {
+     "csv_row": 68,
+     "sha256": "781b9a52ec5b4840b105d5af7c973c20a68bb4db89635f0361444558d5508c93"
+    },
+    {
+     "csv_row": 69,
+     "sha256": "ca9d0ed481e412ecf29fdf9606bbe099d279c7faf4fedb5c76faf163d7488ddc"
+    },
+    {
+     "csv_row": 70,
+     "sha256": "6e1847b61d50f326a557094263d9bcc07dc10a5ce6fe5528bc94a0fe5ae44e55"
+    },
+    {
+     "csv_row": 71,
+     "sha256": "a677407e982c9de45dffcaabeabcec772324f99b7704a824f598a8773393368a"
+    },
+    {
+     "csv_row": 72,
+     "sha256": "99d2c7b0a5c440c7357842991ad9c5e8eacb093aa4684dc5ed122ec60b1429ca"
+    },
+    {
+     "csv_row": 73,
+     "sha256": "c16e7ab6dc0d9749b1cbf0426de7eed3cc2b452c918186299684b7310c596736"
+    },
+    {
+     "csv_row": 74,
+     "sha256": "b45c726a2ece8752f2dfb50e8fdcaf4903cc26d4e83133f069df15d0c9945d3b"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-07-06-e01",
+   "date": "2026-07-06",
+   "ordinal": 1,
+   "label": "Rain flash flood",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-07-06/e01",
+   "source_paths": [
+    "assets/observations/2026-07-06/README.md",
+    "assets/observations/2026-07-06/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 75,
+     "sha256": "e165c5be0f0a775e3dc9011fc27262407ea0b7204e10785de4d19fce0e809fce"
+    },
+    {
+     "csv_row": 76,
+     "sha256": "31d19f7e69556e02aa471fd480c86c7880d3d3c1a9dfab0ea219240860a7a289"
+    },
+    {
+     "csv_row": 77,
+     "sha256": "87df57740b66a8a54b87934262d1bb1e074acedd04f929ddc23567be18a36533"
+    },
+    {
+     "csv_row": 78,
+     "sha256": "2ee6a90504c34a6815f1387dc5a9ba67030adf62da59d42f2fb24af96dc5320e"
+    },
+    {
+     "csv_row": 79,
+     "sha256": "91cedfb01f9ebcdd14f502e15c1d66b8c29e091d9ccbae080901c3dbaabc11c1"
+    },
+    {
+     "csv_row": 80,
+     "sha256": "833e0e147d83e96639ea06320bc852cea23e1ac02d89bc3b81f16039a1d453b1"
+    },
+    {
+     "csv_row": 81,
+     "sha256": "5e40e9297d2ba8654e2bd643e64d08c0e38a2d4aab03ce92820839e2adac88a0"
+    },
+    {
+     "csv_row": 82,
+     "sha256": "5bd529984ed2ac68cf24774f7980068295c7b6eca7cb8c68806e50ca8df1a572"
+    },
+    {
+     "csv_row": 83,
+     "sha256": "5e40b229908203a225170f16a7e6a8ccb2d2fe87e8aa98bf0fd2b4864e274b10"
+    },
+    {
+     "csv_row": 84,
+     "sha256": "faf9cd7103c69aabdb9ce06b30d5e99daa53d6bddc334676ece32bb78397d138"
+    },
+    {
+     "csv_row": 85,
+     "sha256": "ccacd19d0bd10fa975a9c1d76bed8fdf4e22bad6638a677aac43448324768594"
+    },
+    {
+     "csv_row": 86,
+     "sha256": "89c76c7db809b589f4da0da34e87bad220df723d05e80dcd5e9a65f1ea74a508"
+    },
+    {
+     "csv_row": 87,
+     "sha256": "5fa34bd286a34f6a5312c48895ff2450336b1f2d0e64d6f2fbe79c751fcb37c7"
+    },
+    {
+     "csv_row": 88,
+     "sha256": "471d72d1a30e3b049a8c81b55dc31438af3b04a901e80ac9120881aa7fc39d0d"
+    },
+    {
+     "csv_row": 89,
+     "sha256": "0cdc43d52ee25d5d710297a0207b57f723f8f42205e9caec83f7f476e9197462"
+    },
+    {
+     "csv_row": 90,
+     "sha256": "43abdbf2cdea3b09d4a302072f7a22dc0657b7590b11419d3cefcfb37918766a"
+    },
+    {
+     "csv_row": 91,
+     "sha256": "e5f8223b5e64058894f6edcb50335463791dfd263f460750ede270b9592bb849"
+    },
+    {
+     "csv_row": 92,
+     "sha256": "0c47c23f462d467a1dfb26b22924a76188987a1b66ac1c0b2f2dfec87054ebcb"
+    },
+    {
+     "csv_row": 93,
+     "sha256": "0cad2a42b3ef10be20c7e455e7f962b508ad5676172dc213deb7bb7f0de83cbf"
+    },
+    {
+     "csv_row": 94,
+     "sha256": "e82488600bc8e1ce2e896a4e4a29c59236eb128fb1ee09426b7ef8ec8458e492"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-07-09-e01",
+   "date": "2026-07-09",
+   "ordinal": 1,
+   "label": "Rain flood on high tide",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-07-09/e01",
+   "source_paths": [
+    "assets/observations/2026-07-09/README.md",
+    "assets/observations/2026-07-09/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 95,
+     "sha256": "1e6e4c9b62b67880b8751e4dc0b7843950709b20955bf35398afc866973e7d24"
+    },
+    {
+     "csv_row": 96,
+     "sha256": "563c5092a914f85023d92f0fb7b750a9efad904831b666124661fb8d85af11b9"
+    },
+    {
+     "csv_row": 97,
+     "sha256": "31372d3de4c24c72bd29a6f15d5f683be376b7989e349d9c25dc55710a7ffafa"
+    },
+    {
+     "csv_row": 98,
+     "sha256": "8315c5b5095e46af5004722dccca3b312a37091820604583ba5d44af7d56b977"
+    },
+    {
+     "csv_row": 99,
+     "sha256": "5dd3842eb317b85f91af59f91279f81ae0d027354d48566c61ba4a240f6cdcf3"
+    },
+    {
+     "csv_row": 100,
+     "sha256": "672f40838f2cf792f005a7c44de90a2e9735e447a624750e05d8f7cc9448bc75"
+    },
+    {
+     "csv_row": 101,
+     "sha256": "a85ed334e6a56108e719660fa8ad2ac186e52076e87c9a7744a724b3f3afebf0"
+    },
+    {
+     "csv_row": 102,
+     "sha256": "6124d2b804f7bbc5bf798ff6cec5e61f8bb47ab52149159ef175a441c772c85b"
+    },
+    {
+     "csv_row": 103,
+     "sha256": "40b32e2f13b64d45776811273c24fcb20c9facec2699c53299e5b0cee70902a0"
+    },
+    {
+     "csv_row": 104,
+     "sha256": "13dffb21f6f0856e8ba934b2876a923fc056aff9b1317807d9ce0a4beeb430ca"
+    },
+    {
+     "csv_row": 105,
+     "sha256": "1d477f98f13461a6b4cd6685d5584fa066b3c40b9f8742adba859290b6118762"
+    },
+    {
+     "csv_row": 106,
+     "sha256": "81a24e4c6d439295c93bc7fe3165bbdf8e81f7a56dd596b7960f05421eea1303"
+    },
+    {
+     "csv_row": 107,
+     "sha256": "9294c1228887301b502f320487ac49163896702cf9993e26be83cf299fe63968"
+    },
+    {
+     "csv_row": 108,
+     "sha256": "b2fafabc9d110505c35193c2aa6a5cad88febdc73e4a36af010fdf357b0e09fe"
+    },
+    {
+     "csv_row": 109,
+     "sha256": "5bddd2f4364b2dfd6ddad3d82aa5dff4362645a7e505e5ad128cbc0135d738b1"
+    },
+    {
+     "csv_row": 110,
+     "sha256": "baba39662c99809653a5da23ece36b666e8bfa7af270654412ae273060a6982e"
+    },
+    {
+     "csv_row": 111,
+     "sha256": "e95b480801273046f61d3bff56c444dbd6173bed41fcb67ebc7f4b7b56d360fd"
+    },
+    {
+     "csv_row": 112,
+     "sha256": "851e71bcfee4760c127f86d41e419156d36d862f274d0272902979f536563520"
+    },
+    {
+     "csv_row": 113,
+     "sha256": "5c6968612f4462c2381558fe522ac4b58092c79390468c27ce50b8e0493fd29a"
+    },
+    {
+     "csv_row": 114,
+     "sha256": "7a4cf64f363cda2ff7acec4b23035769fd982af2e71e7c7c4b15bb58149c0188"
+    },
+    {
+     "csv_row": 115,
+     "sha256": "bcd8759030715c03188590a5d17a12f88e1b79318726502919001eed096bd86a"
+    },
+    {
+     "csv_row": 116,
+     "sha256": "758139a647469ddef076f4c1bb08be8e77c65a94d3d092dbb4126898d1120a17"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-07-13-e01",
+   "date": "2026-07-13",
+   "ordinal": 1,
+   "label": "Minor tidal street flooding",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-07-13/e01",
+   "source_paths": [
+    "assets/observations/2026-07-13/README.md",
+    "assets/observations/2026-07-13/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 117,
+     "sha256": "dd434be45a591fd2a8b893e630b2383dfcfba66ecb40216e54671a6e671faec5"
+    },
+    {
+     "csv_row": 118,
+     "sha256": "28332227cbee1b618773d49670fe410970b1827758707737137f222c0d42abcc"
+    },
+    {
+     "csv_row": 119,
+     "sha256": "554294a67c5fa98ab5d2cbd57372c577dbbf43b45af83b5de46fcb49ef16d603"
+    },
+    {
+     "csv_row": 120,
+     "sha256": "0e3c3427de421f3262a66136256ffb4fd65930c94dfbc63393e2fb330fddb733"
+    },
+    {
+     "csv_row": 121,
+     "sha256": "9e516a809d79442a055fce3378fbfd4169748c159a0389d460ac042ea632fd6f"
+    },
+    {
+     "csv_row": 122,
+     "sha256": "dc70da2bcf2e41ab84324936b2e03ecb331bcd530d7c1bd5e668282b7711cdb1"
+    },
+    {
+     "csv_row": 123,
+     "sha256": "8d7b325f8c5e85ca64b81b371b022070fe42fadc646b3ba48eeffc2dbf346953"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-07-18-e01",
+   "date": "2026-07-18",
+   "ordinal": 1,
+   "label": "Rain flood",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-07-18/e01",
+   "source_paths": [
+    "assets/observations/2026-07-18/README.md",
+    "assets/observations/2026-07-18/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 124,
+     "sha256": "50f7456852e15a5616a5076f541eb14ea9f3f355f84ecd7a0d34ff276254a30c"
+    },
+    {
+     "csv_row": 125,
+     "sha256": "95e933cba5d24f8a5405899141f2dab0c3271dd7eb63336064243ea880a80abb"
+    },
+    {
+     "csv_row": 126,
+     "sha256": "42c9dc1d956045c34ad6a16fec5f0e4a55cc954051b8a5c07413b2a9d294f444"
+    },
+    {
+     "csv_row": 127,
+     "sha256": "f7b123138ea5ffeb91d93f6172be27c2b7829ac3683355c4d350bda0d9ee8568"
+    },
+    {
+     "csv_row": 128,
+     "sha256": "97d65e5e4294579c93c3b23c210cfa197cbd84965bf956ad2efbb94738055268"
+    },
+    {
+     "csv_row": 129,
+     "sha256": "8a7086c77f6541003448495b143499843a28dd53d03904d25776e80cdd7fed60"
+    },
+    {
+     "csv_row": 130,
+     "sha256": "7e7d10587fae7380145f2cf474341e42db06c92542220939974abc341b535e35"
+    },
+    {
+     "csv_row": 131,
+     "sha256": "b6cbe272f9fb44712f8e4edb504c0a9a0061309d0c04933f23c1afb634e6426e"
+    },
+    {
+     "csv_row": 132,
+     "sha256": "cf3376be0a24eac97c30be9d68265f0331245e76f163bef27add3cc1c6343826"
+    },
+    {
+     "csv_row": 133,
+     "sha256": "78cf50a66becae1e1399b4322983d4f283cb8b515c605ae3352fdc1b08e167f7"
+    },
+    {
+     "csv_row": 134,
+     "sha256": "4a70f4252596683d0297c6e33c9911852e5be2e3d8bb6619fe1b53b8dac20948"
+    },
+    {
+     "csv_row": 135,
+     "sha256": "e39837f47ccf4e1820bdc8b4d15b789cdfa3ebddfcc88013f92a39c6cd33f240"
+    },
+    {
+     "csv_row": 136,
+     "sha256": "6e10f02463ee5af8e1c0932108fa2d961afaaba5c3f8631c4748802a3fe9806a"
+    },
+    {
+     "csv_row": 137,
+     "sha256": "ab061a1526cb24e4748aead5256334d00e81090f23d94cfe3deb7c22b0304785"
+    },
+    {
+     "csv_row": 138,
+     "sha256": "bbea822520f864262940b0dcf841694311c63c7d5589ddd66140e2fe17bb50bc"
+    },
+    {
+     "csv_row": 139,
+     "sha256": "af3a2eb50ba2efd8115e478e866962ee68e854f356e61644fc09b4cb2790cc57"
+    },
+    {
+     "csv_row": 140,
+     "sha256": "8a690fe984596ecd35d2af575aa121584d661f8a80da4bd4e4f2955a6155567f"
+    },
+    {
+     "csv_row": 141,
+     "sha256": "11338af2079cf10c5307bf0cb9c6fa31908931d20376469d4bcc768b25978ce4"
+    },
+    {
+     "csv_row": 142,
+     "sha256": "1130b55bcc5c0e734ab9972d7308d583dec45912682f3f93799223f1e1fde33f"
+    },
+    {
+     "csv_row": 143,
+     "sha256": "2f7e2a68db7c94b86e21c394837ea3121a5b145a333fa56c40c5b81ccf19081a"
+    },
+    {
+     "csv_row": 144,
+     "sha256": "6fb310158691d7e14e4c34b9aa6ca9fdeeac43c233451a5f9424079322b54555"
+    },
+    {
+     "csv_row": 145,
+     "sha256": "9fc4096e4b3cd4b8b64a78b372bbbbd2eaa41bee6564091e6f88ee5f3efeff8c"
+    },
+    {
+     "csv_row": 146,
+     "sha256": "5e89743d776dd147bce3b25c6fae141c9216e316089c231fa38afd3eb2a61fd1"
+    },
+    {
+     "csv_row": 147,
+     "sha256": "812929a1aaf95a22f577c8d0db7bf9d42898fcbc96f5749fd6a5b89108ae4a36"
+    },
+    {
+     "csv_row": 148,
+     "sha256": "ff090bf7c5af6ebd87282c008c5c0cdba2380fa0aeed5c0b7bcc49afbad94c5c"
+    },
+    {
+     "csv_row": 149,
+     "sha256": "297c1483c8e0601ecf6dd88683037012100f60dfd20223fff8a33943e53fbce9"
+    },
+    {
+     "csv_row": 150,
+     "sha256": "6f05c43124c5586dbb331a16b35de687dbe40bb954efeac80afe95a08d9d1f00"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-08-03-e01",
+   "date": "2026-08-03",
+   "ordinal": 1,
+   "label": "Rain flood",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-08-03/e01",
+   "source_paths": [
+    "assets/observations/2026-08-03/README.md",
+    "assets/observations/2026-08-03/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 151,
+     "sha256": "c3a5e84d5fd19354fcd3aab5d962c9c24683a1160ff4e7cc32acce367fdb0a41"
+    },
+    {
+     "csv_row": 152,
+     "sha256": "ea4f8e14ecff46b8e228596ca522daca7d5148039fe3a7a2ade48a28074f5057"
+    },
+    {
+     "csv_row": 153,
+     "sha256": "a0a306160b7b644e506492fa265f9080163a408a8d991d209bff086899cf056f"
+    },
+    {
+     "csv_row": 154,
+     "sha256": "a3502567260d3673e2ac9daed56e1367639689f62a22e9be970ad47f44a9f95d"
+    },
+    {
+     "csv_row": 155,
+     "sha256": "0458721ed7e9636acc71edc5f44b5bde951dde7dadef4ce371d603ddc7f56cbc"
+    },
+    {
+     "csv_row": 156,
+     "sha256": "d962fc73cb909b372dbc75d98ad74686a7a63f6bd8889b092ef56a33933dc1b7"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-08-07-e01",
+   "date": "2026-08-07",
+   "ordinal": 1,
+   "label": "Rain flood; crest bracketed",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-08-07/e01",
+   "source_paths": [
+    "assets/observations/2026-08-07/README.md",
+    "assets/observations/2026-08-07/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 159,
+     "sha256": "1b89ee22024a10202fd2cf43ea0ef95847209076d9877cf494055d1a16f3ee72"
+    },
+    {
+     "csv_row": 160,
+     "sha256": "5bde17a3e6b1bbef5f780d4f8f4457167e82716807e60d1da97d3a6a2dfe2cad"
+    },
+    {
+     "csv_row": 161,
+     "sha256": "3f9f2dee0f7c4fd50f329698bfaef306ae6756b6f041a73c5591dc4219aa60b6"
+    },
+    {
+     "csv_row": 162,
+     "sha256": "623e4438c6ad98075b9cd3079801131eafcfef33e1211c1b8626f67ae2727b9d"
+    },
+    {
+     "csv_row": 163,
+     "sha256": "62ac191d9243db8e48e6e7f7a8f7c545f06f50b004e67a58413ec8937426dbb1"
+    },
+    {
+     "csv_row": 164,
+     "sha256": "122ff2a87eaeef83a40681614b5735f95c23d7872e458b935bbc8e007cea94c5"
+    },
+    {
+     "csv_row": 165,
+     "sha256": "7d566dd95defb7eec0efa027e3a6790b7e0889d83954787a3f2fce3317c3e1b0"
+    },
+    {
+     "csv_row": 166,
+     "sha256": "5cd98fec2e1a2fe01b32c1a94acac759ec5282082465319afdb492a9d7b330c0"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-08-10-e01",
+   "date": "2026-08-10",
+   "ordinal": 1,
+   "label": "Evening spring-tide photo observations",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-08-10/e01",
+   "source_paths": [
+    "assets/observations/2026-08-10/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 167,
+     "sha256": "58fe435508c35d95146514690ef4f28fa1b34b9f6d2c399ea751527e72050b50"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-08-11-e01",
+   "date": "2026-08-11",
+   "ordinal": 1,
+   "label": "Evening spring-tide photo observations",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-08-11/e01",
+   "source_paths": [
+    "assets/observations/2026-08-11/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 168,
+     "sha256": "d92c96f836d7b95386a29adf2fcaee34482a20951ba5de3840f482bad3829174"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-08-12-e01",
+   "date": "2026-08-12",
+   "ordinal": 1,
+   "label": "Evening spring-tide photo observations",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-08-12/e01",
+   "source_paths": [
+    "assets/observations/2026-08-12/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 169,
+     "sha256": "0bf5615be0144b57606c941a3d8dd5bc301c01e40537fe24e9849bad1f6c236b"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-08-13-e01",
+   "date": "2026-08-13",
+   "ordinal": 1,
+   "label": "Evening spring-tide photo observations",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-08-13/e01",
+   "source_paths": [
+    "assets/observations/2026-08-13/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 170,
+     "sha256": "88e517c7b8bbabaafb3df9f368869b48bc77f306962b25a94a989e901d1b2477"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-08-27-e01",
+   "date": "2026-08-27",
+   "ordinal": 1,
+   "label": "Unmeasured rain flood; retrospective evidence",
+   "record_kind": "unmeasured_flood_evidence",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-08-27/e01",
+   "source_paths": [
+    "assets/observations/2026-08-27/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 175,
+     "sha256": "4d41e7469bbb3357e4eb098e28954634c6ed183ee4c998ff0a0bcb92f67f3262"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-09-01-e01",
+   "date": "2026-09-01",
+   "ordinal": 1,
+   "label": "Evening rain flood",
+   "record_kind": "flood_or_tide_observation",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-09-01/e01",
+   "source_paths": [
+    "assets/observations/2026-09-01/README.md",
+    "assets/observations/2026-09-01/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 171,
+     "sha256": "f62bc383d67508ef1e000231d58159576cfe411c3809d589e8933981676e5124"
+    },
+    {
+     "csv_row": 172,
+     "sha256": "2de601f242d20699010351d959565854e2105753193e7cbbe73143c6f439664a"
+    },
+    {
+     "csv_row": 173,
+     "sha256": "24dc5c89170cb4a3a4d8a49581a2b078f08e11c786ebda3de102bed00d42a1fa"
+    },
+    {
+     "csv_row": 174,
+     "sha256": "6f7b84307369323ab00116a2d44b7f9b64a349f1c43ad42fa0e8cdca55f9e748"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-09-13-e01",
+   "date": "2026-09-13",
+   "ordinal": 1,
+   "label": "Dawn rain flood",
+   "record_kind": "flood_episode",
+   "storm_id": "2026-09-13-rain-and-tide",
+   "aliases": [
+    "Event #9 round 1"
+   ],
+   "directory": "assets/observations/2026-09-13/e01",
+   "source_paths": [
+    "assets/observations/2026-09-13/README.md",
+    "assets/observations/2026-09-13/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 178,
+     "sha256": "f50ececcc0d08cbb4efd8cbe40f7d060173610825c5ba6779126f34d9daec58c"
+    },
+    {
+     "csv_row": 179,
+     "sha256": "77ad0c085889ac0b5f14fef4b7c6ab1b0ba5dfd8b8a438a91f27a761b3347fae"
+    },
+    {
+     "csv_row": 180,
+     "sha256": "a30d38c2791897d7e1bd4a5644f91dea6e5ffe09b52ad668251a7d60dfe099e9"
+    },
+    {
+     "csv_row": 181,
+     "sha256": "ac5b1ddfcdd0a6b9f1ae5a0fd63865a16452d75f96ebc8c59b5d78af64611b25"
+    },
+    {
+     "csv_row": 182,
+     "sha256": "400850f1fcdd2bd85e384d874620a9ae047f36293402fb5c22b9b5110bc3bf2c"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-09-13-e02",
+   "date": "2026-09-13",
+   "ordinal": 2,
+   "label": "Later morning compound flood",
+   "record_kind": "flood_episode",
+   "storm_id": "2026-09-13-rain-and-tide",
+   "aliases": [
+    "Event #9 round 2"
+   ],
+   "directory": "assets/observations/2026-09-13/e02",
+   "source_paths": [
+    "assets/observations/2026-09-13/README.md",
+    "assets/observations/2026-09-13/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 183,
+     "sha256": "342b0f2e77574822946db7a281ccf9623a3781f294a6c26b01d4b557ca30ae5c"
+    },
+    {
+     "csv_row": 184,
+     "sha256": "c782b2f7b16a945e1d6776cf8597669e4e0d5f8d27ff7128e92e7e886e68c82f"
+    },
+    {
+     "csv_row": 185,
+     "sha256": "b539e22366c62279531965ba00fc476de60f69a7169ba7b19913effc98618025"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-09-25-e01",
+   "date": "2026-09-25",
+   "ordinal": 1,
+   "label": "Evening negative flood report",
+   "record_kind": "negative_observation_window",
+   "storm_id": "2026-09-25-coastal",
+   "aliases": [
+    "Event #10 round 0"
+   ],
+   "directory": "assets/observations/2026-09-25/e01",
+   "source_paths": [
+    "assets/observations/2026-09-25/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 191,
+     "sha256": "dc1941278ab9d9482764f3e81fcf1c4135aa3fac3a35aea29d0b06eb3ead2cc9"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-09-26-e01",
+   "date": "2026-09-26",
+   "ordinal": 1,
+   "label": "Morning coastal flood",
+   "record_kind": "flood_episode",
+   "storm_id": "2026-09-25-coastal",
+   "aliases": [
+    "Event #10 round 1"
+   ],
+   "directory": "assets/observations/2026-09-26/e01",
+   "source_paths": [
+    "assets/observations/2026-09-26/README.md",
+    "assets/observations/2026-09-26/flood-measurements.txt",
+    "assets/observations/2026-09-26/rawnotes/01-morning.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 187,
+     "sha256": "a2d9e4db4937c298a35338a4ebbed2cb6bbeec3dc78a1cea7a720c1d1fba0259"
+    },
+    {
+     "csv_row": 188,
+     "sha256": "6bca5b3215f9e32412b5455adbec96043f3e6f3effe7473c95b9b53d4183cd09"
+    },
+    {
+     "csv_row": 189,
+     "sha256": "41309bb56e8e68f4ab410b73325fe0de574e66faf343bb3df361fa74411bf49d"
+    },
+    {
+     "csv_row": 190,
+     "sha256": "870fe02b78aa5dbc753fa725c3f8df9f4e6d42807886f1480a74a1b28562aa71"
+    },
+    {
+     "csv_row": 192,
+     "sha256": "8ad6d585cba9434f4fa653018523bc51ea5924ec873cf408c0558d91219b1a7a"
+    },
+    {
+     "csv_row": 193,
+     "sha256": "9ef66f624531f01d936e2b10aea3aa4a41a35ee26cacd364d1fa482e4f848b7c"
+    },
+    {
+     "csv_row": 194,
+     "sha256": "fc53285a4870a6898b5429450d015e669c78159d3c5e4b9ab2236e49aeeaec22"
+    },
+    {
+     "csv_row": 195,
+     "sha256": "7d83fd90de513181b63913eed9fdf422eafd6399d8497dadbcdb72c41f4c4e85"
+    },
+    {
+     "csv_row": 196,
+     "sha256": "19f88f42ac2d3cdd5289d4c81b6b339ed5e38425bbe9a86dce045dfa66ca80d8"
+    },
+    {
+     "csv_row": 197,
+     "sha256": "ba35c19eb9a2c6b892546324a1676fc779386c7ce47511ff8a1c1d107cd6ccb3"
+    },
+    {
+     "csv_row": 198,
+     "sha256": "dbbe42bf1173111016fdc9bbf273fca7361c547383e41e89870cbe75906aa8ec"
+    },
+    {
+     "csv_row": 199,
+     "sha256": "5ed6e1fa8fd0bf526b20ba4bf0ea89fee47e4ebb3f98f328b9bdd1e080c48615"
+    },
+    {
+     "csv_row": 200,
+     "sha256": "a1fffda3cff76253d44a116d4c3b2a97d15fd523378a2d617b208c8568cc063b"
+    },
+    {
+     "csv_row": 201,
+     "sha256": "f2772d6839a6c02fe5caceeb25cdfc1d944de64a70ef078978e7e02c0560b01d"
+    },
+    {
+     "csv_row": 202,
+     "sha256": "79f407a87458ff20d772a3702ff4cc2578852f09046cf9e74d3bd7dd495419f3"
+    },
+    {
+     "csv_row": 203,
+     "sha256": "5c2868af25bc33e4cf139c3af7d887fd36cb9b7ef615942a930f9b19f15d0a63"
+    },
+    {
+     "csv_row": 204,
+     "sha256": "dcbcf77f2c53fe91921eeed241adde5aa5cdd4e947966a42db2769dd8037f5df"
+    },
+    {
+     "csv_row": 205,
+     "sha256": "ba4803911fe5da2df0290349e5efe01ba9db90f6f57b0772117110ddd7901225"
+    },
+    {
+     "csv_row": 206,
+     "sha256": "c7eb8a44578f9a0fbdde9839002f310dd38edd23333d4604463992e401bc5ff6"
+    },
+    {
+     "csv_row": 207,
+     "sha256": "b80ab4bdb259c89de1259329a6fbe3322d72d555628571fa1a00877fa2205323"
+    },
+    {
+     "csv_row": 208,
+     "sha256": "63f102e06bf36aaa6330e7076a5c1cff66f2093918e6b93e17df9448119b6465"
+    },
+    {
+     "csv_row": 209,
+     "sha256": "5b67837799b4a83a773023dee387d99ca24d47dc8785facde6766d1c5d0044de"
+    },
+    {
+     "csv_row": 210,
+     "sha256": "66ea10fec4f689b4b82e7cc7746962cd27fcc9c6f9d4b2bbba0dc73e6a1925a9"
+    },
+    {
+     "csv_row": 211,
+     "sha256": "3328c5fa8166be5d1ced2f7d76bbcf7e3bdd03997902d6af9a2df397761104f3"
+    },
+    {
+     "csv_row": 212,
+     "sha256": "8d1cbf0978f13dd8906778b9259537d767a5439a6ab278e4fdd6fefeb2b8b011"
+    },
+    {
+     "csv_row": 213,
+     "sha256": "40b35980806ea056daa88e1a3e1ed49b759bd0d743cb4142e9f5c00354a1b717"
+    },
+    {
+     "csv_row": 214,
+     "sha256": "7250744bbd12777c174189af2a15a5164712b871f11742bf0230e5b18922491f"
+    },
+    {
+     "csv_row": 215,
+     "sha256": "bbb3b86bd0de9a601442be6f1bdf9fadf9ee5ec8fbb4c017d6ae4f7916d2eacc"
+    },
+    {
+     "csv_row": 216,
+     "sha256": "992181a73a88d7c69664ba3d39ce5b1badbbb8b39ee23d2817e5f6341c9529dc"
+    },
+    {
+     "csv_row": 217,
+     "sha256": "99859e22000721ae4d7ca2b3ef28a083eda4a075857d52e80081173bfb741c1d"
+    },
+    {
+     "csv_row": 218,
+     "sha256": "ef0440f53c1324cb3bd581ce0a60b326f6d075a366349a863836d3c1fb794647"
+    },
+    {
+     "csv_row": 219,
+     "sha256": "2a942de60d1f61f39cde8828aa76ba6949f065789ba7084aad558cd7cb90dd8a"
+    },
+    {
+     "csv_row": 220,
+     "sha256": "11bb420378eb8ac92f56976f480bb5aaebd2e1a3b4860b4b19bdafffa0777e60"
+    },
+    {
+     "csv_row": 221,
+     "sha256": "6629981eeec3ba9d259da2d7b12a6116454d824aa52ba9ff63604cf2a97cf35f"
+    },
+    {
+     "csv_row": 222,
+     "sha256": "930efb1346dde70337497a8ea6e90deaedb73e36d3eeb3503da9948b1b3376ef"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-09-26-e02",
+   "date": "2026-09-26",
+   "ordinal": 2,
+   "label": "Evening coastal flood",
+   "record_kind": "flood_episode",
+   "storm_id": "2026-09-25-coastal",
+   "aliases": [
+    "Event #10 round 2"
+   ],
+   "directory": "assets/observations/2026-09-26/e02",
+   "source_paths": [
+    "assets/observations/2026-09-26/README.md",
+    "assets/observations/2026-09-26/flood-measurements.txt",
+    "assets/observations/2026-09-26/rawnotes/02-evening.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 223,
+     "sha256": "a1a01ca32b4a3ae42f890ec27a57a4ed2f398b924c1e1251daa72e935286bcf1"
+    },
+    {
+     "csv_row": 224,
+     "sha256": "c9ab8b8de2212cc927482f0484e7d33e002a9c5b4ff74264b9d3716dcd689ee9"
+    },
+    {
+     "csv_row": 225,
+     "sha256": "bbaca6781a418b9256c15ac067b58c395f3caaefe0e37077ef99864ecaff6b73"
+    },
+    {
+     "csv_row": 226,
+     "sha256": "ff0674cb8493d31eb88e971aff182effbce388f57e739607b7fb95fe1996c96d"
+    },
+    {
+     "csv_row": 227,
+     "sha256": "010cfaced91acf850b1031b7dda4767779a93ca1d3459bab7e961d5a753f2bcc"
+    },
+    {
+     "csv_row": 228,
+     "sha256": "b7fe797b35da2b21fcb7d80bd729abe87af722af621bf1c32bfc37fba8dec12a"
+    },
+    {
+     "csv_row": 229,
+     "sha256": "0f3d649530df86158e87210c9a42273f0d71df9bfd7136580f0327328b40d5fd"
+    },
+    {
+     "csv_row": 230,
+     "sha256": "952c0fef7d825fa2d351521feb4b43804f89a234f3b4536778689362c0afb330"
+    },
+    {
+     "csv_row": 231,
+     "sha256": "59ef46e8dfbb614db7dfd1d7a7ff1725c8f74a2959b338d9e530dd2d570dae98"
+    },
+    {
+     "csv_row": 232,
+     "sha256": "eba547cd97fdb7a578c1cdccfe69c400dca8cf734c355738e2dc0a64786df4f2"
+    },
+    {
+     "csv_row": 233,
+     "sha256": "0c84939672b4ede6365ec6689c1acabcd744eb148dd936d655a423fdc6eb89c9"
+    },
+    {
+     "csv_row": 234,
+     "sha256": "84aa5142ca54188cf777e614aba378044be3508f6a4be25fe8e911a049235426"
+    },
+    {
+     "csv_row": 235,
+     "sha256": "c5afd0f729cdb7693ad469ea0d9c565ddd3b2b5b038df573f3b79bf0607c06eb"
+    },
+    {
+     "csv_row": 236,
+     "sha256": "724fa4d18fddd67186d7ceb4672cdbc86f982f16b403dd10ab6fb8d51a870291"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-09-27-e01",
+   "date": "2026-09-27",
+   "ordinal": 1,
+   "label": "Morning coastal flood",
+   "record_kind": "flood_episode",
+   "storm_id": "2026-09-25-coastal",
+   "aliases": [
+    "Event #10 round 3"
+   ],
+   "directory": "assets/observations/2026-09-27/e01",
+   "source_paths": [
+    "assets/observations/2026-09-27/README.md",
+    "assets/observations/2026-09-27/flood-measurements.txt",
+    "assets/observations/2026-09-27/rawnotes/01-morning.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 237,
+     "sha256": "a445dca7a18ae4ae24803c9b475caa85251eb94f549f46639a716fa7a39ccb33"
+    },
+    {
+     "csv_row": 238,
+     "sha256": "4ca9fe678b4f5970fa0278e08f273ac221e819f8620d31b4cd85bb878d0492ef"
+    },
+    {
+     "csv_row": 239,
+     "sha256": "0934f449cccfeb51feac7a12881af5da42c2d15f4782491bd0374f686fd6f41d"
+    },
+    {
+     "csv_row": 240,
+     "sha256": "841f01bef4f6f6b84acf0e94d741904a88918cb65ba211fdcf8b155d13775f5e"
+    },
+    {
+     "csv_row": 241,
+     "sha256": "551b718a717673c2649d3f051f22143127cbaedbd4496e5c5c8570010167b368"
+    },
+    {
+     "csv_row": 242,
+     "sha256": "ac74be8173fa6d409aa087bc31fc8becde4acbed4194c62cf2cac26ce5262b67"
+    },
+    {
+     "csv_row": 243,
+     "sha256": "0143dde341748f14137b2dc91f792d4d856993f1e50e48b486e043a13d2d2987"
+    },
+    {
+     "csv_row": 244,
+     "sha256": "b94668f0f6279f935bb975c247ba4575b4ac1cc346754c2881c1b84900f257ba"
+    },
+    {
+     "csv_row": 245,
+     "sha256": "3c4aeff585c6b2beb02d78ca80278b5bc05c8318eef9d1e519852cf4cd485c70"
+    },
+    {
+     "csv_row": 246,
+     "sha256": "7aa00dc9638725193cd6b12fb20a05e3105e8c0819cfc45a37fdebfc5c34544e"
+    },
+    {
+     "csv_row": 247,
+     "sha256": "19007d2bc6f27759481b205acd9866c6c94f09391e83cfb349086c6bf738ec24"
+    },
+    {
+     "csv_row": 248,
+     "sha256": "23210755f7c2719054b50ca2eadc050a9eb8898c13e908cf406130556adccec9"
+    },
+    {
+     "csv_row": 249,
+     "sha256": "c0fdf458ed80cfe93fd0eaf28e13235c976a9f12f96c5cb32b52dbb756d90ac5"
+    },
+    {
+     "csv_row": 250,
+     "sha256": "96893e22a7fcfea37d9ce070aea79570790f567f0b6be1aa984095ddd3df8fdc"
+    },
+    {
+     "csv_row": 251,
+     "sha256": "85869109696dfe495c5014b47fc0c392b8b1f75b37efc1733882b5665aa313ce"
+    },
+    {
+     "csv_row": 252,
+     "sha256": "78ec3674b93065d3663fed2d3b9ccf7dac75d3ad24ba895cfc64f82ac9466226"
+    },
+    {
+     "csv_row": 253,
+     "sha256": "45e0b770cd580d8cd86e9903c2b79b44c2088ba59820e719d319fe2e2e8eeea5"
+    },
+    {
+     "csv_row": 254,
+     "sha256": "7f1771bfeee944aca9a79d6afb4d70d50990d7c1d77124cfe2712bb7db8c8238"
+    },
+    {
+     "csv_row": 255,
+     "sha256": "2eba672b5f4328626946d387b10d31c1d277fc81504cd2add3e1ebdf8d6dd0f8"
+    },
+    {
+     "csv_row": 256,
+     "sha256": "7f9588da3981cb710c61aa6f3ef75376ce171d65f814d2958abe1985442de7f3"
+    },
+    {
+     "csv_row": 257,
+     "sha256": "e80ec55bb7597fbbd33dea1fc74b33bc4919ed15b4f408ee241106a762b0e421"
+    },
+    {
+     "csv_row": 258,
+     "sha256": "53ecc7dfb1b770e17393a835e9040b8c3fe13b4e6ee17de72a5bd24a1c0e7408"
+    },
+    {
+     "csv_row": 259,
+     "sha256": "01681da6d6d6b93753250cbdb10b2d81813d13805add4417df32fa6e4d09b004"
+    },
+    {
+     "csv_row": 260,
+     "sha256": "a2721638269f0c6771feaa64dfedb804faf1010d8b421f472cf6170436b4bafb"
+    },
+    {
+     "csv_row": 261,
+     "sha256": "5abf63b2b100b96a11ebc6c8e9fbc5993a17e80cb0d8d09ea913b7e97c304bb3"
+    },
+    {
+     "csv_row": 262,
+     "sha256": "3cb29a2695ceaa4b06cef3c4a337de8581eedb1fce82a51b07f04e2ca3c6b1ab"
+    },
+    {
+     "csv_row": 263,
+     "sha256": "c618fda4be15f06df7ccd5e8b32615534b9e631fd3f960ce0f895346050348eb"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-09-27-e02",
+   "date": "2026-09-27",
+   "ordinal": 2,
+   "label": "Evening rain-plus-rising-tide flooding (in progress at registration)",
+   "record_kind": "flood_episode",
+   "storm_id": "2026-09-25-coastal",
+   "aliases": [
+    "Event #10 round 4"
+   ],
+   "directory": "assets/observations/2026-09-27/e02",
+   "source_paths": [
+    "assets/observations/2026-09-27/flood-measurements.txt"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 269,
+     "sha256": "2db82bf81d39a436001b0a82a9c024ee80322c75b68633db71d57710aac10684"
+    },
+    {
+     "csv_row": 270,
+     "sha256": "44fbebff70aab263b356143dc06481f98c53010a74228b83945fbae26d0928d9"
+    },
+    {
+     "csv_row": 271,
+     "sha256": "656104e97f1472c478c506bb7177e81d3fc709ce089165ab0ed5fe3f1e52306a"
+    }
+   ]
+  }
+ ],
+ "excluded_ledger_rows": [
+  {
+   "csv_row": 157,
+   "sha256": "cdc8e182976a58b376a758eee7f339a6f7c1b4dd32990c602adace6785726170",
+   "reason": "metadata/correction; not a flood-time measurement"
+  },
+  {
+   "csv_row": 158,
+   "sha256": "74047d56fcb40e3c05df0e45a7660962e7fcd7c2ba4f20b64272f6e48fe75bc5",
+   "reason": "metadata/correction; not a flood-time measurement"
+  },
+  {
+   "csv_row": 176,
+   "sha256": "069cb749336b18c35231301695ab7b5debce132ddf7756d6886723b74eacac23",
+   "reason": "metadata/correction; not a flood-time measurement"
+  },
+  {
+   "csv_row": 177,
+   "sha256": "036be6b6ffcd7b8f9d74e99de810868aadb7f8b22b67bb79f2c57c3c4ad3e751",
+   "reason": "metadata/correction; not a flood-time measurement"
+  },
+  {
+   "csv_row": 186,
+   "sha256": "3fc9b5daa15dc7a5896955f1f5dcb959e6fdf6307be78602c2306726b104814b",
+   "reason": "metadata/correction; not a flood-time measurement"
+  },
+  {
+   "csv_row": 264,
+   "sha256": "80222d55d3ccf64bbb9bc671f2175b476f77a68f33a04e8b466cb318d5b1c660",
+   "reason": "metadata/correction; not a flood-time measurement"
+  },
+  {
+   "csv_row": 265,
+   "sha256": "e679c9d3b4a72fa586f9218fdd667d8c28b959b6db7f667f7c2b26c99567bff0",
+   "reason": "metadata/correction; not a flood-time measurement"
+  },
+  {
+   "csv_row": 266,
+   "sha256": "ea6f9a0718d3ffadf6fe4d11f8ea4e48b20d16c42c53b1ce7e0ef43abed74712",
+   "reason": "metadata/correction; not a flood-time measurement"
+  },
+  {
+   "csv_row": 267,
+   "sha256": "f665e2b6dfe1d1f60d42d988ecdf184253cce7d7efe106b946e3af924ade9b19",
+   "reason": "metadata/correction; not a flood-time measurement"
+  },
+  {
+   "csv_row": 268,
+   "sha256": "ec0666812520a61760a482c8e6fe9bbdf9d29fcb4dffcb14bab614a7c2f8da48",
+   "reason": "retrospective April18 reconstruction metadata; not a flood-time measurement"
+  }
+ ]
 }

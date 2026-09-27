@@ -8,36 +8,29 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1) — independent reply 04 filed; Codex verification pending.**
-      Reply: audits/2026-09-27-a1/04-independent-reply-claude-curlew.md
-      (Claude Fable 5.1 "Curlew"). R1–R7 all CONFIRMED against primary
-      records; repairs on branch `audit/2026-09-27-a1-reply` (worktree
-      ../barnacle-a1reply), UNMERGED: R7 publish-on-delivery-failure workflow
-      + delivery-health file; R6 station-parser/UTC tape window + offset-bearing
-      appends + interval sidecar; R3 per-episode production peaks (Sep26 shows
-      both floods) + Heron interface doc; R5 landing/details wording, nowcast
-      day-max provenance + rejection record (39.0 in @02:40 traced to a phantom
-      6.68-ft "observed" bay input; it was the public "so far today" line all
-      day), figure superseded; R4 raw GMT gauge archive with flags, QC/lag
-      intervals, Battery; R2 rain scenarios for all four tides (Sep27 AM
-      0.23 in, not rain-assisted; the ~2.4 in is scenario A only). 374 tests
-      OK (one skip), gate clean, replays PASS, frozen wind hashes unchanged.
-      STILL OPEN: Codex independent review + merge via ship ritual; owner
-      DECISION whether a modeled value may outrank a same-day tape crest on
-      the "so far today" line; Heron episode-aware/interval-preserving
-      evaluator (history/plans/2026-09-27-heron-episode-interface.md); no gate
-      threshold/leakage model (none authorized); verified (q=v) NOAA series to
-      archive later beside, not over, the preliminary files; Sep26 14:24Z MRMS
-      frame missing; gate photo (rule 9) and episode photos pending; Borough
-      gate-operation history pending. Do not close on tests alone.
-      ADDENDUM (reply 04, 18:25): `_today_lookback` also presents the Sandy
-      Hook peak as the corner's peak ("observed (gauge)") on the site strip
-      and widget "so far" line, and labels the bay+tank model "live radar";
-      ranking rule (tape wins?) + both labels await John's DECISION. Ledger
-      metadata rows (264–268) need a separate clarifications file going
-      forward. Production gauge reads have no Battery cross-check (class (b)
-      change if pursued). Cadence-gap claim retracted (see ledger line).
-
+- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1).**
+      Curlew independently answered R1–R7 in branch-only round04 and built
+      candidate dc4637d3c on audit/2026-09-27-a1-reply. Codex round05:
+      REQUEST CHANGES; not merged. See
+      audits/2026-09-27-a1/05-review-curlew-candidate-codex.md.
+      Keep useful timestamp/per-episode/QC/publication repairs; fix dry
+      evidence precedence and full-day gauge selection, widget evidence/claim
+      parity, private transport-error serialization, ambiguous exit-2
+      publication contract, unsupported interval bounds, Battery datum
+      conversion, and misnamed rain peak-water fields. Correct copy/status
+      errata; regenerate and inspect combined-tree pages before merge.
+      Candidate: 384 tests OK (one skip), three frozen replays PASS, seven
+      wind hashes unchanged, gate clean, protected ledgers unchanged from
+      its base. Those checks do not close scientific or production findings.
+      Next Curlew reply is round06; Codex re-review then merge decision.
+      Preserve main's later live Sep27-e02 ledger/notes/registry additions.
+      Four-window analysis covers Sep25 PM through Sep27 AM only.
+      Owner originals reconciled; stable eNN IDs; all_anchors retained with
+      expanded chronological/sorted views and June14/15 analyses. Apr18/
+      Aug2025 uncertainty explicit; negative-control census and coastal
+      hindcasts remain open. R3 evaluator integration/as-issued coverage
+      belongs to Heron; Tern retains social work. Separate episode outcomes
+      from storm counts; no gate model or frozen wind change authorized.
 
 - [ ] **Storm communication parity — reproduced 2026-09-25.** Public 10:13
       forecast rendered offline: email TODAY LIGHT vs day_worst/tide MODERATE.
@@ -816,3 +809,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | DECISION | sofar-line-empirical-wins | John (18:20): when two values compete and one is empirical and the other a model guess, empirical wins. Clarified 18:24 that the "so far today" line is a daily max whose candidates come from different times; John chose option 3: headline = empirical daily max (tape; else bay peak LABELED as bay, never a corner regime), a higher model day max at an unmeasured time (no tape row within an hour) is APPENDED as a claim, never promoted; model alone only when nothing empirical exists [STATED]
 2026-09-27 | DONE | sofar-line-option3 | Implemented on branch audit/2026-09-27-a1-reply: _today_lookback chooses by evidence class and carries `evidence` + optional `model_claim`; rendering._lookback_phrase feeds all five arms (site day card, site banner, email subject, email text, email html). Widget prints the winning value only (BAY +x for the gauge case; no claim clause; no widget edit/bump). Bay-as-corner defect (sofar-line-bay-as-corner) closed by the same change. Tests tests/test_today_lookback.py [VERIFIED]
 2026-09-27 | FACT | event-10-round4-1818 | 18:18 EDT: water jetting out of NE and NW grates, minor local flooding, not connected; SE/SW not pushing; steady moderate rain; user notes rain-flood kinetics, possibly joint with the rising tide. Logged on receipt (18:24) to the ledger with an offset stamp and to the round notes, pushed c001052d5. Nowcast 22:22Z: rate 0.82 in/hr, bay 1.92, street +4.3 proj +9.6. Tonight's tide 20:58 forecast 7.2 ft MLLW (NWS product). Proposed episode 2026-09-27-e02 [STATED user + VERIFIED artifacts]
+2026-09-27 | PREF | rawnotes-owner-corrects-typos | John (18:48): owner-supplied raw notes are the owner's to edit. An agent that suspects a typo (e.g. Sep26 "12:06 am" for pm) BRINGS IT TO JOHN and never silently reinterprets or "preserves" it; John corrects the original, and the correction is recorded beside it (clarification note + pre-edit hash, as done in 2026-09-26/rawnotes/clarifications.txt). Leaving a known typo in place invites each agent to decide for itself. Supersedes "never edited" wording in the flood-measurements.txt proposal (audit 2026-09-27-a1 reply 04 follow-up) [STATED]
+
+2026-09-27 | DONE | curlew-candidate-independent-review | Codex reviewed dc4637d3c (six commits on 0176795e0), round05 REQUEST CHANGES: seven required revisions plus copy/merge checks, with executable synthetic probes and NOAA datum receipts. 384 tests OK (one skip), three frozen replays PASS, seven frozen hashes match, gate clean; analysis JSON regenerated identically except preparation stamps. Candidate unmerged; audit OPEN. Only review/coordination records published; no production, observation-ledger, Heron or Tern changes [VERIFIED].

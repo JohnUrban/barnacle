@@ -36,3 +36,4 @@ IDs identify episodes, not independent storms. Historical sources remain at thei
 | [2026-09-26-e01](2026-09-26/e01/README.md) | Morning coastal flood | flood_episode | Event #10 round 1 |
 | [2026-09-26-e02](2026-09-26/e02/README.md) | Evening coastal flood | flood_episode | Event #10 round 2 |
 | [2026-09-27-e01](2026-09-27/e01/README.md) | Morning coastal flood | flood_episode | Event #10 round 3 |
+| [2026-09-27-e02](2026-09-27/e02/README.md) | Evening rain-plus-rising-tide flooding (in progress at registration) | flood_episode | Event #10 round 4 |

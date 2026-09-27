@@ -1,99 +1,88 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 18:40 EDT** (branch `audit/2026-09-27-a1-reply`, worktree
-`../barnacle-a1reply`, three commits on `main` `0176795e0`, UNMERGED). Rewrite
-wholesale each ship; <100 lines. `BACKLOG.md` OPEN LOOPS is authoritative.
+**Snapshot: 2026-09-27 18:52 EDT.** Rewrite wholesale each ship; <100 lines.
+`BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — Codex verification of the independent reply
+## Immediate obligation — Curlew candidate needs revision
 
-Audit **2026-09-27-a1 remains OPEN.** Independent reply filed:
-`audits/2026-09-27-a1/04-independent-reply-claude-curlew.md` (Claude Fable 5.1,
-"Curlew"). R1–R7 all CONFIRMED against primary records; repairs are on this
-branch for Codex's independent review, then merge via the ship ritual
-(commit → gate → push, rebase-with-gate). Commits: `bc645ed5c` (production
-repairs + tests), `5b614a076` (event analysis artifacts), plus the docs commit
-carrying the reply/HANDOFF/BACKLOG. 374 tests OK (one absent-training skip; 32
-new), gate clean, three frozen replays PASS, seven frozen wind hashes match,
-offline site render verified. `docs/`, ledgers, model constants, wind files,
-Heron/Tern branches untouched. Do not close the audit on tests alone.
+Event/operations audit **2026-09-27-a1 OPEN**. Curlew's independent round04
+and two addenda are on `audit/2026-09-27-a1-reply` at **dc4637d3c**, sibling
+`../barnacle-a1reply`; implementation unmerged. Codex round05 on main:
+`audits/2026-09-27-a1/05-review-curlew-candidate-codex.md` — REQUEST CHANGES.
+Keep useful fixes; repair dry-evidence precedence/full-day gauge selection,
+widget evidence/model-claim parity, public transport-error privacy, exit-2
+collision, invented interval endpoints, Battery datum conversion, and rain
+peak-water labeling. Fix copy/status errata; inspect regenerated pages after
+combining with current main. Curlew responds in round06; Codex re-verifies.
+Owner option-3 evidence ordering is already approved on candidate BACKLOG;
+no need to ask again. Do not close on tests alone or merge this candidate yet.
+Independent checks: 384 candidate tests OK (one skip), three frozen replays
+PASS, seven wind hashes unchanged, artifact gate clean. Three analysis JSONs
+regenerate identically except preparation times. Protected ledgers unchanged
+from candidate base. This review ship changes documentation/evidence only.
 
-What changed on the branch (review focus in the reply's last section):
-- **R7** exit 2 = delivery-only failure; hourly workflow publishes validated
-  artifacts, then fails the job after push; `data/alert_delivery_health.json`;
-  sent-state untouched on failure (pending_base retry). Production workflow
-  change — needs Codex's eyes.
-- **R6** near-term tape dots and all-pathways peaks parse through the shared
-  station helpers and compare UTC instants (also fixes a fold-collapse on
-  fall-back night); `bin/append_observation.py` stores offsets; 77 rows kept
-  naive; interval sidecar `2026-09-27/analysis/observation_intervals.json`.
-- **R3** production peaks chart is per registered episode (Sep 26 shows both
-  floods). Heron needs: `history/plans/2026-09-27-heron-episode-interface.md`.
-- **R5** landing/details wording no longer calls the gauge line street water or
-  Oct 30 the worst measured flood; nowcast `day_max_provenance` + operator
-  rejection record `data/nowcast_daymax_rejections.json` honored by the merge
-  and the "so far today" line. Widget/email/SMS: objective exemptions, no bump.
-- **R4/R2** raw GMT gauge archive with flags + receipts, `gauge_qc.json` (peak
-  and lag INTERVALS, Battery, spike screen, cache comparison, nowcast bay-input
-  trace), `rain_scenarios.json` (four tides, four explicit assumptions),
-  `event10_hydrographs.png` (supersedes the Sep 26 four-tide figure).
+## September coastal storm — live records continue separately
 
-## Event #10 — September 25–27 coastal flooding (storm 2026-09-25-coastal)
+Read PLAYBOOK before event support. Append BOTH ledger and raw notes on
+receipt. Main includes Sep27 evening **2026-09-27-e02**, Event #10 round4:
+18:18 NE/NW grate jets, 18:30 water spans NE–NW and SE–SW, 18:33 curb level
+(owner reports). Ledger/notes commits c001052d5 and 2892a765a; registry first
+row added in 367654721. Register later rows as reporting proceeds. Consult
+live inputs/owner reports for current conditions, not this snapshot.
+Candidate analysis is explicitly four windows through Sep27 AM; it does not
+yet analyze the subsequent evening. Preserve main's newer records on merge.
 
-Three floods + one negative window, IDs Sep25-e01 / Sep26-e01 / Sep26-e02 /
-Sep27-e01 (registry `assets/observations/episodes.json`, 30 records total).
-Tape crests 5.701 (09:06–09:13 Sep 26), 4.20–4.24 (22:11–22:29 Sep 26), 5.618
-(09:44–10:06 Sep 27); both mornings exceeded Oct 30 2025 (owner: whole garage
-Sep 26, ~90% Sep 27). Sandy Hook (still preliminary, q=p): 5.847 @08:36 with a
-flat top 08:12–08:54 → corner lag 12–61 min; 5.703 @09:06, flat 08:48–09:24 →
-lag 20–78 min; Sep 26 PM lag 83–125 min. Gate: SEEN closed only at 18:19 Sep 26
-(photo pending, rule 9); "almost certainly" ~21:58 and ~08:30 (untimed
-surrogates); inferred otherwise. Rain: Sep 26 AM 1.30 in (14:24Z frame
-missing), "~2.4 in" is scenario A (fixed base, zero drain) only; Sep 27 AM
-0.23 in, not rain-assisted. No gate threshold or leakage model exists; none
-authorized. Garage entry = proxy, not a surveyed elevation.
+Original Sep26 AM/PM and Sep27 AM owner notes are retained and reconciled;
+photos pending. Stable episode IDs/eNN homes distinguish floods from storm
+aliases. Sep25 PM is a negative observation window, not a measured flood.
+Sep26 AM ~5.701 NAVD88 and Sep27 AM ~5.618 exceed Oct30's reconstructed
+benchmark: first garage-entry floods, whole garage Sep26 and ~90% Sep27
+(owner). Garage association is a proxy, not a surveyed new elevation.
+Gate closure directly reported Sep26 18:19; later visits say "almost
+certainly"; earlier closure and causation remain inferred. No calibrated
+gate threshold or leakage model established. Gauge transients also occurred;
+retain as-seen inputs separately from later NOAA downloads. Bay is not street.
+Rain increments are model sensitivities, not measured attribution.
 
-**Public defect, now traced:** the 2026-09-27 nowcast day max **39.0 in @02:40**
-came from runs whose "observed" bay input was 4.6→6.7 ft while NOAA had
-0.2–0.8 ft; the site's "so far today" line showed it as SEVERE +39.0 above the
-25.2-in tape crest all day. Rolls off at local midnight; rejection recorded on
-the branch. **Owner DECISION needed:** may a modeled value ever outrank a
-same-day tape crest on that line? (code = max wins; docstring = modeled only
-when nothing better).
+Expanded historical views and June14/15 analyses are on main; all_anchors
+retained. Apr18 likely lawn-step level (~13.7in above SW), possibly higher,
+is recollection + gauge reconstruction, not tape. Aug2025 identification
+remains tentative. See history/reports/2026-09-27-expanded-flood-records.md.
+Further negative controls/census and missing historical hindcasts remain open.
 
-Owner DECISION 18:20/18:24 (option 3): the "so far today" line is chosen by
-EVIDENCE CLASS — tape, else bay peak labeled as bay, else model — and a higher
-model day max at an unmeasured time is appended as a claim, never promoted.
-Implemented on this branch across all five arms via `_lookback_phrase`
-(widget prints the winner only; no bump). Cadence-gap claim retracted.
-Ledger metadata rows 264–268 need a separate clarifications file.
-LIVE 2026-09-27 evening: 18:18 report logged (c001052d5 on main), NE/NW
-grates jetting, rain + rising tide; proposed episode 2026-09-27-e02.
-Still pending: Codex review/merge; Heron episode-aware evaluator; verified
-NOAA series (archive beside, not over); episode photos; Borough gate history.
 ## Production — v0.10.6 live; release audit CLOSED
 
-Spec `model/v0.10.6.md`; promotion `75a9933ff`. 18 landmarks, hourly site/JSON,
-~10-min radar nowcast; widget v7.29a re-copy by John unconfirmed. SMS imminent
-impact; ntfy/email longer lead; alert tide horizon 48 h. Consult live inputs,
-not this snapshot, for conditions. Seven-day tails and as-issued rain skill
-remain experimental. Live bug fixes from Sep 26 (ntfy Latin-1, true-time tape
-dots) stand; this branch supersedes the tape-dot boundary handling.
+Spec model/v0.10.6.md; promotion 75a9933ff, candidate 1053eb436, owner
+approval b999ea1d0. Event audit does not reopen release mechanics close-out.
+36-h surge decay/fallback ladder unchanged. Seven-day advisory corrections,
+guidance tails and as-issued rain skill remain experimental.
+18 landmarks; hourly site/JSON and ~10-min radar nowcast. Widget v7.29a
+re-copy planned, completion unconfirmed. SMS imminent impact; ntfy/email
+longer lead; alert tide horizon 48h. Forecast/model changes require review.
 
-## Wind-shadow c2 — CLOSED implementation audit; trial collecting
+## Heron and wind-shadow — ownership unchanged
 
-`audits/2026-09-24-a3/07-close-out-codex.md`; frozen bundle 82d156a6…, hashes
-re-verified here. Shadow only; 60 days AND five storms; this storm counts ONCE.
+Wind-shadow c2 implementation CLOSED: audits/2026-09-24-a3/07-close-out-codex.md,
+merge 8d5f6535e, first official record 5d281b19c (Sep24 16:14Z). Frozen bundle
+82d156a6…; changes require new identity. Open-Meteo gfs_seamless SHADOW ONLY.
+Minimum 60 days AND five eligible completed storms; multiple flood episodes
+in one storm do not satisfy multiple-storm evidence. No winter evidence yet.
+Heron evaluator audit CLOSED at cd17a5a14; research remains unmerged and
+A/B1/B2 NOT YET EVALUABLE at close-out. Revisit Oct9 or earlier informative
+event; see history/plans/2026-09-25-heron-validation-checkpoint.md.
+Curlew's branch documents an episode interface; evaluator implementation and
+issuance-coverage assessment remain Heron's. Do not score assumed interval
+endpoints as ground truth (round05 R5).
 
-## Heron — evaluator closed; research unmerged (`cd17a5a14`, untouched)
+## Tern and other follow-ups — separate work
 
-`audits/2026-09-24-a4/09-close-out-codex.md`; interface/gap note above. Revisit 2026-10-09.
+Tern social rehearsal local-only; sibling round28 closed repairs. Owner
+copy/geography acceptance open. No social accounts/posts, production copy
+adoption, merge or push authorized by this audit. Neutral landmark survey
+(VFW/parking lot) remains future owner work; no elevations established.
+`history/plans/2026-09-25-storm-followup-handoff.md`: email/day-worst parity
+remains; guidance-first research is not a gate solution. Assess gauge skill
+separately from street transfer; SMS policy review is separate.
 
-## Social, storm follow-up and owner work
-
-Tern rehearsal local-only; owner copy/geography acceptance open; no posts,
-merge or push of the social branch. Neutral landmark survey is John's task.
-Storm follow-up (`history/plans/2026-09-25-storm-followup-handoff.md`) open.
-
-Read PLAYBOOK before event support (three-clocks rule + handoff checklist).
-Log ledger AND raw notes on receipt. Explicit staging; commit → gate → push;
-rejected push → rebase/abort → gate. Never overwrite newer work.
+Explicit staging; commit → gate → push; rejection → rebase/abort → gate.
+Preserve append-only ledgers and newer work; never overwrite saved whole files.

@@ -1,0 +1,193 @@
+{
+  "candidate": "dc4637d3c9ae0d6c6c53192d4d8e0cb5bbbe300e",
+  "reviewed_utc": "2026-09-27T22:47:45.615481+00:00",
+  "dry_same_window_model": {
+    "evidence": "modeled",
+    "source": "modeled (bay + radar tank; unverified)",
+    "regime": "severe",
+    "navd88": 6.77,
+    "rel_grate_in": 39.0,
+    "time_local": "02:40"
+  },
+  "dry_with_bay": {
+    "evidence": "bay",
+    "source": "bay peak (gauge; corner not measured)",
+    "regime": "bay",
+    "navd88": 4.75,
+    "rel_grate_in": 14.8,
+    "time_local": "09:44"
+  },
+  "delivery_privacy": {
+    "synthetic_recipient_in_persisted_file": true,
+    "persisted_error": "{'15555550123@sms.example.invalid': (550, b'recipient refused')}"
+  },
+  "invalid_cli": {
+    "returncode": 2,
+    "stderr_tail": "flood_forecast_daily.py: error: unrecognized arguments: --invalid-review-flag"
+  },
+  "rain_peak_field": {
+    "2026-09-25-e01/B_bay_tracking_base_zero_drain": {
+      "reported_peak_water": 7.54,
+      "larger_water_in_own_series": 14.9,
+      "time_utc": "00:10Z"
+    },
+    "2026-09-25-e01/C_bay_tracking_base_head_drain": {
+      "reported_peak_water": 6.5,
+      "larger_water_in_own_series": 14.9,
+      "time_utc": "00:10Z"
+    },
+    "2026-09-26-e01/B_bay_tracking_base_zero_drain": {
+      "reported_peak_water": 6.16,
+      "larger_water_in_own_series": 29.57,
+      "time_utc": "13:00Z"
+    },
+    "2026-09-26-e01/C_bay_tracking_base_head_drain": {
+      "reported_peak_water": 3.7,
+      "larger_water_in_own_series": 29.57,
+      "time_utc": "13:00Z"
+    },
+    "2026-09-26-e02/B_bay_tracking_base_zero_drain": {
+      "reported_peak_water": 8.02,
+      "larger_water_in_own_series": 17.03,
+      "time_utc": "00:50Z"
+    },
+    "2026-09-26-e02/C_bay_tracking_base_head_drain": {
+      "reported_peak_water": 7.01,
+      "larger_water_in_own_series": 17.03,
+      "time_utc": "00:50Z"
+    },
+    "2026-09-27-e01/B_bay_tracking_base_zero_drain": {
+      "reported_peak_water": 9.02,
+      "larger_water_in_own_series": 26.33,
+      "time_utc": "13:10Z"
+    },
+    "2026-09-27-e01/C_bay_tracking_base_head_drain": {
+      "reported_peak_water": 5.8,
+      "larger_water_in_own_series": 26.33,
+      "time_utc": "13:10Z"
+    }
+  },
+  "interval_overrides_requiring_assumption_labels": {
+    "187": {
+      "time_kind": "approximate",
+      "time_window_local": [
+        "2026-09-26T06:45:00-04:00",
+        "2026-09-26T07:15:00-04:00"
+      ],
+      "time_note": "Original: 'Around 7'. Water already present earlier ('underway for a while')."
+    },
+    "191": {
+      "time_kind": "surrogate",
+      "time_window_local": [
+        "2026-09-25T19:30:00-04:00",
+        "2026-09-25T21:30:00-04:00"
+      ],
+      "time_note": "Negative check; ledger uses the gauge-peak minute as a surrogate. Owner home 20:00-20:30, spouse home all evening; exact observation time unconfirmed.",
+      "depth_kind": "upper_bound",
+      "depth_hi_in": 0.0,
+      "depth_note": "No flooding at the intersection (bound: water below the SW grate)."
+    },
+    "221": {
+      "depth_kind": "range",
+      "depth_lo_in": -0.5,
+      "depth_hi_in": -0.3,
+      "depth_note": "'about 1 cm under the curb': -0.39 in nominal; ledger -0.4."
+    },
+    "238": {
+      "depth_kind": "range",
+      "depth_lo_in": -1.0,
+      "depth_hi_in": 0.0,
+      "depth_note": "'nearly to curb level at lawn step' (qualitative)."
+    }
+  },
+  "widget_lookback_code": "    const lb = forecast.today_lookback;\n    if (lb && lb.rel_grate_in > 0) {\n      const reg = (lb.regime === \"dry\" ? \"street water\"\n                   : lb.regime).toUpperCase();\n      const lbLine = left.addText(\n        `so far: ${reg} +${lb.rel_grate_in.toFixed(1)}\u2033 @${lb.time_local}`);\n      lbLine.font = Font.semiboldSystemFont(9);\n      lbLine.textColor = new Color(\n        lb.regime === \"severe\" ? \"#b91c1c\" :\n        lb.regime === \"moderate\" ? \"#c2410c\" : \"#555\");\n      lbLine.lineLimit = 1;\n      lbLine.minimumScaleFactor = 0.7;\n    }\n",
+  "verification": {
+    "suite": {
+      "command": "BARNACLE_REQUIRE_GRIB=1 python -m unittest discover -s tests",
+      "tests_run": 384,
+      "skipped": 1,
+      "result": "OK",
+      "isolated_candidate": true
+    },
+    "frozen_replays": {
+      "v0.10.1": "PASS",
+      "v0.10.3": "PASS",
+      "v0.10.6": "PASS"
+    },
+    "gate": "clean",
+    "offline_regeneration": {
+      "observation_intervals.json": "identical except created_local",
+      "gauge_qc.json": "identical except preparation time",
+      "rain_scenarios.json": "identical except prepared_utc",
+      "event10_hydrographs.py": "exit 0; PNG visually inspected"
+    },
+    "frozen_hashes": [
+      {
+        "path": "models/wind_shadow/manifest.json",
+        "expected": "bd3fb4571833393e52f8f7790282f3210f208ca2180afc4d97bf21884e67bb0a",
+        "actual": "bd3fb4571833393e52f8f7790282f3210f208ca2180afc4d97bf21884e67bb0a"
+      },
+      {
+        "path": "models/wind_shadow/DESIGN.md",
+        "expected": "a5b8da50b200478cf1e2aff3c139ff2cb1f71af30305e7198c8325c5f7fe2dab",
+        "actual": "a5b8da50b200478cf1e2aff3c139ff2cb1f71af30305e7198c8325c5f7fe2dab"
+      },
+      {
+        "path": "forecast/wind_shadow.py",
+        "expected": "6fe6a0996629c61082e67e344aae5683d945b623bd65d05a8b49fd1bc9978250",
+        "actual": "6fe6a0996629c61082e67e344aae5683d945b623bd65d05a8b49fd1bc9978250"
+      },
+      {
+        "path": "history/scripts/evaluate_wind_shadow.py",
+        "expected": "79252d50bacc3902fea230bc0b66ff9b943f0497bab84e32f338ab4ac72c6a9b",
+        "actual": "79252d50bacc3902fea230bc0b66ff9b943f0497bab84e32f338ab4ac72c6a9b"
+      },
+      {
+        "path": "history/scripts/fit_wind_shadow_c2.py",
+        "expected": "a1bf5818d36dd1850ccc3b5b9568873a44fd0095bc227a61a0997550f33bf27b",
+        "actual": "a1bf5818d36dd1850ccc3b5b9568873a44fd0095bc227a61a0997550f33bf27b"
+      },
+      {
+        "path": "models/wind_shadow/rain_ref.py",
+        "expected": "ea66d9a6731455befd073401df409ef01bb2fc2f2ff32b7c1f55e65bc519d65b",
+        "actual": "ea66d9a6731455befd073401df409ef01bb2fc2f2ff32b7c1f55e65bc519d65b"
+      },
+      {
+        "path": "models/wind_shadow/stage_storage_curve.csv",
+        "expected": "3cd2a0e58d238a227b84dc200b1f595a8ea7c950154485181b62e04bd6ba119d",
+        "actual": "3cd2a0e58d238a227b84dc200b1f595a8ea7c950154485181b62e04bd6ba119d"
+      }
+    ],
+    "protected_ledger_identity": {
+      "data/labeled_observations.csv": {
+        "identical": true,
+        "base_sha256": "f8d0b9f568ddb13010113287c328f5a467c797e3409cf8c4cde20dc6019e905c",
+        "candidate_sha256": "f8d0b9f568ddb13010113287c328f5a467c797e3409cf8c4cde20dc6019e905c"
+      },
+      "data/predictions_log.csv": {
+        "identical": true,
+        "base_sha256": "c8c4b5ba989c51c5f9a0d86b927e179a7a058a8d5a29b9d037d52dd0a03a8181",
+        "candidate_sha256": "c8c4b5ba989c51c5f9a0d86b927e179a7a058a8d5a29b9d037d52dd0a03a8181"
+      },
+      "data/forecast_accuracy.csv": {
+        "identical": true,
+        "base_sha256": "3303b7e528e9b8f86672d4e8eed4255a6234bbc9c95b79ac1505ef55221039ee",
+        "candidate_sha256": "3303b7e528e9b8f86672d4e8eed4255a6234bbc9c95b79ac1505ef55221039ee"
+      }
+    }
+  },
+  "datum_comparison": {
+    "8518750": {
+      "epoch": "1983-2001",
+      "MLLW": 3.29,
+      "NAVD88": 6.06,
+      "offset_ft": -2.77
+    },
+    "8531680": {
+      "epoch": "1983-2001",
+      "MLLW": 2.51,
+      "NAVD88": 5.33,
+      "offset_ft": -2.82
+    }
+  }
+}
