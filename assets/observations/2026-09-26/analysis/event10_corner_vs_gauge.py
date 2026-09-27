@@ -24,7 +24,7 @@ import flood_forecast_daily as ff  # noqa: E402
 ELEV = {k: e for k, _l, e, _s in ff.LANDMARKS}
 TIDES = [  # (title, start, end, gate note)
     ("Fri 9/25 PM — gate closed (believed)", "2026-09-25 17:00", "2026-09-26 00:30",
-     "corner DRY (user home 20:00-20:30; wife home all evening)"),
+     "corner DRY as far as observed (user check 20:00-20:30; wife home all evening; flooding elsewhere in town)"),
     ("Sat 9/26 AM — gate closed (inferred)", "2026-09-26 04:00", "2026-09-26 13:30",
      "crest 5.70 @ 09:06-09:13; garage flooded"),
     ("Sat 9/26 PM — gate CLOSED (seen 18:19, ~21:58)", "2026-09-26 17:30", "2026-09-27 00:00",
