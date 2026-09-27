@@ -41,7 +41,7 @@ fabricated ones. A few dozen observations over months would be plenty.
 
 | Column | Meaning | Example |
 |---|---|---|
-| `observation_time_local` | ISO 8601 local time when you observed (lst_ldt, treat as America/New_York) | `2026-05-18T21:58` |
+| `observation_time_local` | ISO 8601 station-local time when you observed, WITH its UTC offset for new rows (`bin/append_observation.py` adds it; a naive legacy value is read as America/New_York with fold=0 — AGENTS rule 3, audit 2026-09-27-a1 R6). This is the OBSERVATION time the observer states, not the message-receipt or file-assembly time. | `2026-09-27T17:40:00-04:00` (legacy: `2026-05-18T21:58`) |
 | `landmark_key` | Machine key from `forecast/flood_forecast_daily.py` LANDMARKS list | `lowest_road_corner` |
 | `landmark_label` | Human-readable label for the same landmark | `Lowest road corner across Bay` |
 | `observed_depth_in` | Eye-estimated depth in inches; blank if not estimated | `1.5` or `0` (= no water) |

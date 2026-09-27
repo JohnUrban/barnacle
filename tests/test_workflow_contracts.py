@@ -66,6 +66,31 @@ class DailyWorkflowContractTests(unittest.TestCase):
         self.assertIn("hourly update ${{ steps.when.outputs.utc_date }}", text)
         self.assertIn('docs/archive/${{ steps.when.outputs.local_date }}', text)
 
+    def test_delivery_failure_publishes_then_fails_after_push(self):
+        """Audit 2026-09-27-a1 R7: exit 2 (every alert rail failed after the
+        forecast generated) must not withhold validated artifacts. The
+        forecast step captures the code, the gate and commit steps still run,
+        and a FINAL step fails the job so the outage stays visible."""
+        text = (ROOT / ".github" / "workflows" /
+                "daily_forecast.yml").read_text()
+        forecast_i = text.index("id: forecast")
+        gate_i = text.index("Publish gate (no markers, strict JSON)")
+        commit_i = text.index("Commit and push docs/ + data/ updates")
+        fail_i = text.index("Fail the run if alert delivery failed (after publication)")
+        self.assertLess(forecast_i, gate_i)
+        self.assertLess(gate_i, commit_i)
+        self.assertLess(commit_i, fail_i)
+        self.assertIn('if [ "$rc" -eq 2 ]; then', text)
+        self.assertIn('echo "delivery_failed=true" >> "$GITHUB_OUTPUT"', text)
+        self.assertIn('elif [ "$rc" -ne 0 ]; then\n            exit "$rc"', text)
+        self.assertIn("if: steps.forecast.outputs.delivery_failed == 'true'", text)
+        self.assertIn("data/alert_delivery_health.json", text)
+        # the gate and commit steps carry no condition that would skip them
+        gate_block = text[gate_i:commit_i]
+        self.assertNotIn("if:", gate_block)
+        commit_block = text[commit_i:fail_i]
+        self.assertNotIn("\n        if:", commit_block)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,19 @@
+{
+ "purpose": "Operator record of nowcast day-max values rejected because their input was bad (audit 2026-09-27-a1 R5). forecast/nowcast.py drops a candidate whose (day_local, day_max_utc) appears here and falls through to the next-best candidate. Entries are append-only; add a new entry rather than editing one.",
+ "rejections": [
+  {
+   "day_local": "2026-09-27",
+   "day_max_utc": "2026-09-27T06:40:00Z",
+   "day_max_street_in": 39.0,
+   "reason": "Modeled street maximum driven by a bay input of 6.677 ft NAVD88 stamped 'observed' at 02:40 local (nowcast runs 05:31Z-07:21Z carried 4.633, 5.667, 6.677 ft). NOAA's Sandy Hook series for that window has the bay at 0.2-0.8 ft NAVD88 and The Battery ebbing smoothly; none of those values exist in the retained series. Not a street measurement; the tape crest that morning was 5.62 ft NAVD88 (+25.2 in) at 09:44-10:06 local.",
+   "evidence": [
+    "git history of docs/nowcast.json: 62a848d5f, a5020b395, 5f80bcf04, e5c15508c",
+    "assets/observations/2026-09-27/analysis/gauge_qc.json (spike_trace)",
+    "audits/2026-09-27-a1/04-independent-reply-claude-curlew.md R5"
+   ],
+   "recorded_utc": "2026-09-27T21:45:00Z",
+   "recorded_by": "Claude Fable 5.1 (Curlew)",
+   "note": "Recorded on a review branch; not live on 2026-09-27 itself. The day's public 'so far today' line showed this value until local midnight."
+  }
+ ]
+}

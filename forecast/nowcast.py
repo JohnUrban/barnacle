@@ -120,14 +120,43 @@ def _origin_day_max(today):
             if (j.get("day_max_utc")
                     and _station_day(j["day_max_utc"]) == today
                     and (j.get("day_max_street_in") or 0) > 0):
-                return j["day_max_street_in"], j["day_max_utc"]
+                return (j["day_max_street_in"], j["day_max_utc"],
+                        _carried_provenance(j, "published"))
         except Exception:
             continue
-    return 0, None
+    return 0, None, None
+
+
+def _carried_provenance(prev, carrier):
+    """Provenance of a carried-forward day max (R5): keep the original
+    record when the earlier writer stored one; otherwise say it is
+    unlabeled so nobody mistakes it for a fresh input."""
+    prov = prev.get("day_max_provenance")
+    if isinstance(prov, dict) and prov.get("kind"):
+        return dict(prov)
+    return {"kind": "carried-forward-unlabeled", "carrier": carrier,
+            "run_generated_utc": prev.get("generated_utc")}
 
 
 HEARTBEAT_PATH = os.path.join(HERE, "..", "data",
                               "nowcast_heartbeats.csv")
+# Audit 2026-09-27-a1 R5: a day-max value that came from a rejected input
+# (2026-09-27 02:40 local: a 39.0-in modeled maximum driven by a bay reading
+# of 6.68 ft NAVD88 stamped "observed" while NOAA's series had the bay at
+# ~0.2 ft and The Battery ebbed smoothly) can otherwise survive every later
+# run because the merge below is max-wins across local, previous and
+# published copies. Entries here name the exact (day_local, day_max_utc)
+# to drop; the merge then falls through to the next-best candidate. This
+# is an operator repair record, not a model or input-policy change.
+DAYMAX_REJECTIONS_PATH = ff.DAYMAX_REJECTIONS_PATH
+
+
+def _daymax_rejections(path=None):
+    """{(day_local, day_max_utc)} pairs an operator has rejected (shared
+    reader in flood_forecast_daily; the path is looked up at call time so
+    tests can redirect it)."""
+    return ff._daymax_rejections(path or DAYMAX_REJECTIONS_PATH)
+
 HEARTBEAT_KEEP_DAYS = 30
 
 
@@ -193,12 +222,22 @@ def _write(payload, now_utc=None):
     # when no tape/gauge truth exists.
     today = _station_day(now)
     payload["day_local"] = today
-    # (value, utc) candidates; winner takes both fields. Monotonic
-    # within the day across racing writers (2026-08-03 regression).
-    cand = [(payload.get("street_now_in") or 0, payload["generated_utc"])]
+    # (value, utc, provenance) candidates; winner takes all fields.
+    # Monotonic within the day across racing writers (2026-08-03
+    # regression). Audit 2026-09-27-a1 R5: every candidate carries the
+    # inputs it was modeled from, and operator-rejected (day, utc) pairs
+    # are excluded so a contaminated value cannot outlive its correction.
+    this_run = {"kind": "modeled-street-now",
+                "bay_navd88": payload.get("bay_navd88"),
+                "bay_source": payload.get("bay_source"),
+                "radar_quality": payload.get("radar_quality"),
+                "run_generated_utc": payload["generated_utc"]}
+    cand = [(payload.get("street_now_in") or 0, payload["generated_utc"],
+             this_run)]
     obs_max = payload.pop("_obs_max", None)
     if obs_max:
-        cand.append(obs_max)
+        cand.append((obs_max[0], obs_max[1],
+                     dict(this_run, kind="modeled-observed-window-peak")))
     try:
         with open(OUT_PATH) as f:
             prev = json.load(f)
@@ -209,14 +248,26 @@ def _write(payload, now_utc=None):
                    if prev.get("day_max_utc") else None)
         if prev_day == today and max_day == today:
             cand.append((prev.get("day_max_street_in") or 0,
-                         prev.get("day_max_utc")))
+                         prev.get("day_max_utc"),
+                         _carried_provenance(prev, "local-previous")))
     except (OSError, ValueError):
         pass
-    cand.append(_origin_day_max(today))
-    best, best_utc = max(cand, key=lambda x: x[0] or 0)
+    origin = _origin_day_max(today)
+    cand.append(tuple(origin) + (None,) * (3 - len(origin)))
+    rejected = _daymax_rejections()
+    kept = []
+    for value, utc, prov in cand:
+        if utc and (today, utc) in rejected:
+            print(f"day-max candidate {value} @ {utc} REJECTED by "
+                  f"{os.path.basename(DAYMAX_REJECTIONS_PATH)}", flush=True)
+            continue
+        kept.append((value, utc, prov))
+    best, best_utc, best_prov = max(kept, key=lambda x: x[0] or 0)
     if best and best_utc:
         payload["day_max_street_in"] = round(best, 1)
         payload["day_max_utc"] = best_utc
+        payload["day_max_provenance"] = best_prov or {
+            "kind": "carried-forward-unlabeled"}
     payload.setdefault("nowcast_schema_version", ff.NOWCAST_SCHEMA_VERSION)
     hb_ok, hb_error = _append_heartbeat(
         payload, now_utc or dt.datetime.now(dt.timezone.utc))

@@ -75,6 +75,7 @@ jobs:
       # ntfy/email/SMS attempt independently when risk appears, escalates,
       # or a new same-rank event begins. Manual dispatch forces a send.
       - name: Run forecast (event-driven alert delivery)
+        id: forecast
         env:
           # wind-shadow trial (SHADOW ONLY; audit 2026-09-24-a3 R8): the ONLY
           # place official trial records are written. Displays/alerts unaffected.
@@ -93,9 +94,27 @@ jobs:
           if [ "${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.force_email || 'true') != 'false' }}" = "true" ]; then
             extra="--force-email"
           fi
+          # Audit 2026-09-27-a1 R7: exit 2 means every requested alert
+          # channel failed AFTER the forecast artifacts were generated and
+          # validated. Publish them anyway (gate + commit below), record the
+          # outcome (data/alert_delivery_health.json), and fail the job only
+          # after the push so the outage stays visible while the alert stays
+          # eligible for retry. Any other non-zero exit is a generation
+          # failure and stops the run before publication as before.
+          set +e
           python3 flood_forecast_daily.py \
             --write-html ../docs/index.html \
             --write-json ../docs/forecast.json $extra
+          rc=$?
+          set -e
+          if [ "$rc" -eq 2 ]; then
+            echo "delivery_failed=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::alert delivery failed on every requested channel; publishing the validated forecast, failing the job after push"
+          elif [ "$rc" -ne 0 ]; then
+            exit "$rc"
+          else
+            echo "delivery_failed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Archive today's forecast snapshot (daily only)
         if: steps.when.outputs.is_daily == 'true'
@@ -189,4 +208,12 @@ jobs:
             fi
           done
           echo "push failed after 3 attempts"
+          exit 1
+
+      # Runs AFTER publication (audit 2026-09-27-a1 R7): a transport outage
+      # is reported as a failed run, never by withholding a valid forecast.
+      - name: Fail the run if alert delivery failed (after publication)
+        if: steps.forecast.outputs.delivery_failed == 'true'
+        run: |
+          echo "::error::alert delivery failed on every requested channel (see data/alert_delivery_health.json); forecast artifacts were published and the alert remains eligible for retry"
           exit 1

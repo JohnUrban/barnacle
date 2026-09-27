@@ -4609,6 +4609,29 @@ def compute_flood_windows(series):
 
 
 ALERT_STATE_PATH = os.path.join(_REPO_ROOT, "data", "alert_state.json")
+# Audit 2026-09-27-a1 R7: delivery health is recorded separately from the
+# forecast artifacts. A run whose forecast generated and validated but whose
+# every requested alert channel failed exits with DELIVERY_FAILED_EXIT so the
+# workflow can PUBLISH the fresh artifacts and then fail visibly; any other
+# non-zero exit means generation failed and nothing new should publish.
+ALERT_DELIVERY_HEALTH_PATH = os.path.join(
+    _REPO_ROOT, "data", "alert_delivery_health.json")
+DELIVERY_FAILED_EXIT = 2
+# Audit 2026-09-27-a1 R5: operator-rejected nowcast day maxima (bad input).
+# Shared by forecast/nowcast.py (the writer) and _today_lookback (a reader).
+DAYMAX_REJECTIONS_PATH = os.path.join(
+    _REPO_ROOT, "data", "nowcast_daymax_rejections.json")
+
+
+def _daymax_rejections(path=None):
+    """{(day_local, day_max_utc)} pairs an operator has rejected."""
+    try:
+        with open(path or DAYMAX_REJECTIONS_PATH) as f:
+            entries = json.load(f).get("rejections") or []
+    except (OSError, ValueError):
+        return set()
+    return {(e.get("day_local"), e.get("day_max_utc")) for e in entries
+            if e.get("day_local") and e.get("day_max_utc")}
 
 # Alert ranks: 0 = nothing worth a message. Tide regimes and pluvial
 # levels merge onto one ladder so "risk appeared" has one meaning.
@@ -5118,6 +5141,97 @@ def persist_alert_state(decision, delivered_channels=None, path=None,
     return new_state
 
 
+def record_delivery_health(delivery, decision, requested_channels,
+                           path=None, now_utc=None):
+    """Persist the outcome of one delivery attempt (audit 2026-09-27-a1 R7).
+
+    Delivery transport health is a separate fact from forecast validity:
+    ``status`` is ``ok`` (every attempted rail delivered), ``partial`` (at
+    least one rail delivered, one or more failed and remain pending) or
+    ``failed`` (nothing delivered; the alert stays eligible for retry via the
+    untouched ``last_sent_*`` markers and ``pending_base``). Nothing here
+    marks an alert as delivered; ``persist_alert_state`` owns sent-state.
+    """
+    if path is None:
+        path = ALERT_DELIVERY_HEALTH_PATH
+    now = now_utc or decision.get("now_utc") or dt.datetime.now(dt.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
+    succeeded = sorted(delivery.get("succeeded") or [])
+    failed = [{"channel": f.get("channel"), "error": str(f.get("error", ""))[:300]}
+              for f in (delivery.get("failed") or [])]
+    if succeeded and not failed:
+        status = "ok"
+    elif succeeded:
+        status = "partial"
+    else:
+        status = "failed"
+    health = {
+        "updated_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "status": status,
+        "sig": decision.get("sig", ""),
+        "rank": decision.get("rank", 0),
+        "requested_base_channels": sorted(requested_channels or []),
+        "attempted": sorted(delivery.get("attempted") or []),
+        "succeeded": succeeded,
+        "failed": failed,
+        "retry_eligible": bool(failed),
+        "publication_blocked": False,
+        "note": ("forecast artifacts are generated and validated before alert "
+                 "delivery; a transport failure never withholds them"),
+    }
+    try:
+        with open(path + ".tmp", "w") as f:
+            json.dump(health, f, indent=1)
+        os.replace(path + ".tmp", path)
+    except OSError as e:
+        print(f"WARNING: alert delivery health write failed: {e}", flush=True)
+    return health
+
+
+def _settle_delivery(decision, delivery, base_requested, sms_gate,
+                     ntfy_imminent_gate, imminent_gate, message,
+                     state_path=None, health_path=None):
+    """Acknowledge deliveries transactionally and record delivery health.
+
+    Returns True when at least one rail delivered. On a complete failure the
+    risk transition is persisted with ``last_sent_*`` untouched (retry next
+    run) and False is returned; the caller decides the process exit code.
+    Publication of already-generated forecast artifacts is never gated here.
+    """
+    for failure in delivery["failed"]:
+        print(f"WARNING: {failure['channel']} alert failed: "
+              f"{failure['error']}", flush=True)
+    record_delivery_health(delivery, decision, base_requested,
+                           path=health_path)
+    if delivery["succeeded"]:
+        # base sent-markers move only on a base send; an SMS-only run
+        # records sms_event (and counts) without touching sig dedup
+        base_ok = [c for c in delivery["succeeded"] if c in base_requested]
+        imminent_ok = [
+            c for c, gate in (("sms", sms_gate),
+                              ("ntfy", ntfy_imminent_gate))
+            if gate["send"] and c in delivery["succeeded"]]
+        persist_alert_state(
+            decision, base_ok, path=state_path,
+            sms_gate=imminent_gate if imminent_gate["send"] else None,
+            requested_base_channels=base_requested,
+            imminent_delivered_channels=imminent_ok)
+        print(f"Delivered alert via {', '.join(delivery['succeeded'])} "
+              f"({decision['reason']}; SMS gate: {sms_gate['reason']})"
+              f": {message}")
+        return True
+    # Record the observed risk/all-clear transition, but deliberately leave
+    # last_sent_* untouched so the next delivery-capable run retries.
+    persist_alert_state(
+        decision, path=state_path, requested_base_channels=base_requested)
+    print("ERROR: alert was not delivered by any channel; it remains "
+          "eligible for retry. Forecast artifacts were already generated "
+          f"and are published by the workflow (exit {DELIVERY_FAILED_EXIT} "
+          "= delivery failure only).", flush=True)
+    return False
+
+
 def should_send_alert(forecast, now_utc=None):
     """Compatibility wrapper: evaluate without mutating alert state."""
     decision = evaluate_alert(forecast, now_utc=now_utc)
@@ -5417,7 +5531,11 @@ def _today_lookback():
         nc_day = nc.get("day_local")
         if not nc_day and nc.get("generated_utc"):
             nc_day = utc_to_station_local(nc["generated_utc"]).date().isoformat()
-        if nc_day == today:
+        # audit 2026-09-27-a1 R5: an operator-rejected day max (bad input,
+        # e.g. 2026-09-27 02:40's 39.0 in from a phantom 6.68-ft bay) must
+        # not become "today's peak" on any surface
+        rejected = (nc_day, nc.get("day_max_utc")) in _daymax_rejections()
+        if nc_day == today and not rejected:
             dmx = nc.get("day_max_street_in") or 0
             if dmx > 0:
                 w_nc = GRATE_SW + dmx / 12.0
@@ -5517,9 +5635,12 @@ def _render_historical_floods_html():
        this list puts water on the porch stairs</b> — the mildest
        reaches the top of the 1st step; Sandy put ~3&frac12; feet over
        the porch deck <i>before counting its rain</i>. For scale: the
-       worst events measured since this project began — Oct 30 2025
-       (~5.27 NAVD88 measured, +21&Prime; vs SW grate, past the
-       porch-step base) and the 7/6/2026 flash flood (~4.8 NAVD88) —
+       largest local floods this project has recorded — Sep 26 2026
+       (5.70 NAVD88 tape-measured, +26.2&Prime; vs SW grate, over the
+       first porch step) and Sep 27 2026 (5.62 NAVD88), both
+       coastal-surge tides — then the reconstructed Oct 30 2025
+       compound flood (~5.27 NAVD88, +21&Prime;: memory and post-peak
+       photos, not tape) and the 7/6/2026 flash flood (~4.8 NAVD88) —
        sit far below these floors. <b>Epistemic honesty</b>: this
        ranking is built from the tide gauge, which records no local
        water and no rain. True local rankings are unknowable from it —
@@ -5560,28 +5681,39 @@ def _render_water_series_section(forecast):
     tape_pts = []
     try:
         elev_by_key = {k: e for k, _l, e, _sh in LANDMARKS}
-        t0 = series[0]["time"]
-        t1 = series[-1]["time"]
+        # Audit 2026-09-27-a1 R6: bounds and readings are compared as
+        # INSTANTS through the shared station parser (offset-bearing or
+        # legacy naive rows alike) and the window is inclusive at both
+        # ends. The old string comparison truncated the series' "-04:00"
+        # suffix and dropped a reading sitting exactly on the left edge.
+        # Compare and subtract in UTC: aware datetimes sharing one tzinfo
+        # compare by WALL time and ignore fold, so the repeated fall-back
+        # hour would collapse (station_time_sort_key exists for this).
+        _utc = dt.timezone.utc
+        s0 = parse_station_local_time(series[0]["time"]).astimezone(_utc)
+        s1 = parse_station_local_time(series[1]["time"]).astimezone(_utc)
+        s_end = parse_station_local_time(series[-1]["time"]).astimezone(_utc)
+        step_s = (s1 - s0).total_seconds() or 1800.0
         with open(os.path.join(_REPO_ROOT, "data",
                                "labeled_observations.csv")) as f:
             for r in csv.DictReader(f):
-                ts = (r.get("observation_time_local") or "").replace("T", " ")[:16]
                 key = (r.get("landmark_key") or "").strip()
-                if not (t0 <= ts <= t1) or "pocket" in key \
-                        or key not in elev_by_key:
+                if "pocket" in key or key not in elev_by_key:
                     continue
                 try:
+                    obs_local = parse_station_local_time(
+                        (r.get("observation_time_local") or "").strip())
                     w = elev_by_key[key] + float(r["observed_depth_in"]) / 12.0
                 except (TypeError, ValueError):
                     continue
+                obs_t = obs_local.astimezone(_utc)
+                if not (s0 <= obs_t <= s_end):
+                    continue
                 # exact position: fractional index on the slot axis
                 # (every reading plotted at its true time — user 2026-09-26)
-                obs_t = dt.datetime.strptime(ts, "%Y-%m-%d %H:%M")
-                s0 = parse_station_local_time(series[0]["time"]).replace(tzinfo=None)
-                s1 = parse_station_local_time(series[1]["time"]).replace(tzinfo=None)
-                step_s = (s1 - s0).total_seconds() or 1800.0
                 frac = (obs_t - s0).total_seconds() / step_s
-                tape_pts.append((round(frac, 3), to_in(w), ts[11:16]))
+                tape_pts.append((round(frac, 3), to_in(w),
+                                 obs_local.strftime("%H:%M")))
     except Exception:
         tape_pts = []
     has_rain_layer = any(v is not None for v in pluv)
@@ -5596,7 +5728,8 @@ def _render_water_series_section(forecast):
     curb_in = round((CURB_TOP - GRATE_SW) * 12, 1)
     # Standard y-limits (user 2026-07-06): the same frame every day so
     # the eye calibrates — normal tides swing roughly −55″..+5″ and
-    # measured floods have peaked ~+21″ (Oct 30). [−60, +36] holds all
+    # measured floods have peaked +26.2″ (Sep 26 2026 tape; Oct 30 2025
+    # is a ~+21″ reconstruction). [−60, +36] holds all
     # of that; the frame expands only if data/reference lines exceed it
     # (a Sandy-class forecast should not be clipped).
     all_vals = ([v for v in tide if v is not None]
@@ -5782,9 +5915,15 @@ def _render_water_series_section(forecast):
     if has_observed:
         note_bits.append(
             "The chart reaches 6 h into the PAST: the gray line "
-            "is the OBSERVED bay (despiked gauge — a true observation, "
-            "and via the drains' proven bay-coupling, the tide-pathway "
-            "street water); it stops at the now-line where forecast "
+            "is the OBSERVED bay at the Sandy Hook gauge (despiked) — a "
+            "measured BAY level, not measured street water. In ordinary "
+            "tides the corner has tracked it within a few inches, but the "
+            "September 25–27, 2026 surge tides showed the corner lagging "
+            "the bay peak by a quarter hour to 1½ hours and staying dry "
+            "through one bay peak while the Snug Harbor tide gate was "
+            "reportedly closed; read the gray line as the tide-pathway "
+            "INPUT, never as a street measurement. It stops at the "
+            "now-line where forecast "
             "takes over. Small orange diamonds are tape measurements, each at its true time. The "
             "blue/amber model lines across the past show the CURRENT "
             "model's view, not what was predicted at the time — past "
@@ -6039,6 +6178,84 @@ def _astro_high_tides():
              "kind": "astro"} for t, v in hrows]
 
 
+EPISODE_REGISTRY_PATH = os.path.join(
+    _REPO_ROOT, "assets", "observations", "episodes.json")
+
+
+def _observation_row_hash(row):
+    """Content identity of one ledger row — the recipe the episode registry
+    uses (history/scripts/check_observation_episodes.py): SHA-256 of the
+    parsed CSV row as JSON with sorted keys, no ASCII escaping, compact
+    separators. The CSV line number is only a locator."""
+    import hashlib
+    return hashlib.sha256(json.dumps(
+        dict(row), sort_keys=True, ensure_ascii=False,
+        separators=(",", ":")).encode()).hexdigest()
+
+
+def _episode_row_index(path=None):
+    """{row sha256: episode_id} from assets/observations/episodes.json.
+    Empty when the registry is absent or unreadable (consumers then fall
+    back to calendar-day grouping and say so)."""
+    if path is None:
+        path = EPISODE_REGISTRY_PATH
+    try:
+        with open(path) as f:
+            reg = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    out = {}
+    for ep in reg.get("episodes") or []:
+        for ref in ep.get("ledger_rows") or []:
+            if ref.get("sha256"):
+                out[ref["sha256"]] = ep.get("episode_id")
+    return out
+
+
+def _measured_flood_peaks(obs_path=None, registry_path=None):
+    """Measured flood peaks for the all-pathways chart.
+
+    Audit 2026-09-27-a1 R3: the old rule kept the maximum implied water
+    per CALENDAR DAY, so September 26 2026's evening flood (episode e02,
+    ~4.22 ft) vanished behind that morning's 5.70. Rows are now grouped by
+    the registered episode they belong to (registry rows matched by content
+    hash) and only unregistered rows fall back to a per-day maximum; each
+    marker says which grouping produced it. Times parse through the shared
+    station parser (R6). Returns [{time, navd88, episode_id, grouping}]."""
+    if obs_path is None:
+        obs_path = os.path.join(_REPO_ROOT, "data", "labeled_observations.csv")
+    elev_by_key = {k: e for k, _lbl, e, _sh in LANDMARKS}
+    episode_of = _episode_row_index(registry_path)
+    best = {}
+    try:
+        with open(obs_path) as f:
+            for r in csv.DictReader(f):
+                key = (r.get("landmark_key") or "").strip()
+                if "pocket" in key or key not in elev_by_key:
+                    continue
+                try:
+                    d_in = float(r.get("observed_depth_in") or "")
+                except ValueError:
+                    continue
+                ts = (r.get("observation_time_local") or "").strip()
+                try:
+                    t = parse_station_local_time(ts)
+                except (TypeError, ValueError):
+                    continue
+                w = elev_by_key[key] + d_in / 12.0
+                if w <= GRATE_SW:
+                    continue
+                ep = episode_of.get(_observation_row_hash(r))
+                group = ep if ep else "day:" + t.date().isoformat()
+                if group not in best or w > best[group][1]:
+                    best[group] = (t.strftime("%Y-%m-%d %H:%M"), w, ep)
+    except OSError:
+        return []
+    return [{"time": v[0], "navd88": round(v[1], 3), "episode_id": v[2],
+             "grouping": "episode" if v[2] else "day"}
+            for v in sorted(best.values(), key=lambda v: v[0])]
+
+
 def _flood_peaks_chart_data(forecast):
     """Data for the all-pathways flood-peaks timeline (2026-07-07,
     user design). Everything in ft NAVD88 (client converts to the
@@ -6073,42 +6290,11 @@ def _flood_peaks_chart_data(forecast):
                 pt["burst_potential_mllw"] + MLLW_TO_NAVD88_OFFSET, 3)
         tides.append(row)
 
-    # Measured flood peaks: max implied water per day from the
-    # spot-check log (landmark elevation + depth). Pocket rows are
-    # excluded (retention, not street water); dry checks (implied
-    # water below the SW grate) don't mark.
-    measured = []
-    try:
-        elev_by_key = {k: e for k, _lbl, e, _sh in LANDMARKS}
-        # Full history (2026-08-20 date-range feature): the client
-        # filters to the default window; the payload carries all of it
-        best = {}
-        obs_path = os.path.join(_REPO_ROOT, "data",
-                                "labeled_observations.csv")
-        with open(obs_path) as f:
-            for r in csv.DictReader(f):
-                key = (r.get("landmark_key") or "").strip()
-                if "pocket" in key or key not in elev_by_key:
-                    continue
-                try:
-                    d_in = float(r.get("observed_depth_in") or "")
-                except ValueError:
-                    continue
-                ts = (r.get("observation_time_local") or "").strip()
-                try:
-                    t = dt.datetime.strptime(ts[:16], "%Y-%m-%dT%H:%M")
-                except ValueError:
-                    continue
-                w = elev_by_key[key] + d_in / 12.0
-                if w <= GRATE_SW:
-                    continue
-                day = t.date().isoformat()
-                if day not in best or w > best[day][1]:
-                    best[day] = (ts[:16].replace("T", " "), w)
-        measured = [{"time": v[0], "navd88": round(v[1], 3)}
-                    for v in sorted(best.values())]
-    except OSError:
-        measured = []
+    # Measured flood peaks from the spot-check log (landmark elevation
+    # + depth): one marker per registered flood EPISODE, else per day.
+    # Pocket rows are excluded (retention, not street water); dry checks
+    # (implied water below the SW grate) don't mark.
+    measured = _measured_flood_peaks()
 
     # Past days where any hourly forecast carried live pluvial risk.
     risk_by_day = {}
@@ -8205,35 +8391,14 @@ def _main_core(holder):
     delivery = deliver_alert(forecast, subject, text, html,
                              inline_png=_png, channels=_channels,
                              sms_text=_imminent)
-    for failure in delivery["failed"]:
-        print(f"WARNING: {failure['channel']} alert failed: "
-              f"{failure['error']}", flush=True)
-    if delivery["succeeded"]:
-        # base sent-markers move only on a base send; an SMS-only run
-        # records sms_event (and counts) without touching sig dedup
-        _base_ok = [c for c in delivery["succeeded"]
-                    if c in _base_requested]
-        _imminent_ok = [
-            c for c, gate in (("sms", sms_gate),
-                              ("ntfy", ntfy_imminent_gate))
-            if gate["send"] and c in delivery["succeeded"]]
-        persist_alert_state(
-            decision, _base_ok,
-            sms_gate=_imminent_gate if _imminent_gate["send"] else None,
-            requested_base_channels=_base_requested,
-            imminent_delivered_channels=_imminent_ok)
-        print(f"Delivered alert via {', '.join(delivery['succeeded'])} "
-              f"({decision['reason']}; SMS gate: {sms_gate['reason']})"
-              f": {_imminent or subject}")
-        return
-
-    # Record the observed risk/all-clear transition, but deliberately leave
-    # last_sent_* untouched so the next delivery-capable run retries.
-    persist_alert_state(
-        decision, requested_base_channels=_base_requested)
-    print("ERROR: alert was not delivered by any channel; it remains "
-          "eligible for retry.", flush=True)
-    raise SystemExit(2)
+    if not _settle_delivery(decision, delivery, _base_requested, sms_gate,
+                            ntfy_imminent_gate, _imminent_gate,
+                            _imminent or subject):
+        # Audit 2026-09-27-a1 R7: a transport failure is NOT a generation
+        # failure. The HTML/JSON/per-tide artifacts above are complete and
+        # gate-valid; the workflow publishes them on this exit code and
+        # fails the job afterwards so the outage stays visible.
+        raise SystemExit(DELIVERY_FAILED_EXIT)
 
 
 

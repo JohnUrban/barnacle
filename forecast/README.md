@@ -66,3 +66,23 @@ to `build_water_series` remains valid (nowcast astronomy-only use).
 `outlook_degraded_inputs` scopes the optional outlook. The gate accepts legacy
 artifacts without the split and validates both lists when the new field exists.
 The widget source is unchanged and consumes the corrected JSON automatically.
+
+## Delivery health and day-max provenance (audit 2026-09-27-a1, 2026-09-27)
+
+- **Publication vs delivery.** `flood_forecast_daily.py` writes and validates
+  every forecast artifact before it attempts alert delivery. A run whose
+  every requested alert rail fails exits with `DELIVERY_FAILED_EXIT` (2) and
+  records `data/alert_delivery_health.json` (`status` ok / partial / failed,
+  attempted / succeeded / failed rails, `retry_eligible`). The hourly workflow
+  treats exit 2 as "publish, then fail the job after the push"; any other
+  non-zero exit is a generation failure and still stops publication. Sent-state
+  is owned by `persist_alert_state` alone: a failed rail is never acknowledged
+  and stays in `pending_base` for the next run.
+- **Nowcast day max.** `docs/nowcast.json` carries `day_max_provenance`
+  (`kind` modeled-street-now / modeled-observed-window-peak /
+  carried-forward-unlabeled, the bay input and its source, radar quality, the
+  run). `data/nowcast_daymax_rejections.json` is an append-only operator record
+  of (day_local, day_max_utc) pairs whose input was bad; `nowcast._write` and
+  `_today_lookback` both skip them so a contaminated maximum cannot outlive its
+  correction through the max-wins merge. Adding an entry is a human decision
+  with cited evidence; it is not automation and not an input-policy change.

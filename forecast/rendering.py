@@ -309,13 +309,20 @@ def _render_how_flooding_html(forecast):
        timing is now measured and modeled (v0.10): street water
        lags the rain peak by ~15 min, can rise 8&Prime; in 12
        minutes, and drains back within ~20&ndash;30 min of the rain
-       stopping. All four floods measured to date &mdash; including
-       the two worst &mdash; were rain-driven.</p>
+       stopping. The first four floods measured (through July 2026)
+       &mdash; including the two worst at that time &mdash; were
+       rain-driven; the September 26&ndash;27, 2026 coastal-surge
+       floods are now the largest tape-measured.</p>
     <p><b>Compound (the worst case).</b> The tide can't prevent a rain
        flood, but it can raise its floor: heavy rain landing on a high
        tide has nowhere to go at all. The biggest flood in this
-       project's records — October 30, 2025, water past the bottom
-       porch step — was exactly this combination. The two add
+       project's records before September 2026 — October 30, 2025,
+       water past the bottom porch step (a reconstruction from memory
+       and post-peak photos, not a tape crest) — was exactly this
+       combination. The larger September 26&ndash;27, 2026 floods were
+       surge tides with the Snug Harbor tide gate reportedly closed;
+       the rain share that morning is a model sensitivity, not a
+       measurement. The two add
        <i>sub-linearly</i>, though: the deeper the water, the larger
        the area it covers, so each additional inch takes more water
        than the last. The same rain that raises a low-tide street
@@ -2365,7 +2372,7 @@ def _render_flood_peaks_section(forecast):
               pointBorderWidth: 1.5, showLine: false },
           ];
           if (measP.length) core.push(
-            { label: 'MEASURED flood (spot-check, any cause)',
+            { label: 'MEASURED flood peak (spot-check; one per flood episode, per day if unregistered)',
               data: cpts(measP),
               borderColor: 'rgba(11,61,107,1)',
               backgroundColor: 'rgba(217,119,6,0.9)',
@@ -2555,7 +2562,12 @@ def _render_flood_peaks_section(forecast):
        everything on a real TIME axis in local units: tide peaks (observed ■ / predicted ●
        / faded halo = what we said ~24&nbsp;h ahead), <b>measured
        flood peaks from the spot-check log</b> (orange diamonds — any
-       cause, placed when they actually happened), navy triangles =
+       cause, placed when they actually happened; one diamond per
+       registered flood episode from
+       <code>assets/observations/episodes.json</code>, so two floods on
+       one date both appear — e.g. September 26, 2026 morning and
+       evening; rows outside the registry collapse to one diamond per
+       calendar day), navy triangles =
        rain-burst compound potential on upcoming tides, and faint
        navy day-dashes = days whose hourly forecasts carried live
        burst risk (day-wide, because a burst has magnitude but no

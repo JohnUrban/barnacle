@@ -2,6 +2,7 @@
 """Safely append one live field observation to the canonical ledger."""
 import argparse
 import csv
+import datetime as dt
 import io
 import os
 import sys
@@ -24,7 +25,16 @@ def append_observation(row, path=DEFAULT_PATH):
     ff._csv_needs_header(path, FIELDS)
     if not (row.get("observation_time_local") or "").strip():
         raise ValueError("observation_time_local is required")
-    ff.parse_station_local_time(row["observation_time_local"])
+    stamp = row["observation_time_local"].strip()
+    parsed = ff.parse_station_local_time(stamp)
+    if dt.datetime.fromisoformat(stamp).tzinfo is None:
+        # AGENTS rule 3 / audit 2026-09-27-a1 R6: new rows are stored
+        # offset-bearing. A naive station-local stamp is interpreted with
+        # the shared parser (fold=0 in the repeated fall-back hour) and the
+        # explicit offset is written so no later reader has to guess.
+        normalized = parsed.isoformat(timespec="seconds")
+        print(f"note: naive station time {stamp!r} stored as {normalized}")
+        row = dict(row, observation_time_local=normalized)
     if not (row.get("landmark_key") or "").strip():
         raise ValueError("landmark_key is required")
     if not ((row.get("observed_depth_in") or "").strip()
