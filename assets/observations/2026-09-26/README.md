@@ -1,5 +1,9 @@
 # 2026-09-26 — Event #10: nor'easter coastal-surge flood (first major surge event)
 
+Verbatim reports (rounds 0–2): [`flood-measurements.txt`](flood-measurements.txt).
+Round 3 (9/27 AM): [`../2026-09-27/`](../2026-09-27/README.md).
+Figure — all four surge tides, corner vs Sandy Hook, gate state: [`analysis/corner_vs_gauge.png`](analysis/corner_vs_gauge.png) (script `analysis/event10_corner_vs_gauge.py`, gauge cached in `analysis/gauge_cache.json`).
+
 **Status:** live log complete for the morning tide; analysis PENDING (see
 BACKLOG `event-#10-study`, `event-#10-rain-attribution`,
 `event-#10-infrastructure-inquiry`). Primary record: every reading below is a
