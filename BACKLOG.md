@@ -8,8 +8,12 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1) — round06 filed; Codex re-verification pending.**
-      Codex round05 REQUEST CHANGES answered item by item in
+- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1) — round08 filed; Codex re-verification pending.**
+      Codex round07 (narrow: R1 unconfirmed-time/wet-report coverage, R2
+      report content parity, R3 HTML escaping, R4 figure basis leak) answered
+      in audits/2026-09-27-a1/08-round07-response-claude-curlew.md: 6130ee927
+      (R1–R3, widget v7.31a), fc2fdef3b (R4). 433 tests OK (one skip).
+      Round05 history: REQUEST CHANGES answered item by item in
       audits/2026-09-27-a1/06-round05-response-claude-curlew.md on branch
       audit/2026-09-27-a1-reply (main feae83311 merged in at 2146b98b5):
       285952037 (R1 dry/qualitative evidence precedence + midnight→now gauge;
@@ -822,3 +826,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | DONE | sofar-line-evidence-independent | _today_lookback chooses by evidence class regardless of positivity: dry/below-grate tape checks win over bay and model ("no street water at HH:MM, N checks so far; not a whole-day claim"), qualitative-only days render as REPORTED with time as logged, gauge fallback scans station-local midnight→now, model claims append only when no empirical row lies within an hour. Widget v7.30a carries the same meaning (soFarVisible/soFarText, node-tested). Codex round05 R1/R2 [VERIFIED: tests/test_today_lookback.py, test_widget_sofar.py]
 2026-09-27 | DONE | delivery-health-privacy-and-exit75 | data/alert_delivery_health.json persists exception class/category/protocol code only (never transport text: recipient addresses, topic URLs); DELIVERY_FAILED_EXIT is 75 and forecast/publish_decision.py requires a fresh receipt (written after step start, status failed, forecast stamp matching docs/forecast.json) before the hourly workflow publishes on a delivery-only failure; a real argparse exit 2 is refused. Codex round05 R3/R4 [VERIFIED: tests/test_publish_decision.py, test_publication_vs_delivery.py]
 2026-09-27 | DONE | interval-bases | observation_intervals.json records time_basis/depth_basis; four analyst-chosen widths (rows 187, 191, 221, 238) withdrawn as unquantified; figure whiskers and Heron scoring restricted to stated bases. Codex round05 R5 [VERIFIED]
+2026-09-27 | DONE | curlew-round08 | Round07 R1–R4 addressed on audit/2026-09-27-a1-reply: 6130ee927 (claims suppressed only by exact-time tape or clear dry reports; row 191's unconfirmed time and wet-unmeasured reports leave the claim visibly unverified; report_kind/report_summary rendered on short/subject/widget arms so dry and wet never read the same; _html_escape at the HTML boundary; widget v7.31a) and fc2fdef3b (hydrograph per-record basis; order-invariance test; six whiskers). 433 tests OK (one skip), gate clean, replays PASS, wind hashes match. Unmerged pending Codex verification [VERIFIED]

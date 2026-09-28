@@ -1,28 +1,25 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 19:55 EDT** (branch `audit/2026-09-27-a1-reply`). Rewrite
+**Snapshot: 2026-09-27 21:55 EDT** (branch `audit/2026-09-27-a1-reply`). Rewrite
 wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — Codex verifies the revised Curlew candidate
+## Immediate obligation — Codex verifies the round-08 candidate
 
-Event/operations audit **2026-09-27-a1 OPEN**. Codex round05 REQUEST CHANGES
-(`audits/2026-09-27-a1/05-review-curlew-candidate-codex.md`) is answered in
-**round06** `audits/2026-09-27-a1/06-round05-response-claude-curlew.md` on
-`audit/2026-09-27-a1-reply` (sibling `../barnacle-a1reply`), UNMERGED. Main at
-`feae83311` was merged in (`2146b98b5`, BACKLOG union, live e02 rows kept).
-Repairs: `285952037` R1 evidence-independent so-far line (dry tape = evidence,
-qualitative "reported", gauge midnight→now) + R2 widget **v7.30a** parity
-(node-tested) + R3 health file carries class/category/code only + R4 exit **75**
-and `forecast/publish_decision.py` receipt check; `b70accd76` R5 interval
-bases (four analyst widths withdrawn) + R6 Battery −2.77 datum + R7 separate
-increment/total-water maxima and crest-window increments (Sep26 1.97–2.36 in,
-Sep27 0.02–0.08 in; scenario A base 5.847) + C2 copy/figure; `2191bda8e` C1.
-Combined tree: 421 tests OK (one skip), gate clean, three replays PASS, seven
-wind hashes match; offline regeneration validated by html_contract and
-inspected. `docs/` NOT committed on the branch (bots own it; regenerate at
-merge). Next: Codex re-verification, then merge via the ship ritual. Do not
-close on tests alone. Widget v7.30a needs John's re-copy after merge.
+Event/operations audit **2026-09-27-a1 OPEN**. Codex round07 (narrow REQUEST
+CHANGES) is answered in **round08**
+`audits/2026-09-27-a1/08-round07-response-claude-curlew.md` on
+`audit/2026-09-27-a1-reply` (sibling `../barnacle-a1reply`), UNMERGED, base
+main `feae83311` (merge `2146b98b5`). Round07 repairs: `6130ee927` R1 model
+claims suppressed only by exact-time tape or clear dry reports (row 191's
+unconfirmed time, wet-unmeasured and invalid rows never cover; claims carry a
+verification reason) + R2 report_kind/report_summary on every arm, widget
+**v7.31a** + R3 `_html_escape` at the HTML boundary; `fc2fdef3b` R4 per-record
+basis in the hydrograph, order-invariance test. Round06 repairs stand
+(`285952037`, `b70accd76`, `2191bda8e`). 433 tests OK (one skip), gate clean,
+three replays PASS, seven wind hashes match. Next: Codex re-verification →
+merge against then-current main, regenerate pages, gate, inspect. Widget
+v7.31a is NOT a copy recommendation until deployed. Do not close on tests.
 
 ## September coastal storm — live records continue separately
 
@@ -60,7 +57,7 @@ approval b999ea1d0. Event audit does not reopen release mechanics close-out.
 36-h surge decay/fallback ladder unchanged. Seven-day advisory corrections,
 guidance tails and as-issued rain skill remain experimental.
 18 landmarks; hourly site/JSON and ~10-min radar nowcast. Widget: main has
-v7.29a (re-copy unconfirmed); the branch carries v7.30a. SMS imminent impact;
+v7.29a (re-copy unconfirmed); the branch carries v7.31a. SMS imminent impact;
 ntfy/email longer lead; alert tide horizon 48h. Model changes require review.
 
 ## Heron and wind-shadow — ownership unchanged
