@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-28 09:49 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-28 10:28 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Audit 2026-09-27-a1 — implementation closed; owner check pending
@@ -17,13 +17,13 @@ Owner wording rule: "measured", never "stick"/"ruler"; "tape" only where stated.
 Live behavior: delivery-only alert failures exit 75 and still publish
 (receipt-checked; untested by a real outage); "so far today" by evidence class
 with quoted reports; per-episode peaks; provenance + rejection on day max.
-Curlew bounds candidate **f14837961** (`audit/2026-09-27-a1-bounds`) remains
-UNMERGED; Codex round18 REQUEST CHANGES, separate from the closed ship:
-`audits/2026-09-27-a1/18-review-round17-codex.md`. Round16 probe cases fixed;
-472 tests OK (one skip), three replays PASS, wind hashes/ledgers preserved.
-Three narrower repairs: depth-range/time regex; disputed caps still filter
-model claims; unavailable bounds-file health. Curlew reply19 next before
-review/merge. Branch widget v7.34a is NOT deployed. Round score: 8/10.
+Curlew bounds candidate **648c7db8d** (`audit/2026-09-27-a1-bounds`) is
+APPROVED for merge by Codex round20; still UNMERGED at the review:
+`audits/2026-09-27-a1/20-candidate-approval-codex.md`. Round18 findings fixed;
+487 tests OK (one skip), three replays PASS, wind hashes/ledgers preserved;
+whole-build health and full site/email/widget-text rendering verified.
+NEXT Curlew: merge current main, regenerate no-send, gate/push, verify live,
+record round21. Widget v7.35a is a branch asset until shipped. Score: 9/10.
 Owner bands/clarifications retained on that branch. Crossing 4.37 vs curb
 4.16 remains an open survey discrepancy; no elevation change authorized.
 Science follow-ups remain OPEN: gate transfer, high-base tank, verified NOAA,
