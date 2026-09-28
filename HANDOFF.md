@@ -1,17 +1,16 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-28 11:20 EDT (landmark-bounds ship).** Rewrite wholesale each
+**Snapshot: 2026-09-28 11:55 EDT (landmark-bounds shipped).** Rewrite wholesale each
 ship; <100 lines. `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Landmark-bounds work unit — SHIPPING (Codex round 20 approved)
+## Landmark-bounds work unit — SHIPPED (Codex round 20 approved)
 
 Candidate `648c7db8d` (branch `audit/2026-09-27-a1-bounds`) approved:
 `audits/2026-09-27-a1/20-candidate-approval-codex.md`; owner authorization =
 BACKLOG PREF `observations-are-quantitative`, PREF `measurement-wording`,
-DECISION `sofar-line-empirical-wins`. Main merged at `f815877cb`; pages
-regenerated no-send on the combined tree; ship record + deployment checks in
-`audits/2026-09-27-a1/21-*` (CI, Pages, deployed widget asset, forecast
-stamps, bounds health). Live after ship: append-only bounds record
+DECISION `sofar-line-empirical-wins`. SHIPPED `7248c500d` (11:37 EDT), Pages
+green; CI failed on a fixed-count tide-page test, fixed in `ad2b66a52`
+(CI 36446596736 green). Record `audits/2026-09-27-a1/21-landmark-bounds-ship-claude-curlew.md`. Live after ship: append-only bounds record
 `data/observation_bounds.jsonl` (writer `bin/append_observation_bound.py`,
 shared contract `forecast/observation_bounds.py`, gate-validated; missing or
 unreadable file = degraded input); "so far today" is interval-aware over
