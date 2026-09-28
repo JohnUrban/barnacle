@@ -75,7 +75,9 @@ class ModelVersionTests(unittest.TestCase):
         self.assertFalse(any(row.startswith("driveway_central,") for row in map_rows))
 
         widget = (ROOT / "docs" / "barnacle-widget.js").read_text(encoding="utf-8")
-        self.assertIn('const WIDGET_VERSION = "v7.29a";', widget)
+        # v7.30a (2026-09-27, audit 2026-09-27-a1 round 05 R2): the so-far line
+        # gained evidence/claim parity with the site and email arms
+        self.assertIn('const WIDGET_VERSION = "v7.30a";', widget)
         self.assertNotIn("driveway_central", widget)
 
 

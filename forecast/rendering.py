@@ -123,21 +123,45 @@ def _clock_hhmm(time_str):
     return value[11:16] if len(value) >= 16 else value
 
 
+def _lookback_visible(lb):
+    """Whether the "so far today" line renders at all (round 05 R1): any
+    empirical evidence renders, including a dry measurement; bay and model
+    values render only when above the SW grate."""
+    if not lb:
+        return False
+    if lb.get("evidence") in ("measured", "reported"):
+        return True
+    return (lb.get("rel_grate_in") or 0) > 0
+
+
 def _lookback_phrase(lb, html=False, short=False):
     """One phrase for the "so far today" value on EVERY arm (rule 8; owner
-    DECISION 2026-09-27, audit 2026-09-27-a1 reply 04 option 3): the
-    headline is the empirical daily max — tape, else the bay peak labeled
-    as bay — and a model claim at an unmeasured time is appended, never
-    promoted. `evidence` ∈ measured | bay | modeled (legacy dicts without it
-    are read from `source`)."""
+    DECISION 2026-09-27, audit 2026-09-27-a1 reply 04 option 3; round 05 R1):
+    the headline is the empirical evidence — a tape maximum (even a dry
+    one), else the latest qualitative report, else the bay peak labeled as
+    bay — and a model claim at an unmeasured time is appended, never
+    promoted. `evidence` ∈ measured | reported | bay | modeled (legacy dicts
+    without it are read from `source`)."""
     inch = "&Prime;" if html else '\u2033'
     ev = lb.get("evidence") or (
         "measured" if "tape" in (lb.get("source") or "") else "modeled")
-    val = f"{lb['rel_grate_in']:+.1f}{inch}"
+    rel = lb.get("rel_grate_in")
+    val = f"{rel:+.1f}{inch}" if isinstance(rel, (int, float)) else ""
     when = lb.get("time_local") or ""
-    if ev == "measured":
+    n = lb.get("n_checks") or 0
+    checks = f"{n} check{'s' if n != 1 else ''} so far" if n else "tape"
+    if ev == "measured" and isinstance(rel, (int, float)) and rel <= 0:
+        head = f"MEASURED no street water at {when}" + (
+            f" ({checks})" if short else
+            f" (tape, {checks}; not a whole-day claim)")
+    elif ev == "measured":
         head = f"MEASURED {val} at {when}" + (
             "" if short else f" (tape, {regime_display(lb.get('regime') or '')})")
+    elif ev == "reported":
+        tilde = "~" if lb.get("time_uncertain") else ""
+        head = f"REPORTED at {tilde}{when}" + (
+            " (no tape)" if short else
+            f" (no tape; \u201c{(lb.get('report') or '')[:60]}\u201d; time as logged)")
     elif ev == "bay":
         head = f"BAY PEAK {val} at {when}" + (
             " (gauge)" if short else " (gauge; corner not measured)")
@@ -290,7 +314,7 @@ def _render_day_cards_html(forecast):
         extra = ""
         if is_today:
             _lb = forecast.get("today_lookback")
-            if _lb and (_lb.get("rel_grate_in") or 0) > 0:
+            if _lookback_visible(_lb):
                 extra = (
                     '<div class="regime-summary dc-sofar"><b>SO FAR:</b> '
                     + _lookback_phrase(_lb, html=True) + ".</div>")
@@ -336,10 +360,11 @@ def _render_how_flooding_html(forecast):
        timing is now measured and modeled (v0.10): street water
        lags the rain peak by ~15 min, can rise 8&Prime; in 12
        minutes, and drains back within ~20&ndash;30 min of the rain
-       stopping. The first four floods measured (through July 2026)
-       &mdash; including the two worst at that time &mdash; were
-       rain-driven; the September 26&ndash;27, 2026 coastal-surge
-       floods are now the largest tape-measured.</p>
+       stopping. The rain floods tape-measured on July 6, July 9,
+       July 18 and August 3, 2026 all came with the bay below the
+       grates; the tidal floods of June 14&ndash;15 and the
+       coastal-surge floods of September 26&ndash;27, 2026 (the largest
+       tape-measured) came from the bay.</p>
     <p><b>Compound (the worst case).</b> The tide can't prevent a rain
        flood, but it can raise its floor: heavy rain landing on a high
        tide has nowhere to go at all. The biggest flood in this
@@ -1285,7 +1310,7 @@ def render_email(forecast):
         _tr = "dry" if forecast.get("water_series") else regime
     _today_head, _ = headline_for(forecast, _tr)
     _lb = forecast.get("today_lookback")
-    if _lb and (_lb.get("rel_grate_in") or 0) > 0:
+    if _lookback_visible(_lb):
         _today_head += " (so far: " + _lookback_phrase(_lb, short=True) + ")"
     # audit R7 / rule 6: WORST 72H is the worst PATHWAY across the three days,
     # not the tide-keyed peak; the tide peak stays as the detail.
@@ -1366,7 +1391,7 @@ def render_email(forecast):
         forecast, forecast.get("today_regime") or regime)
     _lbt = forecast.get("today_lookback")
     _lb_text = ""
-    if _lbt and (_lbt.get("rel_grate_in") or 0) > 0:
+    if _lookback_visible(_lbt):
         _lb_text = " | so far: " + _lookback_phrase(_lbt)
     text = f"""\
 TODAY: {_today_head_text}{_lb_text}
@@ -1462,7 +1487,7 @@ Model: {CURRENT_MODEL_VERSION} (pluvial: dynamic tank hydrograph; scenarios = ta
             "cold_lockout": "#eceff1"}.get(_today_cls, "#fff8e1")
     _lb = forecast.get("today_lookback")
     _lb_html = ""
-    if _lb and (_lb.get("rel_grate_in") or 0) > 0:
+    if _lookback_visible(_lb):
         _lb_html = (
             f'<div style="border-top:1px solid rgba(0,0,0,0.15);'
             f'margin-top:6px;padding-top:6px;font-size:14px">'
@@ -3089,7 +3114,7 @@ def render_html_page(forecast):
                          + (f" at {_clock_hhmm(_t_time)}" if _t_time else "") + ".")
     _lb = forecast.get("today_lookback")
     lookback_html = ""
-    if _lb and (_lb.get("rel_grate_in") or 0) > 0:
+    if _lookback_visible(_lb):
         lookback_html = (
             f'\n    <div class="regime-summary" style="margin-top:6px;'
             f'border-top:1px solid rgba(0,0,0,0.12);padding-top:6px">'

@@ -39,7 +39,45 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.29a";
+const WIDGET_VERSION = "v7.30a";
+// v7.30a (2026-09-27, audit 2026-09-27-a1 round 05 R2): the "so far" line
+// reads today_lookback.evidence and model_claim — measured (tape, even a
+// dry check), reported (no tape), BAY (gauge), MODELED (unverified) — and
+// appends a model claim at an unmeasured time instead of hiding it. Same
+// meaning as the site strip and email (rendering._lookback_phrase).
+
+// SOFAR-BEGIN — pure functions, unit-tested with node (tests/test_widget_sofar.py)
+function soFarVisible(lb) {
+  if (!lb) return false;
+  if (lb.evidence === "measured" || lb.evidence === "reported") return true;
+  return (lb.rel_grate_in || 0) > 0;
+}
+function soFarText(lb) {
+  const rel = (typeof lb.rel_grate_in === "number") ? lb.rel_grate_in : null;
+  const val = rel === null ? "" : ((rel >= 0 ? "+" : "") + rel.toFixed(1) + "\u2033");
+  const at = "@" + (lb.time_local || "");
+  const ev = lb.evidence || ((lb.source || "").indexOf("tape") >= 0 ? "measured" : "modeled");
+  let head;
+  if (ev === "measured" && rel !== null && rel <= 0) {
+    const n = lb.n_checks || 0;
+    head = "no water " + at + " (tape" + (n ? ", " + n + " check" + (n === 1 ? "" : "s") : "") + ")";
+  } else if (ev === "measured") {
+    head = val + " " + at + " (tape)";
+  } else if (ev === "reported") {
+    head = "reported " + (lb.time_uncertain ? "~" : "") + at + " (no tape)";
+  } else if (ev === "bay") {
+    head = "BAY " + val + " " + at + " (gauge)";
+  } else {
+    head = "MODELED " + val + " " + at + " (unverified)";
+  }
+  const mc = lb.model_claim;
+  if (mc && typeof mc.rel_grate_in === "number") {
+    head += " \u00b7 model " + (mc.rel_grate_in >= 0 ? "+" : "") + mc.rel_grate_in.toFixed(0)
+          + "\u2033 @" + (mc.time_local || "?") + " unmeasured";
+  }
+  return "so far: " + head;
+}
+// SOFAR-END
 const NOWCAST_URL = "https://johnurban.github.io/barnacle/nowcast.json";
 const FORECAST_URL = "https://johnurban.github.io/barnacle/forecast.json";
 
@@ -615,21 +653,21 @@ function makeWidget(forecast, family) {
 
     // SO-FAR line (2026-07-09, post-event-#4): the outlook is
     // forward-looking by design, but an hour after a top-3 flood the
-    // widget read as amnesia. today_lookback = today's measured/
-    // observed peak (spot-check tape sees rain floods; despiked
-    // gauge sees tide floods).
+    // widget read as amnesia. v7.30a: today_lookback is chosen by
+    // EVIDENCE CLASS (owner decision 2026-09-27): tape (even dry) >
+    // qualitative report > bay peak (labeled BAY) > model (labeled
+    // MODELED, unverified); a higher model claim at an unmeasured time
+    // is appended, never promoted. Text = soFarText() above.
     const lb = forecast.today_lookback;
-    if (lb && lb.rel_grate_in > 0) {
-      const reg = (lb.regime === "dry" ? "street water"
-                   : lb.regime).toUpperCase();
-      const lbLine = left.addText(
-        `so far: ${reg} +${lb.rel_grate_in.toFixed(1)}″ @${lb.time_local}`);
+    if (soFarVisible(lb)) {
+      const lbLine = left.addText(soFarText(lb));
       lbLine.font = Font.semiboldSystemFont(9);
       lbLine.textColor = new Color(
+        lb.evidence === "modeled" || lb.evidence === "bay" ? "#6b6b6b" :
         lb.regime === "severe" ? "#b91c1c" :
         lb.regime === "moderate" ? "#c2410c" : "#555");
       lbLine.lineLimit = 1;
-      lbLine.minimumScaleFactor = 0.7;
+      lbLine.minimumScaleFactor = 0.6;
     }
 
     // Flood window for the highest landmark crossed today, or the

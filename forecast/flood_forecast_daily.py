@@ -4616,7 +4616,10 @@ ALERT_STATE_PATH = os.path.join(_REPO_ROOT, "data", "alert_state.json")
 # non-zero exit means generation failed and nothing new should publish.
 ALERT_DELIVERY_HEALTH_PATH = os.path.join(
     _REPO_ROOT, "data", "alert_delivery_health.json")
-DELIVERY_FAILED_EXIT = 2
+# 75 = EX_TEMPFAIL. Never 2: Python's argument parser and a missing script
+# also exit 2 (audit round 05 R4). The workflow additionally verifies a fresh
+# completion receipt (forecast/publish_decision.py) before publishing on it.
+DELIVERY_FAILED_EXIT = 75
 # Audit 2026-09-27-a1 R5: operator-rejected nowcast day maxima (bad input).
 # Shared by forecast/nowcast.py (the writer) and _today_lookback (a reader).
 DAYMAX_REJECTIONS_PATH = os.path.join(
@@ -5141,8 +5144,49 @@ def persist_alert_state(decision, delivered_channels=None, path=None,
     return new_state
 
 
+def _delivery_error_facts(exc):
+    """Bounded, allowlisted facts about a transport failure (audit round 05
+    R3): exception class, category and a numeric protocol code. NEVER the
+    message text — SMTP and HTTP exception strings carry recipient addresses
+    (the SMS gateway address is a phone number) and topic URLs, and the
+    health file is committed to a public repository."""
+    import smtplib
+    import socket
+    import urllib.error
+    if not isinstance(exc, BaseException):
+        return {"error_class": "ConfigurationError",
+                "error_category": "config", "error_code": None}
+    name, code, category = type(exc).__name__, None, "other"
+    if isinstance(exc, UnicodeError):
+        category = "encoding"
+    elif isinstance(exc, smtplib.SMTPRecipientsRefused):
+        category = "smtp-recipients"
+        codes = [v[0] for v in (exc.recipients or {}).values()
+                 if isinstance(v, tuple) and v and isinstance(v[0], int)]
+        code = codes[0] if codes else None
+    elif isinstance(exc, smtplib.SMTPAuthenticationError):
+        category, code = "smtp-auth", exc.smtp_code
+    elif isinstance(exc, smtplib.SMTPResponseException):
+        category, code = "smtp-response", exc.smtp_code
+    elif isinstance(exc, (smtplib.SMTPConnectError, smtplib.SMTPServerDisconnected)):
+        category = "smtp-connect"
+    elif isinstance(exc, smtplib.SMTPException):
+        category = "smtp-other"
+    elif isinstance(exc, urllib.error.HTTPError):
+        category, code = "http", exc.code
+    elif isinstance(exc, urllib.error.URLError):
+        category = "network"
+    elif isinstance(exc, (TimeoutError, socket.timeout)):
+        category = "timeout"
+    elif isinstance(exc, (ConnectionError, OSError)):
+        category = "network"
+    return {"error_class": name, "error_category": category,
+            "error_code": code if isinstance(code, int) else None}
+
+
 def record_delivery_health(delivery, decision, requested_channels,
-                           path=None, now_utc=None):
+                           path=None, now_utc=None,
+                           forecast_generated_utc=None):
     """Persist the outcome of one delivery attempt (audit 2026-09-27-a1 R7).
 
     Delivery transport health is a separate fact from forecast validity:
@@ -5151,6 +5195,10 @@ def record_delivery_health(delivery, decision, requested_channels,
     ``failed`` (nothing delivered; the alert stays eligible for retry via the
     untouched ``last_sent_*`` markers and ``pending_base``). Nothing here
     marks an alert as delivered; ``persist_alert_state`` owns sent-state.
+    Failure entries carry only ``_delivery_error_facts`` (round 05 R3): no
+    transport message text is ever written. ``run.forecast_generated_utc``
+    is the completion receipt the workflow checks before publishing on a
+    delivery-only failure (round 05 R4).
     """
     if path is None:
         path = ALERT_DELIVERY_HEALTH_PATH
@@ -5158,8 +5206,12 @@ def record_delivery_health(delivery, decision, requested_channels,
     if now.tzinfo is None:
         now = now.replace(tzinfo=dt.timezone.utc)
     succeeded = sorted(delivery.get("succeeded") or [])
-    failed = [{"channel": f.get("channel"), "error": str(f.get("error", ""))[:300]}
-              for f in (delivery.get("failed") or [])]
+    failed = []
+    for f in (delivery.get("failed") or []):
+        facts = {k: f.get(k) for k in ("error_class", "error_category", "error_code")}
+        if not facts.get("error_class"):
+            facts = _delivery_error_facts(f.get("exception", f.get("error", "")))
+        failed.append({"channel": f.get("channel"), **facts})
     if succeeded and not failed:
         status = "ok"
     elif succeeded:
@@ -5177,8 +5229,11 @@ def record_delivery_health(delivery, decision, requested_channels,
         "failed": failed,
         "retry_eligible": bool(failed),
         "publication_blocked": False,
+        "run": {"forecast_generated_utc": forecast_generated_utc,
+                "pid": os.getpid()},
         "note": ("forecast artifacts are generated and validated before alert "
-                 "delivery; a transport failure never withholds them"),
+                 "delivery; a transport failure never withholds them; failure "
+                 "entries carry class/category/code only, never message text"),
     }
     try:
         with open(path + ".tmp", "w") as f:
@@ -5191,7 +5246,8 @@ def record_delivery_health(delivery, decision, requested_channels,
 
 def _settle_delivery(decision, delivery, base_requested, sms_gate,
                      ntfy_imminent_gate, imminent_gate, message,
-                     state_path=None, health_path=None):
+                     state_path=None, health_path=None,
+                     forecast_generated_utc=None):
     """Acknowledge deliveries transactionally and record delivery health.
 
     Returns True when at least one rail delivered. On a complete failure the
@@ -5200,10 +5256,17 @@ def _settle_delivery(decision, delivery, base_requested, sms_gate,
     Publication of already-generated forecast artifacts is never gated here.
     """
     for failure in delivery["failed"]:
+        facts = {k: failure.get(k) for k in ("error_class", "error_category", "error_code")}
+        if not facts.get("error_class"):
+            facts = _delivery_error_facts(failure.get("exception", failure.get("error", "")))
+        # class/category/code only (round 05 R3): workflow logs are public too
         print(f"WARNING: {failure['channel']} alert failed: "
-              f"{failure['error']}", flush=True)
+              f"{facts['error_class']} [{facts['error_category']}"
+              f"{' ' + str(facts['error_code']) if facts['error_code'] else ''}]",
+              flush=True)
     record_delivery_health(delivery, decision, base_requested,
-                           path=health_path)
+                           path=health_path,
+                           forecast_generated_utc=forecast_generated_utc)
     if delivery["succeeded"]:
         # base sent-markers move only on a base send; an SMS-only run
         # records sms_event (and counts) without touching sig dedup
@@ -5475,34 +5538,49 @@ def build_sms_text(forecast):
             f"johnurban.github.io/barnacle/?a={int(_time.time()) // 60}")
 
 
+def _lookback_time_uncertain(text):
+    """Heuristic: a qualitative report whose own wording says its time is
+    not exact (round 05 R1: never render such a time as a precise reading)."""
+    t = (text or "").lower()
+    return any(k in t for k in ("unconfirmed", "sometime", "exact time",
+                                "between ", "~", "around "))
+
+
 def _today_lookback():
     """What actually happened at the corner SO FAR today (user design
     2026-07-09, post-event-#4: an hour after a top-3 flood the widget
     said only 'RAIN FLOOD RISK' — true forward-looking, but reads as
     amnesia to a casual user).
 
-    Owner DECISION 2026-09-27 (audit 2026-09-27-a1 reply 04, option 3):
-    when an empirical value and a model guess compete for the same window,
-    empirical wins. The headline is therefore chosen by EVIDENCE CLASS,
-    never by height:
-      (a) today's spot-check rows (tape — the only source that sees rain
-          floods): max implied water, evidence "measured";
-      (b) else today's despiked Sandy Hook peak, evidence "bay" — a BAY
-          level labeled as such, never presented as a corner regime;
-      (c) else the nowcast's carried day max, evidence "modeled" (bay base
-          + radar tank; a rejected day max is skipped).
-    A model day max that exceeds the empirical headline and falls at a time
-    with NO tape row within an hour is APPENDED as `model_claim`, never
-    promoted; a model claim inside a measured hour is discarded.
-    Returns {navd88, rel_grate_in, time_local, regime, source, evidence,
-    model_claim?} or None when nothing sits above the SW grate today."""
+    Owner DECISION 2026-09-27 (audit 2026-09-27-a1 reply 04, option 3;
+    round 05 R1): when an empirical value and a model guess compete for the
+    same window, empirical wins. The headline is chosen by EVIDENCE CLASS,
+    never by height and never by positivity:
+      (a) today's spot-check rows with a numeric depth (tape): max implied
+          water, evidence "measured" — even when that maximum is at or below
+          the SW grate (a dry check is evidence, not absence of evidence; it
+          is rendered as "no street water at HH:MM", not as a whole-day claim);
+      (b) else today's qualitative rows (no depth): evidence "reported", the
+          latest report's wording and its time as logged (flagged uncertain
+          when the wording says so); no numeric level is invented;
+      (c) else today's despiked Sandy Hook peak over station-local midnight
+          → now, evidence "bay" — a BAY level labeled as such, never a
+          corner regime;
+      (d) else the nowcast's carried day max, evidence "modeled" (bay base +
+          radar tank; a rejected day max is skipped).
+    A model day max that exceeds the headline (or the grate, for a reported
+    headline) and falls at a time with NO empirical row within an hour is
+    APPENDED as `model_claim`, never promoted; inside a measured hour it is
+    discarded. Returns {evidence, navd88, rel_grate_in, time_local, regime,
+    source, n_checks, model_claim?, report?, time_uncertain?} or None."""
     try:
         now_local = _station_local_now()
     except Exception:
         return None
     today = now_local.date().isoformat()
-    tape, tape_instants = None, []
-    # (a) tape
+    _utc = dt.timezone.utc
+    tape, reported, instants, n_checks = None, None, [], 0
+    # (a)/(b) the ledger
     try:
         elev_by_key = {k: e for k, _lbl, e, _sh in LANDMARKS}
         obs_path = os.path.join(_REPO_ROOT, "data",
@@ -5517,27 +5595,41 @@ def _today_lookback():
                 if t.date().isoformat() != today:
                     continue
                 key = (r.get("landmark_key") or "").strip()
-                if "pocket" in key or key not in elev_by_key:
+                if key == "none" or "pocket" in key or key not in elev_by_key:
                     continue
-                tape_instants.append(t.astimezone(dt.timezone.utc))
-                try:
-                    w = elev_by_key[key] + float(r["observed_depth_in"]) / 12.0
-                except (TypeError, ValueError, KeyError):
-                    continue
-                if tape is None or w > tape[0]:
-                    tape = (w, t.strftime("%H:%M"))
+                inst = t.astimezone(_utc)
+                instants.append(inst)
+                n_checks += 1
+                depth = (r.get("observed_depth_in") or "").strip()
+                if depth:
+                    try:
+                        w = elev_by_key[key] + float(depth) / 12.0
+                    except ValueError:
+                        continue
+                    if tape is None or w > tape[0]:
+                        tape = (w, t.strftime("%H:%M"))
+                else:
+                    qual = " ".join((r.get("observed_qualitative") or "").split())
+                    if qual and (reported is None or inst >= reported[0]):
+                        reported = (inst, qual, t.strftime("%H:%M"),
+                                    _lookback_time_uncertain(qual))
     except OSError:
         pass
-    # (b) gauge (despiked upstream) — the bay, not the corner
+    # (c) gauge: station-local midnight → now (round 05 R1: a ±12 h window
+    # around now missed early crests late in the day and let a bigger
+    # previous-day crest displace today's early in the day)
     bay = None
     try:
+        midnight = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
+        half = max((now_local - midnight).total_seconds() / 7200.0, 0.05)
+        center = midnight + dt.timedelta(hours=half)
         peak, peak_t = _fetch_actual_peak_around(
-            now_local.strftime("%Y-%m-%d %H:%M"), window_hours=12)
+            center.strftime("%Y-%m-%d %H:%M"), window_hours=half)
         if peak is not None and (peak_t or "").startswith(today):
             bay = (peak + MLLW_TO_NAVD88_OFFSET, (peak_t or "")[11:16])
     except Exception:
         pass
-    # (c) the nowcast's own day max — bay base stage + radar tank
+    # (d) the nowcast's own day max — bay base stage + radar tank
     model = None
     try:
         with open(os.path.join(_REPO_ROOT, "docs", "nowcast.json")) as f:
@@ -5559,29 +5651,39 @@ def _today_lookback():
             model = (GRATE_SW + dmx / 12.0, t_nc, t_inst)
     except (OSError, ValueError):
         pass
-    if tape and tape[0] > GRATE_SW:
+    if tape is not None:
         w, t = tape
         out = {"evidence": "measured", "source": "measured (tape)",
-               "regime": classify_regime_from_water(w)}
+               "regime": classify_regime_from_water(w) if w > GRATE_SW else "dry",
+               "navd88": round(w, 3), "rel_grate_in": round((w - GRATE_SW) * 12, 1),
+               "time_local": t, "n_checks": n_checks}
+    elif reported is not None:
+        _inst, qual, t, unsure = reported
+        out = {"evidence": "reported", "source": "reported (qualitative, no tape)",
+               "regime": "reported", "navd88": None, "rel_grate_in": None,
+               "time_local": t, "n_checks": n_checks,
+               "report": qual[:90], "time_uncertain": unsure}
     elif bay and bay[0] > GRATE_SW:
         w, t = bay
         out = {"evidence": "bay",
                "source": "bay peak (gauge; corner not measured)",
-               "regime": "bay"}
+               "regime": "bay", "navd88": round(w, 3),
+               "rel_grate_in": round((w - GRATE_SW) * 12, 1), "time_local": t,
+               "n_checks": 0}
     elif model and model[0] > GRATE_SW:
         w, t = model[0], model[1]
         out = {"evidence": "modeled",
                "source": "modeled (bay + radar tank; unverified)",
-               "regime": classify_regime_from_water(w)}
+               "regime": classify_regime_from_water(w), "navd88": round(w, 3),
+               "rel_grate_in": round((w - GRATE_SW) * 12, 1), "time_local": t,
+               "n_checks": 0}
     else:
         return None
-    out.update({"navd88": round(w, 3),
-                "rel_grate_in": round((w - GRATE_SW) * 12, 1),
-                "time_local": t})
-    if model and out["evidence"] != "modeled" and model[0] > w:
-        m_inst = model[2].astimezone(dt.timezone.utc) if model[2] else None
+    floor = out["navd88"] if out["navd88"] is not None else GRATE_SW
+    if model and out["evidence"] != "modeled" and model[0] > floor:
+        m_inst = model[2].astimezone(_utc) if model[2] else None
         covered = m_inst is not None and any(
-            abs((ti - m_inst).total_seconds()) <= 3600 for ti in tape_instants)
+            abs((ti - m_inst).total_seconds()) <= 3600 for ti in instants)
         if not covered:
             out["model_claim"] = {
                 "navd88": round(model[0], 3),
@@ -7928,7 +8030,8 @@ def deliver_alert(forecast, subject, text, html, inline_png=None,
             urlopen(req, timeout=15).read()
             result["succeeded"].append("ntfy")
         except Exception as e:
-            result["failed"].append({"channel": "ntfy", "error": str(e)})
+            result["failed"].append({"channel": "ntfy", "error": str(e),
+                                     "exception": e, **_delivery_error_facts(e)})
 
     email_vars = ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM",
                   "SMTP_TO"]
@@ -7940,12 +8043,14 @@ def deliver_alert(forecast, subject, text, html, inline_png=None,
             send_email(subject, text, html, inline_png=inline_png)
             result["succeeded"].append("email")
         except Exception as e:
-            result["failed"].append({"channel": "email", "error": str(e)})
+            result["failed"].append({"channel": "email", "error": str(e),
+                                     "exception": e, **_delivery_error_facts(e)})
     elif email_present and "email" in enabled:
         missing = [name for name in email_vars if name not in email_present]
         result["failed"].append({
             "channel": "email",
             "error": "incomplete configuration; missing " + ", ".join(missing),
+            **_delivery_error_facts("config"),
         })
 
     sms_to = os.environ.get("ALERT_SMS_TO", "").strip()
@@ -7958,6 +8063,7 @@ def deliver_alert(forecast, subject, text, html, inline_png=None,
                 "channel": "sms",
                 "error": "incomplete SMTP configuration; missing "
                          + ", ".join(missing),
+                **_delivery_error_facts("config"),
             })
         else:
             result["attempted"].append("sms")
@@ -7967,7 +8073,8 @@ def deliver_alert(forecast, subject, text, html, inline_png=None,
                 send_email("", sms_text or build_sms_text(forecast), None)
                 result["succeeded"].append("sms")
             except Exception as e:
-                result["failed"].append({"channel": "sms", "error": str(e)})
+                result["failed"].append({"channel": "sms", "error": str(e),
+                                         "exception": e, **_delivery_error_facts(e)})
             finally:
                 if original_to is None:
                     os.environ.pop("SMTP_TO", None)
@@ -7977,6 +8084,7 @@ def deliver_alert(forecast, subject, text, html, inline_png=None,
     if not result["attempted"] and not result["failed"]:
         result["failed"].append({
             "channel": "all", "error": "no delivery channels configured",
+            **_delivery_error_facts("config"),
         })
     return result
 
@@ -8424,7 +8532,8 @@ def _main_core(holder):
                              sms_text=_imminent)
     if not _settle_delivery(decision, delivery, _base_requested, sms_gate,
                             ntfy_imminent_gate, _imminent_gate,
-                            _imminent or subject):
+                            _imminent or subject,
+                            forecast_generated_utc=forecast.get("generated_utc")):
         # Audit 2026-09-27-a1 R7: a transport failure is NOT a generation
         # failure. The HTML/JSON/per-tide artifacts above are complete and
         # gate-valid; the workflow publishes them on this exit code and

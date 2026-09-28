@@ -94,24 +94,28 @@ jobs:
           if [ "${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.force_email || 'true') != 'false' }}" = "true" ]; then
             extra="--force-email"
           fi
-          # Audit 2026-09-27-a1 R7: exit 2 means every requested alert
-          # channel failed AFTER the forecast artifacts were generated and
-          # validated. Publish them anyway (gate + commit below), record the
-          # outcome (data/alert_delivery_health.json), and fail the job only
-          # after the push so the outage stays visible while the alert stays
-          # eligible for retry. Any other non-zero exit is a generation
-          # failure and stops the run before publication as before.
+          # Audit 2026-09-27-a1 R7 / round 05 R4: exit 75 (EX_TEMPFAIL) means
+          # every requested alert channel failed AFTER the forecast artifacts
+          # were generated and validated. publish_decision.py then requires a
+          # fresh completion receipt (data/alert_delivery_health.json written
+          # after this step started, status failed, forecast stamp matching
+          # docs/forecast.json) before the validated forecast publishes and
+          # the job is failed after the push. Exit 2 (argparse, missing
+          # script) and every other non-zero status stop the run before
+          # publication.
+          started=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           set +e
           python3 flood_forecast_daily.py \
             --write-html ../docs/index.html \
             --write-json ../docs/forecast.json $extra
           rc=$?
           set -e
-          if [ "$rc" -eq 2 ]; then
+          decision=$(python3 publish_decision.py --rc "$rc" --started-utc "$started" \
+            --forecast-json ../docs/forecast.json --health ../data/alert_delivery_health.json)
+          echo "publish decision: $decision (rc=$rc)"
+          if [ "$decision" = "publish-then-fail" ]; then
             echo "delivery_failed=true" >> "$GITHUB_OUTPUT"
             echo "::warning::alert delivery failed on every requested channel; publishing the validated forecast, failing the job after push"
-          elif [ "$rc" -ne 0 ]; then
-            exit "$rc"
           else
             echo "delivery_failed=false" >> "$GITHUB_OUTPUT"
           fi

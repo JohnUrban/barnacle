@@ -67,10 +67,10 @@ class DailyWorkflowContractTests(unittest.TestCase):
         self.assertIn('docs/archive/${{ steps.when.outputs.local_date }}', text)
 
     def test_delivery_failure_publishes_then_fails_after_push(self):
-        """Audit 2026-09-27-a1 R7: exit 2 (every alert rail failed after the
-        forecast generated) must not withhold validated artifacts. The
-        forecast step captures the code, the gate and commit steps still run,
-        and a FINAL step fails the job so the outage stays visible."""
+        """Audit 2026-09-27-a1 R7 / round 05 R4: a delivery-only failure
+        (exit 75, never Python's 2) publishes validated artifacts only after
+        publish_decision.py verifies a fresh completion receipt; the gate and
+        commit steps still run; a FINAL step fails the job after the push."""
         text = (ROOT / ".github" / "workflows" /
                 "daily_forecast.yml").read_text()
         forecast_i = text.index("id: forecast")
@@ -80,17 +80,19 @@ class DailyWorkflowContractTests(unittest.TestCase):
         self.assertLess(forecast_i, gate_i)
         self.assertLess(gate_i, commit_i)
         self.assertLess(commit_i, fail_i)
-        self.assertIn('if [ "$rc" -eq 2 ]; then', text)
-        self.assertIn('echo "delivery_failed=true" >> "$GITHUB_OUTPUT"', text)
-        self.assertIn('elif [ "$rc" -ne 0 ]; then\n            exit "$rc"', text)
+        run_block = text[forecast_i:gate_i]
+        self.assertIn('started=$(date -u +%Y-%m-%dT%H:%M:%SZ)', run_block)
+        self.assertLess(run_block.index("started=$(date"), run_block.index("python3 flood_forecast_daily.py"))
+        self.assertIn('publish_decision.py --rc "$rc" --started-utc "$started"', run_block)
+        self.assertIn('if [ "$decision" = "publish-then-fail" ]; then', run_block)
+        self.assertIn('echo "delivery_failed=true" >> "$GITHUB_OUTPUT"', run_block)
+        self.assertNotIn('-eq 2', run_block)
         self.assertIn("if: steps.forecast.outputs.delivery_failed == 'true'", text)
         self.assertIn("data/alert_delivery_health.json", text)
-        # the gate and commit steps carry no condition that would skip them
         gate_block = text[gate_i:commit_i]
         self.assertNotIn("if:", gate_block)
         commit_block = text[commit_i:fail_i]
         self.assertNotIn("\n        if:", commit_block)
-
 
 if __name__ == "__main__":
     unittest.main()
