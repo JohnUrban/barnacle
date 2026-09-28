@@ -1,16 +1,18 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 22:31 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-27 23:03 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## SHIPPED — audit 2026-09-27-a1 candidate live; one owner check pending
+## Audit 2026-09-27-a1 — implementation closed; owner check pending
 
 Codex round11 approved `6e9fe57cb`; shipped as `c2569c07a` (2026-09-28
 02:47Z), CI + Pages green, live site verified (widget **v7.32a**, bay-not-
 street note, `SO FAR: MEASURED +25.2″ at 09:44`). Record:
-`audits/2026-09-27-a1/12-ship-verification-claude-curlew.md`. PENDING (John):
+`audits/2026-09-27-a1/13-close-out-codex.md`: independent deployment verified;
+443 tests OK (one skip), three replays PASS, ledgers preserved. PENDING (John):
 re-copy the DEPLOYED widget v7.32a and check the medium layout with a long
-quoted report + model-claim clause. Rejected day max: first post-merge nowcast run pending at 02:55Z; midnight rollover retires it anyway.
+quoted report + model-claim clause. Rejected +39-in day max removed by the
+02:57:54Z nowcast (224f1e1a4), verified live before midnight rollover.
 Live behavior: delivery-only alert failures exit 75 and still publish
 (receipt-checked; untested by a real outage); "so far today" by evidence class
 with quoted reports; per-episode peaks; provenance + rejection on day max.
@@ -55,8 +57,8 @@ Spec model/v0.10.6.md; promotion 75a9933ff, candidate 1053eb436, owner
 approval b999ea1d0. Event audit does not reopen release mechanics close-out.
 36-h surge decay/fallback ladder unchanged. Seven-day advisory corrections,
 guidance tails and as-issued rain skill remain experimental.
-18 landmarks; hourly site/JSON and ~10-min radar nowcast. Widget v7.29a
-re-copy planned, completion unconfirmed. SMS imminent impact; ntfy/email
+18 landmarks; hourly site/JSON and ~10-min radar nowcast. Widget v7.32a
+re-copy/native layout check pending (above). SMS imminent impact; ntfy/email
 longer lead; alert tide horizon 48h. Forecast/model changes require review.
 
 ## Heron and wind-shadow — ownership unchanged
@@ -69,7 +71,7 @@ in one storm do not satisfy multiple-storm evidence. No winter evidence yet.
 Heron evaluator audit CLOSED at cd17a5a14; research remains unmerged and
 A/B1/B2 NOT YET EVALUABLE at close-out. Revisit Oct9 or earlier informative
 event; see history/plans/2026-09-25-heron-validation-checkpoint.md.
-Curlew's branch documents an episode interface; evaluator implementation and
+The merged Curlew work documents an episode interface; evaluator implementation and
 issuance-coverage assessment remain Heron's. Do not score assumed interval
 endpoints as ground truth (round05 R5).
 

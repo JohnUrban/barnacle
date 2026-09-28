@@ -8,11 +8,12 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **September 25–27 event/operations audit 2026-09-27-a1 — implementation SHIPPED (c2569c07a, 2026-09-28 02:47Z); owner widget check + scientific follow-ups remain.**
-      Codex round11 approved candidate 6e9fe57cb; ship record
-      audits/2026-09-27-a1/12-ship-verification-claude-curlew.md (CI + Pages
-      green; live site verified: widget v7.32a, bay-not-street note, so-far
-      line MEASURED +25.2 at 09:44; rejected day max awaiting the first post-merge nowcast run).
+- [ ] **September 25–27 event/operations audit 2026-09-27-a1 — implementation/deployment review CLOSED; owner widget acceptance + follow-ups remain OPEN.**
+      Shipped c2569c07a; independent close-out:
+      audits/2026-09-27-a1/13-close-out-codex.md. 443 tests OK (one skip),
+      three replays PASS, ledgers preserved; live widget v7.32a, bay-not-street
+      note, so-far MEASURED +25.2 at 09:44. Rejected +39-in day max removed
+      by post-merge nowcast 224f1e1a4, verified live before midnight rollover.
       PENDING owner-only: re-copy deployed v7.32a and check the native medium
       layout with a long quoted report + model claim. OPEN follow-ups (not
       closed by the ship): landmark-relation-bounds (John's rule: reports are
@@ -220,10 +221,11 @@ looks stale, trust this file. Ledger lines are append-only:
       this is NOT a Tern/social-card requirement or current-work blocker.
       Any later model landmark adoption follows rule 5 and surface parity;
       preserve existing landmark IDs and historical observations.
-- [ ] Re-copy widget source v7.29a into Scriptable. John references v7.28a
-      and intends to copy the new source (2026-09-24); installation not yet
-      confirmed. The sole behavior change from v7.28a removes the estimated
-      driveway rung; fall-back-hour parsing was already present in v7.28a.
+- [ ] Re-copy deployed widget source v7.32a into Scriptable; installation
+      and native medium-widget readability with long report/model-claim text
+      remain unconfirmed. This supersedes the v7.29a recopy target: intervening
+      edits also distinguish measured, reported, bay and model evidence.
+      See audit 2026-09-27-a1 round13; owner acceptance remains pending.
 - [ ] Nowcast scheduler: trigger TRIPPED by event #7 (18-min publish
       gap covered the entire rise). Half-A (launchd, Mac-awake hours)
       believed installed 2026-08-07 but NEVER fired until revived
@@ -823,3 +825,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | PREF | observations-are-quantitative | John (22:44): every field report is meant to yield an exact or banded estimate. A tracked landmark named with breach/level/over/under is quantitative: "breached over the first porch step" = level just exceeded 5.41 ft at that moment (and ≥ 5.41 if the breach was earlier). Connectivity reports carry bands from the survey: "spans SE to SW but not NE to NW" = between the Central middle at the far corner (3.91) and the Bay Ave middle (4.36); "over the curb at the upstream grate but not the curb at the lawn step" = between the upstream-grate sidewalk (4.14, map_points approximated) and the walkway curb top (4.16). Agents must ASK when a band is not computable, never file the report as purely qualitative. Production code still reads only structured bounds recorded by an agent (sidecar basis stated_landmarks), never prose [STATED; survey refs model/elevations.md, assets/map_points.csv]
 2026-09-27 | OPEN | landmark-relation-bounds | Extend the interval sidecar to every landmark-relation report in the four windows (188, 230, 237, 238, 241, 251, 222 …) with stated_landmarks bounds from the survey; make _today_lookback read stated-landmark bounds as "bounded" evidence (band rendered, claims outside the band suppressible); neutral wording for the unverified-claim note. Next Curlew round after the ship [STATED plan]
 2026-09-28 | DONE | audit-a1-shipped | Curlew candidate 6e9fe57cb (Codex round11 APPROVED; owner DECISION sofar-line-empirical-wins) merged with main d3cd2b92b at 87511aab5 (36 newer commits preserved; ledger union), pages regenerated no-send on the merged tree, shipped as c2569c07a at 02:47:16Z; CI 36371161800 and Pages 36371161755 success; live site verified by 02:50Z (widget v7.32a, bay-not-street wording, so-far MEASURED +25.2 at 09:44 replacing the phantom modeled +39.0). Rejected day max: At write time (02:55Z) the latest published nowcast was still the pre-merge run 2026-09-28T02:38:13Z (day max 39.0 @ 2026-09-27T06:40:00Z); the first post-merge nowcast run will apply the rejection. The line's local-midnight rollover (04:00Z) retires the value regardless. Widget native layout check PENDING (owner). Record: audits/2026-09-27-a1/12-ship-verification-claude-curlew.md [VERIFIED]
+
+2026-09-27 | DONE | audit-a1-independent-closeout | Codex round13 independently verified ship c2569c07a and post-merge nowcast 224f1e1a4: code matches approved candidate, three protected ledgers byte-identical to pre-merge main, 443 tests OK (one skip), three frozen replays PASS, seven wind hashes match, gate/episode registry clean, CI and Pages success. Live receipt 2026-09-28 03:01Z: widget v7.32a, measured +25.2 in at 09:44; rejected +39-in day max removed by 02:57:54Z run before local midnight. Implementation/deployment review CLOSED; native widget owner acceptance, landmark-relation-bounds and scientific follow-ups OPEN. Earlier audit-a1-shipped ledger date used UTC Sep28; local ship was Sep27 22:47 EDT. Record audits/2026-09-27-a1/13-close-out-codex.md [VERIFIED]
