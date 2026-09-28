@@ -132,11 +132,15 @@ primary records in [`../2026-09-27/analysis/gauge_qc.json`](../2026-09-27/analys
   titled all four tides "gate closed". Gate state per tide: Sep 26 18:19
   **seen closed (photo)**; ~21:58 and Sep 27 ~08:30 **"almost certainly"**,
   untimed in the originals; Sep 25 PM and Sep 26 AM **inferred**.
-- **Rain "≈ tide 23.8 + rain 2.4"** is a fixed-base (5.7 ft), zero-drain tank
-  sensitivity, reproduced at 2.45 in at 09:02 in
-  [`../2026-09-27/analysis/rain_scenarios.json`](../2026-09-27/analysis/rain_scenarios.json)
-  beside three other explicit assumptions (bay-tracking base with and
-  without head-dependent drain; low base). None is a measured partition of
-  the crest. MRMS coverage 04:00–13:00 local: 90 of 91 frames (14:24Z missing).
+- **Rain "≈ tide 23.8 + rain 2.4"** is a zero-drain tank sensitivity with the
+  base held at the tide's crest bay level (5.847 ft NAVD88; an earlier
+  erratum draft said 5.7, corrected 2026-09-27 evening, round 05 R7),
+  reproduced as a 2.45-in maximum increment at 09:02 in
+  [`../2026-09-27/analysis/rain_scenarios.json`](../2026-09-27/analysis/rain_scenarios.json).
+  Over the observed crest window 09:06–09:13 the modeled increment is
+  1.97–2.36 in under the three closed-drain assumptions (A/B/C) and
+  9.9–10.8 in with the drains fully open (D). Total-water and increment
+  maxima are reported separately; none is a measured partition of the
+  crest. MRMS coverage 04:00–13:00 local: 90 of 91 frames (14:24Z missing).
 - "First porch step top = garage entry" (Sep 27) is an observed association
   at one flood, a proxy, not a surveyed elevation.

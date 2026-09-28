@@ -22,6 +22,16 @@ Per tide window it reports:
      D  fixed LOW base 2.50 ft (drains fully open): the rain alone
   Every scenario is a model sensitivity, not measured attribution. The
   street tape series is listed beside them for comparison only.
+  Per scenario (round 05 R7): `max_increment_in` and its time, the water at
+  THAT instant (`water_at_max_increment_in_vs_sw`), the separate
+  `max_water_in_vs_sw` and its time (base + increment can peak at a
+  different time when the bay is moving), and the increment over the
+  observed corner-crest window where one exists.
+  Missing-frame handling: the tank steps every 2 min; the rate applied at
+  step t is the LAST cached 6-min frame at or before t − TANK_LAG_MIN (a
+  missing frame is bridged by the previous frame, never zero-filled).
+  Storage starts empty (V = 0) at the window start; a window that opens
+  during rain understates early storage.
 Run: ~/.barnacle/venv/bin/python event10_rain_scenarios.py
 """
 import csv
@@ -39,12 +49,16 @@ MRMS = REPO / "history/data/mrms/mrms_extracted.csv"
 LEDGER = REPO / "data/labeled_observations.csv"
 UTC = dt.timezone.utc
 STEP = dt.timedelta(minutes=2)
-WINDOWS = [  # episode, rain window UTC [start, end], crest bay for scenario A
+WINDOWS = [  # episode, rain window UTC [start, end]
     ("2026-09-25-e01", "2026-09-25T21:00:00Z", "2026-09-26T04:30:00Z"),
     ("2026-09-26-e01", "2026-09-26T08:00:00Z", "2026-09-26T17:00:00Z"),
     ("2026-09-26-e02", "2026-09-26T21:00:00Z", "2026-09-27T04:00:00Z"),
     ("2026-09-27-e01", "2026-09-27T08:00:00Z", "2026-09-27T17:00:00Z"),
 ]
+# observed corner-crest windows (tape plateau, station-local → UTC)
+CREST = {"2026-09-26-e01": ("2026-09-26T13:06:00Z", "2026-09-26T13:13:00Z"),
+         "2026-09-26-e02": ("2026-09-27T02:11:00Z", "2026-09-27T02:29:00Z"),
+         "2026-09-27-e01": ("2026-09-27T13:44:00Z", "2026-09-27T14:06:00Z")}
 
 
 def load_rain(a, b):
@@ -156,23 +170,38 @@ def main():
                 lambda t: ff.PLUVIAL_DRAIN_RATE * min(1, max(0, (ff.GRATE_SW - bay_at(bay, t)) / 0.52))),
             "D_fixed_low_base_2p50_full_drain": (lambda t: 2.50, lambda t: ff.PLUVIAL_DRAIN_RATE),
         }
+        crest = CREST.get(eid)
         for name, (bfn, dfn) in scen.items():
             series = tank(frames, t0, t1, bfn, dfn)
-            pk = max(series, key=lambda s: s[2])
-            w["scenarios"][name] = {
+            pk_inc = max(series, key=lambda s: s[2])       # largest rain INCREMENT
+            pk_wat = max(series, key=lambda s: s[1])       # largest TOTAL water
+            entry = {
                 "assumption": {"A_fixed_crest_base_zero_drain": f"base held at crest bay {crest_bay:.3f} ft NAVD88; drain 0",
                                "B_bay_tracking_base_zero_drain": "base = despiked archived bay each step; drain 0",
                                "C_bay_tracking_base_head_drain": "base = despiked archived bay; production head-dependent drain",
                                "D_fixed_low_base_2p50_full_drain": "base 2.50 ft (drains open); full drain rate"}[name],
-                "peak_rain_lift_in": pk[2], "peak_lift_utc": pk[0].isoformat(),
-                "peak_water_in_vs_sw": pk[1],
+                "max_increment_in": pk_inc[2], "max_increment_utc": pk_inc[0].isoformat(),
+                "water_at_max_increment_in_vs_sw": pk_inc[1],
+                "max_water_in_vs_sw": pk_wat[1], "max_water_utc": pk_wat[0].isoformat(),
                 "series_10min": [(s[0].strftime("%H:%MZ"), s[1], s[2]) for s in series[::5]],
             }
+            if crest:
+                c0 = dt.datetime.fromisoformat(crest[0].replace("Z", "+00:00"))
+                c1 = dt.datetime.fromisoformat(crest[1].replace("Z", "+00:00"))
+                inside = [x for x in series if c0 <= x[0] <= c1]
+                if inside:
+                    entry["increment_at_corner_crest_in"] = {
+                        "window_utc": list(crest),
+                        "min": min(x[2] for x in inside), "max": max(x[2] for x in inside)}
+            w["scenarios"][name] = entry
         result["windows"][eid] = w
     (HERE / "rain_scenarios.json").write_text(json.dumps(result, indent=1))
     for eid, w in result["windows"].items():
-        print(eid, w.get("status", ""), json.dumps(w.get("coverage")), json.dumps(w.get("totals", {}).get("box_mean_sum_in")),
-              {k: (v["peak_rain_lift_in"], v["peak_lift_utc"]) for k, v in w["scenarios"].items()})
+        print(eid, w.get("status", ""), "total_in", json.dumps(w.get("totals", {}).get("box_mean_sum_in")))
+        for k, v in w["scenarios"].items():
+            print("   ", k, "max_inc", v["max_increment_in"], v["max_increment_utc"][11:16],
+                  "max_water", v["max_water_in_vs_sw"], v["max_water_utc"][11:16],
+                  "crest_inc", v.get("increment_at_corner_crest_in", {}).get("min"), v.get("increment_at_corner_crest_in", {}).get("max"))
 
 
 if __name__ == "__main__":

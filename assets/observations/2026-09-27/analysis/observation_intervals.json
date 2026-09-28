@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "created_local": "2026-09-27T17:55:14-04:00",
+ "created_local": "2026-09-27T19:20:37-04:00",
  "purpose": "Additive interval/provenance sidecar for the 2026-09-25..27 ledger rows. The ledger scalars are unchanged; consumers that score or classify should use time_window_local and depth_lo/hi_in, and treat surrogate/window times and range midpoints as such.",
  "time_kinds": [
   "stated_exact",
@@ -20,6 +20,14 @@
   "not_applicable",
   "none"
  ],
+ "bases": {
+  "stated": "endpoints in the owner's own words",
+  "stated_landmarks": "endpoints from named landmarks the owner cited",
+  "adjacent_entries": "untimed line bounded by the timed lines around it",
+  "unquantified": "approximate/qualitative with no defensible numeric width; lo/hi or window are null",
+  "none": "not applicable"
+ },
+ "scoring_rule": "Score only against bounds whose basis is stated, stated_landmarks or adjacent_entries. Unquantified rows are point/nominal values with unknown width; never invent a width for them.",
  "sources": [
   "assets/observations/2026-09-26/rawnotes/01-morning.txt",
   "assets/observations/2026-09-26/rawnotes/02-evening.txt",
@@ -36,16 +44,15 @@
    "time_local_offset_bearing": "2026-09-25T20:06:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "surrogate",
-   "time_window_local": [
-    "2026-09-25T19:30:00-04:00",
-    "2026-09-25T21:30:00-04:00"
-   ],
+   "time_basis": "unquantified",
+   "time_window_local": null,
    "ledger_depth_in": null,
    "depth_kind": "upper_bound",
+   "depth_basis": "stated",
    "depth_lo_in": null,
    "depth_hi_in": 0.0,
    "observed_qualitative": "NO flooding at the Bay/Central intersection at the ~20:06 surge high tide (user, stated next morning; exact observation time unconfirmed)",
-   "time_note": "Negative check; ledger uses the gauge-peak minute as a surrogate. Owner home 20:00-20:30, spouse home all evening; exact observation time unconfirmed.",
+   "time_note": "Negative check; ledger uses the gauge-peak minute (20:06) as a surrogate. Owner home 20:00-20:30, spouse home all evening; exact observation time unconfirmed and not numerically bounded.",
    "depth_note": "No flooding at the intersection (bound: water below the SW grate)."
   },
   {
@@ -57,16 +64,15 @@
    "time_local_offset_bearing": "2026-09-26T07:00:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "approximate",
-   "time_window_local": [
-    "2026-09-26T06:45:00-04:00",
-    "2026-09-26T07:15:00-04:00"
-   ],
+   "time_basis": "unquantified",
+   "time_window_local": null,
    "ledger_depth_in": null,
    "depth_kind": "qualitative",
+   "depth_basis": "none",
    "depth_lo_in": null,
    "depth_hi_in": null,
    "observed_qualitative": "Water across Central SE->SW and over the other grates (user)",
-   "time_note": "Original: 'Around 7'. Water already present earlier ('underway for a while')."
+   "time_note": "Original: 'Around 7'; no numeric window is stated. Water already present earlier ('underway for a while')."
   },
   {
    "csv_row": 188,
@@ -77,12 +83,14 @@
    "time_local_offset_bearing": "2026-09-26T07:15:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T07:15:00-04:00",
     "2026-09-26T07:15:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "lower_bound",
+   "depth_basis": "stated",
    "depth_lo_in": 0.0,
    "depth_hi_in": null,
    "observed_qualitative": "Over the curb; near top of lawn step (user)",
@@ -97,12 +105,14 @@
    "time_local_offset_bearing": "2026-09-26T07:18:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T07:18:00-04:00",
     "2026-09-26T07:18:00-04:00"
    ],
    "ledger_depth_in": 0.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 0.0,
    "depth_hi_in": 0.0,
    "observed_qualitative": "Level with lawn step (user)"
@@ -116,16 +126,18 @@
    "time_local_offset_bearing": "2026-09-26T07:22:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T07:22:00-04:00",
     "2026-09-26T07:22:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "range",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": 0.0,
    "depth_hi_in": 0.24,
    "observed_qualitative": "Over the lawn step but NOT yet to base of porch step (user) => corner ~4.66-4.68 NAVD88 (~+13.8 in vs SW grate) while SH read 8.26 MLLW = 5.44 NAVD88 \u2014 corner ~0.75 ft BELOW the gauge",
-   "depth_note": "Over the lawn step (4.66) but not to the porch-step base (4.68): 0-0.24 in above the lawn step."
+   "depth_note": "Over the lawn step (4.66) but not to the porch-step base (4.68): 0-0.24 in above the lawn step, from the two named landmarks."
   },
   {
    "csv_row": 192,
@@ -136,12 +148,14 @@
    "time_local_offset_bearing": "2026-09-26T07:28:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T07:28:00-04:00",
     "2026-09-26T07:28:00-04:00"
    ],
    "ledger_depth_in": 0.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 0.0,
    "depth_hi_in": 0.0,
    "observed_qualitative": "Up to base of first porch step (user)"
@@ -155,12 +169,14 @@
    "time_local_offset_bearing": "2026-09-26T07:37:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T07:37:00-04:00",
     "2026-09-26T07:37:00-04:00"
    ],
    "ledger_depth_in": 1.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 1.0,
    "depth_hi_in": 1.0,
    "observed_qualitative": "1 inch up the wall of the first porch step (user) => ~4.76 NAVD88"
@@ -174,12 +190,14 @@
    "time_local_offset_bearing": "2026-09-26T07:44:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T07:44:00-04:00",
     "2026-09-26T07:44:00-04:00"
    ],
    "ledger_depth_in": 1.45,
    "depth_kind": "range",
+   "depth_basis": "stated",
    "depth_lo_in": 1.4,
    "depth_hi_in": 1.5,
    "observed_qualitative": "1.4-1.5 inch up the wall of the first porch step (user) => ~4.80 NAVD88",
@@ -194,12 +212,14 @@
    "time_local_offset_bearing": "2026-09-26T07:52:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T07:52:00-04:00",
     "2026-09-26T07:52:00-04:00"
    ],
    "ledger_depth_in": 2.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 2.0,
    "depth_hi_in": 2.0,
    "observed_qualitative": "2 inches up the wall of the first porch step (user) => ~4.85 NAVD88"
@@ -213,12 +233,14 @@
    "time_local_offset_bearing": "2026-09-26T07:56:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T07:56:00-04:00",
     "2026-09-26T07:56:00-04:00"
    ],
    "ledger_depth_in": 3.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 3.0,
    "depth_hi_in": 3.0,
    "observed_qualitative": "3 inches up the wall of the first porch step (user) => ~4.93 NAVD88"
@@ -232,12 +254,14 @@
    "time_local_offset_bearing": "2026-09-26T08:13:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T08:13:00-04:00",
     "2026-09-26T08:13:00-04:00"
    ],
    "ledger_depth_in": 5.1,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 5.1,
    "depth_hi_in": 5.1,
    "observed_qualitative": "5.1 inches up the wall of the first porch step (user)"
@@ -251,12 +275,14 @@
    "time_local_offset_bearing": "2026-09-26T08:18:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T08:18:00-04:00",
     "2026-09-26T08:18:00-04:00"
    ],
    "ledger_depth_in": 6.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 6.0,
    "depth_hi_in": 6.0,
    "observed_qualitative": "6.0 inches up the wall of the first porch step (user)"
@@ -270,12 +296,14 @@
    "time_local_offset_bearing": "2026-09-26T08:21:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T08:21:00-04:00",
     "2026-09-26T08:21:00-04:00"
    ],
    "ledger_depth_in": 6.25,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 6.25,
    "depth_hi_in": 6.25,
    "observed_qualitative": "6.25 inches up the wall of the first porch step (user)"
@@ -289,12 +317,14 @@
    "time_local_offset_bearing": "2026-09-26T08:25:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T08:25:00-04:00",
     "2026-09-26T08:25:00-04:00"
    ],
    "ledger_depth_in": 7.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 7.0,
    "depth_hi_in": 7.0,
    "observed_qualitative": "7.0 inches up the wall of the first porch step (user)"
@@ -308,12 +338,14 @@
    "time_local_offset_bearing": "2026-09-26T08:29:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T08:29:00-04:00",
     "2026-09-26T08:29:00-04:00"
    ],
    "ledger_depth_in": 7.5,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 7.5,
    "depth_hi_in": 7.5,
    "observed_qualitative": "7.5 inches up the wall of the first porch step (user)"
@@ -327,12 +359,14 @@
    "time_local_offset_bearing": "2026-09-26T08:37:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T08:37:00-04:00",
     "2026-09-26T08:37:00-04:00"
    ],
    "ledger_depth_in": 0.25,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 0.25,
    "depth_hi_in": 0.25,
    "observed_qualitative": "ABOVE the first porch step: 9 in up from its base (riser 8.75 in) => ~5.43 NAVD88 (user). SEVERE regime reached"
@@ -346,12 +380,14 @@
    "time_local_offset_bearing": "2026-09-26T08:43:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T08:43:00-04:00",
     "2026-09-26T08:43:00-04:00"
    ],
    "ledger_depth_in": 10.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 10.0,
    "depth_hi_in": 10.0,
    "observed_qualitative": "still over first porch step; 10.0 in over porch step base (user)"
@@ -365,12 +401,14 @@
    "time_local_offset_bearing": "2026-09-26T08:53:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T08:53:00-04:00",
     "2026-09-26T08:53:00-04:00"
    ],
    "ledger_depth_in": 11.25,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 11.25,
    "depth_hi_in": 11.25,
    "observed_qualitative": "still over first porch step; 11.25 in over porch step base (user)"
@@ -384,12 +422,14 @@
    "time_local_offset_bearing": "2026-09-26T09:00:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T09:00:00-04:00",
     "2026-09-26T09:00:00-04:00"
    ],
    "ledger_depth_in": 12.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 12.0,
    "depth_hi_in": 12.0,
    "observed_qualitative": "still over first porch step; 12.0 in over porch step base (user)"
@@ -403,12 +443,14 @@
    "time_local_offset_bearing": "2026-09-26T09:06:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T09:06:00-04:00",
     "2026-09-26T09:06:00-04:00"
    ],
    "ledger_depth_in": 12.25,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 12.25,
    "depth_hi_in": 12.25,
    "observed_qualitative": "still over first porch step; 12.25 in over porch step base (user)"
@@ -422,12 +464,14 @@
    "time_local_offset_bearing": "2026-09-26T09:13:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T09:13:00-04:00",
     "2026-09-26T09:13:00-04:00"
    ],
    "ledger_depth_in": 12.25,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 12.25,
    "depth_hi_in": 12.25,
    "observed_qualitative": "still over first porch step; 12.25 in over porch step base (user)"
@@ -441,12 +485,14 @@
    "time_local_offset_bearing": "2026-09-26T09:24:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T09:24:00-04:00",
     "2026-09-26T09:24:00-04:00"
    ],
    "ledger_depth_in": 12.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 12.0,
    "depth_hi_in": 12.0,
    "observed_qualitative": "still over first porch step; 12.0 in over porch step base (user)"
@@ -460,12 +506,14 @@
    "time_local_offset_bearing": "2026-09-26T09:48:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T09:48:00-04:00",
     "2026-09-26T09:48:00-04:00"
    ],
    "ledger_depth_in": 11.75,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 11.75,
    "depth_hi_in": 11.75,
    "observed_qualitative": "still over first porch step; 11.75 in over porch step base (user)"
@@ -479,12 +527,14 @@
    "time_local_offset_bearing": "2026-09-26T08:53:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T08:53:00-04:00",
     "2026-09-26T08:53:00-04:00"
    ],
    "ledger_depth_in": 3.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 3.0,
    "depth_hi_in": 3.0,
    "observed_qualitative": "Garage flooded all the way to the back: ~3 in at the mouth, ~1 in near the back; anything on the floor at risk (user). Implies garage floor ~5.37 NAVD88 at mouth, ~5.53 at back [INFERRED from corner 5.62 at 08:53]"
@@ -498,12 +548,14 @@
    "time_local_offset_bearing": "2026-09-26T10:02:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T10:02:00-04:00",
     "2026-09-26T10:02:00-04:00"
    ],
    "ledger_depth_in": 11.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 11.0,
    "depth_hi_in": 11.0,
    "observed_qualitative": "still over first porch step; 11.0 in over porch step base (user)"
@@ -517,12 +569,14 @@
    "time_local_offset_bearing": "2026-09-26T10:14:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T10:14:00-04:00",
     "2026-09-26T10:14:00-04:00"
    ],
    "ledger_depth_in": 10.2,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 10.2,
    "depth_hi_in": 10.2,
    "observed_qualitative": "still over first porch step; 10.2 in over porch step base (user)"
@@ -536,12 +590,14 @@
    "time_local_offset_bearing": "2026-09-26T10:27:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T10:27:00-04:00",
     "2026-09-26T10:27:00-04:00"
    ],
    "ledger_depth_in": 9.5,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 9.5,
    "depth_hi_in": 9.5,
    "observed_qualitative": "still over first porch step; 9.5 in over porch step base (user); rain started back up, moderate"
@@ -555,12 +611,14 @@
    "time_local_offset_bearing": "2026-09-26T10:50:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T10:50:00-04:00",
     "2026-09-26T10:50:00-04:00"
    ],
    "ledger_depth_in": 8.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 8.0,
    "depth_hi_in": 8.0,
    "observed_qualitative": "now UNDER first porch step top; 8.0 in over porch step base (user)"
@@ -574,12 +632,14 @@
    "time_local_offset_bearing": "2026-09-26T10:59:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T10:59:00-04:00",
     "2026-09-26T10:59:00-04:00"
    ],
    "ledger_depth_in": 7.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 7.0,
    "depth_hi_in": 7.0,
    "observed_qualitative": "under first porch step top; 7.0 in over porch step base (user)"
@@ -593,12 +653,14 @@
    "time_local_offset_bearing": "2026-09-26T11:10:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T11:10:00-04:00",
     "2026-09-26T11:10:00-04:00"
    ],
    "ledger_depth_in": 6.2,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 6.2,
    "depth_hi_in": 6.2,
    "observed_qualitative": "under first porch step top; 6.2 in up the first porch step wall; 6.2 in over porch step base (user)"
@@ -612,12 +674,14 @@
    "time_local_offset_bearing": "2026-09-26T11:21:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T11:21:00-04:00",
     "2026-09-26T11:21:00-04:00"
    ],
    "ledger_depth_in": 5.2,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 5.2,
    "depth_hi_in": 5.2,
    "observed_qualitative": "5.2 in up the first porch step wall (user)"
@@ -631,12 +695,14 @@
    "time_local_offset_bearing": "2026-09-26T11:42:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T11:42:00-04:00",
     "2026-09-26T11:42:00-04:00"
    ],
    "ledger_depth_in": 3.2,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 3.2,
    "depth_hi_in": 3.2,
    "observed_qualitative": "3.2 in up the first porch step wall (user)"
@@ -650,12 +716,14 @@
    "time_local_offset_bearing": "2026-09-26T12:06:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T12:06:00-04:00",
     "2026-09-26T12:06:00-04:00"
    ],
    "ledger_depth_in": 1.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 1.0,
    "depth_hi_in": 1.0,
    "observed_qualitative": "1 in up the first porch step wall (user)",
@@ -670,12 +738,14 @@
    "time_local_offset_bearing": "2026-09-26T12:42:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T12:42:00-04:00",
     "2026-09-26T12:42:00-04:00"
    ],
    "ledger_depth_in": 0.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 0.0,
    "depth_hi_in": 0.0,
    "observed_qualitative": "below lawn step; about level with the BOTTOM of the lawn step (sidewalk under walkway lawn-step, 4.33 NAVD88) (user)"
@@ -689,16 +759,18 @@
    "time_local_offset_bearing": "2026-09-26T12:52:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T12:52:00-04:00",
     "2026-09-26T12:52:00-04:00"
    ],
    "ledger_depth_in": -0.4,
-   "depth_kind": "range",
-   "depth_lo_in": -0.5,
-   "depth_hi_in": -0.3,
+   "depth_kind": "approximate",
+   "depth_basis": "unquantified",
+   "depth_lo_in": null,
+   "depth_hi_in": null,
    "observed_qualitative": "slightly under level with the curb in front of the lawn step, by ~1 cm (user) => ~4.13 NAVD88; last reading of the morning",
-   "depth_note": "'about 1 cm under the curb': -0.39 in nominal; ledger -0.4."
+   "depth_note": "'about 1 cm under the curb': nominal -0.39 in; ledger -0.4. No stated width."
   },
   {
    "csv_row": 222,
@@ -709,12 +781,14 @@
    "time_local_offset_bearing": "2026-09-26T12:52:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T12:52:00-04:00",
     "2026-09-26T12:52:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "upper_bound",
+   "depth_basis": "stated",
    "depth_lo_in": null,
    "depth_hi_in": 0.0,
    "observed_qualitative": "Roads virtually clear; intersection clear; safe to drive (user) \u2014 consistent with water ~4.13 NAVD88 below road_middle 4.36 / intersection high point 4.54",
@@ -729,12 +803,14 @@
    "time_local_offset_bearing": "2026-09-26T18:19:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T18:19:00-04:00",
     "2026-09-26T18:19:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "qualitative",
+   "depth_basis": "none",
    "depth_lo_in": null,
    "depth_hi_in": null,
    "observed_qualitative": "Tide gate visually CONFIRMED CLOSED at Snug Harbor beach (user; photo taken)"
@@ -748,12 +824,14 @@
    "time_local_offset_bearing": "2026-09-26T19:28:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T19:28:00-04:00",
     "2026-09-26T19:28:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "qualitative",
+   "depth_basis": "none",
    "depth_lo_in": null,
    "depth_hi_in": null,
    "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
@@ -767,12 +845,14 @@
    "time_local_offset_bearing": "2026-09-26T19:52:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T19:52:00-04:00",
     "2026-09-26T19:52:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "qualitative",
+   "depth_basis": "none",
    "depth_lo_in": null,
    "depth_hi_in": null,
    "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
@@ -786,12 +866,14 @@
    "time_local_offset_bearing": "2026-09-26T20:28:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T20:28:00-04:00",
     "2026-09-26T20:28:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "qualitative",
+   "depth_basis": "none",
    "depth_lo_in": null,
    "depth_hi_in": null,
    "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
@@ -805,12 +887,14 @@
    "time_local_offset_bearing": "2026-09-26T20:37:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T20:37:00-04:00",
     "2026-09-26T20:37:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "qualitative",
+   "depth_basis": "none",
    "depth_lo_in": null,
    "depth_hi_in": null,
    "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
@@ -824,12 +908,14 @@
    "time_local_offset_bearing": "2026-09-26T20:47:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T20:47:00-04:00",
     "2026-09-26T20:47:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "qualitative",
+   "depth_basis": "none",
    "depth_lo_in": null,
    "depth_hi_in": null,
    "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
@@ -843,12 +929,14 @@
    "time_local_offset_bearing": "2026-09-26T21:10:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T21:10:00-04:00",
     "2026-09-26T21:10:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "qualitative",
+   "depth_basis": "none",
    "depth_lo_in": null,
    "depth_hi_in": null,
    "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
@@ -862,12 +950,14 @@
    "time_local_offset_bearing": "2026-09-26T21:30:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "window",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T21:20:00-04:00",
     "2026-09-26T21:40:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "lower_bound",
+   "depth_basis": "stated",
    "depth_lo_in": 0.0,
    "depth_hi_in": null,
    "observed_qualitative": "sometime 21:20-21:40: water spans SE to SW grate across Central; otherwise very minor; cars drive fine; north side only puddling above grates; other puddles are rain puddles present all night (user)",
@@ -883,12 +973,14 @@
    "time_local_offset_bearing": "2026-09-26T21:54:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T21:54:00-04:00",
     "2026-09-26T21:54:00-04:00"
    ],
    "ledger_depth_in": -0.3,
    "depth_kind": "range",
+   "depth_basis": "stated",
    "depth_lo_in": -0.39,
    "depth_hi_in": 0.0,
    "observed_qualitative": "less than 1 cm below the curb in front of the lawn step; south side larger; NE and NW grates larger but NE-NW not connected; OVER the curb at the upstream (Bay Ave, NE-direction) grate area (user)",
@@ -903,16 +995,18 @@
    "time_local_offset_bearing": "2026-09-26T21:58:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "surrogate",
+   "time_basis": "adjacent_entries",
    "time_window_local": [
     "2026-09-26T21:54:00-04:00",
     "2026-09-26T22:11:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "not_applicable",
+   "depth_basis": "none",
    "depth_lo_in": null,
    "depth_hi_in": null,
    "observed_qualitative": "gate submerged but almost certainly still CLOSED: if open it would be strapped up and the water was not high enough to cover it in the open state; user believes closed since Friday (user)",
-   "time_note": "Gate visit untimed in the original; ledger 21:58 assigned from surrounding entries.",
+   "time_note": "Gate visit untimed in the original; ledger 21:58 assigned from the surrounding 21:54 and 22:11 entries.",
    "depth_note": "Infrastructure state report ('almost certainly closed'), not a water level."
   },
   {
@@ -924,12 +1018,14 @@
    "time_local_offset_bearing": "2026-09-26T22:11:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T22:11:00-04:00",
     "2026-09-26T22:11:00-04:00"
    ],
    "ledger_depth_in": 0.75,
    "depth_kind": "range",
+   "depth_basis": "stated",
    "depth_lo_in": 0.5,
    "depth_hi_in": 1.0,
    "observed_qualitative": "0.5-1 in over curb in front of lawn step, up to the base of the lawn step and a little up it; NE-NW connected; NW-SW connected; NE-SE a close miss but Bay Ave fully crossed a bit upstream at the upstream grate (user)",
@@ -944,12 +1040,14 @@
    "time_local_offset_bearing": "2026-09-26T22:29:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T22:29:00-04:00",
     "2026-09-26T22:29:00-04:00"
    ],
    "ledger_depth_in": 0.75,
    "depth_kind": "range",
+   "depth_basis": "stated",
    "depth_lo_in": 0.5,
    "depth_hi_in": 1.0,
    "observed_qualitative": "same as 22:11 (user)",
@@ -964,14 +1062,16 @@
    "time_local_offset_bearing": "2026-09-26T22:39:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T22:39:00-04:00",
     "2026-09-26T22:39:00-04:00"
    ],
    "ledger_depth_in": 0.5,
    "depth_kind": "approximate",
-   "depth_lo_in": 0.5,
-   "depth_hi_in": 0.5,
+   "depth_basis": "unquantified",
+   "depth_lo_in": null,
+   "depth_hi_in": null,
    "observed_qualitative": "receding: ~0.5 in over curb; NE-NW gap across Bay Ave wider; water moving as if receding (user)",
    "depth_note": "'more like 0.5 inch, not 1', receding."
   },
@@ -984,16 +1084,18 @@
    "time_local_offset_bearing": "2026-09-26T23:12:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "upper_bound",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T22:39:00-04:00",
     "2026-09-26T23:12:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "upper_bound",
+   "depth_basis": "stated",
    "depth_lo_in": null,
    "depth_hi_in": 0.0,
    "observed_qualitative": "flood receded completely as far as visible from the door window; maybe lingering bits; time of clearing unknown (between 22:39 and 23:12) (user)",
-   "time_note": "Receded 'completely as far as I can tell'; clearing time unknown between 22:39 and 23:12."
+   "time_note": "Receded 'completely as far as I can tell'; clearing time unknown between the 22:39 report and this 23:12 one."
   },
   {
    "csv_row": 237,
@@ -1004,12 +1106,14 @@
    "time_local_offset_bearing": "2026-09-27T07:48:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "already_present",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T07:48:00-04:00",
     "2026-09-27T07:48:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "lower_bound",
+   "depth_basis": "stated",
    "depth_lo_in": 0.0,
    "depth_hi_in": null,
    "observed_qualitative": "water already across Central SE to SW grate but minor, cars drive fine; puddles over NE and NW grates only, ~1 in above them (user)",
@@ -1025,16 +1129,18 @@
    "time_local_offset_bearing": "2026-09-27T08:12:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T08:12:00-04:00",
     "2026-09-27T08:12:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "range",
-   "depth_lo_in": -1.0,
-   "depth_hi_in": 0.0,
+   "depth_kind": "approximate",
+   "depth_basis": "unquantified",
+   "depth_lo_in": null,
+   "depth_hi_in": null,
    "observed_qualitative": "substantially more: lining both sides of Bay, not yet spanning Bay; widely across Central SE-SW; proper flooding nearly to curb level at lawn step; over the curb elsewhere e.g. upstream grate (user)",
-   "depth_note": "'nearly to curb level at lawn step' (qualitative)."
+   "depth_note": "'nearly to curb level at lawn step' (qualitative); no numeric width stated."
   },
   {
    "csv_row": 239,
@@ -1045,12 +1151,14 @@
    "time_local_offset_bearing": "2026-09-27T08:14:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T08:14:00-04:00",
     "2026-09-27T08:14:00-04:00"
    ],
    "ledger_depth_in": 0.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 0.0,
    "depth_hi_in": 0.0,
    "observed_qualitative": "exact moment it breached over the curb in front of the lawn step (user)"
@@ -1064,14 +1172,16 @@
    "time_local_offset_bearing": "2026-09-27T08:16:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T08:16:00-04:00",
     "2026-09-27T08:16:00-04:00"
    ],
    "ledger_depth_in": 6.0,
    "depth_kind": "approximate",
-   "depth_lo_in": 6.0,
-   "depth_hi_in": 6.0,
+   "depth_basis": "unquantified",
+   "depth_lo_in": null,
+   "depth_hi_in": null,
    "observed_qualitative": "6 in over NE grate; ~5.5 in above street at curb in front of lawn step; water reached base of lawn step (~4.24-4.30 NAVD88) (user)",
    "depth_note": "'6 inches over NE grate; around 5.5 inches above street at curb' (two co-reports)."
   },
@@ -1084,12 +1194,14 @@
    "time_local_offset_bearing": "2026-09-27T08:17:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T08:17:00-04:00",
     "2026-09-27T08:17:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "lower_bound",
+   "depth_basis": "stated",
    "depth_lo_in": 0.0,
    "depth_hi_in": null,
    "observed_qualitative": "water crossed Bay Ave at the upstream grate and farther upstream; NW to SW bridged (user)",
@@ -1104,12 +1216,14 @@
    "time_local_offset_bearing": "2026-09-27T08:18:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T08:18:00-04:00",
     "2026-09-27T08:18:00-04:00"
    ],
    "ledger_depth_in": 1.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 1.0,
    "depth_hi_in": 1.0,
    "observed_qualitative": "NE to SE bridged; 1 in up the lawn step wall (user)"
@@ -1123,12 +1237,14 @@
    "time_local_offset_bearing": "2026-09-27T08:22:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T08:22:00-04:00",
     "2026-09-27T08:22:00-04:00"
    ],
    "ledger_depth_in": 2.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 2.0,
    "depth_hi_in": 2.0,
    "observed_qualitative": "2 in up lawn step; most of intersection flooded except small crown (user)"
@@ -1142,12 +1258,14 @@
    "time_local_offset_bearing": "2026-09-27T08:24:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T08:24:00-04:00",
     "2026-09-27T08:24:00-04:00"
    ],
    "ledger_depth_in": 3.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 3.0,
    "depth_hi_in": 3.0,
    "observed_qualitative": "3 in up lawn step; crown now covered (user)"
@@ -1161,12 +1279,14 @@
    "time_local_offset_bearing": "2026-09-27T08:36:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T08:36:00-04:00",
     "2026-09-27T08:36:00-04:00"
    ],
    "ledger_depth_in": 2.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 2.0,
    "depth_hi_in": 2.0,
    "observed_qualitative": "2 in up wall of first porch step (user)"
@@ -1180,12 +1300,14 @@
    "time_local_offset_bearing": "2026-09-27T08:41:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T08:41:00-04:00",
     "2026-09-27T08:41:00-04:00"
    ],
    "ledger_depth_in": 3.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 3.0,
    "depth_hi_in": 3.0,
    "observed_qualitative": "3 in up wall of first porch step (user)"
@@ -1199,12 +1321,14 @@
    "time_local_offset_bearing": "2026-09-27T08:47:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T08:47:00-04:00",
     "2026-09-27T08:47:00-04:00"
    ],
    "ledger_depth_in": 4.25,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 4.25,
    "depth_hi_in": 4.25,
    "observed_qualitative": "4.25 in up wall of first porch step (user)"
@@ -1218,12 +1342,14 @@
    "time_local_offset_bearing": "2026-09-27T08:52:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T08:52:00-04:00",
     "2026-09-27T08:52:00-04:00"
    ],
    "ledger_depth_in": 5.2,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 5.2,
    "depth_hi_in": 5.2,
    "observed_qualitative": "5.2 in up wall of first porch step (user)"
@@ -1237,12 +1363,14 @@
    "time_local_offset_bearing": "2026-09-27T09:02:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T09:02:00-04:00",
     "2026-09-27T09:02:00-04:00"
    ],
    "ledger_depth_in": 7.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 7.0,
    "depth_hi_in": 7.0,
    "observed_qualitative": "7 in up wall of first porch step; still no water in garage (user)"
@@ -1256,12 +1384,14 @@
    "time_local_offset_bearing": "2026-09-27T09:12:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T09:12:00-04:00",
     "2026-09-27T09:12:00-04:00"
    ],
    "ledger_depth_in": 0.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 0.0,
    "depth_hi_in": 0.0,
    "observed_qualitative": "level with first porch step top, about to breach; water all the way up the driveway to the mouth of the garage but not inside => garage entry ~ level with first porch step top (user)"
@@ -1275,12 +1405,14 @@
    "time_local_offset_bearing": "2026-09-27T09:14:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T09:14:00-04:00",
     "2026-09-27T09:14:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "lower_bound",
+   "depth_basis": "stated",
    "depth_lo_in": 0.0,
    "depth_hi_in": null,
    "observed_qualitative": "breached over first porch step; water entered garage by a couple inches, waves push it several inches back and forth (user)",
@@ -1295,12 +1427,14 @@
    "time_local_offset_bearing": "2026-09-27T09:24:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T09:24:00-04:00",
     "2026-09-27T09:24:00-04:00"
    ],
    "ledger_depth_in": 10.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 10.0,
    "depth_hi_in": 10.0,
    "observed_qualitative": "10 in up from porch step base, over first step; water ~1/3 into the garage (8-10 ft in) (user)"
@@ -1314,12 +1448,14 @@
    "time_local_offset_bearing": "2026-09-27T09:33:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T09:33:00-04:00",
     "2026-09-27T09:33:00-04:00"
    ],
    "ledger_depth_in": 10.75,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 10.75,
    "depth_hi_in": 10.75,
    "observed_qualitative": "10.75 in; water over 2/3 of garage length (user)"
@@ -1333,12 +1469,14 @@
    "time_local_offset_bearing": "2026-09-27T09:44:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T09:44:00-04:00",
     "2026-09-27T09:44:00-04:00"
    ],
    "ledger_depth_in": 11.25,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 11.25,
    "depth_hi_in": 11.25,
    "observed_qualitative": "11.25 in; water ~90% of garage length, up to the refrigerator on the back wall, ~3 ft dry (user)"
@@ -1352,14 +1490,16 @@
    "time_local_offset_bearing": "2026-09-27T09:53:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T09:53:00-04:00",
     "2026-09-27T09:53:00-04:00"
    ],
    "ledger_depth_in": 11.25,
    "depth_kind": "approximate",
-   "depth_lo_in": 11.25,
-   "depth_hi_in": 11.25,
+   "depth_basis": "unquantified",
+   "depth_lo_in": null,
+   "depth_hi_in": null,
    "observed_qualitative": "11.25 in; garage still ~90%; may have stopped rising (user)",
    "depth_note": "'may have stopped rising'."
   },
@@ -1372,12 +1512,14 @@
    "time_local_offset_bearing": "2026-09-27T10:06:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T10:06:00-04:00",
     "2026-09-27T10:06:00-04:00"
    ],
    "ledger_depth_in": 11.25,
    "depth_kind": "upper_bound",
+   "depth_basis": "stated",
    "depth_lo_in": null,
    "depth_hi_in": 11.25,
    "observed_qualitative": "11.25 in or slightly lower; garage still ~90%; stopped rising, may soon reverse (CREST 09:44-10:06) (user)",
@@ -1392,12 +1534,14 @@
    "time_local_offset_bearing": "2026-09-27T10:18:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T10:18:00-04:00",
     "2026-09-27T10:18:00-04:00"
    ],
    "ledger_depth_in": 11.0,
    "depth_kind": "upper_bound",
+   "depth_basis": "stated",
    "depth_lo_in": null,
    "depth_hi_in": 11.0,
    "observed_qualitative": "11 in or slightly lower; water ~3 ft back from the refrigerator; clearly receding slowly (user)",
@@ -1412,12 +1556,14 @@
    "time_local_offset_bearing": "2026-09-27T10:38:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T10:38:00-04:00",
     "2026-09-27T10:38:00-04:00"
    ],
    "ledger_depth_in": 9.5,
    "depth_kind": "upper_bound",
+   "depth_basis": "stated",
    "depth_lo_in": null,
    "depth_hi_in": 9.5,
    "observed_qualitative": "9.5 in or slightly lower; garage water back to ~1/3 inside (user)",
@@ -1432,12 +1578,14 @@
    "time_local_offset_bearing": "2026-09-27T08:30:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "surrogate",
+   "time_basis": "adjacent_entries",
    "time_window_local": [
     "2026-09-27T08:24:00-04:00",
     "2026-09-27T08:36:00-04:00"
    ],
    "ledger_depth_in": null,
    "depth_kind": "not_applicable",
+   "depth_basis": "none",
    "depth_lo_in": null,
    "depth_hi_in": null,
    "observed_qualitative": "water extremely high; no signs the gate is open; almost certainly CLOSED (user)",
@@ -1453,12 +1601,14 @@
    "time_local_offset_bearing": "2026-09-27T10:54:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T10:54:00-04:00",
     "2026-09-27T10:54:00-04:00"
    ],
    "ledger_depth_in": 8.2,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 8.2,
    "depth_hi_in": 8.2,
    "observed_qualitative": "8.2 in up from base near first porch step, now slightly lower than first porch step; water out of the garage (wet, no longer filled); flood water ~up to the garage mouth but not over the lip => garage lip ~5.36-5.41 NAVD88 (user)"
@@ -1472,12 +1622,14 @@
    "time_local_offset_bearing": "2026-09-27T11:20:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T11:20:00-04:00",
     "2026-09-27T11:20:00-04:00"
    ],
    "ledger_depth_in": 6.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 6.0,
    "depth_hi_in": 6.0,
    "observed_qualitative": "6 in up from base near first porch step (user)"
@@ -1491,12 +1643,14 @@
    "time_local_offset_bearing": "2026-09-27T12:01:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T12:01:00-04:00",
     "2026-09-27T12:01:00-04:00"
    ],
    "ledger_depth_in": 2.0,
    "depth_kind": "point",
+   "depth_basis": "stated",
    "depth_lo_in": 2.0,
    "depth_hi_in": 2.0,
    "observed_qualitative": "2 in up from base near first porch step (user)"
@@ -1510,12 +1664,14 @@
    "time_local_offset_bearing": "2026-09-27T12:48:00-04:00",
    "ledger_time_naive": true,
    "time_kind": "stated_exact",
+   "time_basis": "stated",
    "time_window_local": [
     "2026-09-27T12:48:00-04:00",
     "2026-09-27T12:48:00-04:00"
    ],
    "ledger_depth_in": 0.75,
    "depth_kind": "range",
+   "depth_basis": "stated",
    "depth_lo_in": 0.5,
    "depth_hi_in": 1.0,
    "observed_qualitative": "below the lawn step, at most 1 in above the curb (probably 0.5-1 in); water no longer crosses Bay Ave along its length, just local leftovers each side; still crosses Central at both north and south grate pairs (user)",

@@ -27,8 +27,13 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
 sys.path.insert(0, str(REPO))
 from forecast import flood_forecast_daily as ff  # noqa: E402
+sys.path.insert(0, str(HERE))
+from station_datums import mllw_to_navd88_offset  # noqa: E402
 
-MLLW_TO_NAVD = ff.MLLW_TO_NAVD88_OFFSET   # -2.82 ft
+MLLW_TO_NAVD = ff.MLLW_TO_NAVD88_OFFSET   # -2.82 ft, Sandy Hook (production constant)
+OFFSET = {"sandy-hook": mllw_to_navd88_offset("8531680"),   # -2.82
+          "battery": mllw_to_navd88_offset("8518750")}      # -2.77 (round 05 R6)
+assert OFFSET["sandy-hook"] == MLLW_TO_NAVD
 SRC = HERE / "gauge-sources"
 CACHE = REPO / "assets/observations/2026-09-26/analysis/gauge_cache.json"
 LEDGER = REPO / "data/labeled_observations.csv"
@@ -64,6 +69,7 @@ def latest(prefix):
     path = files[-1]
     req = json.loads(path.with_name(path.stem + "-request.json").read_text())
     rows = json.loads(path.read_text())["data"]
+    offset = OFFSET[prefix]
     series = []
     for r in rows:
         if not r.get("v"):
@@ -71,7 +77,7 @@ def latest(prefix):
         t_local = ff.noaa_gmt_to_station_time(r["t"])
         series.append({"gmt": r["t"], "local": t_local.isoformat(" ", "minutes"),
                        "_t": t_local, "mllw": float(r["v"]),
-                       "navd88": round(float(r["v"]) + MLLW_TO_NAVD, 3),
+                       "navd88": round(float(r["v"]) + offset, 3),
                        "sigma": r.get("s"), "flags": r.get("f"), "q": r.get("q")})
     return path.name, req["retrieved_utc"], series
 
@@ -115,9 +121,12 @@ def main():
                                    "quality_flags": sorted({r["q"] for r in sh})},
                     "battery": {"file": bat_name, "retrieved_utc": bat_ret,
                                 "quality_flags": sorted({r["q"] for r in bat})},
-                    "datum_note": "NOAA MLLW transported in GMT; NAVD88 = MLLW + (-2.82). "
-                                  "The committed gauge_cache.json asked NOAA for datum=NAVD "
-                                  "directly, which sits 0.005 ft lower (NOAA's own offset)."},
+                    "datum_note": "NOAA MLLW transported in GMT; station-specific NAVD88 = MLLW + offset: "
+                                  "Sandy Hook -2.82, The Battery -2.77 (station_datums.py; NOAA 1983-2001 "
+                                  "epoch receipts in audits/2026-09-27-a1/05-noaa-*-datums.json). The committed "
+                                  "gauge_cache.json asked NOAA for datum=NAVD directly, which sits 0.005 ft "
+                                  "lower (NOAA's own offset).",
+                    "datum_offsets_ft": OFFSET},
         "caveat": "All rows are NOAA PRELIMINARY (q='p') at retrieval; a later download "
                   "is not automatically the verified record. Bay level is not street water.",
         "tides": {}, "lags": {}, "spike_screen": spike_screen(sh, bat),

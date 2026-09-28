@@ -1,5 +1,5 @@
 {
- "prepared_utc": "2026-09-27T21:50:45+00:00",
+ "prepared_utc": "2026-09-27T23:20:38+00:00",
  "inputs": {
   "mrms": "history/data/mrms/mrms_extracted.csv",
   "gauge": "sandy-hook-20260927T214541Z.json",
@@ -32,9 +32,11 @@
    "scenarios": {
     "A_fixed_crest_base_zero_drain": {
      "assumption": "base held at crest bay 4.748 ft NAVD88; drain 0",
-     "peak_rain_lift_in": 0.67,
-     "peak_lift_utc": "2026-09-26T02:26:00+00:00",
-     "peak_water_in_vs_sw": 15.4,
+     "max_increment_in": 0.67,
+     "max_increment_utc": "2026-09-26T02:26:00+00:00",
+     "water_at_max_increment_in_vs_sw": 15.4,
+     "max_water_in_vs_sw": 15.4,
+     "max_water_utc": "2026-09-26T02:26:00+00:00",
      "series_10min": [
       [
        "21:00Z",
@@ -270,9 +272,11 @@
     },
     "B_bay_tracking_base_zero_drain": {
      "assumption": "base = despiked archived bay each step; drain 0",
-     "peak_rain_lift_in": 7.54,
-     "peak_lift_utc": "2026-09-26T02:26:00+00:00",
-     "peak_water_in_vs_sw": 7.54,
+     "max_increment_in": 7.54,
+     "max_increment_utc": "2026-09-26T02:26:00+00:00",
+     "water_at_max_increment_in_vs_sw": 7.54,
+     "max_water_in_vs_sw": 14.93,
+     "max_water_utc": "2026-09-26T00:06:00+00:00",
      "series_10min": [
       [
        "21:00Z",
@@ -508,9 +512,11 @@
     },
     "C_bay_tracking_base_head_drain": {
      "assumption": "base = despiked archived bay; production head-dependent drain",
-     "peak_rain_lift_in": 6.5,
-     "peak_lift_utc": "2026-09-26T02:24:00+00:00",
-     "peak_water_in_vs_sw": 6.5,
+     "max_increment_in": 6.5,
+     "max_increment_utc": "2026-09-26T02:24:00+00:00",
+     "water_at_max_increment_in_vs_sw": 6.5,
+     "max_water_in_vs_sw": 14.93,
+     "max_water_utc": "2026-09-26T00:06:00+00:00",
      "series_10min": [
       [
        "21:00Z",
@@ -746,9 +752,11 @@
     },
     "D_fixed_low_base_2p50_full_drain": {
      "assumption": "base 2.50 ft (drains open); full drain rate",
-     "peak_rain_lift_in": 0.0,
-     "peak_lift_utc": "2026-09-25T21:00:00+00:00",
-     "peak_water_in_vs_sw": 0.0,
+     "max_increment_in": 0.0,
+     "max_increment_utc": "2026-09-25T21:00:00+00:00",
+     "water_at_max_increment_in_vs_sw": 0.0,
+     "max_water_in_vs_sw": 0.0,
+     "max_water_utc": "2026-09-25T21:00:00+00:00",
      "series_10min": [
       [
        "21:00Z",
@@ -1007,9 +1015,11 @@
    "scenarios": {
     "A_fixed_crest_base_zero_drain": {
      "assumption": "base held at crest bay 5.847 ft NAVD88; drain 0",
-     "peak_rain_lift_in": 2.45,
-     "peak_lift_utc": "2026-09-26T13:02:00+00:00",
-     "peak_water_in_vs_sw": 30.38,
+     "max_increment_in": 2.45,
+     "max_increment_utc": "2026-09-26T13:02:00+00:00",
+     "water_at_max_increment_in_vs_sw": 30.38,
+     "max_water_in_vs_sw": 30.38,
+     "max_water_utc": "2026-09-26T13:02:00+00:00",
      "series_10min": [
       [
        "08:00Z",
@@ -1286,13 +1296,23 @@
        27.99,
        0.07
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-26T13:06:00Z",
+       "2026-09-26T13:13:00Z"
+      ],
+      "min": 1.97,
+      "max": 2.36
+     }
     },
     "B_bay_tracking_base_zero_drain": {
      "assumption": "base = despiked archived bay each step; drain 0",
-     "peak_rain_lift_in": 6.16,
-     "peak_lift_utc": "2026-09-26T16:08:00+00:00",
-     "peak_water_in_vs_sw": 6.16,
+     "max_increment_in": 6.16,
+     "max_increment_utc": "2026-09-26T16:08:00+00:00",
+     "water_at_max_increment_in_vs_sw": 6.16,
+     "max_water_in_vs_sw": 29.97,
+     "max_water_utc": "2026-09-26T12:58:00+00:00",
      "series_10min": [
       [
        "08:00Z",
@@ -1569,13 +1589,23 @@
        3.6,
        3.6
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-26T13:06:00Z",
+       "2026-09-26T13:13:00Z"
+      ],
+      "min": 1.97,
+      "max": 2.36
+     }
     },
     "C_bay_tracking_base_head_drain": {
      "assumption": "base = despiked archived bay; production head-dependent drain",
-     "peak_rain_lift_in": 3.7,
-     "peak_lift_utc": "2026-09-26T15:24:00+00:00",
-     "peak_water_in_vs_sw": 3.7,
+     "max_increment_in": 3.7,
+     "max_increment_utc": "2026-09-26T15:24:00+00:00",
+     "water_at_max_increment_in_vs_sw": 3.7,
+     "max_water_in_vs_sw": 29.97,
+     "max_water_utc": "2026-09-26T12:58:00+00:00",
      "series_10min": [
       [
        "08:00Z",
@@ -1852,13 +1882,23 @@
        0.05,
        0.05
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-26T13:06:00Z",
+       "2026-09-26T13:13:00Z"
+      ],
+      "min": 1.97,
+      "max": 2.36
+     }
     },
     "D_fixed_low_base_2p50_full_drain": {
      "assumption": "base 2.50 ft (drains open); full drain rate",
-     "peak_rain_lift_in": 10.94,
-     "peak_lift_utc": "2026-09-26T13:02:00+00:00",
-     "peak_water_in_vs_sw": 10.94,
+     "max_increment_in": 10.94,
+     "max_increment_utc": "2026-09-26T13:02:00+00:00",
+     "water_at_max_increment_in_vs_sw": 10.94,
+     "max_water_in_vs_sw": 10.94,
+     "max_water_utc": "2026-09-26T13:02:00+00:00",
      "series_10min": [
       [
        "08:00Z",
@@ -2135,7 +2175,15 @@
        0.0,
        0.0
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-26T13:06:00Z",
+       "2026-09-26T13:13:00Z"
+      ],
+      "min": 9.9,
+      "max": 10.77
+     }
     }
    },
    "street_tape": [
@@ -2334,9 +2382,11 @@
    "scenarios": {
     "A_fixed_crest_base_zero_drain": {
      "assumption": "base held at crest bay 4.899 ft NAVD88; drain 0",
-     "peak_rain_lift_in": 0.74,
-     "peak_lift_utc": "2026-09-27T03:44:00+00:00",
-     "peak_water_in_vs_sw": 17.29,
+     "max_increment_in": 0.74,
+     "max_increment_utc": "2026-09-27T03:44:00+00:00",
+     "water_at_max_increment_in_vs_sw": 17.29,
+     "max_water_in_vs_sw": 17.29,
+     "max_water_utc": "2026-09-27T03:44:00+00:00",
      "series_10min": [
       [
        "21:00Z",
@@ -2553,13 +2603,23 @@
        17.15,
        0.6
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-27T02:11:00Z",
+       "2026-09-27T02:29:00Z"
+      ],
+      "min": 0.28,
+      "max": 0.33
+     }
     },
     "B_bay_tracking_base_zero_drain": {
      "assumption": "base = despiked archived bay each step; drain 0",
-     "peak_rain_lift_in": 8.02,
-     "peak_lift_utc": "2026-09-27T03:44:00+00:00",
-     "peak_water_in_vs_sw": 8.02,
+     "max_increment_in": 8.02,
+     "max_increment_utc": "2026-09-27T03:44:00+00:00",
+     "water_at_max_increment_in_vs_sw": 8.02,
+     "max_water_in_vs_sw": 17.15,
+     "max_water_utc": "2026-09-27T00:46:00+00:00",
      "series_10min": [
       [
        "21:00Z",
@@ -2776,13 +2836,23 @@
        7.54,
        7.54
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-27T02:11:00Z",
+       "2026-09-27T02:29:00Z"
+      ],
+      "min": 0.94,
+      "max": 2.04
+     }
     },
     "C_bay_tracking_base_head_drain": {
      "assumption": "base = despiked archived bay; production head-dependent drain",
-     "peak_rain_lift_in": 7.01,
-     "peak_lift_utc": "2026-09-27T02:52:00+00:00",
-     "peak_water_in_vs_sw": 7.01,
+     "max_increment_in": 7.01,
+     "max_increment_utc": "2026-09-27T02:52:00+00:00",
+     "water_at_max_increment_in_vs_sw": 7.01,
+     "max_water_in_vs_sw": 17.15,
+     "max_water_utc": "2026-09-27T00:46:00+00:00",
      "series_10min": [
       [
        "21:00Z",
@@ -2999,13 +3069,23 @@
        0.82,
        0.82
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-27T02:11:00Z",
+       "2026-09-27T02:29:00Z"
+      ],
+      "min": 0.94,
+      "max": 2.04
+     }
     },
     "D_fixed_low_base_2p50_full_drain": {
      "assumption": "base 2.50 ft (drains open); full drain rate",
-     "peak_rain_lift_in": 0.0,
-     "peak_lift_utc": "2026-09-26T21:00:00+00:00",
-     "peak_water_in_vs_sw": 0.0,
+     "max_increment_in": 0.0,
+     "max_increment_utc": "2026-09-26T21:00:00+00:00",
+     "water_at_max_increment_in_vs_sw": 0.0,
+     "max_water_in_vs_sw": 0.0,
+     "max_water_utc": "2026-09-26T21:00:00+00:00",
      "series_10min": [
       [
        "21:00Z",
@@ -3222,7 +3302,15 @@
        0.0,
        0.0
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-27T02:11:00Z",
+       "2026-09-27T02:29:00Z"
+      ],
+      "min": 0.0,
+      "max": 0.0
+     }
     }
    },
    "street_tape": [
@@ -3268,9 +3356,11 @@
    "scenarios": {
     "A_fixed_crest_base_zero_drain": {
      "assumption": "base held at crest bay 5.703 ft NAVD88; drain 0",
-     "peak_rain_lift_in": 0.92,
-     "peak_lift_utc": "2026-09-27T09:26:00+00:00",
-     "peak_water_in_vs_sw": 27.11,
+     "max_increment_in": 0.92,
+     "max_increment_utc": "2026-09-27T09:26:00+00:00",
+     "water_at_max_increment_in_vs_sw": 27.11,
+     "max_water_in_vs_sw": 27.11,
+     "max_water_utc": "2026-09-27T09:26:00+00:00",
      "series_10min": [
       [
        "08:00Z",
@@ -3547,13 +3637,23 @@
        26.2,
        0.0
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-27T13:44:00Z",
+       "2026-09-27T14:06:00Z"
+      ],
+      "min": 0.02,
+      "max": 0.08
+     }
     },
     "B_bay_tracking_base_zero_drain": {
      "assumption": "base = despiked archived bay each step; drain 0",
-     "peak_rain_lift_in": 9.02,
-     "peak_lift_utc": "2026-09-27T09:26:00+00:00",
-     "peak_water_in_vs_sw": 9.02,
+     "max_increment_in": 9.02,
+     "max_increment_utc": "2026-09-27T09:26:00+00:00",
+     "water_at_max_increment_in_vs_sw": 9.02,
+     "max_water_in_vs_sw": 26.33,
+     "max_water_utc": "2026-09-27T13:10:00+00:00",
      "series_10min": [
       [
        "08:00Z",
@@ -3830,13 +3930,23 @@
        0.04,
        0.04
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-27T13:44:00Z",
+       "2026-09-27T14:06:00Z"
+      ],
+      "min": 0.02,
+      "max": 0.08
+     }
     },
     "C_bay_tracking_base_head_drain": {
      "assumption": "base = despiked archived bay; production head-dependent drain",
-     "peak_rain_lift_in": 5.8,
-     "peak_lift_utc": "2026-09-27T09:26:00+00:00",
-     "peak_water_in_vs_sw": 5.8,
+     "max_increment_in": 5.8,
+     "max_increment_utc": "2026-09-27T09:26:00+00:00",
+     "water_at_max_increment_in_vs_sw": 5.8,
+     "max_water_in_vs_sw": 26.33,
+     "max_water_utc": "2026-09-27T13:10:00+00:00",
      "series_10min": [
       [
        "08:00Z",
@@ -4113,13 +4223,23 @@
        0.04,
        0.04
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-27T13:44:00Z",
+       "2026-09-27T14:06:00Z"
+      ],
+      "min": 0.02,
+      "max": 0.08
+     }
     },
     "D_fixed_low_base_2p50_full_drain": {
      "assumption": "base 2.50 ft (drains open); full drain rate",
-     "peak_rain_lift_in": 5.8,
-     "peak_lift_utc": "2026-09-27T09:26:00+00:00",
-     "peak_water_in_vs_sw": 5.8,
+     "max_increment_in": 5.8,
+     "max_increment_utc": "2026-09-27T09:26:00+00:00",
+     "water_at_max_increment_in_vs_sw": 5.8,
+     "max_water_in_vs_sw": 5.8,
+     "max_water_utc": "2026-09-27T09:26:00+00:00",
      "series_10min": [
       [
        "08:00Z",
@@ -4396,7 +4516,15 @@
        0.0,
        0.0
       ]
-     ]
+     ],
+     "increment_at_corner_crest_in": {
+      "window_utc": [
+       "2026-09-27T13:44:00Z",
+       "2026-09-27T14:06:00Z"
+      ],
+      "min": 0.0,
+      "max": 0.0
+     }
     }
    },
    "street_tape": [

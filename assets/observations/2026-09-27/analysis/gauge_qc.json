@@ -1,5 +1,5 @@
 {
- "prepared_utc": "2026-09-27T21:47:17+00:00",
+ "prepared_utc": "2026-09-27T23:23:37+00:00",
  "sources": {
   "sandy_hook": {
    "file": "sandy-hook-20260927T214541Z.json",
@@ -15,7 +15,11 @@
     "p"
    ]
   },
-  "datum_note": "NOAA MLLW transported in GMT; NAVD88 = MLLW + (-2.82). The committed gauge_cache.json asked NOAA for datum=NAVD directly, which sits 0.005 ft lower (NOAA's own offset)."
+  "datum_note": "NOAA MLLW transported in GMT; station-specific NAVD88 = MLLW + offset: Sandy Hook -2.82, The Battery -2.77 (station_datums.py; NOAA 1983-2001 epoch receipts in audits/2026-09-27-a1/05-noaa-*-datums.json). The committed gauge_cache.json asked NOAA for datum=NAVD directly, which sits 0.005 ft lower (NOAA's own offset).",
+  "datum_offsets_ft": {
+   "sandy-hook": -2.82,
+   "battery": -2.77
+  }
  },
  "caveat": "All rows are NOAA PRELIMINARY (q='p') at retrieval; a later download is not automatically the verified record. Bay level is not street water.",
  "tides": {
@@ -43,7 +47,7 @@
    },
    "despike_removed_samples": 0,
    "battery": {
-    "max_navd88": 4.362,
+    "max_navd88": 4.412,
     "max_local": "2026-09-25 20:36-04:00",
     "flat_tol_ft": 0.03,
     "flat_from_local": "2026-09-25 20:36-04:00",
@@ -79,7 +83,7 @@
    },
    "despike_removed_samples": 0,
    "battery": {
-    "max_navd88": 5.49,
+    "max_navd88": 5.54,
     "max_local": "2026-09-26 09:36-04:00",
     "flat_tol_ft": 0.03,
     "flat_from_local": "2026-09-26 09:36-04:00",
@@ -115,7 +119,7 @@
    },
    "despike_removed_samples": 0,
    "battery": {
-    "max_navd88": 4.414,
+    "max_navd88": 4.464,
     "max_local": "2026-09-26 21:06-04:00",
     "flat_tol_ft": 0.03,
     "flat_from_local": "2026-09-26 21:00-04:00",
@@ -151,7 +155,7 @@
    },
    "despike_removed_samples": 0,
    "battery": {
-    "max_navd88": 5.179,
+    "max_navd88": 5.229,
     "max_local": "2026-09-27 09:48-04:00",
     "flat_tol_ft": 0.03,
     "flat_from_local": "2026-09-27 09:42-04:00",

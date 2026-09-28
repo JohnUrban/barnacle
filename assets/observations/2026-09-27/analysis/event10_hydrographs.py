@@ -37,8 +37,12 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[3]
 sys.path.insert(0, str(REPO))
 from forecast import flood_forecast_daily as ff  # noqa: E402
+sys.path.insert(0, str(HERE))
+from station_datums import mllw_to_navd88_offset  # noqa: E402
 
 UTC = dt.timezone.utc
+OFFSET = {"sandy-hook": mllw_to_navd88_offset("8531680"),   # -2.82
+          "battery": mllw_to_navd88_offset("8518750")}      # -2.77 (round 05 R6)
 ELEV = {k: e for k, _l, e, _s in ff.LANDMARKS}
 INTERVALS = json.loads((HERE / "observation_intervals.json").read_text())
 INTERVAL_BY_HASH = {r["sha256"]: r for r in INTERVALS["records"]}
@@ -70,7 +74,7 @@ def gauge(prefix):
     for r in rows:
         if r.get("v"):
             t = dt.datetime.strptime(r["t"], "%Y-%m-%d %H:%M").replace(tzinfo=UTC)
-            out.append((t, float(r["v"]) + ff.MLLW_TO_NAVD88_OFFSET, r.get("q"), r.get("f")))
+            out.append((t, float(r["v"]) + OFFSET[prefix], r.get("q"), r.get("f")))
     return out, files[-1].name
 
 
@@ -142,13 +146,15 @@ def main():
             w0 = local(ff.parse_station_local_time(win[0])) if win else local(t_aware)
             w1 = local(ff.parse_station_local_time(win[1])) if win else local(t_aware)
             dk = iv.get("depth_kind", "point" if r["observed_depth_in"].strip() else "qualitative")
+            basis = iv.get("depth_basis", "stated")
             elev = ELEV.get(key)
-            if dk in ("point", "range", "approximate", "upper_bound", "lower_bound") and elev is not None:
-                lo, hi = iv.get("depth_lo_in"), iv.get("depth_hi_in")
-                try:
-                    d = float(r["observed_depth_in"])
-                except ValueError:
-                    d = lo if lo is not None else hi
+            lo, hi = iv.get("depth_lo_in"), iv.get("depth_hi_in")
+            try:
+                d = float(r["observed_depth_in"])
+            except ValueError:
+                d = lo if lo is not None else hi   # None: qualitative with no stated bound
+            if dk in ("point", "range", "approximate", "upper_bound", "lower_bound") \
+                    and elev is not None and d is not None:
                 tape.append((local(t_aware), elev + d / 12, dk,
                              None if lo is None else elev + lo / 12,
                              None if hi is None else elev + hi / 12, tk, w0, w1))
@@ -173,7 +179,7 @@ def main():
             ax_q.plot([t], [ycode[kind]], marker=mk[kind], ms=7, mfc=col[kind] if exact else "white",
                       mec=col[kind], mew=1.3, ls="none")
         ax_q.set_ylim(0, 1.05); ax_q.set_yticks([0.25, 0.55, 0.85])
-        ax_q.set_yticklabels(["dry report", "water reported,\nnot measured", "gate report"], fontsize=7)
+        ax_q.set_yticklabels(["dry", "wet, unmeasured", "gate"], fontsize=7)
         ax_q.grid(alpha=.15)
         # water
         g = [(local(t), v, q, f) for t, v, q, f in sh if in_window(t, a, b)]
@@ -190,7 +196,8 @@ def main():
             ax_w.plot([p[0] for p in pts], [p[1] for p in pts], "-", color="#d97706", lw=1, alpha=.7)
         for t, w, dk, lo, hi, tk, w0, w1 in tape:
             exact_t = tk == "stated_exact"
-            if dk == "range" and lo is not None and hi is not None:
+            if dk == "range" and lo is not None and hi is not None \
+                    and basis in ("stated", "stated_landmarks"):
                 ax_w.plot([t, t], [lo, hi], color="#b45309", lw=1.6)
             if dk == "upper_bound":
                 ax_w.plot([t], [w], marker="v", ms=7, mfc="white", mec="#b45309", mew=1.4, ls="none")
@@ -215,12 +222,12 @@ def main():
     handles = [
         Line2D([], [], marker="D", color="#d97706", mec="#0b3d6b", ls="-", lw=1, label="street tape (landmark + depth), stated time"),
         Line2D([], [], marker="D", color="white", mec="#0b3d6b", ls="none", label="approximate reading / surrogate or window time (bar = window)"),
-        Line2D([], [], color="#b45309", lw=1.6, label="reported depth range"),
+        Line2D([], [], color="#b45309", lw=1.6, label="depth range stated by the owner (no analyst widths drawn)"),
         Line2D([], [], marker="v", color="white", mec="#b45309", ls="none", label="upper bound (water at most here)"),
         Line2D([], [], marker="^", color="white", mec="#b45309", ls="none", label="lower bound (water at least here)"),
         Line2D([], [], color="#9a9a9a", lw=1, label="Sandy Hook raw (archived preliminary)"),
         Line2D([], [], color="#555555", lw=1.8, label="Sandy Hook despiked"),
-        Line2D([], [], color="#7aa6c2", lw=1.2, ls="--", label="The Battery"),
+        Line2D([], [], color="#7aa6c2", lw=1.2, ls="--", label="The Battery (MLLW − 2.77, station datum)"),
     ]
     fig.legend(handles=handles, loc="lower center", ncol=3, fontsize=8, frameon=False,
                bbox_to_anchor=(0.5, 0.005))
@@ -229,7 +236,7 @@ def main():
                  fontsize=11.5, y=0.995)
     fig.text(0.01, 0.0, f"sources: {sh_file}, {bat_file}, history/data/mrms/mrms_extracted.csv, data/labeled_observations.csv, "
              "observation_intervals.json · rendered " + dt.datetime.now(UTC).strftime("%Y-%m-%d %H:%MZ"), fontsize=6.5, color="#666")
-    fig.subplots_adjust(top=0.965, bottom=0.04, left=0.07, right=0.80)
+    fig.subplots_adjust(top=0.965, bottom=0.04, left=0.095, right=0.80)
     fig.savefig(HERE / "event10_hydrographs.png", dpi=110)
     fig.savefig(HERE / "event10_hydrographs.pdf")
     print("wrote", HERE / "event10_hydrographs.png")

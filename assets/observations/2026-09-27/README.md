@@ -72,10 +72,13 @@ Figure: [`../2026-09-26/analysis/corner_vs_gauge.png`](../2026-09-26/analysis/co
   surrogate. Not visual confirmation.
 - Rain this morning: MRMS catchment box mean **0.23 in** over 04:00–13:00
   local (91 of 91 frames), peak 6-min rate 0.35 in/hr at 05:26 local, before
-  the flood. The fixed-base zero-drain sensitivity lifts at most 0.9 in and
-  peaks before first water; see [`analysis/rain_scenarios.json`](analysis/rain_scenarios.json).
-  This morning's flood is not materially rain-assisted under any of the four
-  explicit assumptions.
+  the flood. Over the observed crest window **09:44–10:06** the modeled rain
+  increment is **0.02–0.08 in** under assumptions A–C and 0 under D; the
+  full-window increment maxima (0.9 / 9.0 / 5.8 / 5.8 in) all occur at 05:26,
+  before first water ([`analysis/rain_scenarios.json`](analysis/rain_scenarios.json)).
+  So the crest of this flood is not materially rain-assisted under any of the
+  four explicit assumptions — a sensitivity statement about the tank at the
+  crest, not measured attribution.
 - The public nowcast's retained day maximum of **39.0 in at 02:40 local** is
   a model output driven by a bay input of 6.68 ft NAVD88 stamped "observed"
   while the archived series had the bay at 0.2 ft
