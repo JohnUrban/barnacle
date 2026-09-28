@@ -1,25 +1,28 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 18:52 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-27 19:55 EDT** (branch `audit/2026-09-27-a1-reply`). Rewrite
+wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — Curlew candidate needs revision
+## Immediate obligation — Codex verifies the revised Curlew candidate
 
-Event/operations audit **2026-09-27-a1 OPEN**. Curlew's independent round04
-and two addenda are on `audit/2026-09-27-a1-reply` at **dc4637d3c**, sibling
-`../barnacle-a1reply`; implementation unmerged. Codex round05 on main:
-`audits/2026-09-27-a1/05-review-curlew-candidate-codex.md` — REQUEST CHANGES.
-Keep useful fixes; repair dry-evidence precedence/full-day gauge selection,
-widget evidence/model-claim parity, public transport-error privacy, exit-2
-collision, invented interval endpoints, Battery datum conversion, and rain
-peak-water labeling. Fix copy/status errata; inspect regenerated pages after
-combining with current main. Curlew responds in round06; Codex re-verifies.
-Owner option-3 evidence ordering is already approved on candidate BACKLOG;
-no need to ask again. Do not close on tests alone or merge this candidate yet.
-Independent checks: 384 candidate tests OK (one skip), three frozen replays
-PASS, seven wind hashes unchanged, artifact gate clean. Three analysis JSONs
-regenerate identically except preparation times. Protected ledgers unchanged
-from candidate base. This review ship changes documentation/evidence only.
+Event/operations audit **2026-09-27-a1 OPEN**. Codex round05 REQUEST CHANGES
+(`audits/2026-09-27-a1/05-review-curlew-candidate-codex.md`) is answered in
+**round06** `audits/2026-09-27-a1/06-round05-response-claude-curlew.md` on
+`audit/2026-09-27-a1-reply` (sibling `../barnacle-a1reply`), UNMERGED. Main at
+`feae83311` was merged in (`2146b98b5`, BACKLOG union, live e02 rows kept).
+Repairs: `285952037` R1 evidence-independent so-far line (dry tape = evidence,
+qualitative "reported", gauge midnight→now) + R2 widget **v7.30a** parity
+(node-tested) + R3 health file carries class/category/code only + R4 exit **75**
+and `forecast/publish_decision.py` receipt check; `b70accd76` R5 interval
+bases (four analyst widths withdrawn) + R6 Battery −2.77 datum + R7 separate
+increment/total-water maxima and crest-window increments (Sep26 1.97–2.36 in,
+Sep27 0.02–0.08 in; scenario A base 5.847) + C2 copy/figure; `2191bda8e` C1.
+Combined tree: 421 tests OK (one skip), gate clean, three replays PASS, seven
+wind hashes match; offline regeneration validated by html_contract and
+inspected. `docs/` NOT committed on the branch (bots own it; regenerate at
+merge). Next: Codex re-verification, then merge via the ship ritual. Do not
+close on tests alone. Widget v7.30a needs John's re-copy after merge.
 
 ## September coastal storm — live records continue separately
 
@@ -30,7 +33,7 @@ receipt. Main includes Sep27 evening **2026-09-27-e02**, Event #10 round4:
 row added in 367654721. Register later rows as reporting proceeds. Consult
 live inputs/owner reports for current conditions, not this snapshot.
 Candidate analysis is explicitly four windows through Sep27 AM; it does not
-yet analyze the subsequent evening. Preserve main's newer records on merge.
+yet analyze the subsequent evening. Later e02 rows are registered on main.
 
 Original Sep26 AM/PM and Sep27 AM owner notes are retained and reconciled;
 photos pending. Stable episode IDs/eNN homes distinguish floods from storm
@@ -56,9 +59,9 @@ Spec model/v0.10.6.md; promotion 75a9933ff, candidate 1053eb436, owner
 approval b999ea1d0. Event audit does not reopen release mechanics close-out.
 36-h surge decay/fallback ladder unchanged. Seven-day advisory corrections,
 guidance tails and as-issued rain skill remain experimental.
-18 landmarks; hourly site/JSON and ~10-min radar nowcast. Widget v7.29a
-re-copy planned, completion unconfirmed. SMS imminent impact; ntfy/email
-longer lead; alert tide horizon 48h. Forecast/model changes require review.
+18 landmarks; hourly site/JSON and ~10-min radar nowcast. Widget: main has
+v7.29a (re-copy unconfirmed); the branch carries v7.30a. SMS imminent impact;
+ntfy/email longer lead; alert tide horizon 48h. Model changes require review.
 
 ## Heron and wind-shadow — ownership unchanged
 

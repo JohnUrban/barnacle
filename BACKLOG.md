@@ -8,29 +8,32 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1).**
-      Curlew independently answered R1–R7 in branch-only round04 and built
-      candidate dc4637d3c on audit/2026-09-27-a1-reply. Codex round05:
-      REQUEST CHANGES; not merged. See
-      audits/2026-09-27-a1/05-review-curlew-candidate-codex.md.
-      Keep useful timestamp/per-episode/QC/publication repairs; fix dry
-      evidence precedence and full-day gauge selection, widget evidence/claim
-      parity, private transport-error serialization, ambiguous exit-2
-      publication contract, unsupported interval bounds, Battery datum
-      conversion, and misnamed rain peak-water fields. Correct copy/status
-      errata; regenerate and inspect combined-tree pages before merge.
-      Candidate: 384 tests OK (one skip), three frozen replays PASS, seven
-      wind hashes unchanged, gate clean, protected ledgers unchanged from
-      its base. Those checks do not close scientific or production findings.
-      Next Curlew reply is round06; Codex re-review then merge decision.
-      Preserve main's later live Sep27-e02 ledger/notes/registry additions.
-      Four-window analysis covers Sep25 PM through Sep27 AM only.
+- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1) — round06 filed; Codex re-verification pending.**
+      Codex round05 REQUEST CHANGES answered item by item in
+      audits/2026-09-27-a1/06-round05-response-claude-curlew.md on branch
+      audit/2026-09-27-a1-reply (main feae83311 merged in at 2146b98b5):
+      285952037 (R1 dry/qualitative evidence precedence + midnight→now gauge;
+      R2 widget v7.30a parity, node-tested; R3 sanitized delivery health;
+      R4 exit 75 + publish_decision.py receipt check), b70accd76 (R5 interval
+      bases, analyst widths withdrawn; R6 Battery −2.77; R7 separate maxima +
+      crest-window increments; C2 copy/figure), 2191bda8e (C1). 421 tests OK
+      (one skip), gate clean, three replays PASS, seven wind hashes unchanged;
+      combined-tree pages regenerated offline, html_contract clean, inspected;
+      docs/ not committed on the branch. NEXT: Codex re-review, then merge via
+      the ship ritual; John re-copies widget v7.30a after merge. Still open
+      scientifically: no gate model; tank at high base untested; Sep26 14:24Z
+      MRMS frame; verified (q=v) NOAA series to archive beside the preliminary
+      files; Heron episode-aware/interval-preserving evaluator (score only
+      stated bases); gate photo and episode photos; Borough gate history.
+      Four-window analysis covers Sep25 PM through Sep27 AM only; the live
+      Sep27 evening episode (e02) is registered on main as rows arrive.
       Owner originals reconciled; stable eNN IDs; all_anchors retained with
       expanded chronological/sorted views and June14/15 analyses. Apr18/
       Aug2025 uncertainty explicit; negative-control census and coastal
       hindcasts remain open. R3 evaluator integration/as-issued coverage
       belongs to Heron; Tern retains social work. Separate episode outcomes
       from storm counts; no gate model or frozen wind change authorized.
+
 
 - [ ] **Storm communication parity — reproduced 2026-09-25.** Public 10:13
       forecast rendered offline: email TODAY LIGHT vs day_worst/tide MODERATE.
@@ -812,3 +815,10 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | PREF | rawnotes-owner-corrects-typos | John (18:48): owner-supplied raw notes are the owner's to edit. An agent that suspects a typo (e.g. Sep26 "12:06 am" for pm) BRINGS IT TO JOHN and never silently reinterprets or "preserves" it; John corrects the original, and the correction is recorded beside it (clarification note + pre-edit hash, as done in 2026-09-26/rawnotes/clarifications.txt). Leaving a known typo in place invites each agent to decide for itself. Supersedes "never edited" wording in the flood-measurements.txt proposal (audit 2026-09-27-a1 reply 04 follow-up) [STATED]
 
 2026-09-27 | DONE | curlew-candidate-independent-review | Codex reviewed dc4637d3c (six commits on 0176795e0), round05 REQUEST CHANGES: seven required revisions plus copy/merge checks, with executable synthetic probes and NOAA datum receipts. 384 tests OK (one skip), three frozen replays PASS, seven frozen hashes match, gate clean; analysis JSON regenerated identically except preparation stamps. Candidate unmerged; audit OPEN. Only review/coordination records published; no production, observation-ledger, Heron or Tern changes [VERIFIED].
+2026-09-27 | DONE | curlew-round06 | Round05 R1–R7 and C1–C3 addressed on audit/2026-09-27-a1-reply after merging main feae83311 (2146b98b5): 285952037 (R1–R4), b70accd76 (R5–R7, C2), 2191bda8e (C1). 421 tests OK (one skip; 37 new), gate clean, replays PASS, wind hashes match; combined-tree regeneration validated and inspected; docs/ left to the merge step. Unmerged pending Codex re-verification [VERIFIED]
+2026-09-27 | FACT | scenario-a-base-erratum | Round04 and the event-10-rain-scenarios ledger line said scenario A held the Sep26 base at 5.703 ft; the crest bay that scenario uses is 5.847 ft (5.703 is Sep27's). Corrected in rain_scenarios.json assumptions, the Sep26 README erratum and round06 (Codex round05 R7) [VERIFIED]
+2026-09-27 | FACT | rain-crest-window-increments | With increment and total-water maxima separated, the modeled rain increment over the observed crest windows is Sep26 AM 1.97–2.36 in (A–C; 9.9–10.8 with drains open), Sep26 PM 0.28–2.04 in, Sep27 AM 0.02–0.08 in (A–C). Sensitivities of the production tank, not measured attribution [VERIFIED: rain_scenarios.json]
+2026-09-27 | FACT | battery-datum-correction | The first gauge QC/figure applied Sandy Hook's −2.82 ft to The Battery; NOAA's station datums give −2.77 (Codex receipts 05-noaa-8518750-datums.json). Battery series was 0.05 ft low; QC and figure regenerated with station_datums.py; production constant untouched [VERIFIED]
+2026-09-27 | DONE | sofar-line-evidence-independent | _today_lookback chooses by evidence class regardless of positivity: dry/below-grate tape checks win over bay and model ("no street water at HH:MM, N checks so far; not a whole-day claim"), qualitative-only days render as REPORTED with time as logged, gauge fallback scans station-local midnight→now, model claims append only when no empirical row lies within an hour. Widget v7.30a carries the same meaning (soFarVisible/soFarText, node-tested). Codex round05 R1/R2 [VERIFIED: tests/test_today_lookback.py, test_widget_sofar.py]
+2026-09-27 | DONE | delivery-health-privacy-and-exit75 | data/alert_delivery_health.json persists exception class/category/protocol code only (never transport text: recipient addresses, topic URLs); DELIVERY_FAILED_EXIT is 75 and forecast/publish_decision.py requires a fresh receipt (written after step start, status failed, forecast stamp matching docs/forecast.json) before the hourly workflow publishes on a delivery-only failure; a real argparse exit 2 is refused. Codex round05 R3/R4 [VERIFIED: tests/test_publish_decision.py, test_publication_vs_delivery.py]
+2026-09-27 | DONE | interval-bases | observation_intervals.json records time_basis/depth_basis; four analyst-chosen widths (rows 187, 191, 221, 238) withdrawn as unquantified; figure whiskers and Heron scoring restricted to stated bases. Codex round05 R5 [VERIFIED]
