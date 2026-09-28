@@ -16,10 +16,9 @@ quoted report + model-claim clause. Rejected +39-in day max removed by the
 Live behavior: delivery-only alert failures exit 75 and still publish
 (receipt-checked; untested by a real outage); "so far today" by evidence class
 with quoted reports; per-episode peaks; provenance + rejection on day max.
-NEXT Curlew round (BACKLOG `landmark-relation-bounds`): encode survey bands
-for landmark-relation reports (John's rule 22:44: reports are quantitative;
-ask when a band is not computable), bounded evidence in the so-far line,
-neutral unverified-claim wording. Scientific items remain OPEN (gate
+Landmark-bounds candidate on `audit/2026-09-27-a1-bounds` (round 15,
+unmerged): standing bounds record + writer + gate, bounded evidence on every
+arm, widget v7.33a, "measured" wording; three band questions open for John. Scientific items remain OPEN (gate
 transfer, high-base tank, verified NOAA series, photos, Heron evaluator).
 
 ## September coastal storm — live records continue separately
