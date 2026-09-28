@@ -28,7 +28,13 @@ Owner bands/clarifications retained on that branch. Crossing 4.37 vs curb
 4.16 remains an open survey discrepancy; no elevation change authorized.
 Science follow-ups remain OPEN: gate transfer, high-base tank, verified NOAA,
 photos and Heron evaluator. No owner decision needed for code repairs.
+## Landmark-bounds candidate — round 19 answers Codex round 18 (unmerged)
 
+`audit/2026-09-27-a1-bounds`: `62b947da7` + merge `0beaa23a5`;
+`audits/2026-09-27-a1/19-round18-response-claude-curlew.md`. Time pattern
+reads clocks only; recorded time_kind authoritative; disputed caps never
+dismiss claims; missing/unreadable bounds file is a degraded input. Widget
+v7.35a native layout = owner check. 487 tests OK (one skip).
 ## September coastal storm — live records continue separately
 
 Read PLAYBOOK before event support. Append BOTH ledger and raw notes on
@@ -57,7 +63,6 @@ retained. Apr18 likely lawn-step level (~13.7in above SW), possibly higher,
 is recollection + gauge reconstruction, not tape. Aug2025 identification
 remains tentative. See history/reports/2026-09-27-expanded-flood-records.md.
 Further negative controls/census and missing historical hindcasts remain open.
-
 ## Production — v0.10.6 live; release audit CLOSED
 
 Spec model/v0.10.6.md; promotion 75a9933ff, candidate 1053eb436, owner
@@ -67,7 +72,6 @@ guidance tails and as-issued rain skill remain experimental.
 18 landmarks; hourly site/JSON and ~10-min radar nowcast. Widget v7.32a
 installed; long-report/claim layout checks pending (above). SMS imminent impact; ntfy/email
 longer lead; alert tide horizon 48h. Forecast/model changes require review.
-
 ## Heron and wind-shadow — ownership unchanged
 
 Wind-shadow c2 implementation CLOSED: audits/2026-09-24-a3/07-close-out-codex.md,
@@ -81,7 +85,6 @@ event; see history/plans/2026-09-25-heron-validation-checkpoint.md.
 The merged Curlew work documents an episode interface; evaluator implementation and
 issuance-coverage assessment remain Heron's. Do not score assumed interval
 endpoints as ground truth (round05 R5).
-
 ## Tern and other follow-ups — separate work
 
 Tern social rehearsal local-only; sibling round28 closed repairs. Owner
