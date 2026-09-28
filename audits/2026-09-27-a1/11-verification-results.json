@@ -1,0 +1,157 @@
+{
+  "candidate": "6e9fe57cb",
+  "reviewed_utc": "2026-09-28T02:28:20.992915+00:00",
+  "prior_surrogate_case_fixed": {
+    "evidence": "reported",
+    "source": "reported (qualitative, no tape)",
+    "regime": "reported",
+    "navd88": null,
+    "rel_grate_in": null,
+    "time_local": "20:06",
+    "n_checks": 1,
+    "report": "NO flooding at the Bay/Central intersection at the ~20:06 surge high tide (user, stated next morning; exact observation time unconfirmed)",
+    "report_kind": "negative",
+    "report_summary": "NO flooding at the Bay/Central intersection at the ~20:06\u2026",
+    "time_uncertain": true,
+    "model_claim": {
+      "navd88": 5.687,
+      "rel_grate_in": 26.0,
+      "time_local": "20:06",
+      "verification": "nearby report time unconfirmed; claim unverified",
+      "note": "model day max not promoted over the empirical value"
+    }
+  },
+  "prior_unknown_depth_case_fixed": {
+    "evidence": "reported",
+    "source": "reported (qualitative, no tape)",
+    "regime": "reported",
+    "navd88": null,
+    "rel_grate_in": null,
+    "time_local": "02:50",
+    "n_checks": 1,
+    "report": "Water seen above SW grate; depth not measured",
+    "report_kind": "water",
+    "report_summary": "Water seen above SW grate; depth not measured",
+    "time_uncertain": false,
+    "model_claim": {
+      "navd88": 6.77,
+      "rel_grate_in": 39.0,
+      "time_local": "02:40",
+      "verification": "report at that time did not measure depth; claim unverified",
+      "note": "model day max not promoted over the empirical value"
+    }
+  },
+  "prior_html_case_fixed": "REPORTED at 20:06: \u201c&lt;b&gt;dry&lt;/b&gt; &amp; water &lt;curb&gt;\u201d (no tape; depth not measured; time as logged)",
+  "probe_script": "audits/2026-09-27-a1/09-review-probes.py (reused against isolated 6e9fe57cb archive; hardcoded old candidate label corrected here)",
+  "row238": {
+    "source_row": 238,
+    "landmark_key": "curb",
+    "source_text": "substantially more: lining both sides of Bay, not yet spanning Bay; widely across Central SE-SW; proper flooding nearly to curb level at lawn step; over the curb elsewhere e.g. upstream grate (user)",
+    "payload": {
+      "evidence": "reported",
+      "source": "reported (qualitative, no tape)",
+      "regime": "reported",
+      "navd88": null,
+      "rel_grate_in": null,
+      "time_local": "08:12",
+      "n_checks": 1,
+      "report": "substantially more: lining both sides of Bay, not yet spanning Bay; widely across Central SE-SW; proper flooding nearly to curb level at lawn step; over the curb elsewhere e.g. upstream grate (user)",
+      "report_kind": "water",
+      "report_summary": "substantially more: lining both sides of Bay, not yet\u2026",
+      "time_uncertain": false
+    },
+    "short": "REPORTED at 08:12: \u201csubstantially more: lining both sides of Bay, not yet\u2026\u201d (no tape)",
+    "widget": "so far: reported @08:12: \u201csubstantially more: lining both sides of Bay, not yet\u2026\u201d (no tape)"
+  },
+  "negation": {
+    "source": "2026-09-27T02:50,grate_SW,,Not dry; water above the SW grate",
+    "payload": {
+      "evidence": "reported",
+      "source": "reported (qualitative, no tape)",
+      "regime": "reported",
+      "navd88": null,
+      "rel_grate_in": null,
+      "time_local": "02:50",
+      "n_checks": 1,
+      "report": "Not dry; water above the SW grate",
+      "report_kind": "water",
+      "report_summary": "Not dry; water above the SW grate",
+      "time_uncertain": false,
+      "model_claim": {
+        "navd88": 6.77,
+        "rel_grate_in": 39.0,
+        "time_local": "02:40",
+        "verification": "report at that time did not measure depth; claim unverified",
+        "note": "model day max not promoted over the empirical value"
+      }
+    },
+    "short": "REPORTED at 02:50: \u201cNot dry; water above the SW grate\u201d (no tape); model claims +39.0\u2033 at 02:40",
+    "widget": "so far: reported @02:50: \u201cNot dry; water above the SW grate\u201d (no tape) \u00b7 model +39\u2033 @02:40 unverified"
+  },
+  "full_surface_render_checks": {
+    "actual_row238_wrong_landmark": {
+      "page_rendered": true,
+      "email_subject_text_html_rendered": true,
+      "source_distinction_present": true
+    },
+    "negation_becomes_dry_and_suppresses_model": {
+      "page_rendered": true,
+      "email_subject_text_html_rendered": true,
+      "source_distinction_present": true
+    }
+  },
+  "verification": {
+    "tests": 443,
+    "skipped": 1,
+    "suite": "PASS (BARNACLE_REQUIRE_GRIB=1)",
+    "artifact_gate": "clean",
+    "replays": {
+      "101": "verification: PASS (read-only; no production files written)",
+      "103": "verification: PASS (production v0.10.6; fill frozen at v0.10.3)",
+      "106": "verification: PASS (production v0.10.6; surge decay golden v0.10.6)"
+    },
+    "native_scriptable_layout": "not executed; deployment check remains",
+    "frozen_hashes": [
+      {
+        "path": "models/wind_shadow/manifest.json",
+        "expected": "bd3fb4571833393e52f8f7790282f3210f208ca2180afc4d97bf21884e67bb0a",
+        "actual": "bd3fb4571833393e52f8f7790282f3210f208ca2180afc4d97bf21884e67bb0a"
+      },
+      {
+        "path": "models/wind_shadow/DESIGN.md",
+        "expected": "a5b8da50b200478cf1e2aff3c139ff2cb1f71af30305e7198c8325c5f7fe2dab",
+        "actual": "a5b8da50b200478cf1e2aff3c139ff2cb1f71af30305e7198c8325c5f7fe2dab"
+      },
+      {
+        "path": "forecast/wind_shadow.py",
+        "expected": "6fe6a0996629c61082e67e344aae5683d945b623bd65d05a8b49fd1bc9978250",
+        "actual": "6fe6a0996629c61082e67e344aae5683d945b623bd65d05a8b49fd1bc9978250"
+      },
+      {
+        "path": "history/scripts/evaluate_wind_shadow.py",
+        "expected": "79252d50bacc3902fea230bc0b66ff9b943f0497bab84e32f338ab4ac72c6a9b",
+        "actual": "79252d50bacc3902fea230bc0b66ff9b943f0497bab84e32f338ab4ac72c6a9b"
+      },
+      {
+        "path": "history/scripts/fit_wind_shadow_c2.py",
+        "expected": "a1bf5818d36dd1850ccc3b5b9568873a44fd0095bc227a61a0997550f33bf27b",
+        "actual": "a1bf5818d36dd1850ccc3b5b9568873a44fd0095bc227a61a0997550f33bf27b"
+      },
+      {
+        "path": "models/wind_shadow/rain_ref.py",
+        "expected": "ea66d9a6731455befd073401df409ef01bb2fc2f2ff32b7c1f55e65bc519d65b",
+        "actual": "ea66d9a6731455befd073401df409ef01bb2fc2f2ff32b7c1f55e65bc519d65b"
+      },
+      {
+        "path": "models/wind_shadow/stage_storage_curve.csv",
+        "expected": "3cd2a0e58d238a227b84dc200b1f595a8ea7c950154485181b62e04bd6ba119d",
+        "actual": "3cd2a0e58d238a227b84dc200b1f595a8ea7c950154485181b62e04bd6ba119d"
+      }
+    ],
+    "ledgers_identical_to_incorporated_main": {
+      "data/labeled_observations.csv": "6d593b42abda64f913ab860e0ed204c737dc7016fe30030cd64bfe8c8255aa63",
+      "data/predictions_log.csv": "8bdb6011717a0c4a1000f802b0d1aaa669c16c1a69f9a9cc731e67fd46791f80",
+      "data/forecast_accuracy.csv": "3303b7e528e9b8f86672d4e8eed4255a6234bbc9c95b79ac1505ef55221039ee"
+    }
+  }
+}

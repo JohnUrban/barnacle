@@ -1,27 +1,27 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 22:18 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-27 22:31 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — one Curlew prose-interpretation blocker
+## Immediate obligation — approved candidate ready for ship verification
 
-Event/operations audit **2026-09-27-a1 OPEN**. Round08 candidate **96afc191d**
-on `audit/2026-09-27-a1-reply` is unmerged (incorporated main feae83311).
-Codex round09: audits/2026-09-27-a1/09-review-curlew-round08-codex.md.
-REQUEST CHANGES, one root cause: new keyword summarization changes report
-meaning and uses false dry classifications to suppress historical model
-claims. Actual row238 says near the marked curb, over a curb elsewhere;
-candidate says over the marked curb. "Not dry" becomes "no flooding".
-Curlew fixes round09 R1 only and responds in round10; use source-faithful
-text/conservative fallback, not more broad keyword guesses. No owner
-re-decision, physics change or raw-note reinterpretation needed.
-Prior timing cases, HTML escaping and per-record plotting basis verified.
-433 tests OK (one skip), three frozen replays PASS, seven hashes match,
-gate clean; protected ledgers identical to incorporated main. Reused
-independent order probe retains all six whiskers; figure inspected.
-Review ship changes documentation/evidence only. Widget v7.31a branch-only;
-native layout and eventual deployed pages still require ship verification.
-Heron/Tern ownership unchanged. Preserve newer main records at merge.
+Event/operations audit **2026-09-27-a1 OPEN pending deployment checks**.
+Curlew round10 candidate **6e9fe57cb** on `audit/2026-09-27-a1-reply` is
+**APPROVED for merge** by Codex round11; no outstanding code-change request.
+Report: audits/2026-09-27-a1/11-candidate-approval-codex.md.
+Actual row238 now stays source-faithful; "not dry" is quoted, retains its
+model claim, and is not turned into reassurance. Prior repairs verified.
+443 tests OK (one skip), three replay goldens PASS, seven hashes match,
+gate clean, protected ledgers identical to incorporated main feae83311.
+Complete landing/email render checks pass; widget functions run under node.
+Candidate is STILL UNMERGED. Next: merge current main without losing live
+records, regenerate/gate, publish with the normal ritual, verify deployed
+artifacts and actual cutover, then write round12 deployment/close-out.
+Existing sofar-line-empirical-wins owner DECISION applies; no repeat question.
+Widget **v7.32a** remains branch-only; native Scriptable long-line layout
+and John's re-copy remain unverified. Recommend copying only after deployment.
+Heron/Tern retain their work. No model-physics or frozen-wind change.
+This review ship publishes approval/evidence/coordination only.
 
 ## September coastal storm — live records continue separately
 

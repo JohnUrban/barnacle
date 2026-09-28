@@ -8,26 +8,22 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1).**
-      Curlew round08 candidate 96afc191d unmerged; main incorporated only
-      through feae83311. Codex round09 REQUEST CHANGES, one blocker:
-      keyword-based qualitative report interpretation changes meaning and
-      can falsely classify a wet report as dry, suppressing a model claim.
-      Actual row238's near-marked-curb/over-elsewhere distinction is lost;
-      "not dry" becomes "no flooding". Source-faithful text/conservative
-      coverage needed. Curlew round10 next; report and probes:
-      audits/2026-09-27-a1/09-review-curlew-round08-codex.md.
-      Prior timing/escaping/figure fixes verified. Candidate 433 tests OK
-      (one skip), three frozen replays PASS, seven hashes match, gate clean;
-      ledgers identical to incorporated main. Widget v7.31a branch-only.
-      After approval: preserve current main/live rows, regenerate/gate and
-      inspect publication; widget layout/re-copy and actual cutover pending.
-      Four-window analysis covers Sep25 PM through Sep27 AM only. Owner
-      originals reconciled; eNN IDs and expanded views retained. Historical
-      negative-control census/coastal hindcasts and photos remain open.
-      Heron owns evaluator integration/as-issued coverage; Tern owns social.
-      Separate episode outcomes from storm counts; no gate-model/frozen
-      wind changes or raw-note reinterpretations authorized by this review.
+- [ ] **September 25–27 event/operations audit OPEN pending ship verification (2026-09-27-a1).**
+      Curlew round10 candidate 6e9fe57cb APPROVED for merge by Codex round11;
+      no outstanding code-change request. Source wording preserved rather
+      than reinterpreted; original row238 and negation cases verified through
+      payload/site/email/widget text. Candidate remains UNMERGED. Report:
+      audits/2026-09-27-a1/11-candidate-approval-codex.md.
+      443 tests OK (one skip), three frozen replays PASS, seven frozen hashes
+      match, gate clean; protected ledgers identical to incorporated main
+      feae83311. Next: preserve newer main/event records at merge, regenerate
+      and gate, verify publication/cutover, then round12 deployment close-out.
+      Widget v7.32a branch-only; native layout and owner re-copy still pending.
+      Owner sofar-line-empirical-wins DECISION already applies; no repeat ask.
+      Four-window study covers Sep25 PM through Sep27 AM only; later evening
+      records, photos, historical census/hindcasts and gauge/gate science
+      remain separate work. Heron owns as-issued evaluation; Tern owns social.
+      No gate model, alert-policy promotion or frozen wind change authorized.
 
 - [ ] **Storm communication parity — reproduced 2026-09-25.** Public 10:13
       forecast rendered offline: email TODAY LIGHT vs day_worst/tide MODERATE.
@@ -798,3 +794,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | DONE | curlew-round06-independent-review | Codex reviewed 8da682473 on combined main feae83311; round07 REQUEST CHANGES with four narrower fixes (uncertain qualitative claim coverage, meaningful short/widget reports, HTML escaping, per-record plotting basis). Prior privacy/publication/interval/datum/rain-max repairs verified. 421 tests OK (one skip), three replay goldens PASS, seven hashes match, gate clean, three JSONs reproducible; protected ledgers identical to incorporated main. Candidate remains unmerged; Curlew round08 next. Review/coordination only; Heron/Tern ownership unchanged [VERIFIED].
 
 2026-09-27 | DONE | curlew-round08-independent-review | Codex reviewed 96afc191d, round09 REQUEST CHANGES limited to qualitative report semantics/coverage: actual row238 location qualifier lost; synthetic "not dry" falsely clears and suppresses historical model claim. Prior uncertain-time/HTML/plot-order fixes verified. 433 tests OK (one skip), three replays PASS, seven hashes match, gate clean; protected ledgers identical to incorporated main. Candidate unmerged; Curlew round10 next; review/coordination only [VERIFIED].
+
+2026-09-27 | DONE | curlew-candidate-approved | Codex round11 approves 6e9fe57cb for merge/deployment verification; round09 blocker resolved, no further implementation revision requested. 443 tests OK (one skip), three frozen replays PASS, seven hashes match, gate clean; actual-source/negation probes and full landing/email render checks pass. Candidate remains unmerged; preserve current main, regenerate/gate and verify publication, native widget layout and actual cutover before close-out. Widget v7.32a not yet a copy recommendation. Audit OPEN for ship verification; scientific follow-ups/Heron/Tern ownership retained [VERIFIED].
