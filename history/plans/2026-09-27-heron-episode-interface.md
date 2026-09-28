@@ -6,15 +6,15 @@ unmerged evaluator (research/as-issued-validation, `cd17a5a14`) consumes, and
 the gap between them. Evaluator implementation and research decisions remain
 Heron's; nothing on that branch was modified.
 
-## What exists on main (this branch)
+## What exists, and where (labels per round 05 C1)
 
-| Artifact | Provides | Identity |
-|---|---|---|
-| `assets/observations/episodes.json` | 30 episodes/windows, `record_kind`, `storm_id`, aliases, `ledger_rows` | row SHA-256 (content), never CSV line |
-| `assets/observations/2026-09-27/analysis/observation_intervals.json` | per-row `time_kind`, `time_window_local`, `depth_kind`, `depth_lo/hi_in` for the four Sep 25–27 episodes | same row hash |
-| `assets/observations/2026-09-27/analysis/gauge_qc.json` | per-tide gauge peak **intervals**, corner-vs-gauge lag intervals, spike screen, cache comparison | episode id |
-| `assets/observations/2026-09-27/analysis/rain_scenarios.json` | MRMS coverage and labeled tank sensitivities per tide | episode id |
-| `forecast.flood_forecast_daily._measured_flood_peaks()` | production per-episode measured peaks (falls back per day and says so) | episode id |
+| Artifact | Where | Provides | Identity |
+|---|---|---|---|
+| `assets/observations/episodes.json` | **main** (shipped; 31 records incl. the live 2026-09-27-e02) | `record_kind`, `storm_id`, aliases, `ledger_rows` | row SHA-256 (content), never CSV line |
+| `assets/observations/2026-09-27/analysis/observation_intervals.json` | **review branch only** (`audit/2026-09-27-a1-reply`) | per-row `time_kind`/`depth_kind`, `time_basis`/`depth_basis`, windows and bounds for the four Sep 25–27 windows | same row hash |
+| `assets/observations/2026-09-27/analysis/gauge_qc.json` | **review branch only** | per-tide gauge peak **intervals**, corner-vs-gauge lag intervals, spike screen, cache comparison | episode id |
+| `assets/observations/2026-09-27/analysis/rain_scenarios.json` | **review branch only** | MRMS coverage and labeled tank sensitivities per tide (increment and total-water maxima kept separate) | episode id |
+| `forecast.flood_forecast_daily._measured_flood_peaks()` | **review branch only** | production per-episode measured peaks (falls back per day and says so) | episode id |
 
 ## What the evaluator does today (read-only inspection of `cd17a5a14`)
 
@@ -47,7 +47,10 @@ Heron's; nothing on that branch was modified.
    approximate, already_present, upper_bound} rows must not be scored as
    exact-minute outcomes; `depth_kind` ∈ {range, upper_bound, lower_bound}
    rows should score against the interval (tolerance/bracket classes the
-   protocol already has), not the midpoint.
+   protocol already has), not the midpoint — **but only where
+   `depth_basis`/`time_basis` is `stated`, `stated_landmarks` or
+   `adjacent_entries`. Rows marked `unquantified` carry a nominal value and
+   an unknown width (round 05 R5); never invent a width for them.**
 4. **As-issued pairs only from issuance archives.** All 77 new rows have
    blank `model_predicted_depth_in`; do not backfill. Pairs come from
    `data/replay_inputs` / `docs/archive` / `data/predictions_log.csv` joined
