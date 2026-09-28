@@ -14,10 +14,16 @@ looks stale, trust this file. Ledger lines are append-only:
       three replays PASS, ledgers preserved; live widget v7.32a, bay-not-street
       note, so-far MEASURED +25.2 at 09:44. Rejected +39-in day max removed
       by post-merge nowcast 224f1e1a4, verified live before midnight rollover.
-      PENDING owner-only: re-copy deployed v7.32a and check the native medium
-      layout with a long quoted report + model claim. OPEN follow-ups (not
-      closed by the ship): landmark-relation-bounds (John's rule: reports are
-      quantitative; survey bands; ask when unclear); gate-transfer physics
+      Owner check 22:59: measured form verified on the native medium widget
+      (v7.32a, screenshot in audit 14); quoted-report and model-claim forms
+      still pending a day that produces them. OPEN follow-ups (not
+      closed by the ship): landmark-relation-bounds (candidate 2fb8454ae on
+      audit/2026-09-27-a1-bounds UNMERGED; Codex round16 REQUEST CHANGES:
+      empirical interval ranking, time provenance, bounds schema; Curlew
+      reply17 next). Reports are quantitative; survey bands; ask when unclear.
+      Crossing 4.37 vs curb 4.16 is an unresolved survey discrepancy recorded
+      with owner clarifications on the branch; do not change elevations or
+      treat disputed bounds as exact calibration. Other open work: gate-transfer physics
       (no gate model authorized); high-base tank; verified (q=v) NOAA series
       beside the preliminary archive; photos (rule 9); Borough gate history;
       historical negative-control census/hindcasts; Heron episode-aware,
@@ -830,3 +836,7 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | DONE | landmark-relation-bounds-candidate | Branch audit/2026-09-27-a1-bounds, commit 4c33036ba (unmerged, Codex review requested, round 15): append-only data/observation_bounds.jsonl (row-hash keyed, landmark provenance) + writer + gate validator; 19 survey-derived bands for Sep 25–27 rows (e.g. 4.14–4.16 for "over the upstream-grate curb, not the walkway curb"; 5.41 for "breached over the first porch step"; ≤3.52 for "still no flooding"); _today_lookback evidence order measured > bounded > reported > bay > modeled with band upper bounds covering claims; all arms + widget v7.33a render bands; sidecar/hydrograph read the same record; "measured" replaces "tape" where the instrument is unstated. Open questions to John: NE–NW Central crossing height; 18:18 upper bound; row 188 hi. 455 tests OK (one skip) [VERIFIED]
 2026-09-27 | OPEN | central-crossing-vs-curb-inconsistency | John (23:47, from the survey PDF): NE/NW grates 3.80, road peak directly between them 4.37, NE-grate-to-SE-corner peak 4.32, SE-SW peak 3.91, walkway street 3.78, curb 4.16, intersection peak 4.54/4.51. The 18:30 Sep 27 "spans NE to NW" report (>= 4.37) and the 18:33 "level with the curb" reading (4.16) conflict by 0.21 ft: either the 4.37 crossing estimate is too high or the curb elevation is too low. Not solvable tonight; needs a field re-check of both. Until then row 270 carries only the SE-SW floor and row 230 a loose <4.37 upper bound [STATED + VERIFIED ledger]
 2026-09-27 | FACT | landmark-bands-owner-confirmed | Rows 188 (4.63-4.66: "near top of lawn step" = lawn-step height, maybe ~1 cm under), 269 (3.80-4.05: "one or a couple, at most a few inches above the NE/NW grates"), 230 and 270 recorded as new owner-confirmed lines in data/observation_bounds.jsonl with John's verbatim statements in assets/observations/2026-09-27/analysis/owner-band-clarifications.txt; earlier lines retained. Branch audit/2026-09-27-a1-bounds [VERIFIED]
+2026-09-27 | PREF | measurement-wording | John (23:02–23:07): "tape" is a claim about the instrument and is often wrong — he has used a tape measure and lately a two-foot level that reads inches; the instrument does not matter, the measurement does. Use "measured" for readings against landmarks of known height and "empirical" for the class incl. qualitative reports; NEVER write "stick" or "ruler"; keep "tape" only where the record itself states a tape (older events with tape photos). Sweep all arms in the bounds work unit [STATED]
+2026-09-27 | FACT | widget-native-check-partial | John re-copied deployed v7.32a (22:59 EDT screenshot, audits/2026-09-27-a1/14-widget-v7.32a-medium-measured-form.png): medium widget shows `so far: +25.2″ @09:44 (tape)` on one legible line, severe color, footer v7.32a. Quoted-report and model-claim forms remain unexercised on the native surface (owner-only, pending a day that produces them) [VERIFIED screenshot]
+
+2026-09-27 | DONE | landmark-bounds-independent-review | Codex reviewed Curlew candidate 2fb8454ae (round15 plus both addenda), isolated 455 tests OK/one skip, three replays PASS, seven wind hashes match, gate/registry clean, protected ledgers unchanged. Round16 REQUEST CHANGES: a lower measured point hides a higher quantitative band; depth/location words incorrectly mark exact reports time-uncertain and discard bands; writer/gate/reader schema mismatch admits malformed values (string bound passes gate then crashes forecast; NaN writer appends). Lower-bound model comparison and scalar/range precedence also need repair. Branch remains UNMERGED, v7.33a not deployed; earlier round13 ship close-out stands. Owner v7.32a measured-form screenshot confirmed. Survey crossing-versus-curb discrepancy stays open. Reproducible probes/results and repair acceptance criteria in audits/2026-09-27-a1/16-review-landmark-bounds-codex.md; Curlew reply17 next [VERIFIED]
