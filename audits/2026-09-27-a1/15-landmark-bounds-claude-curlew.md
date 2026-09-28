@@ -67,3 +67,27 @@ uncertain-time bands ignored, every arm incl. node-rendered widget); gate
 clean; three frozen replays PASS; seven frozen wind hashes match; ledgers
 untouched; hydrograph regenerated and inspected. Native Scriptable layout of
 the new band line is an owner check, as before.
+
+## Addendum (23:35 EDT) — owner answers to Q2/Q3; Q1 candidates
+
+John's verbatim answers are in
+`assets/observations/2026-09-27/analysis/owner-band-clarifications.txt` and
+were recorded as NEW lines in `data/observation_bounds.jsonl` (basis
+`stated`, `owner_confirmed: true`; the earlier lines stand as history):
+
+- Row 188 (07:15 Sep 26, "near top of lawn step"): means the lawn-step
+  height, possibly ~1 cm under → **4.63–4.66** (supersedes 4.16–4.66).
+- Row 269 (18:18 Sep 27, "local flooding around the NE/NW grates, not
+  connected"): "only one or a couple (at most a few) inches above those
+  grates" → **3.80–4.05**, local pools; must also be consistent with the
+  NE–NW crossing not yet made (Q1).
+
+Q1 remains open pending John's read of the labeled map
+(`python assets/render_map.py --label name`). Candidate points near the
+NE–NW connection across Central, from `assets/map_points.csv`:
+`central_north_middle_1` 4.37 (Central crown nearest Bay Ave),
+`central_north_proximal_1` 3.87 / `central_north_distal_1` 4.05 (edges),
+`nw_crosswalk_distal` 3.91, `cross_bay` 3.75, `intersection_center` 4.51.
+The 18:33 curb reading (4.16) three minutes after "NE to NW connected"
+rules out the 4.37 crown as the connecting path; the survey PDFs are
+`model/elevations.pdf` and `model/HLND2303-Road-Reconstruction-Supplement-Set-2024.05.06.pdf`.
