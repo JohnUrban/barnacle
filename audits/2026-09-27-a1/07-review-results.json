@@ -1,0 +1,197 @@
+{
+  "candidate": "8da682473",
+  "reviewed_utc": "2026-09-28T00:10:52.511869+00:00",
+  "prior_dry_case_fixed": {
+    "evidence": "measured",
+    "source": "measured (tape)",
+    "regime": "dry",
+    "navd88": 3.52,
+    "rel_grate_in": 0.0,
+    "time_local": "02:50",
+    "n_checks": 1
+  },
+  "surrogate_time_suppresses_claim": {
+    "evidence": "reported",
+    "source": "reported (qualitative, no tape)",
+    "regime": "reported",
+    "navd88": null,
+    "rel_grate_in": null,
+    "time_local": "20:06",
+    "n_checks": 1,
+    "report": "NO flooding at the Bay/Central intersection at the ~20:06 surge high tide (user, stated ne",
+    "time_uncertain": true
+  },
+  "exact_qualitative_wet_suppresses_higher_model": {
+    "evidence": "reported",
+    "source": "reported (qualitative, no tape)",
+    "regime": "reported",
+    "navd88": null,
+    "rel_grate_in": null,
+    "time_local": "02:50",
+    "n_checks": 1,
+    "report": "Water seen above SW grate; depth not measured",
+    "time_uncertain": false
+  },
+  "opposite_reports_widget": [
+    "so far: reported ~@20:06 (no tape)",
+    "so far: reported ~@20:06 (no tape)"
+  ],
+  "opposite_reports_short": [
+    "REPORTED at ~20:06 (no tape)",
+    "REPORTED at ~20:06 (no tape)"
+  ],
+  "opposite_reports_long": [
+    "REPORTED at ~20:06 (no tape; \u201cNo flooding at the intersection\u201d; time as logged)",
+    "REPORTED at ~20:06 (no tape; \u201cWater over the curb at the intersection\u201d; time as logged)"
+  ],
+  "literal_report_interpreted_as_markup": "REPORTED at ~20:06 (no tape; \u201c<b>dry</b> & water <curb>\u201d; time as logged)",
+  "private_recipient_removed": true,
+  "safe_failure_facts": [
+    {
+      "channel": "sms",
+      "error_class": "SMTPRecipientsRefused",
+      "error_category": "smtp-recipients",
+      "error_code": 550
+    }
+  ],
+  "figure_basis_not_carried_in_tape_tuple": true,
+  "figure_order_example": {
+    "last_basis": "stated",
+    "stated_range_rows": [
+      190,
+      194
+    ],
+    "move_approximate_row_221_to_end_basis": "unquantified"
+  },
+  "figure_order_reproduction": {
+    "original_order_range_whiskers": [
+      [
+        "2026-09-26 07:22:00",
+        [
+          4.66,
+          4.68
+        ]
+      ],
+      [
+        "2026-09-26 07:44:00",
+        [
+          4.796666666666666,
+          4.805
+        ]
+      ],
+      [
+        "2026-09-26 21:54:00",
+        [
+          4.1275,
+          4.16
+        ]
+      ],
+      [
+        "2026-09-26 22:11:00",
+        [
+          4.201666666666667,
+          4.243333333333333
+        ]
+      ],
+      [
+        "2026-09-26 22:29:00",
+        [
+          4.201666666666667,
+          4.243333333333333
+        ]
+      ],
+      [
+        "2026-09-27 12:48:00",
+        [
+          4.201666666666667,
+          4.243333333333333
+        ]
+      ]
+    ],
+    "same_rows_row221_last_range_whiskers": [
+      [
+        "2026-09-26 21:54:00",
+        [
+          4.1275,
+          4.16
+        ]
+      ],
+      [
+        "2026-09-26 22:11:00",
+        [
+          4.201666666666667,
+          4.243333333333333
+        ]
+      ],
+      [
+        "2026-09-26 22:29:00",
+        [
+          4.201666666666667,
+          4.243333333333333
+        ]
+      ],
+      [
+        "2026-09-27 12:48:00",
+        [
+          4.201666666666667,
+          4.243333333333333
+        ]
+      ]
+    ],
+    "ledger_rows_changed": false
+  },
+  "verification": {
+    "tests": 421,
+    "skipped": 1,
+    "suite": "PASS (BARNACLE_REQUIRE_GRIB=1)",
+    "artifact_gate": "clean",
+    "replays": {
+      "101": "verification: PASS (read-only; no production files written)",
+      "103": "verification: PASS (production v0.10.6; fill frozen at v0.10.3)",
+      "106": "verification: PASS (production v0.10.6; surge decay golden v0.10.6)"
+    },
+    "offline_analysis_regeneration": "all four builders exit 0; all three JSONs identical except preparation stamps; PNG visually inspected",
+    "frozen_hashes": [
+      {
+        "path": "models/wind_shadow/manifest.json",
+        "expected": "bd3fb4571833393e52f8f7790282f3210f208ca2180afc4d97bf21884e67bb0a",
+        "actual": "bd3fb4571833393e52f8f7790282f3210f208ca2180afc4d97bf21884e67bb0a"
+      },
+      {
+        "path": "models/wind_shadow/DESIGN.md",
+        "expected": "a5b8da50b200478cf1e2aff3c139ff2cb1f71af30305e7198c8325c5f7fe2dab",
+        "actual": "a5b8da50b200478cf1e2aff3c139ff2cb1f71af30305e7198c8325c5f7fe2dab"
+      },
+      {
+        "path": "forecast/wind_shadow.py",
+        "expected": "6fe6a0996629c61082e67e344aae5683d945b623bd65d05a8b49fd1bc9978250",
+        "actual": "6fe6a0996629c61082e67e344aae5683d945b623bd65d05a8b49fd1bc9978250"
+      },
+      {
+        "path": "history/scripts/evaluate_wind_shadow.py",
+        "expected": "79252d50bacc3902fea230bc0b66ff9b943f0497bab84e32f338ab4ac72c6a9b",
+        "actual": "79252d50bacc3902fea230bc0b66ff9b943f0497bab84e32f338ab4ac72c6a9b"
+      },
+      {
+        "path": "history/scripts/fit_wind_shadow_c2.py",
+        "expected": "a1bf5818d36dd1850ccc3b5b9568873a44fd0095bc227a61a0997550f33bf27b",
+        "actual": "a1bf5818d36dd1850ccc3b5b9568873a44fd0095bc227a61a0997550f33bf27b"
+      },
+      {
+        "path": "models/wind_shadow/rain_ref.py",
+        "expected": "ea66d9a6731455befd073401df409ef01bb2fc2f2ff32b7c1f55e65bc519d65b",
+        "actual": "ea66d9a6731455befd073401df409ef01bb2fc2f2ff32b7c1f55e65bc519d65b"
+      },
+      {
+        "path": "models/wind_shadow/stage_storage_curve.csv",
+        "expected": "3cd2a0e58d238a227b84dc200b1f595a8ea7c950154485181b62e04bd6ba119d",
+        "actual": "3cd2a0e58d238a227b84dc200b1f595a8ea7c950154485181b62e04bd6ba119d"
+      }
+    ],
+    "ledgers_identical_to_incorporated_main": {
+      "data/labeled_observations.csv": "6d593b42abda64f913ab860e0ed204c737dc7016fe30030cd64bfe8c8255aa63",
+      "data/predictions_log.csv": "8bdb6011717a0c4a1000f802b0d1aaa669c16c1a69f9a9cc731e67fd46791f80",
+      "data/forecast_accuracy.csv": "3303b7e528e9b8f86672d4e8eed4255a6234bbc9c95b79ac1505ef55221039ee"
+    }
+  }
+}
