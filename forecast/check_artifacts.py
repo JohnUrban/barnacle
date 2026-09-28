@@ -568,51 +568,23 @@ def validate_nowcast_metadata(path):
 
 def validate_observation_bounds(path, ledger_path):
     """Append-only landmark-bound records (data/observation_bounds.jsonl):
-    strict JSON per line, required fields, numeric ordering, and every
-    sha256 must identify a current ledger row (writer/validator parity)."""
-    failures = []
+    the shared contract in forecast/observation_bounds.py — strict JSON per
+    line, finite numeric-or-null bounds (no booleans), ordering, well-formed
+    landmark provenance, time/scope metadata, and identity consistency with
+    the current ledger row. Writer, gate and reader validate identically
+    (audit 2026-09-27-a1 round 16 R3)."""
     if not os.path.exists(path):
-        return failures
+        return []
     try:
-        with open(ledger_path, newline="", encoding="utf-8") as f:
-            hashes = set()
-            for row in csv.DictReader(f):
-                hashes.add(hashlib.sha256(json.dumps(
-                    dict(row), sort_keys=True, ensure_ascii=False,
-                    separators=(",", ":")).encode()).hexdigest())
+        from .observation_bounds import load_bounds, load_ledger_rows
+    except ImportError:
+        from observation_bounds import load_bounds, load_ledger_rows
+    try:
+        rows = load_ledger_rows(ledger_path)
     except (OSError, csv.Error) as e:
         return [f"ledger unreadable for bounds check: {e}"]
-    required = ("sha256", "csv_row", "observation_time_local", "landmark_key",
-                "lo_navd88", "hi_navd88", "basis", "landmarks", "text",
-                "recorded_utc", "recorded_by")
-    with open(path, encoding="utf-8") as f:
-        for n, line in enumerate(f, 1):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                rec = json.loads(line, parse_constant=_reject_nonfinite)
-            except ValueError as e:
-                failures.append(f"line {n}: not strict JSON ({e})")
-                continue
-            missing = [k for k in required if k not in rec]
-            if missing:
-                failures.append(f"line {n}: missing {missing}")
-                continue
-            lo, hi = rec["lo_navd88"], rec["hi_navd88"]
-            if lo is None and hi is None:
-                failures.append(f"line {n}: no bound")
-            if isinstance(lo, (int, float)) and isinstance(hi, (int, float)) and lo > hi:
-                failures.append(f"line {n}: lo exceeds hi")
-            if rec["basis"] not in ("stated_landmarks", "stated"):
-                failures.append(f"line {n}: basis {rec['basis']!r}")
-            if rec["sha256"] not in hashes:
-                failures.append(f"line {n}: sha256 matches no ledger row")
-    return failures
-
-
-def _reject_nonfinite(name):
-    raise ValueError(f"non-finite value {name}")
+    _records, problems = load_bounds(path, rows)
+    return problems
 
 
 def validate_alert_state(path):

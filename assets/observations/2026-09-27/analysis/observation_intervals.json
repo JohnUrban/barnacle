@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "created_local": "2026-09-27T23:48:51-04:00",
+ "created_local": "2026-09-28T09:32:02-04:00",
  "purpose": "Additive interval/provenance sidecar for the 2026-09-25..27 ledger rows. The ledger scalars are unchanged; consumers that score or classify should use time_window_local and depth_lo/hi_in, and treat surrogate/window times and range midpoints as such.",
  "time_kinds": [
   "stated_exact",
@@ -59,10 +59,12 @@
     null,
     3.52
    ],
-   "landmark_band_text": "no flooding at the intersection: below the SW grate (3.52); observation time unconfirmed (surrogate 20:06)",
+   "landmark_band_text": "no flooding at the intersection: below the SW grate (3.52); ledger 20:06 is a surrogate (gauge-peak minute), exact observation time unconfirmed",
    "landmark_band_sources": [
     "model/elevations.md (first-water sentinel)"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 187,
@@ -86,10 +88,12 @@
     3.8,
     null
    ],
-   "landmark_band_text": "across Central SE-SW and over the other grates: at or above the NE/NW grates (3.80); time approximate ('around 7')",
+   "landmark_band_text": "across Central SE-SW and over the other grates: at or above the NE/NW grates (3.80); time 'around 7' per the owner's original note (rawnotes/01-morning.txt line 3)",
    "landmark_band_sources": [
     "model/elevations.md (NE/NW grates emerge at 3.80)"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 188,
@@ -120,7 +124,9 @@
    "landmark_band_sources": [
     "assets/observations/2026-09-27/analysis/owner-band-clarifications.txt (John, 2026-09-27 23:27 EDT)",
     "model/elevations.md"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 189,
@@ -826,7 +832,9 @@
    "landmark_band_text": "roads virtually clear, intersection clear: below the Bay Ave road middle (4.36); the same-minute curb reading is about 4.13",
    "landmark_band_sources": [
     "model/elevations.md"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 223,
@@ -876,7 +884,9 @@
    "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
    "landmark_band_sources": [
     "model/elevations.md (first-water sentinel)"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 225,
@@ -905,7 +915,9 @@
    "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
    "landmark_band_sources": [
     "model/elevations.md (first-water sentinel)"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 226,
@@ -934,7 +946,9 @@
    "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
    "landmark_band_sources": [
     "model/elevations.md (first-water sentinel)"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 227,
@@ -963,7 +977,9 @@
    "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
    "landmark_band_sources": [
     "model/elevations.md (first-water sentinel)"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 228,
@@ -992,7 +1008,9 @@
    "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
    "landmark_band_sources": [
     "model/elevations.md (first-water sentinel)"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 229,
@@ -1021,7 +1039,9 @@
    "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
    "landmark_band_sources": [
     "model/elevations.md (first-water sentinel)"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 230,
@@ -1049,11 +1069,13 @@
     3.91,
     4.37
    ],
-   "landmark_band_text": "spans SE to SW (>= 3.91, SE-SW road peak) and north side not connected (< 4.37, the NE-NW road peak per the survey PDF; loose upper bound \u2014 the 4.37 estimate may be high, open survey question); first-water window 21:20-21:40",
+   "landmark_band_text": "spans SE to SW (>= 3.91) and north side not connected (< 4.37, the NE-NW road peak per the survey PDF, DISPUTED vs the curb elevation \u2014 not used for claim coverage); first water sometime 21:20-21:40",
    "landmark_band_sources": [
     "model/elevations.md / owner 23:47",
-    "assets/observations/2026-09-27/analysis/owner-band-clarifications.txt (John, 2026-09-27 23:47 EDT, from the survey PDF)"
-   ]
+    "assets/observations/2026-09-27/analysis/owner-band-clarifications.txt (John, 2026-09-27 23:47)"
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": true
   },
   {
    "csv_row": 231,
@@ -1071,11 +1093,23 @@
    ],
    "ledger_depth_in": -0.3,
    "depth_kind": "range",
-   "depth_basis": "stated",
-   "depth_lo_in": -0.39,
+   "depth_basis": "stated_landmarks",
+   "depth_lo_in": -0.24,
    "depth_hi_in": 0.0,
    "observed_qualitative": "less than 1 cm below the curb in front of the lawn step; south side larger; NE and NW grates larger but NE-NW not connected; OVER the curb at the upstream (Bay Ave, NE-direction) grate area (user)",
-   "depth_note": "'less than 1 cm below the curb'; ledger -0.3."
+   "depth_note": "'less than 1 cm below the curb'; ledger -0.3.",
+   "landmark_band_navd88": [
+    4.14,
+    4.16
+   ],
+   "landmark_band_text": "over the curb/sidewalk at the upstream grate (4.14); less than 1 cm below the walkway curb (4.16). The ledger's -0.3 in is a legacy range representative, not a direct reading: this band supersedes it (round 16 C1)",
+   "landmark_band_sources": [
+    "assets/map_points.csv (approximated)",
+    "model/elevations.md"
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false,
+   "ledger_scalar_superseded": true
   },
   {
    "csv_row": 232,
@@ -1174,7 +1208,7 @@
    "ledger_time_local": "2026-09-26T23:12",
    "time_local_offset_bearing": "2026-09-26T23:12:00-04:00",
    "ledger_time_naive": true,
-   "time_kind": "upper_bound",
+   "time_kind": "window",
    "time_basis": "stated",
    "time_window_local": [
     "2026-09-26T22:39:00-04:00",
@@ -1191,10 +1225,12 @@
     null,
     3.52
    ],
-   "landmark_band_text": "receded completely as far as visible: below the SW grate (3.52); clearing time unknown between 22:39 and 23:12",
+   "landmark_band_text": "receded completely as far as visible: below the SW grate (3.52); clearing time unknown between the 22:39 report and this 23:12 one",
    "landmark_band_sources": [
     "model/elevations.md (first-water sentinel)"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 237,
@@ -1226,7 +1262,9 @@
    "landmark_band_sources": [
     "model/elevations.md",
     "model/elevations.md"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 238,
@@ -1257,7 +1295,9 @@
    "landmark_band_sources": [
     "assets/map_points.csv (approximated)",
     "model/elevations.md"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 239,
@@ -1330,7 +1370,9 @@
    "landmark_band_text": "Bay Ave crossed at the upstream grate and NW-SW bridged: at or above the Bay Ave middle at the corner (4.32); no upper bound stated",
    "landmark_band_sources": [
     "model/elevations.md (middle of Bay Ave at corner)"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 242,
@@ -1549,7 +1591,9 @@
    "landmark_band_text": "breached over the first porch step top (5.41): level just exceeded at that moment (owner rule 2026-09-27 22:44)",
    "landmark_band_sources": [
     "model/elevations.md"
-   ]
+   ],
+   "landmark_band_scope": "intersection",
+   "landmark_band_disputed": false
   },
   {
    "csv_row": 252,

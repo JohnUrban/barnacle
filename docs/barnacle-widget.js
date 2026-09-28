@@ -39,7 +39,10 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.33a";
+const WIDGET_VERSION = "v7.34a";
+// v7.34a (2026-09-28, round 16 R1): interval-aware so-far line — a local-pool
+// band is labeled, an uncertain band time gets "~", and when another band
+// allows a higher level than the headline it says "\u00b7 up to +X\u2033 @HH:MM".
 // v7.33a (2026-09-27, landmark-bounds unit): BOUNDED evidence (a report that
 // relates water to landmarks of known height, band from the survey) renders
 // as "+lo–hi″"; instrument-neutral wording ("measured", never "tape").
@@ -77,9 +80,11 @@ function soFarText(lb) {
   } else if (ev === "bounded") {
     const lo = (typeof lb.lo_rel_grate_in === "number") ? lb.lo_rel_grate_in : null;
     const hi = (typeof lb.hi_rel_grate_in === "number") ? lb.hi_rel_grate_in : null;
-    const band = (lo !== null && hi !== null) ? fmt(lo) + "\u2013" + fmt(hi)
+    const band = (lo !== null && hi !== null && Math.abs(hi - lo) < 0.05) ? fmt(hi)
+               : (lo !== null && hi !== null) ? fmt(lo) + "\u2013" + fmt(hi)
                : (lo !== null ? "\u2265" + fmt(lo) : "\u2264" + fmt(hi));
-    head = band + " " + at + " (landmarks)";
+    head = (lb.scope === "local" ? "local pool " : "") + band + " "
+         + (lb.time_uncertain ? "@~" + (lb.time_local || "") : at) + " (landmarks)";
   } else if (ev === "reported") {
     const what = lb.report_summary || "report received; depth not measured";
     head = "reported " + (lb.time_uncertain ? "~" : "") + at + ": \u201c" + what + "\u201d (not measured)";
@@ -87,6 +92,9 @@ function soFarText(lb) {
     head = "BAY " + val + " " + at + " (gauge)";
   } else {
     head = "MODELED " + val + " " + at + " (unverified)";
+  }
+  if (typeof lb.possible_up_to_rel_grate_in === "number") {
+    head += " \u00b7 up to " + fmt(lb.possible_up_to_rel_grate_in) + " @" + (lb.possible_up_to_time_local || "?");
   }
   const mc = lb.model_claim;
   if (mc && typeof mc.rel_grate_in === "number") {

@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from forecast import check_artifacts, flood_forecast_daily as ff, rendering
+from forecast import check_artifacts, flood_forecast_daily as ff, observation_bounds as ob, rendering
 from tests.test_today_lookback import FIELDS, MODEL_39, NOW
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -70,7 +70,7 @@ class WriterAndGateTests(unittest.TestCase):
         with open(ledger, newline="") as f:
             row = list(csv.DictReader(f))[0]
         self.assertEqual(rec["sha256"], ff._observation_row_hash(row))
-        self.assertEqual(aob.load_bounds(path)[0]["lo_navd88"], 4.14)
+        self.assertEqual(list(ob.load_bounds(path)[0].values())[0]["lo_navd88"], 4.14)
         self.assertEqual(check_artifacts.validate_observation_bounds(path, ledger), [])
 
     def test_writer_rejects_bad_bands(self):
@@ -93,14 +93,14 @@ class WriterAndGateTests(unittest.TestCase):
                                           "basis": "stated_landmarks", "landmarks": LM, "text": "t",
                                           "recorded_utc": "u", "recorded_by": "t"}) + "\n{not json\n")
         problems = check_artifacts.validate_observation_bounds(path, ledger)
-        self.assertTrue(any("matches no ledger row" in p for p in problems))
+        self.assertTrue(any("sha256" in p for p in problems))
         self.assertTrue(any("not strict JSON" in p for p in problems))
 
     def test_committed_bounds_file_passes_the_gate_and_cites_landmarks(self):
         path = ROOT / "data" / "observation_bounds.jsonl"
         self.assertEqual(check_artifacts.validate_observation_bounds(
             str(path), str(ROOT / "data" / "labeled_observations.csv")), [])
-        recs = aob.load_bounds(str(path))
+        recs = list(ob.load_bounds(str(path))[0].values())
         self.assertGreaterEqual(len(recs), 15)
         for r in recs:
             self.assertTrue(r["landmarks"] and all(lm.get("source") for lm in r["landmarks"]))
@@ -160,7 +160,10 @@ class BoundedEvidenceTests(unittest.TestCase):
                          "below the SW grate", "t", ledger, path)
         claim = dict(MODEL_39, day_max_street_in=26.0, day_max_utc="2026-09-28T00:06:00Z")
         lb = _lookback(tmp, claim)
-        self.assertEqual(lb["evidence"], "reported")          # band ignored: time unconfirmed
+        # round 16 R2: the band is kept as quantitative evidence with its
+        # uncertain time; it never covers the claim
+        self.assertEqual(lb["evidence"], "bounded")
+        self.assertTrue(lb["time_uncertain"])
         self.assertIn("unconfirmed", lb["model_claim"]["verification"])
 
     def test_every_arm_renders_the_band(self):

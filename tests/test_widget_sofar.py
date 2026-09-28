@@ -81,7 +81,7 @@ class WidgetSoFarTests(unittest.TestCase):
 
     def test_widget_render_block_uses_the_functions_and_version_bumped(self):
         src = WIDGET.read_text(encoding="utf-8")
-        self.assertIn('const WIDGET_VERSION = "v7.33a";', src)
+        self.assertIn('const WIDGET_VERSION = "v7.34a";', src)
         self.assertNotIn("(tape", src[src.index("// SOFAR-BEGIN"):src.index("// SOFAR-END")])
         self.assertIn("if (soFarVisible(lb)) {", src)
         self.assertIn("left.addText(soFarText(lb));", src)

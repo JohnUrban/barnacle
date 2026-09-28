@@ -94,16 +94,15 @@ def row_hash(row):
 BOUNDS = ROOT / "data/observation_bounds.jsonl"
 
 
-def landmark_bounds():
-    """{row sha256: record} from the standing landmark-bounds record (owner
-    rule 2026-09-27 22:44; bin/append_observation_bound.py). Later lines win."""
-    out = {}
-    if BOUNDS.exists():
-        for line in BOUNDS.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                rec = json.loads(line)
-                out[rec["sha256"]] = rec
-    return out
+def landmark_bounds(rows):
+    """{row sha256: validated record} from the standing landmark-bounds
+    record through the shared contract (round 16 R3); invalid lines are
+    reported and skipped, never silently used."""
+    from forecast import observation_bounds as ob
+    by_hash, problems = ob.load_bounds(str(BOUNDS), rows, locator="hash")
+    for p in problems:
+        print("WARNING bounds:", p)
+    return by_hash
 
 
 def main():
@@ -113,7 +112,7 @@ def main():
     sys.path.insert(0, str(ROOT))
     from forecast import flood_forecast_daily as ff
     elev = {k: e for k, _l, e, _s in ff.LANDMARKS}
-    bounds = landmark_bounds()
+    bounds = landmark_bounds(rows)
     records, seen = [], set()
     for ep in reg["episodes"]:
         if ep["episode_id"] not in EPISODES:
@@ -146,7 +145,9 @@ def main():
             # hand overrides: inches relative to the row's landmark, basis
             # stated_landmarks, provenance carried
             lb = bounds.get(ref["sha256"])
-            if lb and row["landmark_key"] in elev and not depth:
+            if lb and row["landmark_key"] in elev and (not depth or lb.get("supersedes_scalar")):
+                # round 16 C1: a band replaces a legacy range-representative
+                # scalar only when the record says supersedes_scalar
                 e0 = elev[row["landmark_key"]]
                 lo, hi = lb.get("lo_navd88"), lb.get("hi_navd88")
                 rec["depth_kind"] = ("range" if lo is not None and hi is not None
@@ -157,6 +158,16 @@ def main():
                 rec["landmark_band_navd88"] = [lo, hi]
                 rec["landmark_band_text"] = lb.get("text")
                 rec["landmark_band_sources"] = [lm.get("source") for lm in lb.get("landmarks", [])]
+                rec["landmark_band_scope"] = lb.get("scope", "intersection")
+                rec["landmark_band_disputed"] = bool(lb.get("disputed"))
+                if depth:
+                    rec["ledger_scalar_superseded"] = True
+                # round 16 R2: time metadata travels with the record
+                tk = lb.get("time_kind", "stated_exact")
+                if tk != "stated_exact":
+                    rec["time_kind"] = tk
+                    rec["time_basis"] = "stated" if lb.get("time_window_local") else "unquantified"
+                    rec["time_window_local"] = lb.get("time_window_local")
                 ov = {}
             if "depth_lo_in" in ov and "depth_hi_in" not in ov and ov.get("depth_kind") == "lower_bound":
                 rec["depth_hi_in"] = None

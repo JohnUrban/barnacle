@@ -7,99 +7,64 @@ records the band an agent computed from the survey — never from prose
 parsing — as an append-only JSON line in data/observation_bounds.jsonl,
 keyed by the ledger row's content hash (the registry's identity). Production
 (`_today_lookback`) and the analysis sidecar read this file; the ledger row
-itself is never edited.
+itself is never edited. Validation is the shared contract in
+forecast/observation_bounds.py (round 16 R3); an invalid record is never
+written.
 
     python3 bin/append_observation_bound.py --csv-row 231 \\
         --lo 4.14 --hi 4.16 --basis stated_landmarks \\
         --landmark "upstream_grate_sidewalk:4.14:over:assets/map_points.csv (approximated)" \\
         --landmark "curb:4.16:not over:model/elevations.md" \\
-        --text "over the upstream-grate sidewalk (4.14); not over the walkway curb (4.16)"
+        --text "over the upstream-grate sidewalk (4.14); not over the walkway curb (4.16)" \\
+        [--time-kind stated_exact|approximate|window|surrogate] \\
+        [--time-window "2026-09-26T21:20:00-04:00" "2026-09-26T21:40:00-04:00"] \\
+        [--scope intersection|local] [--supersedes-scalar] [--disputed] [--owner-confirmed]
 
-Either bound may be omitted (one-sided). `--basis` is stated_landmarks (the
-owner named the landmarks) or stated (the owner gave the number). Ask the
-owner when a band cannot be computed; do not invent widths.
+Either bound may be omitted (one-sided). ``--time-kind`` records the
+OBSERVATION time's certainty as the source states it (round 16 R2): only
+stated_exact bands can cover a model claim. ``--scope local`` marks a band
+for a local pool (e.g. around one grate), never a whole-intersection level.
+``--supersedes-scalar`` says the band replaces a legacy range-representative
+number in the ledger row's depth field (round 16 C1). ``--disputed`` keeps a
+band out of claim coverage while a survey point is in question (C2).
+Ask the owner when a band cannot be computed; do not invent widths.
 """
 import argparse
-import csv
 import datetime as dt
-import hashlib
-import json
 import os
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+from forecast import observation_bounds as ob  # noqa: E402
+
 LEDGER = os.path.join(ROOT, "data", "labeled_observations.csv")
 BOUNDS = os.path.join(ROOT, "data", "observation_bounds.jsonl")
-BASES = ("stated_landmarks", "stated")
-REQUIRED = ("sha256", "csv_row", "observation_time_local", "landmark_key",
-            "lo_navd88", "hi_navd88", "basis", "landmarks", "text",
-            "recorded_utc", "recorded_by")
-
-
-def row_hash(row):
-    return hashlib.sha256(json.dumps(dict(row), sort_keys=True, ensure_ascii=False,
-                                     separators=(",", ":")).encode()).hexdigest()
-
-
-def validate_record(rec, ledger_hashes=None):
-    """Return a list of problems (empty = valid)."""
-    bad = [f"missing {k}" for k in REQUIRED if k not in rec]
-    if bad:
-        return bad
-    lo, hi = rec["lo_navd88"], rec["hi_navd88"]
-    if lo is None and hi is None:
-        bad.append("at least one of lo_navd88/hi_navd88 is required")
-    for name, v in (("lo_navd88", lo), ("hi_navd88", hi)):
-        if v is not None and not isinstance(v, (int, float)):
-            bad.append(f"{name} must be a number or null")
-    if isinstance(lo, (int, float)) and isinstance(hi, (int, float)) and lo > hi:
-        bad.append("lo_navd88 exceeds hi_navd88")
-    if rec["basis"] not in BASES:
-        bad.append(f"basis must be one of {BASES}")
-    if not isinstance(rec["landmarks"], list) or not rec["landmarks"]:
-        bad.append("landmarks must be a non-empty list")
-    else:
-        for lm in rec["landmarks"]:
-            for k in ("key", "navd88", "relation", "source"):
-                if k not in lm:
-                    bad.append(f"landmark entry missing {k}")
-    if ledger_hashes is not None and rec["sha256"] not in ledger_hashes:
-        bad.append("sha256 does not match any ledger row")
-    return bad
-
-
-def load_bounds(path=BOUNDS):
-    out = []
-    if not os.path.exists(path):
-        return out
-    with open(path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                out.append(json.loads(line))
-    return out
 
 
 def append_bound(csv_row, lo, hi, basis, landmarks, text, recorded_by,
-                 ledger_path=LEDGER, bounds_path=BOUNDS, owner_confirmed=False):
-    with open(ledger_path, newline="", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
+                 ledger_path=LEDGER, bounds_path=BOUNDS, owner_confirmed=False,
+                 time_kind="stated_exact", time_window=None, scope="intersection",
+                 supersedes_scalar=False, disputed=False):
+    rows = ob.load_ledger_rows(ledger_path)
     if not 2 <= csv_row <= len(rows) + 1:
         raise ValueError(f"csv_row {csv_row} outside the ledger")
     row = rows[csv_row - 2]
     rec = {
-        "sha256": row_hash(row), "csv_row": csv_row,
+        "sha256": ob.row_hash(row), "csv_row": csv_row,
         "observation_time_local": row["observation_time_local"],
         "landmark_key": row["landmark_key"],
         "lo_navd88": lo, "hi_navd88": hi, "basis": basis,
-        "landmarks": landmarks, "text": text,
+        "time_kind": time_kind, "time_window_local": list(time_window) if time_window else None,
+        "scope": scope, "landmarks": landmarks, "text": text,
         "recorded_utc": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "recorded_by": recorded_by, "owner_confirmed": bool(owner_confirmed),
+        "supersedes_scalar": bool(supersedes_scalar), "disputed": bool(disputed),
     }
-    problems = validate_record(rec)
+    problems = ob.validate_record(rec, rows)
     if problems:
         raise ValueError("; ".join(problems))
-    encoded = (json.dumps(rec, ensure_ascii=False) + "\n").encode("utf-8")
+    encoded = ob.serialize(rec).encode("utf-8")   # raises before any write on NaN/inf
     fd = os.open(bounds_path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
     try:
         os.write(fd, encoded)
@@ -113,26 +78,44 @@ def _parse_landmark(spec):
     parts = spec.split(":", 3)
     if len(parts) != 4:
         raise argparse.ArgumentTypeError("landmark must be key:navd88:relation:source")
-    return {"key": parts[0], "navd88": float(parts[1]), "relation": parts[2], "source": parts[3]}
+    try:
+        navd = float(parts[1])
+    except ValueError:
+        raise argparse.ArgumentTypeError("landmark navd88 must be a number")
+    return {"key": parts[0], "navd88": navd, "relation": parts[2], "source": parts[3]}
+
+
+def _finite(text):
+    v = float(text)
+    if v != v or v in (float("inf"), float("-inf")):
+        raise argparse.ArgumentTypeError("bounds must be finite numbers")
+    return v
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--csv-row", type=int, required=True)
-    ap.add_argument("--lo", type=float, default=None)
-    ap.add_argument("--hi", type=float, default=None)
-    ap.add_argument("--basis", choices=BASES, default="stated_landmarks")
+    ap.add_argument("--lo", type=_finite, default=None)
+    ap.add_argument("--hi", type=_finite, default=None)
+    ap.add_argument("--basis", choices=ob.BASES, default="stated_landmarks")
     ap.add_argument("--landmark", action="append", type=_parse_landmark, required=True)
     ap.add_argument("--text", required=True)
+    ap.add_argument("--time-kind", choices=ob.TIME_KINDS, default="stated_exact")
+    ap.add_argument("--time-window", nargs=2, default=None, metavar=("START", "END"))
+    ap.add_argument("--scope", choices=ob.SCOPES, default="intersection")
+    ap.add_argument("--supersedes-scalar", action="store_true")
+    ap.add_argument("--disputed", action="store_true")
     ap.add_argument("--recorded-by", default="agent")
     ap.add_argument("--owner-confirmed", action="store_true")
     ap.add_argument("--ledger", default=LEDGER)
     ap.add_argument("--path", default=BOUNDS)
     a = ap.parse_args()
     rec = append_bound(a.csv_row, a.lo, a.hi, a.basis, a.landmark, a.text, a.recorded_by,
-                       ledger_path=a.ledger, bounds_path=a.path, owner_confirmed=a.owner_confirmed)
+                       ledger_path=a.ledger, bounds_path=a.path, owner_confirmed=a.owner_confirmed,
+                       time_kind=a.time_kind, time_window=a.time_window, scope=a.scope,
+                       supersedes_scalar=a.supersedes_scalar, disputed=a.disputed)
     print(f"appended bound for row {a.csv_row} ({rec['observation_time_local']}): "
-          f"[{a.lo}, {a.hi}] ft NAVD88")
+          f"[{a.lo}, {a.hi}] ft NAVD88, time {a.time_kind}, scope {a.scope}")
 
 
 if __name__ == "__main__":

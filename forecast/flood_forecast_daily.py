@@ -2732,6 +2732,13 @@ def build_forecast():
         input_health["outlook_7d"] = {"status": "unavailable",
                                       "detail": f"outlook failed: {e}"}
 
+    # round 16 R3: the bounds record is read here so that a malformed line
+    # is a VISIBLE degraded input, never a crash and never a silent "no
+    # quantitative evidence"
+    _today_lookback_result = _today_lookback()
+    _bh = _bounds_health()
+    if _bh:
+        input_health["observation_bounds"] = _bh
     degraded_inputs = sorted(
         name for name, health in input_health.items()
         if health.get("status") != "ok" and not name.startswith("outlook_")
@@ -2796,7 +2803,7 @@ def build_forecast():
                                     if today_peak_water is not None else None),
         "today_peak_time": today_peak_time,
         "today_regime": today_regime,
-        "today_lookback": _today_lookback(),   # what already happened today
+        "today_lookback": _today_lookback_result,   # what already happened today
         "day_outlook": day_outlook,            # per-day tide/rain risk (widget)
         "tide_predictions_stale": _TIDE_FALLBACK_USED["flag"],
         "today_highest_crossed": today_highest_crossed,
@@ -4630,28 +4637,6 @@ OBSERVATION_BOUNDS_PATH = os.path.join(
     _REPO_ROOT, "data", "observation_bounds.jsonl")
 
 
-def _observation_bounds(path=None):
-    """{row sha256: record} from the append-only landmark-bounds record
-    (bin/append_observation_bound.py). Later lines win for the same row
-    (a correction is a new line, never an edit). Empty when absent."""
-    out = {}
-    try:
-        with open(path or OBSERVATION_BOUNDS_PATH, encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    rec = json.loads(line)
-                except ValueError:
-                    continue
-                if rec.get("sha256"):
-                    out[rec["sha256"]] = rec
-    except OSError:
-        pass
-    return out
-
-
 def _daymax_rejections(path=None):
     """{(day_local, day_max_utc)} pairs an operator has rejected."""
     try:
@@ -5564,22 +5549,27 @@ def build_sms_text(forecast):
             f"johnurban.github.io/barnacle/?a={int(_time.time()) // 60}")
 
 
+# Round 16 R2: time uncertainty is read from the bounds record when one
+# exists (explicit time_kind). For legacy prose only, this pattern catches
+# statements ABOUT THE TIME — "exact observation time unconfirmed",
+# "sometime", "between 21:20 and 21:40", "around 7", "~20:06" — and NOT
+# depth or location words ("~1 in above them", "around each grate").
+_TIME_UNCERTAIN_RE = re.compile(
+    r"(exact (?:observation )?time unconfirmed|time unconfirmed|unconfirmed time"
+    r"|\bsometime\b"
+    r"|\bbetween \d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*(?:and|-|–|to)\s*\d{1,2}(?::\d{2})?"
+    r"|\baround \d{1,2}(?::\d{2})?(?:\s*(?:am|pm))?(?!\s*(?:in\b|inch|inches|cm\b|ft\b|feet|\"|″))"
+    r"|~\s*\d{1,2}:\d{2})", re.I)
+
+
 def _lookback_time_uncertain(text):
-    """Heuristic: a qualitative report whose own wording says its time is
-    not exact (round 05 R1: never render such a time as a precise reading;
-    round 07 R1: never let it establish exact-hour coverage either)."""
-    t = (text or "").lower()
-    return any(k in t for k in ("unconfirmed", "sometime", "exact time",
-                                "between ", "~", "around "))
+    """Legacy-prose fallback: does the wording say the OBSERVATION TIME is
+    not exact? Depth ("~1 in") and location ("around each") never count."""
+    return bool(_TIME_UNCERTAIN_RE.search(text or ""))
 
 
-# Round 09 R1: NO keyword inference of meaning. A report is summarized by a
-# source-faithful excerpt, never rephrased, and never attached to a landmark
-# the wording does not itself name. The only classification kept is the one
-# coverage needs: an UNAMBIGUOUS negative (a negative phrase and nothing in
-# the rest of the sentence that reports water, a crossing, an exception or a
-# location qualifier). Everything else is "water" or "ambiguous" and can
-# never suppress a model claim.
+_DRY_REPORT_WORDS = ("no flooding", "no water", "no evidence of flooding",
+                     "receded completely", "dry")
 _NEGATIVE_PHRASES = ("no flooding", "no water", "no evidence of flooding",
                      "receded completely")
 _POSITIVE_OR_QUALIFYING = ("water", "flood", "over", "above", "wet", "puddl",
@@ -5614,14 +5604,48 @@ def _report_excerpt(text, limit=60):
     if len(t) <= limit:
         return t
     cut = t[:limit].rsplit(" ", 1)[0].rstrip(" ;,:-")
-    return (cut or t[:limit]) + "\u2026"
+    return (cut or t[:limit]) + "…"
 
 
 def _report_summary(kind, text, landmark_key=None):
-    """Kept for callers: the summary IS the excerpt. No landmark is inferred
-    (round 09 R1: "over the curb elsewhere" must never become "water over
-    the curb")."""
+    """The summary IS the excerpt; no landmark is inferred (round 09 R1)."""
     return _report_excerpt(text) or "report received; depth not measured"
+
+
+_BOUNDS_PROBLEMS = []
+
+
+def _observation_bounds(path=None):
+    """{row sha256: validated record} from data/observation_bounds.jsonl via
+    the shared contract (forecast/observation_bounds.py). Malformed lines are
+    never silently dropped: they are stashed in _BOUNDS_PROBLEMS, surfaced
+    by build_forecast as a degraded input, and the row falls back to its
+    prose handling."""
+    try:
+        from . import observation_bounds as _ob
+    except ImportError:
+        import observation_bounds as _ob
+    try:
+        rows = _ob.load_ledger_rows(os.path.join(_REPO_ROOT, "data",
+                                                 "labeled_observations.csv"))
+    except (OSError, csv.Error):
+        rows = None
+    by_hash, problems = _ob.load_bounds(path or OBSERVATION_BOUNDS_PATH, rows,
+                                        locator="hash")
+    _BOUNDS_PROBLEMS[:] = problems
+    if problems:
+        print(f"WARNING: observation_bounds.jsonl has {len(problems)} invalid "
+              f"line(s); those bands are ignored: {problems[0]}", flush=True)
+    return by_hash
+
+
+def _bounds_health():
+    """input_health entry for the bounds record after _today_lookback ran."""
+    if not _BOUNDS_PROBLEMS:
+        return None
+    return {"status": "degraded",
+            "detail": (f"{len(_BOUNDS_PROBLEMS)} invalid line(s) in "
+                       f"observation_bounds.jsonl ignored; first: {_BOUNDS_PROBLEMS[0][:160]}")}
 
 
 def _today_lookback():
@@ -5630,42 +5654,68 @@ def _today_lookback():
     said only 'RAIN FLOOD RISK' — true forward-looking, but reads as
     amnesia to a casual user).
 
-    Owner DECISION 2026-09-27 (audit 2026-09-27-a1 reply 04, option 3;
-    rounds 05 R1 and 07 R1): when an empirical value and a model guess
-    compete for the same window, empirical wins. The headline is chosen by
-    EVIDENCE CLASS, never by height and never by positivity:
-      (a) today's spot-check rows with a VALID numeric depth (measured): max
-          implied water, evidence "measured" — even at or below the SW grate
-          (rendered as "no street water at HH:MM", not a whole-day claim);
-      (b) else today's qualitative rows: evidence "reported", the latest
-          report's wording verbatim (excerpt for short arms; no paraphrase,
-          no inferred landmark), its time as logged (flagged uncertain when
-          the wording says so); no numeric level is invented;
-      (c) else today's despiked Sandy Hook peak over station-local midnight
-          → now, evidence "bay" (a BAY level, never a corner regime);
-      (d) else the nowcast's carried day max, evidence "modeled" (a rejected
-          day max is skipped).
-    A model day max that exceeds the headline (or the grate, for a reported
-    headline) is APPENDED as `model_claim`, never promoted. It is SUPPRESSED
-    only when a row that establishes exact-hour coverage lies within an hour
-    of it: a valid measured reading at an exact time, a landmark band whose
-    upper bound the claim exceeds, or an UNAMBIGUOUS negative
-    report at an exact time (`_report_kind` == "negative"). A report whose
-    time is unconfirmed, any report that mentions water or a qualification,
-    a mixed/negated report ("not dry"), or an invalid numeric row never
-    counts as coverage; the claim then stays, with `verification` saying why.
-    Returns {evidence, navd88, rel_grate_in, time_local, regime, source,
-    n_checks, model_claim?, report?, report_kind?, report_summary?,
-    time_uncertain?} or None."""
+    Owner DECISIONS 2026-09-27 (option 3, 18:24; reports are quantitative,
+    22:44) and audit rounds 05/07/09/16: empirical evidence beats a model
+    guess, and the day's empirical summary is INTERVAL-AWARE across
+    measured points and recorded landmark bands (round 16 R1):
+      (a) every measured point (valid numeric depth; a legacy range
+          representative is replaced by its recorded band when the record
+          says `supersedes_scalar`) and every recorded band (scope
+          "intersection") is an empirical interval [lo, hi] at its time;
+          the headline is the interval with the HIGHEST KNOWN FLOOR — a
+          later band whose floor exceeds a measured maximum is retained,
+          never hidden; when another band allows a higher level than the
+          winner, that is disclosed (`possible_up_to_*`) instead of picking
+          an arbitrary winner; upper-only bands ("still no flooding") lead
+          only when nothing has a floor; local-scope bands lead only when
+          nothing intersection-scope exists and say so;
+      (b) else the latest qualitative report ("reported", quoted verbatim);
+      (c) else the bay peak over station-local midnight→now ("bay");
+      (d) else the nowcast day max ("modeled"; a rejected day max is skipped).
+    A model day max above the headline's known range is APPENDED as
+    `model_claim`, never promoted. It is suppressed only by exact-time,
+    intersection-scope, undisputed coverage within an hour: a measured point
+    (any claim), a band with an upper bound the claim exceeds, or an
+    unambiguous negative report (cap = the SW grate). Time certainty comes
+    from the record's `time_kind`, or for legacy prose from wording about
+    the time only (round 16 R2); an open band, a local pool, a disputed
+    survey point, an unmeasured or mixed report, or an unconfirmed time
+    leaves the claim visible with `verification` saying why."""
     try:
         now_local = _station_local_now()
     except Exception:
         return None
     today = now_local.date().isoformat()
     _utc = dt.timezone.utc
-    tape, bounded, reported, n_checks = None, None, None, 0
-    covering, nearby_kinds = [], []     # (instant) / (instant, kind)
     bounds_by_hash = _observation_bounds()
+    empirical, reported, n_checks = [], None, 0
+    covering, nearby_kinds = [], []     # (instant, cap) / (instant, kind)
+
+    def _add_band(rec, inst, t_local, qual):
+        lo, hi = rec.get("lo_navd88"), rec.get("hi_navd88")
+        # the record's time_kind is authoritative, but wording that says the
+        # time is uncertain also disables coverage (belt and braces)
+        exact = (rec.get("time_kind", "stated_exact") == "stated_exact"
+                 and not _lookback_time_uncertain(qual))
+        scope = rec.get("scope", "intersection")
+        disputed = bool(rec.get("disputed"))
+        empirical.append({"kind": "band", "inst": inst, "t": t_local.strftime("%H:%M"),
+                          "lo": lo, "hi": hi, "exact": exact, "scope": scope,
+                          "disputed": disputed, "text": rec.get("text") or "",
+                          "basis": rec.get("basis"), "qual": qual,
+                          "time_kind": rec.get("time_kind", "stated_exact"),
+                          "window": rec.get("time_window_local")})
+        if not exact:
+            nearby_kinds.append((inst, "uncertain-time"))
+        elif scope != "intersection":
+            nearby_kinds.append((inst, "band-local"))
+        elif disputed:
+            nearby_kinds.append((inst, "band-disputed"))
+        elif hi is None:
+            nearby_kinds.append((inst, "band-open"))
+        else:
+            covering.append((inst, hi))
+
     # (a)/(b) the ledger
     try:
         elev_by_key = {k: e for k, _lbl, e, _sh in LANDMARKS}
@@ -5685,38 +5735,40 @@ def _today_lookback():
                     continue
                 inst = t.astimezone(_utc)
                 qual = " ".join((r.get("observed_qualitative") or "").split())
-                unsure = _lookback_time_uncertain(qual)
                 depth = (r.get("observed_depth_in") or "").strip()
+                rec = bounds_by_hash.get(_observation_row_hash(r))
                 if depth:
                     try:
                         w = elev_by_key[key] + float(depth) / 12.0
                     except ValueError:
                         continue            # invalid numeric row: no evidence of any kind
                     n_checks += 1
+                    if rec and rec.get("supersedes_scalar"):
+                        _add_band(rec, inst, t, qual)   # legacy range representative (round 16 C1)
+                        continue
+                    unsure = _lookback_time_uncertain(qual)
+                    empirical.append({"kind": "point", "inst": inst, "t": t.strftime("%H:%M"),
+                                      "lo": w, "hi": w, "exact": not unsure,
+                                      "scope": "intersection", "disputed": False,
+                                      "text": "", "basis": "measured", "qual": qual,
+                                      "time_kind": "stated_exact" if not unsure else "approximate",
+                                      "window": None})
                     if unsure:
                         nearby_kinds.append((inst, "uncertain-time"))
                     else:
                         covering.append((inst, None))   # exact reading: covers any claim
-                    if tape is None or w > tape[0]:
-                        tape = (w, t.strftime("%H:%M"))
                 elif qual:
                     n_checks += 1
+                    if rec:
+                        _add_band(rec, inst, t, qual)
+                        if reported is None or inst >= reported[0]:
+                            reported = (inst, qual, t.strftime("%H:%M"),
+                                        rec.get("time_kind", "stated_exact") != "stated_exact",
+                                        _report_kind(qual), key)
+                        continue
                     kind = _report_kind(qual)
-                    bound = bounds_by_hash.get(_observation_row_hash(r))
-                    if bound and not unsure:
-                        # a landmark band recorded by an agent from the survey
-                        # (owner rule: such reports are quantitative); its hi
-                        # covers claims above it, its lo is a floor; a band
-                        # with no upper bound cannot suppress anything
-                        lo, hi = bound.get("lo_navd88"), bound.get("hi_navd88")
-                        if hi is not None:
-                            covering.append((inst, hi))
-                        else:
-                            nearby_kinds.append((inst, "report-unmeasured"))
-                        rank = lo if lo is not None else hi
-                        if bounded is None or rank > bounded[0]:
-                            bounded = (rank, lo, hi, t.strftime("%H:%M"), bound, qual)
-                    elif unsure:
+                    unsure = _lookback_time_uncertain(qual)
+                    if unsure:
                         nearby_kinds.append((inst, "uncertain-time"))
                     elif kind == "negative":
                         covering.append((inst, GRATE_SW))  # water not visible: below the sentinel grate
@@ -5748,9 +5800,6 @@ def _today_lookback():
         nc_day = nc.get("day_local")
         if not nc_day and nc.get("generated_utc"):
             nc_day = utc_to_station_local(nc["generated_utc"]).date().isoformat()
-        # audit 2026-09-27-a1 R5: an operator-rejected day max (bad input,
-        # e.g. 2026-09-27 02:40's 39.0 in from a phantom 6.68-ft bay) must
-        # not become "today's peak" on any surface
         rejected = (nc_day, nc.get("day_max_utc")) in _daymax_rejections()
         dmx = nc.get("day_max_street_in") or 0
         if nc_day == today and not rejected and dmx > 0:
@@ -5762,26 +5811,54 @@ def _today_lookback():
             model = (GRATE_SW + dmx / 12.0, t_nc, t_inst)
     except (OSError, ValueError):
         pass
-    if tape is not None:
-        w, t = tape
-        out = {"evidence": "measured", "source": "measured (inches at a landmark)",
-               "regime": classify_regime_from_water(w) if w > GRATE_SW else "dry",
-               "navd88": round(w, 3), "rel_grate_in": round((w - GRATE_SW) * 12, 1),
-               "time_local": t, "n_checks": n_checks}
-    elif bounded is not None:
-        _rank, lo, hi, t, bound, qual = bounded
-        out = {"evidence": "bounded", "source": "bounded (landmarks of known height)",
-               "regime": classify_regime_from_water(hi if hi is not None else lo)
-               if (hi if hi is not None else lo) > GRATE_SW else "dry",
-               "navd88": None if hi is None else round(hi, 3),
-               "rel_grate_in": None if hi is None else round((hi - GRATE_SW) * 12, 1),
-               "lo_navd88": None if lo is None else round(lo, 3),
-               "lo_rel_grate_in": None if lo is None else round((lo - GRATE_SW) * 12, 1),
-               "hi_navd88": None if hi is None else round(hi, 3),
-               "hi_rel_grate_in": None if hi is None else round((hi - GRATE_SW) * 12, 1),
-               "time_local": t, "n_checks": n_checks,
-               "band_text": bound.get("text") or "", "basis": bound.get("basis"),
-               "report": qual[:200], "report_summary": _report_summary(None, qual)}
+
+    def _rel(v):
+        return None if v is None else round((v - GRATE_SW) * 12, 1)
+
+    # ---- headline: interval-aware empirical summary (round 16 R1)
+    inter = [e for e in empirical if e["scope"] == "intersection"]
+    pool = inter if inter else [e for e in empirical if e["scope"] == "local"]
+    floors = [e for e in pool if e["lo"] is not None]
+    if floors:
+        win = max(floors, key=lambda e: (e["lo"], e["inst"]))
+    else:
+        caps = [e for e in pool if e["hi"] is not None]
+        win = max(caps, key=lambda e: e["inst"]) if caps else None
+    out = None
+    if win is not None:
+        top = win["hi"] if win["hi"] is not None else win["lo"]
+        level = top if top is not None else GRATE_SW
+        local_only = win["scope"] != "intersection"
+        if win["kind"] == "point":
+            out = {"evidence": "measured", "source": "measured (inches at a landmark)",
+                   "regime": classify_regime_from_water(level) if level > GRATE_SW else "dry",
+                   "navd88": round(level, 3), "rel_grate_in": _rel(level)}
+        else:
+            out = {"evidence": "bounded",
+                   "source": ("bounded (landmarks of known height)" if not local_only
+                              else "bounded (local pool; landmarks of known height)"),
+                   "regime": classify_regime_from_water(level) if level > GRATE_SW else "dry",
+                   "navd88": None if win["hi"] is None else round(win["hi"], 3),
+                   "rel_grate_in": _rel(win["hi"]),
+                   "band_text": win["text"], "basis": win["basis"], "scope": win["scope"],
+                   "report": (win["qual"] or "")[:200],
+                   "report_summary": _report_summary(None, win["qual"])}
+        out.update({"lo_navd88": None if win["lo"] is None else round(win["lo"], 3),
+                    "lo_rel_grate_in": _rel(win["lo"]),
+                    "hi_navd88": None if win["hi"] is None else round(win["hi"], 3),
+                    "hi_rel_grate_in": _rel(win["hi"]),
+                    "time_local": win["t"], "time_kind": win["time_kind"],
+                    "time_uncertain": not win["exact"], "n_checks": n_checks})
+        if win["window"]:
+            out["time_window_local"] = list(win["window"])
+        # another interval allows a higher level than the winner's known range
+        higher = [e for e in pool if e is not win and e["hi"] is not None
+                  and e["hi"] > level + 1e-9]
+        if higher:
+            h = max(higher, key=lambda e: e["hi"])
+            out["possible_up_to_navd88"] = round(h["hi"], 3)
+            out["possible_up_to_rel_grate_in"] = _rel(h["hi"])
+            out["possible_up_to_time_local"] = h["t"]
     elif reported is not None:
         _inst, qual, t, unsure, kind, key = reported
         out = {"evidence": "reported", "source": "reported (qualitative, not measured)",
@@ -5795,40 +5872,41 @@ def _today_lookback():
         out = {"evidence": "bay",
                "source": "bay peak (gauge; corner not measured)",
                "regime": "bay", "navd88": round(w, 3),
-               "rel_grate_in": round((w - GRATE_SW) * 12, 1), "time_local": t,
-               "n_checks": 0}
+               "rel_grate_in": _rel(w), "time_local": t, "n_checks": 0}
     elif model and model[0] > GRATE_SW:
         w, t = model[0], model[1]
         out = {"evidence": "modeled",
                "source": "modeled (bay + radar tank; unverified)",
                "regime": classify_regime_from_water(w), "navd88": round(w, 3),
-               "rel_grate_in": round((w - GRATE_SW) * 12, 1), "time_local": t,
-               "n_checks": 0}
+               "rel_grate_in": _rel(w), "time_local": t, "n_checks": 0}
     else:
         return None
-    floor = out["navd88"] if out["navd88"] is not None else GRATE_SW
-    if model and out["evidence"] != "modeled" and model[0] > floor:
+    # ---- model claim
+    if out["evidence"] in ("measured", "bounded"):
+        floor = out.get("hi_navd88") if out.get("hi_navd88") is not None else out.get("lo_navd88")
+        if out.get("possible_up_to_navd88") is not None:
+            floor = max(floor, out["possible_up_to_navd88"])
+    else:
+        floor = out["navd88"] if out["navd88"] is not None else GRATE_SW
+    if model and out["evidence"] != "modeled" and model[0] > floor + 1e-9:
         m_inst = model[2].astimezone(_utc) if model[2] else None
         hour = dt.timedelta(hours=1)
-        # a row covers the claim when it is within the hour AND either is an
-        # exact reading (cap None) or carries an upper bound the claim exceeds
         suppressed = m_inst is not None and any(
             abs(ti - m_inst) <= hour and (cap is None or model[0] > cap)
             for ti, cap in covering)
         if not suppressed:
             near = {k for ti, k in nearby_kinds
                     if m_inst is not None and abs(ti - m_inst) <= hour}
-            if "report-unmeasured" in near:
-                why = "report at that time did not measure depth; claim unverified"
-            elif "ambiguous" in near:
-                why = "nearby report is mixed or qualified; claim unverified"
-            elif "uncertain-time" in near:
-                why = "nearby report time unconfirmed; claim unverified"
-            else:
-                why = "no measurement then"
+            why = ("a landmark band at that time has no upper bound; claim unverified" if "band-open" in near
+                   else "only a local pool was bounded at that time; claim unverified" if "band-local" in near
+                   else "the band at that time rests on a disputed survey point; claim unverified" if "band-disputed" in near
+                   else "report at that time did not measure depth; claim unverified" if "report-unmeasured" in near
+                   else "nearby report is mixed or qualified; claim unverified" if "ambiguous" in near
+                   else "nearby report time unconfirmed; claim unverified" if "uncertain-time" in near
+                   else "no measurement then")
             out["model_claim"] = {
                 "navd88": round(model[0], 3),
-                "rel_grate_in": round((model[0] - GRATE_SW) * 12, 1),
+                "rel_grate_in": _rel(model[0]),
                 "time_local": model[1],
                 "verification": why,
                 "note": "model day max not promoted over the empirical value"}

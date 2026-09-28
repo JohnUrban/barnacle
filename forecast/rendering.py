@@ -163,7 +163,9 @@ def _lookback_phrase(lb, html=False, short=False):
         # known height is quantitative; the band comes from the survey via
         # data/observation_bounds.jsonl, never from parsing prose
         lo, hi = lb.get("lo_rel_grate_in"), lb.get("hi_rel_grate_in")
-        if lo is not None and hi is not None:
+        if lo is not None and hi is not None and abs(hi - lo) < 0.05:
+            band = f"{hi:+.1f}{inch}"          # a landmark named exactly ("breached over …")
+        elif lo is not None and hi is not None:
             band = f"{lo:+.1f}{inch} to {hi:+.1f}{inch}"
         elif lo is not None:
             band = f"at least {lo:+.1f}{inch}"
@@ -172,7 +174,9 @@ def _lookback_phrase(lb, html=False, short=False):
         text = lb.get("band_text") or ""
         if html:
             text = _html_escape(text)
-        head = f"BOUNDED {band} at {when}" + (
+        tilde = "~" if lb.get("time_uncertain") else ""
+        local = lb.get("scope") == "local"
+        head = f"BOUNDED {'(local pool) ' if local else ''}{band} at {tilde}{when}" + (
             " (landmarks)" if short else
             f" (landmark band: {text}; no inches read)" if text else " (landmark band; no inches read)")
     elif ev == "reported":
@@ -192,6 +196,11 @@ def _lookback_phrase(lb, html=False, short=False):
     else:
         head = f"MODELED {val} at {when}" + (
             "" if short else " (bay + radar tank; unverified)")
+    up = lb.get("possible_up_to_rel_grate_in")
+    if isinstance(up, (int, float)):
+        # round 16 R1: another interval allows a higher level than the headline
+        head += (f"; a {lb.get('possible_up_to_time_local') or '?'} band allows up to {up:+.1f}{inch}"
+                 + ("" if short else " (peak not uniquely placed)"))
     mc = lb.get("model_claim")
     if mc:
         why = mc.get("verification") or "unmeasured then"

@@ -77,7 +77,7 @@ class ModelVersionTests(unittest.TestCase):
         widget = (ROOT / "docs" / "barnacle-widget.js").read_text(encoding="utf-8")
         # v7.33a (2026-09-27, landmark-bounds unit): bounded evidence and
         # instrument-neutral wording on the so-far line
-        self.assertIn('const WIDGET_VERSION = "v7.33a";', widget)
+        self.assertIn('const WIDGET_VERSION = "v7.34a";', widget)
         self.assertNotIn("driveway_central", widget)
 
 
