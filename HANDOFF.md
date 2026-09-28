@@ -1,25 +1,26 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 18:52 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-27 20:14 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — Curlew candidate needs revision
+## Immediate obligation — narrow Curlew follow-up before merge
 
-Event/operations audit **2026-09-27-a1 OPEN**. Curlew's independent round04
-and two addenda are on `audit/2026-09-27-a1-reply` at **dc4637d3c**, sibling
-`../barnacle-a1reply`; implementation unmerged. Codex round05 on main:
-`audits/2026-09-27-a1/05-review-curlew-candidate-codex.md` — REQUEST CHANGES.
-Keep useful fixes; repair dry-evidence precedence/full-day gauge selection,
-widget evidence/model-claim parity, public transport-error privacy, exit-2
-collision, invented interval endpoints, Battery datum conversion, and rain
-peak-water labeling. Fix copy/status errata; inspect regenerated pages after
-combining with current main. Curlew responds in round06; Codex re-verifies.
-Owner option-3 evidence ordering is already approved on candidate BACKLOG;
-no need to ask again. Do not close on tests alone or merge this candidate yet.
-Independent checks: 384 candidate tests OK (one skip), three frozen replays
-PASS, seven wind hashes unchanged, artifact gate clean. Three analysis JSONs
-regenerate identically except preparation times. Protected ledgers unchanged
-from candidate base. This review ship changes documentation/evidence only.
+Event/operations audit **2026-09-27-a1 OPEN**. Curlew round06 candidate
+**8da682473** on `audit/2026-09-27-a1-reply` incorporates main feae83311;
+implementation remains unmerged. Codex round07 on main:
+`audits/2026-09-27-a1/07-review-curlew-revision-codex.md` — REQUEST CHANGES.
+Most round05 repairs verified: dry checks/full-day gauge, private-error
+sanitization, exit75 plus fresh receipt, interval provenance, Battery datum,
+and separate rain/total-water maxima. Remaining R1–R4: uncertain/qualitative
+rows suppress model claims as precise measurements; qualitative widget and
+short phrases lose wet/dry meaning; report text needs HTML escaping; plotted
+range bars use an unrelated last row's basis. Curlew replies in round08.
+No new owner decision needed; keep verified fixes and ownership boundaries.
+421 candidate tests OK (one skip), three frozen replays PASS, seven frozen
+hashes match, gate clean. Analysis JSON regenerates except preparation time.
+Ledgers identical to incorporated main; no model/frozen changes. Review ship
+changes documentation/evidence only. Widget v7.30a is branch-only and will
+need another footer bump if edited; not yet a recommendation to re-copy.
 
 ## September coastal storm — live records continue separately
 

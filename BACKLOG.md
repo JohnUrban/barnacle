@@ -9,28 +9,25 @@ looks stale, trust this file. Ledger lines are append-only:
 ## OPEN LOOPS (force-ranked)
 
 - [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1).**
-      Curlew independently answered R1–R7 in branch-only round04 and built
-      candidate dc4637d3c on audit/2026-09-27-a1-reply. Codex round05:
-      REQUEST CHANGES; not merged. See
-      audits/2026-09-27-a1/05-review-curlew-candidate-codex.md.
-      Keep useful timestamp/per-episode/QC/publication repairs; fix dry
-      evidence precedence and full-day gauge selection, widget evidence/claim
-      parity, private transport-error serialization, ambiguous exit-2
-      publication contract, unsupported interval bounds, Battery datum
-      conversion, and misnamed rain peak-water fields. Correct copy/status
-      errata; regenerate and inspect combined-tree pages before merge.
-      Candidate: 384 tests OK (one skip), three frozen replays PASS, seven
-      wind hashes unchanged, gate clean, protected ledgers unchanged from
-      its base. Those checks do not close scientific or production findings.
-      Next Curlew reply is round06; Codex re-review then merge decision.
-      Preserve main's later live Sep27-e02 ledger/notes/registry additions.
-      Four-window analysis covers Sep25 PM through Sep27 AM only.
-      Owner originals reconciled; stable eNN IDs; all_anchors retained with
-      expanded chronological/sorted views and June14/15 analyses. Apr18/
-      Aug2025 uncertainty explicit; negative-control census and coastal
-      hindcasts remain open. R3 evaluator integration/as-issued coverage
-      belongs to Heron; Tern retains social work. Separate episode outcomes
-      from storm counts; no gate model or frozen wind change authorized.
+      Curlew round06 candidate 8da682473 incorporates main feae83311.
+      Codex round07 REQUEST CHANGES; candidate remains unmerged. See
+      audits/2026-09-27-a1/07-review-curlew-revision-codex.md.
+      Most round05 repairs verified. Four remaining fixes: uncertainty-aware
+      claim suppression; qualitative report meaning in widget/short text;
+      HTML escaping of raw report text; per-record basis for range bars.
+      Curlew writes round08 next. No new owner decision or physics change.
+      Candidate: 421 tests OK (one skip), three frozen replays PASS, seven
+      frozen hashes match, gate clean, protected ledgers identical to its
+      incorporated main. Three analysis JSONs reproduce except timestamps.
+      Regeneration/deployed-page verification still required at merge; final
+      widget re-copy follows deployment, not branch-only v7.30a.
+      Preserve ongoing Sep27-e02 records; four-window analysis covers Sep25
+      PM through Sep27 AM only. Owner originals reconciled; stable eNN IDs;
+      all_anchors retained plus expanded views and June14/15 analyses.
+      Apr18/Aug2025 uncertainty explicit; negative-control census/coastal
+      hindcasts remain open. Heron owns evaluator integration/as-issued
+      coverage; Tern owns social. Separate episode outcomes from storm
+      counts; no gate model or frozen wind change authorized.
 
 - [ ] **Storm communication parity — reproduced 2026-09-25.** Public 10:13
       forecast rendered offline: email TODAY LIGHT vs day_worst/tide MODERATE.
@@ -797,3 +794,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | PREF | rawnotes-owner-corrects-typos | John (18:48): owner-supplied raw notes are the owner's to edit. An agent that suspects a typo (e.g. Sep26 "12:06 am" for pm) BRINGS IT TO JOHN and never silently reinterprets or "preserves" it; John corrects the original, and the correction is recorded beside it (clarification note + pre-edit hash, as done in 2026-09-26/rawnotes/clarifications.txt). Leaving a known typo in place invites each agent to decide for itself. Supersedes "never edited" wording in the flood-measurements.txt proposal (audit 2026-09-27-a1 reply 04 follow-up) [STATED]
 
 2026-09-27 | DONE | curlew-candidate-independent-review | Codex reviewed dc4637d3c (six commits on 0176795e0), round05 REQUEST CHANGES: seven required revisions plus copy/merge checks, with executable synthetic probes and NOAA datum receipts. 384 tests OK (one skip), three frozen replays PASS, seven frozen hashes match, gate clean; analysis JSON regenerated identically except preparation stamps. Candidate unmerged; audit OPEN. Only review/coordination records published; no production, observation-ledger, Heron or Tern changes [VERIFIED].
+
+2026-09-27 | DONE | curlew-round06-independent-review | Codex reviewed 8da682473 on combined main feae83311; round07 REQUEST CHANGES with four narrower fixes (uncertain qualitative claim coverage, meaningful short/widget reports, HTML escaping, per-record plotting basis). Prior privacy/publication/interval/datum/rain-max repairs verified. 421 tests OK (one skip), three replay goldens PASS, seven hashes match, gate clean, three JSONs reproducible; protected ledgers identical to incorporated main. Candidate remains unmerged; Curlew round08 next. Review/coordination only; Heron/Tern ownership unchanged [VERIFIED].
