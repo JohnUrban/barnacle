@@ -39,38 +39,50 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.32a";
+const WIDGET_VERSION = "v7.33a";
+// v7.33a (2026-09-27, landmark-bounds unit): BOUNDED evidence (a report that
+// relates water to landmarks of known height, band from the survey) renders
+// as "+lo–hi″"; instrument-neutral wording ("measured", never "tape").
 // v7.32a (2026-09-27, round 09 R1): a qualitative report is QUOTED (verbatim
 // excerpt), never paraphrased or attached to a landmark by keyword.
 // v7.31a (2026-09-27, round 07 R2): a qualitative report carries WHAT was
 // reported (report_summary: "no flooding reported" vs "water over the curb
 // (depth not measured)"), and a model claim carries why it is unverified.
 // v7.30a (2026-09-27, audit 2026-09-27-a1 round 05 R2): the "so far" line
-// reads today_lookback.evidence and model_claim — measured (tape, even a
-// dry check), reported (no tape), BAY (gauge), MODELED (unverified) — and
+// reads today_lookback.evidence and model_claim — measured (even a dry
+// check), bounded (landmarks), reported (not measured), BAY (gauge), MODELED
+// (unverified) — and
 // appends a model claim at an unmeasured time instead of hiding it. Same
 // meaning as the site strip and email (rendering._lookback_phrase).
 
 // SOFAR-BEGIN — pure functions, unit-tested with node (tests/test_widget_sofar.py)
 function soFarVisible(lb) {
   if (!lb) return false;
-  if (lb.evidence === "measured" || lb.evidence === "reported") return true;
+  if (lb.evidence === "measured" || lb.evidence === "bounded" || lb.evidence === "reported") return true;
   return (lb.rel_grate_in || 0) > 0;
 }
 function soFarText(lb) {
   const rel = (typeof lb.rel_grate_in === "number") ? lb.rel_grate_in : null;
   const val = rel === null ? "" : ((rel >= 0 ? "+" : "") + rel.toFixed(1) + "\u2033");
   const at = "@" + (lb.time_local || "");
-  const ev = lb.evidence || ((lb.source || "").indexOf("tape") >= 0 ? "measured" : "modeled");
+  const src = lb.source || "";
+  const ev = lb.evidence || ((src.indexOf("measured") >= 0 || src.indexOf("tape") >= 0) ? "measured" : "modeled");
+  const fmt = (x) => (x >= 0 ? "+" : "") + x.toFixed(1) + "\u2033";
   let head;
   if (ev === "measured" && rel !== null && rel <= 0) {
     const n = lb.n_checks || 0;
-    head = "no water " + at + " (tape" + (n ? ", " + n + " check" + (n === 1 ? "" : "s") : "") + ")";
+    head = "no water " + at + " (measured" + (n ? ", " + n + " check" + (n === 1 ? "" : "s") : "") + ")";
   } else if (ev === "measured") {
-    head = val + " " + at + " (tape)";
+    head = val + " " + at + " (measured)";
+  } else if (ev === "bounded") {
+    const lo = (typeof lb.lo_rel_grate_in === "number") ? lb.lo_rel_grate_in : null;
+    const hi = (typeof lb.hi_rel_grate_in === "number") ? lb.hi_rel_grate_in : null;
+    const band = (lo !== null && hi !== null) ? fmt(lo) + "\u2013" + fmt(hi)
+               : (lo !== null ? "\u2265" + fmt(lo) : "\u2264" + fmt(hi));
+    head = band + " " + at + " (landmarks)";
   } else if (ev === "reported") {
     const what = lb.report_summary || "report received; depth not measured";
-    head = "reported " + (lb.time_uncertain ? "~" : "") + at + ": \u201c" + what + "\u201d (no tape)";
+    head = "reported " + (lb.time_uncertain ? "~" : "") + at + ": \u201c" + what + "\u201d (not measured)";
   } else if (ev === "bay") {
     head = "BAY " + val + " " + at + " (gauge)";
   } else {
@@ -661,7 +673,7 @@ function makeWidget(forecast, family) {
     // SO-FAR line (2026-07-09, post-event-#4): the outlook is
     // forward-looking by design, but an hour after a top-3 flood the
     // widget read as amnesia. v7.30a: today_lookback is chosen by
-    // EVIDENCE CLASS (owner decision 2026-09-27): tape (even dry) >
+    // EVIDENCE CLASS (owner decision 2026-09-27): measured (even dry) > bounded >
     // qualitative report > bay peak (labeled BAY) > model (labeled
     // MODELED, unverified); a higher model claim at an unmeasured time
     // is appended, never promoted. Text = soFarText() above.
@@ -671,6 +683,7 @@ function makeWidget(forecast, family) {
       lbLine.font = Font.semiboldSystemFont(9);
       lbLine.textColor = new Color(
         lb.evidence === "modeled" || lb.evidence === "bay" ? "#6b6b6b" :
+        lb.evidence === "bounded" ? "#8a5a00" :
         lb.regime === "severe" ? "#b91c1c" :
         lb.regime === "moderate" ? "#c2410c" : "#555");
       lbLine.lineLimit = 1;

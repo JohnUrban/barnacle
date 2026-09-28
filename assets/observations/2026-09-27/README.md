@@ -83,7 +83,7 @@ Figure: [`../2026-09-26/analysis/corner_vs_gauge.png`](../2026-09-26/analysis/co
   a model output driven by a bay input of 6.68 ft NAVD88 stamped "observed"
   while the archived series had the bay at 0.2 ft
   ([`analysis/gauge_qc.json` → `nowcast_bay_input_trace`](analysis/gauge_qc.json)).
-  It is not a street measurement; the tape crest was 5.62 ft (+25.2 in).
+  It is not a street measurement; the measured crest was 5.62 ft (+25.2 in).
   Recorded for rejection in `data/nowcast_daymax_rejections.json`.
 - Corrected four-tide figure with rain forcing and a separate report strip:
   [`analysis/event10_hydrographs.png`](analysis/event10_hydrographs.png).

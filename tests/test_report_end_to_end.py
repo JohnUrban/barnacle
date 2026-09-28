@@ -121,7 +121,7 @@ class EndToEndReportTests(unittest.TestCase):
         short, html, widget = self._all_arms(lb)
         self.assertIn("MEASURED no street water at 02:50", short)
         if NODE:
-            self.assertIn("no water @02:50 (tape", widget)
+            self.assertIn("no water @02:50 (measured", widget)
 
     def test_html_arm_escapes_the_quoted_report(self):
         lb = lookback(_row("2026-09-27T02:50", "grate_SW", "<b>dry</b> & water <curb>"), None)

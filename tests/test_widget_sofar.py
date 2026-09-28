@@ -13,31 +13,36 @@ WIDGET = ROOT / "docs" / "barnacle-widget.js"
 CASES = [
     ({"evidence": "measured", "rel_grate_in": 25.2, "time_local": "09:44", "regime": "severe",
       "model_claim": {"rel_grate_in": 39.0, "time_local": "02:40"}},
-     "so far: +25.2″ @09:44 (tape) · model +39″ @02:40 unmeasured"),
+     "so far: +25.2″ @09:44 (measured) · model +39″ @02:40 unmeasured"),
     ({"evidence": "measured", "rel_grate_in": 0.0, "time_local": "02:50", "regime": "dry", "n_checks": 1},
-     "so far: no water @02:50 (tape, 1 check)"),
+     "so far: no water @02:50 (measured, 1 check)"),
     ({"evidence": "measured", "rel_grate_in": -2.0, "time_local": "02:50", "regime": "dry", "n_checks": 3},
-     "so far: no water @02:50 (tape, 3 checks)"),
+     "so far: no water @02:50 (measured, 3 checks)"),
     ({"evidence": "reported", "rel_grate_in": None, "time_local": "21:10", "time_uncertain": True,
       "report_kind": "negative", "report_summary": "still NO flooding at the Bay/Central intersection"},
-     "so far: reported ~@21:10: \u201cstill NO flooding at the Bay/Central intersection\u201d (no tape)"),
+     "so far: reported ~@21:10: \u201cstill NO flooding at the Bay/Central intersection\u201d (not measured)"),
     ({"evidence": "reported", "rel_grate_in": None, "time_local": "18:18",
       "report_kind": "water", "report_summary": "water jetting UP out of the NE and NW grates with local\u2026"},
-     "so far: reported @18:18: \u201cwater jetting UP out of the NE and NW grates with local\u2026\u201d (no tape)"),
+     "so far: reported @18:18: \u201cwater jetting UP out of the NE and NW grates with local\u2026\u201d (not measured)"),
+    ({"evidence": "bounded", "lo_rel_grate_in": 7.4, "hi_rel_grate_in": 7.7, "time_local": "21:54"},
+     "so far: +7.4\u2033\u2013+7.7\u2033 @21:54 (landmarks)"),
+    ({"evidence": "bounded", "lo_rel_grate_in": None, "hi_rel_grate_in": 0.0, "time_local": "19:28"},
+     "so far: \u2264+0.0\u2033 @19:28 (landmarks)"),
     ({"evidence": "reported", "time_local": "20:06"},
-     "so far: reported @20:06: \u201creport received; depth not measured\u201d (no tape)"),
+     "so far: reported @20:06: \u201creport received; depth not measured\u201d (not measured)"),
     ({"evidence": "measured", "rel_grate_in": 25.2, "time_local": "09:44", "regime": "severe",
       "model_claim": {"rel_grate_in": 39.0, "time_local": "02:40",
                       "verification": "water reported then but depth not measured; claim unverified"}},
-     "so far: +25.2\u2033 @09:44 (tape) \u00b7 model +39\u2033 @02:40 unverified"),
+     "so far: +25.2\u2033 @09:44 (measured) \u00b7 model +39\u2033 @02:40 unverified"),
     ({"evidence": "bay", "rel_grate_in": 14.8, "time_local": "20:06", "regime": "bay"},
      "so far: BAY +14.8″ @20:06 (gauge)"),
     ({"evidence": "modeled", "rel_grate_in": 6.4, "time_local": "16:40", "regime": "street"},
      "so far: MODELED +6.4″ @16:40 (unverified)"),
-    ({"rel_grate_in": 12.0, "time_local": "10:00", "regime": "moderate", "source": "measured (tape)"},
-     "so far: +12.0″ @10:00 (tape)"),   # legacy payload without `evidence`
+    ({"rel_grate_in": 12.0, "time_local": "10:00", "regime": "moderate", "source": "measured (measured)"},
+     "so far: +12.0″ @10:00 (measured)"),   # legacy payload without `evidence`
 ]
 VISIBLE = [({"evidence": "measured", "rel_grate_in": 0.0}, True),
+           ({"evidence": "bounded", "lo_rel_grate_in": 7.4, "hi_rel_grate_in": 7.7}, True),
            ({"evidence": "reported"}, True),
            ({"evidence": "bay", "rel_grate_in": 0}, False),
            ({"evidence": "modeled", "rel_grate_in": 4.0}, True),
@@ -76,7 +81,8 @@ class WidgetSoFarTests(unittest.TestCase):
 
     def test_widget_render_block_uses_the_functions_and_version_bumped(self):
         src = WIDGET.read_text(encoding="utf-8")
-        self.assertIn('const WIDGET_VERSION = "v7.32a";', src)
+        self.assertIn('const WIDGET_VERSION = "v7.33a";', src)
+        self.assertNotIn("(tape", src[src.index("// SOFAR-BEGIN"):src.index("// SOFAR-END")])
         self.assertIn("if (soFarVisible(lb)) {", src)
         self.assertIn("left.addText(soFarText(lb));", src)
         self.assertNotIn("lb.rel_grate_in > 0)", src)

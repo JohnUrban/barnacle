@@ -91,10 +91,29 @@ def row_hash(row):
                                      separators=(",", ":")).encode()).hexdigest()
 
 
+BOUNDS = ROOT / "data/observation_bounds.jsonl"
+
+
+def landmark_bounds():
+    """{row sha256: record} from the standing landmark-bounds record (owner
+    rule 2026-09-27 22:44; bin/append_observation_bound.py). Later lines win."""
+    out = {}
+    if BOUNDS.exists():
+        for line in BOUNDS.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                rec = json.loads(line)
+                out[rec["sha256"]] = rec
+    return out
+
+
 def main():
     reg = json.loads(REGISTRY.read_text())
     with LEDGER.open(newline="") as f:
         rows = list(csv.DictReader(f))
+    sys.path.insert(0, str(ROOT))
+    from forecast import flood_forecast_daily as ff
+    elev = {k: e for k, _l, e, _s in ff.LANDMARKS}
+    bounds = landmark_bounds()
     records, seen = [], set()
     for ep in reg["episodes"]:
         if ep["episode_id"] not in EPISODES:
@@ -123,6 +142,22 @@ def main():
             }
             ov = OVERRIDES.get(n, {})
             rec.update({k: v for k, v in ov.items()})
+            # landmark bands from the standing record take precedence over the
+            # hand overrides: inches relative to the row's landmark, basis
+            # stated_landmarks, provenance carried
+            lb = bounds.get(ref["sha256"])
+            if lb and row["landmark_key"] in elev and not depth:
+                e0 = elev[row["landmark_key"]]
+                lo, hi = lb.get("lo_navd88"), lb.get("hi_navd88")
+                rec["depth_kind"] = ("range" if lo is not None and hi is not None
+                                     else "lower_bound" if lo is not None else "upper_bound")
+                rec["depth_basis"] = lb.get("basis", "stated_landmarks")
+                rec["depth_lo_in"] = None if lo is None else round((lo - e0) * 12, 2)
+                rec["depth_hi_in"] = None if hi is None else round((hi - e0) * 12, 2)
+                rec["landmark_band_navd88"] = [lo, hi]
+                rec["landmark_band_text"] = lb.get("text")
+                rec["landmark_band_sources"] = [lm.get("source") for lm in lb.get("landmarks", [])]
+                ov = {}
             if "depth_lo_in" in ov and "depth_hi_in" not in ov and ov.get("depth_kind") == "lower_bound":
                 rec["depth_hi_in"] = None
             if "depth_hi_in" in ov and "depth_lo_in" not in ov and ov.get("depth_kind") == "upper_bound":
@@ -155,6 +190,7 @@ def main():
                   "unquantified": "approximate/qualitative with no defensible numeric width; lo/hi or window are null",
                   "none": "not applicable"},
         "scoring_rule": "Score only against bounds whose basis is stated, stated_landmarks or adjacent_entries. Unquantified rows are point/nominal values with unknown width; never invent a width for them.",
+        "landmark_bounds_source": "data/observation_bounds.jsonl (append-only, row-hash keyed; bands from model/elevations.md and assets/map_points.csv; basis stated_landmarks)",
         "sources": ["assets/observations/2026-09-26/rawnotes/01-morning.txt",
                     "assets/observations/2026-09-26/rawnotes/02-evening.txt",
                     "assets/observations/2026-09-27/rawnotes/01-morning.txt",

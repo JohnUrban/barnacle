@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "created_local": "2026-09-27T19:20:37-04:00",
+ "created_local": "2026-09-27T23:16:14-04:00",
  "purpose": "Additive interval/provenance sidecar for the 2026-09-25..27 ledger rows. The ledger scalars are unchanged; consumers that score or classify should use time_window_local and depth_lo/hi_in, and treat surrogate/window times and range midpoints as such.",
  "time_kinds": [
   "stated_exact",
@@ -28,6 +28,7 @@
   "none": "not applicable"
  },
  "scoring_rule": "Score only against bounds whose basis is stated, stated_landmarks or adjacent_entries. Unquantified rows are point/nominal values with unknown width; never invent a width for them.",
+ "landmark_bounds_source": "data/observation_bounds.jsonl (append-only, row-hash keyed; bands from model/elevations.md and assets/map_points.csv; basis stated_landmarks)",
  "sources": [
   "assets/observations/2026-09-26/rawnotes/01-morning.txt",
   "assets/observations/2026-09-26/rawnotes/02-evening.txt",
@@ -48,12 +49,20 @@
    "time_window_local": null,
    "ledger_depth_in": null,
    "depth_kind": "upper_bound",
-   "depth_basis": "stated",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": null,
    "depth_hi_in": 0.0,
    "observed_qualitative": "NO flooding at the Bay/Central intersection at the ~20:06 surge high tide (user, stated next morning; exact observation time unconfirmed)",
    "time_note": "Negative check; ledger uses the gauge-peak minute (20:06) as a surrogate. Owner home 20:00-20:30, spouse home all evening; exact observation time unconfirmed and not numerically bounded.",
-   "depth_note": "No flooding at the intersection (bound: water below the SW grate)."
+   "depth_note": "No flooding at the intersection (bound: water below the SW grate).",
+   "landmark_band_navd88": [
+    null,
+    3.52
+   ],
+   "landmark_band_text": "no flooding at the intersection: below the SW grate (3.52); observation time unconfirmed (surrogate 20:06)",
+   "landmark_band_sources": [
+    "model/elevations.md (first-water sentinel)"
+   ]
   },
   {
    "csv_row": 187,
@@ -67,12 +76,20 @@
    "time_basis": "unquantified",
    "time_window_local": null,
    "ledger_depth_in": null,
-   "depth_kind": "qualitative",
-   "depth_basis": "none",
-   "depth_lo_in": null,
+   "depth_kind": "lower_bound",
+   "depth_basis": "stated_landmarks",
+   "depth_lo_in": -8.88,
    "depth_hi_in": null,
    "observed_qualitative": "Water across Central SE->SW and over the other grates (user)",
-   "time_note": "Original: 'Around 7'; no numeric window is stated. Water already present earlier ('underway for a while')."
+   "time_note": "Original: 'Around 7'; no numeric window is stated. Water already present earlier ('underway for a while').",
+   "landmark_band_navd88": [
+    3.8,
+    null
+   ],
+   "landmark_band_text": "across Central SE-SW and over the other grates: at or above the NE/NW grates (3.80); time approximate ('around 7')",
+   "landmark_band_sources": [
+    "model/elevations.md (NE/NW grates emerge at 3.80)"
+   ]
   },
   {
    "csv_row": 188,
@@ -89,12 +106,21 @@
     "2026-09-26T07:15:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "lower_bound",
-   "depth_basis": "stated",
+   "depth_kind": "range",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": 0.0,
-   "depth_hi_in": null,
+   "depth_hi_in": 6.0,
    "observed_qualitative": "Over the curb; near top of lawn step (user)",
-   "depth_note": "Over the curb, near top of lawn step (qualitative)."
+   "depth_note": "Over the curb, near top of lawn step (qualitative).",
+   "landmark_band_navd88": [
+    4.16,
+    4.66
+   ],
+   "landmark_band_text": "over the walkway curb (4.16); near the top of the lawn step but not over it (4.66)",
+   "landmark_band_sources": [
+    "model/elevations.md (top of curb at walkway)",
+    "model/elevations.md"
+   ]
   },
   {
    "csv_row": 189,
@@ -788,11 +814,19 @@
    ],
    "ledger_depth_in": null,
    "depth_kind": "upper_bound",
-   "depth_basis": "stated",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": null,
-   "depth_hi_in": 0.0,
+   "depth_hi_in": -2.16,
    "observed_qualitative": "Roads virtually clear; intersection clear; safe to drive (user) \u2014 consistent with water ~4.13 NAVD88 below road_middle 4.36 / intersection high point 4.54",
-   "depth_note": "'Roads virtually clear; intersection clear; safe to drive': water below the intersection high point (4.54)."
+   "depth_note": "'Roads virtually clear; intersection clear; safe to drive': water below the intersection high point (4.54).",
+   "landmark_band_navd88": [
+    null,
+    4.36
+   ],
+   "landmark_band_text": "roads virtually clear, intersection clear: below the Bay Ave road middle (4.36); the same-minute curb reading is about 4.13",
+   "landmark_band_sources": [
+    "model/elevations.md"
+   ]
   },
   {
    "csv_row": 223,
@@ -830,11 +864,19 @@
     "2026-09-26T19:28:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "qualitative",
-   "depth_basis": "none",
+   "depth_kind": "upper_bound",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": null,
-   "depth_hi_in": null,
-   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
+   "depth_hi_in": 0.0,
+   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)",
+   "landmark_band_navd88": [
+    null,
+    3.52
+   ],
+   "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
+   "landmark_band_sources": [
+    "model/elevations.md (first-water sentinel)"
+   ]
   },
   {
    "csv_row": 225,
@@ -851,11 +893,19 @@
     "2026-09-26T19:52:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "qualitative",
-   "depth_basis": "none",
+   "depth_kind": "upper_bound",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": null,
-   "depth_hi_in": null,
-   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
+   "depth_hi_in": 0.0,
+   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)",
+   "landmark_band_navd88": [
+    null,
+    3.52
+   ],
+   "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
+   "landmark_band_sources": [
+    "model/elevations.md (first-water sentinel)"
+   ]
   },
   {
    "csv_row": 226,
@@ -872,11 +922,19 @@
     "2026-09-26T20:28:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "qualitative",
-   "depth_basis": "none",
+   "depth_kind": "upper_bound",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": null,
-   "depth_hi_in": null,
-   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
+   "depth_hi_in": 0.0,
+   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)",
+   "landmark_band_navd88": [
+    null,
+    3.52
+   ],
+   "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
+   "landmark_band_sources": [
+    "model/elevations.md (first-water sentinel)"
+   ]
   },
   {
    "csv_row": 227,
@@ -893,11 +951,19 @@
     "2026-09-26T20:37:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "qualitative",
-   "depth_basis": "none",
+   "depth_kind": "upper_bound",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": null,
-   "depth_hi_in": null,
-   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
+   "depth_hi_in": 0.0,
+   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)",
+   "landmark_band_navd88": [
+    null,
+    3.52
+   ],
+   "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
+   "landmark_band_sources": [
+    "model/elevations.md (first-water sentinel)"
+   ]
   },
   {
    "csv_row": 228,
@@ -914,11 +980,19 @@
     "2026-09-26T20:47:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "qualitative",
-   "depth_basis": "none",
+   "depth_kind": "upper_bound",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": null,
-   "depth_hi_in": null,
-   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
+   "depth_hi_in": 0.0,
+   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)",
+   "landmark_band_navd88": [
+    null,
+    3.52
+   ],
+   "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
+   "landmark_band_sources": [
+    "model/elevations.md (first-water sentinel)"
+   ]
   },
   {
    "csv_row": 229,
@@ -935,11 +1009,19 @@
     "2026-09-26T21:10:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "qualitative",
-   "depth_basis": "none",
+   "depth_kind": "upper_bound",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": null,
-   "depth_hi_in": null,
-   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)"
+   "depth_hi_in": 0.0,
+   "observed_qualitative": "still NO flooding at the Bay/Central intersection (user)",
+   "landmark_band_navd88": [
+    null,
+    3.52
+   ],
+   "landmark_band_text": "still no flooding at the intersection: below the SW grate, the first-water sentinel (3.52)",
+   "landmark_band_sources": [
+    "model/elevations.md (first-water sentinel)"
+   ]
   },
   {
    "csv_row": 230,
@@ -957,12 +1039,20 @@
    ],
    "ledger_depth_in": null,
    "depth_kind": "lower_bound",
-   "depth_basis": "stated",
-   "depth_lo_in": 0.0,
+   "depth_basis": "stated_landmarks",
+   "depth_lo_in": 3.24,
    "depth_hi_in": null,
    "observed_qualitative": "sometime 21:20-21:40: water spans SE to SW grate across Central; otherwise very minor; cars drive fine; north side only puddling above grates; other puddles are rain puddles present all night (user)",
    "time_note": "First water reported 'sometime between 9:20-9:40'; ledger 21:30 is the midpoint, not onset.",
-   "depth_note": "Water spans SE-SW grates across Central (above SW grate)."
+   "depth_note": "Water spans SE-SW grates across Central (above SW grate).",
+   "landmark_band_navd88": [
+    3.91,
+    null
+   ],
+   "landmark_band_text": "spans SE to SW across Central: at or above the Central middle at the far corner (3.91); north side not connected \u2014 the NE-NW crossing height is an open question to the owner; first-water window 21:20-21:40",
+   "landmark_band_sources": [
+    "model/elevations.md (middle of Central at the far corner)"
+   ]
   },
   {
    "csv_row": 231,
@@ -1091,11 +1181,19 @@
    ],
    "ledger_depth_in": null,
    "depth_kind": "upper_bound",
-   "depth_basis": "stated",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": null,
    "depth_hi_in": 0.0,
    "observed_qualitative": "flood receded completely as far as visible from the door window; maybe lingering bits; time of clearing unknown (between 22:39 and 23:12) (user)",
-   "time_note": "Receded 'completely as far as I can tell'; clearing time unknown between the 22:39 report and this 23:12 one."
+   "time_note": "Receded 'completely as far as I can tell'; clearing time unknown between the 22:39 report and this 23:12 one.",
+   "landmark_band_navd88": [
+    null,
+    3.52
+   ],
+   "landmark_band_text": "receded completely as far as visible: below the SW grate (3.52); clearing time unknown between 22:39 and 23:12",
+   "landmark_band_sources": [
+    "model/elevations.md (first-water sentinel)"
+   ]
   },
   {
    "csv_row": 237,
@@ -1112,13 +1210,22 @@
     "2026-09-27T07:48:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "lower_bound",
-   "depth_basis": "stated",
-   "depth_lo_in": 0.0,
-   "depth_hi_in": null,
+   "depth_kind": "range",
+   "depth_basis": "stated_landmarks",
+   "depth_lo_in": 3.24,
+   "depth_hi_in": 8.64,
    "observed_qualitative": "water already across Central SE to SW grate but minor, cars drive fine; puddles over NE and NW grates only, ~1 in above them (user)",
    "time_note": "Water already present at 07:48; not flood onset.",
-   "depth_note": "Minor water SE-SW across Central; ~1 in over NE/NW grates."
+   "depth_note": "Minor water SE-SW across Central; ~1 in over NE/NW grates.",
+   "landmark_band_navd88": [
+    3.91,
+    4.36
+   ],
+   "landmark_band_text": "across Central SE-SW (>= 3.91) but minor and cars drive fine (< Bay Ave road middle 4.36); water already present, not onset",
+   "landmark_band_sources": [
+    "model/elevations.md",
+    "model/elevations.md"
+   ]
   },
   {
    "csv_row": 238,
@@ -1135,12 +1242,21 @@
     "2026-09-27T08:12:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "approximate",
-   "depth_basis": "unquantified",
-   "depth_lo_in": null,
-   "depth_hi_in": null,
+   "depth_kind": "range",
+   "depth_basis": "stated_landmarks",
+   "depth_lo_in": -0.24,
+   "depth_hi_in": 0.0,
    "observed_qualitative": "substantially more: lining both sides of Bay, not yet spanning Bay; widely across Central SE-SW; proper flooding nearly to curb level at lawn step; over the curb elsewhere e.g. upstream grate (user)",
-   "depth_note": "'nearly to curb level at lawn step' (qualitative); no numeric width stated."
+   "depth_note": "'nearly to curb level at lawn step' (qualitative); no numeric width stated.",
+   "landmark_band_navd88": [
+    4.14,
+    4.16
+   ],
+   "landmark_band_text": "over the curb at the upstream grate (4.14); nearly to curb level at the lawn step, not over (4.16)",
+   "landmark_band_sources": [
+    "assets/map_points.csv (approximated)",
+    "model/elevations.md"
+   ]
   },
   {
    "csv_row": 239,
@@ -1201,11 +1317,19 @@
    ],
    "ledger_depth_in": null,
    "depth_kind": "lower_bound",
-   "depth_basis": "stated",
-   "depth_lo_in": 0.0,
+   "depth_basis": "stated_landmarks",
+   "depth_lo_in": 8.16,
    "depth_hi_in": null,
    "observed_qualitative": "water crossed Bay Ave at the upstream grate and farther upstream; NW to SW bridged (user)",
-   "depth_note": "Bay Ave crossed at the upstream grate (water at or above it)."
+   "depth_note": "Bay Ave crossed at the upstream grate (water at or above it).",
+   "landmark_band_navd88": [
+    4.32,
+    null
+   ],
+   "landmark_band_text": "Bay Ave crossed at the upstream grate and NW-SW bridged: at or above the Bay Ave middle at the corner (4.32); no upper bound stated",
+   "landmark_band_sources": [
+    "model/elevations.md (middle of Bay Ave at corner)"
+   ]
   },
   {
    "csv_row": 242,
@@ -1411,12 +1535,20 @@
     "2026-09-27T09:14:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "lower_bound",
-   "depth_basis": "stated",
+   "depth_kind": "range",
+   "depth_basis": "stated_landmarks",
    "depth_lo_in": 0.0,
-   "depth_hi_in": null,
+   "depth_hi_in": 0.0,
    "observed_qualitative": "breached over first porch step; water entered garage by a couple inches, waves push it several inches back and forth (user)",
-   "depth_note": "Breached over the first porch step top; water entering garage (level not measured)."
+   "depth_note": "Breached over the first porch step top; water entering garage (level not measured).",
+   "landmark_band_navd88": [
+    5.41,
+    5.41
+   ],
+   "landmark_band_text": "breached over the first porch step top (5.41): level just exceeded at that moment (owner rule 2026-09-27 22:44)",
+   "landmark_band_sources": [
+    "model/elevations.md"
+   ]
   },
   {
    "csv_row": 252,

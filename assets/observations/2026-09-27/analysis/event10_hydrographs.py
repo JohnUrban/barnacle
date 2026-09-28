@@ -12,7 +12,7 @@ Per tide, three stacked panels sharing the time axis:
           triangle), water reported but not measured (up triangle), gate
           state report (square). Hollow = surrogate/window/approximate
           time, drawn across its window. Nothing here sits on a water level.
-  water   street tape (landmark elevation + depth, each at its stated time;
+  water   street readings (landmark elevation + inches, each at its stated time;
           whiskers = reported range, half-marker = bound), Sandy Hook raw
           archived preliminary series (flags retained, GMT transport) with
           the production despike, The Battery, landmark lines, and the
@@ -99,8 +99,8 @@ def in_window(t_utc, a, b):
 
 
 def gather(rows, a, b):
-    """Split ledger rows in the window into plotted tape records and strip
-    reports. Each tape record is (t_local, water, depth_kind, lo, hi,
+    """Split ledger rows in the window into plotted reading records and strip
+    reports. Each reading record is (t_local, water, depth_kind, lo, hi,
     time_kind, w0, w1, depth_basis); the basis travels with the record."""
     tape, strip = [], []
     for h, r in rows:
@@ -239,7 +239,7 @@ def main():
             ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
         ax_r.tick_params(labelbottom=False); ax_q.tick_params(labelbottom=False)
     handles = [
-        Line2D([], [], marker="D", color="#d97706", mec="#0b3d6b", ls="-", lw=1, label="street tape (landmark + depth), stated time"),
+        Line2D([], [], marker="D", color="#d97706", mec="#0b3d6b", ls="-", lw=1, label="street reading (landmark + inches), stated time"),
         Line2D([], [], marker="D", color="white", mec="#0b3d6b", ls="none", label="approximate reading / surrogate or window time (bar = window)"),
         Line2D([], [], color="#b45309", lw=1.6, label="depth range stated by the owner (no analyst widths drawn)"),
         Line2D([], [], marker="v", color="white", mec="#b45309", ls="none", label="upper bound (water at most here)"),

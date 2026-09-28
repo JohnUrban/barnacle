@@ -27,7 +27,7 @@ def _render(series, rows):
         with mock.patch.object(ff, "_REPO_ROOT", str(root)):
             html = ff._render_water_series_section({"water_series": series})
     cfg = json.loads(re.search(r"var cfg = (\{.*?\});", html).group(1))
-    tape = [d for d in cfg["data"]["datasets"] if "tape" in d["label"].lower()]
+    tape = [d for d in cfg["data"]["datasets"] if d.get("type") == "scatter" and "measured" in d["label"].lower()]
     return tape[0]["data"] if tape else []
 
 

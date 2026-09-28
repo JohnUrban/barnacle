@@ -73,7 +73,9 @@ class HydrographOrderTests(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()):
             self.m.main()
         self.assertEqual(len(drawn), expected)
-        self.assertEqual(len(drawn), 6)
+        # six owner-stated ranges plus the landmark bands recorded in
+        # data/observation_bounds.jsonl (rows 188, 237, 238, 251 in these windows)
+        self.assertGreaterEqual(len(drawn), 6)
 
 
 if __name__ == "__main__":

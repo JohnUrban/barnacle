@@ -1775,7 +1775,7 @@ def predict_landmark_depths(sandy_hook_peak_mllw, peak_rain_rate_in_hr=0.0,
     v0.8 (2026-06-16) changes from v0.7:
     - Enhancement constant: -0.13 → 0.00. The 2026-06-15 storm-condition
       event (SH 7.289, peak winds N/NNE) cleanly fit a 0 enhancement
-      across 4-grate cross-fit, while the 3 prior tape-measured events
+      across 4-grate cross-fit, while the 3 prior measured events
       (5/18, 5/31, 6/14, all with offshore peak winds) fit -0.13. v0.8
       takes the conservative (over-predict) value of 0 as the main
       model. The wind-adjustment function (compute_wind_adjustment)
@@ -4626,6 +4626,32 @@ DAYMAX_REJECTIONS_PATH = os.path.join(
     _REPO_ROOT, "data", "nowcast_daymax_rejections.json")
 
 
+OBSERVATION_BOUNDS_PATH = os.path.join(
+    _REPO_ROOT, "data", "observation_bounds.jsonl")
+
+
+def _observation_bounds(path=None):
+    """{row sha256: record} from the append-only landmark-bounds record
+    (bin/append_observation_bound.py). Later lines win for the same row
+    (a correction is a new line, never an edit). Empty when absent."""
+    out = {}
+    try:
+        with open(path or OBSERVATION_BOUNDS_PATH, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                if rec.get("sha256"):
+                    out[rec["sha256"]] = rec
+    except OSError:
+        pass
+    return out
+
+
 def _daymax_rejections(path=None):
     """{(day_local, day_max_utc)} pairs an operator has rejected."""
     try:
@@ -5608,7 +5634,7 @@ def _today_lookback():
     rounds 05 R1 and 07 R1): when an empirical value and a model guess
     compete for the same window, empirical wins. The headline is chosen by
     EVIDENCE CLASS, never by height and never by positivity:
-      (a) today's spot-check rows with a VALID numeric depth (tape): max
+      (a) today's spot-check rows with a VALID numeric depth (measured): max
           implied water, evidence "measured" — even at or below the SW grate
           (rendered as "no street water at HH:MM", not a whole-day claim);
       (b) else today's qualitative rows: evidence "reported", the latest
@@ -5622,7 +5648,8 @@ def _today_lookback():
     A model day max that exceeds the headline (or the grate, for a reported
     headline) is APPENDED as `model_claim`, never promoted. It is SUPPRESSED
     only when a row that establishes exact-hour coverage lies within an hour
-    of it: a valid tape reading at an exact time, or an UNAMBIGUOUS negative
+    of it: a valid measured reading at an exact time, a landmark band whose
+    upper bound the claim exceeds, or an UNAMBIGUOUS negative
     report at an exact time (`_report_kind` == "negative"). A report whose
     time is unconfirmed, any report that mentions water or a qualification,
     a mixed/negated report ("not dry"), or an invalid numeric row never
@@ -5636,8 +5663,9 @@ def _today_lookback():
         return None
     today = now_local.date().isoformat()
     _utc = dt.timezone.utc
-    tape, reported, n_checks = None, None, 0
+    tape, bounded, reported, n_checks = None, None, None, 0
     covering, nearby_kinds = [], []     # (instant) / (instant, kind)
+    bounds_by_hash = _observation_bounds()
     # (a)/(b) the ledger
     try:
         elev_by_key = {k: e for k, _lbl, e, _sh in LANDMARKS}
@@ -5668,16 +5696,30 @@ def _today_lookback():
                     if unsure:
                         nearby_kinds.append((inst, "uncertain-time"))
                     else:
-                        covering.append(inst)
+                        covering.append((inst, None))   # exact reading: covers any claim
                     if tape is None or w > tape[0]:
                         tape = (w, t.strftime("%H:%M"))
                 elif qual:
                     n_checks += 1
                     kind = _report_kind(qual)
-                    if unsure:
+                    bound = bounds_by_hash.get(_observation_row_hash(r))
+                    if bound and not unsure:
+                        # a landmark band recorded by an agent from the survey
+                        # (owner rule: such reports are quantitative); its hi
+                        # covers claims above it, its lo is a floor; a band
+                        # with no upper bound cannot suppress anything
+                        lo, hi = bound.get("lo_navd88"), bound.get("hi_navd88")
+                        if hi is not None:
+                            covering.append((inst, hi))
+                        else:
+                            nearby_kinds.append((inst, "report-unmeasured"))
+                        rank = lo if lo is not None else hi
+                        if bounded is None or rank > bounded[0]:
+                            bounded = (rank, lo, hi, t.strftime("%H:%M"), bound, qual)
+                    elif unsure:
                         nearby_kinds.append((inst, "uncertain-time"))
                     elif kind == "negative":
-                        covering.append(inst)  # unambiguous, timed negative observation
+                        covering.append((inst, GRATE_SW))  # water not visible: below the sentinel grate
                     elif kind == "ambiguous":
                         nearby_kinds.append((inst, "ambiguous"))
                     else:
@@ -5722,13 +5764,27 @@ def _today_lookback():
         pass
     if tape is not None:
         w, t = tape
-        out = {"evidence": "measured", "source": "measured (tape)",
+        out = {"evidence": "measured", "source": "measured (inches at a landmark)",
                "regime": classify_regime_from_water(w) if w > GRATE_SW else "dry",
                "navd88": round(w, 3), "rel_grate_in": round((w - GRATE_SW) * 12, 1),
                "time_local": t, "n_checks": n_checks}
+    elif bounded is not None:
+        _rank, lo, hi, t, bound, qual = bounded
+        out = {"evidence": "bounded", "source": "bounded (landmarks of known height)",
+               "regime": classify_regime_from_water(hi if hi is not None else lo)
+               if (hi if hi is not None else lo) > GRATE_SW else "dry",
+               "navd88": None if hi is None else round(hi, 3),
+               "rel_grate_in": None if hi is None else round((hi - GRATE_SW) * 12, 1),
+               "lo_navd88": None if lo is None else round(lo, 3),
+               "lo_rel_grate_in": None if lo is None else round((lo - GRATE_SW) * 12, 1),
+               "hi_navd88": None if hi is None else round(hi, 3),
+               "hi_rel_grate_in": None if hi is None else round((hi - GRATE_SW) * 12, 1),
+               "time_local": t, "n_checks": n_checks,
+               "band_text": bound.get("text") or "", "basis": bound.get("basis"),
+               "report": qual[:200], "report_summary": _report_summary(None, qual)}
     elif reported is not None:
         _inst, qual, t, unsure, kind, key = reported
-        out = {"evidence": "reported", "source": "reported (qualitative, no tape)",
+        out = {"evidence": "reported", "source": "reported (qualitative, not measured)",
                "regime": "reported", "navd88": None, "rel_grate_in": None,
                "time_local": t, "n_checks": n_checks,
                "report": qual[:200], "report_kind": kind,
@@ -5754,8 +5810,11 @@ def _today_lookback():
     if model and out["evidence"] != "modeled" and model[0] > floor:
         m_inst = model[2].astimezone(_utc) if model[2] else None
         hour = dt.timedelta(hours=1)
+        # a row covers the claim when it is within the hour AND either is an
+        # exact reading (cap None) or carries an upper bound the claim exceeds
         suppressed = m_inst is not None and any(
-            abs(ti - m_inst) <= hour for ti in covering)
+            abs(ti - m_inst) <= hour and (cap is None or model[0] > cap)
+            for ti, cap in covering)
         if not suppressed:
             near = {k for ti, k in nearby_kinds
                     if m_inst is not None and abs(ti - m_inst) <= hour}
@@ -5851,11 +5910,11 @@ def _render_historical_floods_html():
        reaches the top of the 1st step; Sandy put ~3&frac12; feet over
        the porch deck <i>before counting its rain</i>. For scale: the
        largest local floods this project has recorded — Sep 26 2026
-       (5.70 NAVD88 tape-measured, +26.2&Prime; vs SW grate, over the
+       (5.70 NAVD88 measured, +26.2&Prime; vs SW grate, over the
        first porch step) and Sep 27 2026 (5.62 NAVD88), both
        coastal-surge tides — then the reconstructed Oct 30 2025
        compound flood (~5.27 NAVD88, +21&Prime;: memory and post-peak
-       photos, not tape) and the 7/6/2026 flash flood (~4.8 NAVD88) —
+       photos, not measured) and the 7/6/2026 flash flood (~4.8 NAVD88) —
        sit far below these floors. <b>Epistemic honesty</b>: this
        ranking is built from the tide gauge, which records no local
        water and no rain. True local rankings are unknowable from it —
@@ -5980,7 +6039,7 @@ def _render_water_series_section(forecast):
         tide_idx += 1
         datasets.insert(0,
             {"type": "scatter", "xAxisID": "xtape",
-             "label": "MEASURED (tape)",
+             "label": "MEASURED (inches at landmarks)",
              "data": [{"x": f, "y": v, "t": t} for f, v, t in tape_pts],
              "borderColor": "#0b3d6b",
              "backgroundColor": "rgba(217,119,6,0.9)",
@@ -6139,7 +6198,7 @@ def _render_water_series_section(forecast):
             "reportedly closed; read the gray line as the tide-pathway "
             "INPUT, never as a street measurement. It stops at the "
             "now-line where forecast "
-            "takes over. Small orange diamonds are tape measurements, each at its true time. The "
+            "takes over. Small orange diamonds are measurements at landmarks of known height, each at its true time. The "
             "blue/amber model lines across the past show the CURRENT "
             "model's view, not what was predicted at the time — past "
             "rain floods can exceed them (that gap is the point).")
@@ -7551,7 +7610,7 @@ def _render_equation_widget_html(forecast, wrapper="section"):
       <dt>Local enhancement ({LOCAL_ENHANCEMENT_FT:+.2f} ft)</dt>
       <dd>The residual after the datum conversion: how much water at
         342 Bay differs from what the SH gauge reads. v0.8+ sets this
-        to <b>0.00 ft</b> — the conservative value from 4 tape-measured
+        to <b>0.00 ft</b> — the conservative value from 4 measured
         spot-check events (SH 6.17–7.29). Regular tides with offshore
         peak winds run ~0.13 ft lower; the wind-adjustment line in the
         worst-case detail reports that "expected actual" separately.

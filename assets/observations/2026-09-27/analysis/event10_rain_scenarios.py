@@ -21,7 +21,7 @@ Per tide window it reports:
         nowcast tank does with a real bay
      D  fixed LOW base 2.50 ft (drains fully open): the rain alone
   Every scenario is a model sensitivity, not measured attribution. The
-  street tape series is listed beside them for comparison only.
+  street reading series is listed beside them for comparison only.
   Per scenario (round 05 R7): `max_increment_in` and its time, the water at
   THAT instant (`water_at_max_increment_in_vs_sw`), the separate
   `max_water_in_vs_sw` and its time (base + increment can peak at a
@@ -55,7 +55,7 @@ WINDOWS = [  # episode, rain window UTC [start, end]
     ("2026-09-26-e02", "2026-09-26T21:00:00Z", "2026-09-27T04:00:00Z"),
     ("2026-09-27-e01", "2026-09-27T08:00:00Z", "2026-09-27T17:00:00Z"),
 ]
-# observed corner-crest windows (tape plateau, station-local → UTC)
+# observed corner-crest windows (measured plateau, station-local → UTC)
 CREST = {"2026-09-26-e01": ("2026-09-26T13:06:00Z", "2026-09-26T13:13:00Z"),
          "2026-09-26-e02": ("2026-09-27T02:11:00Z", "2026-09-27T02:29:00Z"),
          "2026-09-27-e01": ("2026-09-27T13:44:00Z", "2026-09-27T14:06:00Z")}
@@ -150,7 +150,7 @@ def main():
              "coverage": {"frames": len(frames), "expected": len(expected),
                           "missing_utc": missing,
                           "integration": "rectangular 6-min sum of catchment box-mean rate"},
-             "scenarios": {}, "street_tape": street_series(a, b)}
+             "scenarios": {}, "street_readings": street_series(a, b)}
         if not frames:
             w["status"] = "no rain frames cached for this window"
             result["windows"][eid] = w

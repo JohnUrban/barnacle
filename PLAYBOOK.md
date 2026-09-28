@@ -7,7 +7,7 @@ as any lesson that changes it.
 
 ## During the event (user, phone in hand)
 
-1. Spot-check per the evolved protocol: notes-only tape readings,
+1. Spot-check per the evolved protocol: notes-only readings in inches,
    landmark-anchored (which landmark, inches above it), timestamped,
    fast cadence; mainly NE grate + sidewalk-under-lawn-step wall.
    Even "no water" observations are calibration data.
@@ -44,7 +44,7 @@ as any lesson that changes it.
    stage ≈ +13.7–13.9″ in events #6, #8, #9 and 8/27 — a weak lower
    bound [INFERRED], not a rung; v0.10.4 removed it from the model.
    To make it a landmark, do what built the ladder: pick a physical
-   point on that ramp, mark it, tape it.
+   point on that ramp, mark it, measure it.
 
 **In the session after (Claude, cold start) — follow this RECIPE
 in order; every step has been needed at least once:**
@@ -134,7 +134,20 @@ in order; every step has been needed at least once:**
   and 9:40") stay ranges in the text; a midpoint stored in the CSV is
   a storage convenience, and untimed reports get a surrogate time
   that is LABELED as such. Owner-supplied original files are kept
-  byte-for-byte under `rawnotes/`, never edited.
+  byte-for-byte under `rawnotes/`; typos are raised to John, who corrects the
+  original himself (PREF rawnotes-owner-corrects-typos).
+- REPORTS ARE QUANTITATIVE (John, 2026-09-27 22:44): every report is meant
+  to yield an exact or banded level. A tracked landmark named with breach /
+  level / over / under is a number ("breached over the first porch step" =
+  5.41 ft just exceeded); connectivity reports give bands from the survey
+  (`model/elevations.md`, `assets/map_points.csv`). Record the band with
+  `bin/append_observation_bound.py` (append-only, row-hash keyed, landmark
+  provenance) and ASK John when a band cannot be computed. Never parse
+  prose in code; production reads only the recorded bands.
+- WORDING (John, 2026-09-27 23:02): say "measured" for readings against
+  landmarks; the instrument does not matter and is often unknown — never
+  write "stick" or "ruler", and keep "tape" only where the record itself
+  says a tape was used.
 - HANDOFF CHECKLIST at the end of live support (do not hand off
   without it): (1) every report in the ledger AND the notes file;
   (2) episode registered in `episodes.json` with row hashes

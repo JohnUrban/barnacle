@@ -129,7 +129,7 @@ def _lookback_visible(lb):
     values render only when above the SW grate."""
     if not lb:
         return False
-    if lb.get("evidence") in ("measured", "reported"):
+    if lb.get("evidence") in ("measured", "bounded", "reported"):
         return True
     return (lb.get("rel_grate_in") or 0) > 0
 
@@ -137,26 +137,44 @@ def _lookback_visible(lb):
 def _lookback_phrase(lb, html=False, short=False):
     """One phrase for the "so far today" value on EVERY arm (rule 8; owner
     DECISION 2026-09-27, audit 2026-09-27-a1 reply 04 option 3; round 05 R1):
-    the headline is the empirical evidence — a tape maximum (even a dry
+    the headline is the empirical evidence — a measured maximum (even a dry
     one), else the latest qualitative report, else the bay peak labeled as
     bay — and a model claim at an unmeasured time is appended, never
     promoted. `evidence` ∈ measured | reported | bay | modeled (legacy dicts
     without it are read from `source`)."""
     inch = "&Prime;" if html else '\u2033'
     ev = lb.get("evidence") or (
-        "measured" if "tape" in (lb.get("source") or "") else "modeled")
+        "measured" if "measured" in (lb.get("source") or "") or "tape" in (lb.get("source") or "")
+        else "modeled")
     rel = lb.get("rel_grate_in")
     val = f"{rel:+.1f}{inch}" if isinstance(rel, (int, float)) else ""
     when = lb.get("time_local") or ""
     n = lb.get("n_checks") or 0
-    checks = f"{n} check{'s' if n != 1 else ''} so far" if n else "tape"
+    checks = f"{n} check{'s' if n != 1 else ''} so far" if n else "measured"
     if ev == "measured" and isinstance(rel, (int, float)) and rel <= 0:
         head = f"MEASURED no street water at {when}" + (
             f" ({checks})" if short else
-            f" (tape, {checks}; not a whole-day claim)")
+            f" (measured, {checks}; not a whole-day claim)")
     elif ev == "measured":
         head = f"MEASURED {val} at {when}" + (
-            "" if short else f" (tape, {regime_display(lb.get('regime') or '')})")
+            "" if short else f" (measured, {regime_display(lb.get('regime') or '')})")
+    elif ev == "bounded":
+        # owner rule 2026-09-27: a report relating water to landmarks of
+        # known height is quantitative; the band comes from the survey via
+        # data/observation_bounds.jsonl, never from parsing prose
+        lo, hi = lb.get("lo_rel_grate_in"), lb.get("hi_rel_grate_in")
+        if lo is not None and hi is not None:
+            band = f"{lo:+.1f}{inch} to {hi:+.1f}{inch}"
+        elif lo is not None:
+            band = f"at least {lo:+.1f}{inch}"
+        else:
+            band = f"at most {hi:+.1f}{inch}"
+        text = lb.get("band_text") or ""
+        if html:
+            text = _html_escape(text)
+        head = f"BOUNDED {band} at {when}" + (
+            " (landmarks)" if short else
+            f" (landmark band: {text}; no inches read)" if text else " (landmark band; no inches read)")
     elif ev == "reported":
         # round 07 R2/R3 + round 09 R1: quote WHAT was reported, verbatim —
         # an excerpt on the short arms, the report itself on the full arm —
@@ -166,8 +184,8 @@ def _lookback_phrase(lb, html=False, short=False):
         full = (lb.get("report") or excerpt)[:200]
         if html:
             excerpt, full = _html_escape(excerpt), _html_escape(full)
-        head = (f"REPORTED at {tilde}{when}: \u201c{excerpt}\u201d (no tape)" if short else
-                f"REPORTED at {tilde}{when}: \u201c{full}\u201d (no tape; depth not measured; time as logged)")
+        head = (f"REPORTED at {tilde}{when}: \u201c{excerpt}\u201d (not measured)" if short else
+                f"REPORTED at {tilde}{when}: \u201c{full}\u201d (not measured; time as logged)")
     elif ev == "bay":
         head = f"BAY PEAK {val} at {when}" + (
             " (gauge)" if short else " (gauge; corner not measured)")
@@ -369,17 +387,17 @@ def _render_how_flooding_html(forecast):
        timing is now measured and modeled (v0.10): street water
        lags the rain peak by ~15 min, can rise 8&Prime; in 12
        minutes, and drains back within ~20&ndash;30 min of the rain
-       stopping. The rain floods tape-measured on July 6, July 9,
+       stopping. The rain floods measured on July 6, July 9,
        July 18 and August 3, 2026 all came with the bay below the
        grates; the tidal floods of June 14&ndash;15 and the
        coastal-surge floods of September 26&ndash;27, 2026 (the largest
-       tape-measured) came from the bay.</p>
+       measured) came from the bay.</p>
     <p><b>Compound (the worst case).</b> The tide can't prevent a rain
        flood, but it can raise its floor: heavy rain landing on a high
        tide has nowhere to go at all. The biggest flood in this
        project's records before September 2026 — October 30, 2025,
        water past the bottom porch step (a reconstruction from memory
-       and post-peak photos, not a tape crest) — was exactly this
+       and post-peak photos, not a measured crest) — was exactly this
        combination. The larger September 26&ndash;27, 2026 floods were
        surge tides with the Snug Harbor tide gate reportedly closed;
        the rain share that morning is a model sensitivity, not a
@@ -898,7 +916,7 @@ def _render_accuracy_html(forecast):
         'against the spot-check log in '
         '<code>data/labeled_observations.csv</code>. The evidence registry '
         'currently has six measured flood-peak anchors; the v0.10.1 fit set '
-        'is two full tape-measured hydrographs, with the other events used '
+        'is two full measured hydrographs, with the other events used '
         'as independent peak, recession, or out-of-sample checks.</p>'
     )
 
@@ -1978,10 +1996,10 @@ def _render_oscillation_section(forecast):
        rain floods). Horizontal lines are the SH-MLLW thresholds at
        which the
        {CURRENT_MODEL_VERSION} model (enhancement 0.00, calibrated on
-       4 tape-measured events, SH 6.17&ndash;7.29) predicts water
+       4 measured events, SH 6.17&ndash;7.29) predicts water
        reaches each landmark. <b>Caveats</b>: offshore peak winds run
        ~0.13 ft lower (see the wind adjustment); the 0.00 enhancement
-       is untested by tape above SH ~7.3 (storm-surge extrapolation);
+       is untested by measurement above SH ~7.3 (storm-surge extrapolation);
        and these are TIDE thresholds — rain floods ignore them
        entirely (see the rain pathway / burst band above).</p>
     <div class="heatmap-toggle unit-toggle">

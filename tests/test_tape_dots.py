@@ -36,7 +36,7 @@ class TapeDotTests(unittest.TestCase):
                     {"water_series": series})
         cfg = json.loads(re.search(r'var cfg = (\{.*?\});', html).group(1))
         tape = next(d for d in cfg["data"]["datasets"]
-                    if "tape" in d["label"].lower())
+                    if d.get("type") == "scatter" and "measured" in d["label"].lower())
         # every reading plotted, at its true fractional slot position
         self.assertEqual(tape["type"], "scatter")
         self.assertEqual(len(tape["data"]), 3)

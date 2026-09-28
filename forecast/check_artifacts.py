@@ -12,6 +12,7 @@ lenient one hid it. Run before ANY commit of docs/ or data/:
   4. forecast.json carries valid provenance and input-health metadata
 Exit 1 = do not commit.
 """
+import hashlib
 import json
 import os
 import sys
@@ -565,6 +566,55 @@ def validate_nowcast_metadata(path):
     return failures
 
 
+def validate_observation_bounds(path, ledger_path):
+    """Append-only landmark-bound records (data/observation_bounds.jsonl):
+    strict JSON per line, required fields, numeric ordering, and every
+    sha256 must identify a current ledger row (writer/validator parity)."""
+    failures = []
+    if not os.path.exists(path):
+        return failures
+    try:
+        with open(ledger_path, newline="", encoding="utf-8") as f:
+            hashes = set()
+            for row in csv.DictReader(f):
+                hashes.add(hashlib.sha256(json.dumps(
+                    dict(row), sort_keys=True, ensure_ascii=False,
+                    separators=(",", ":")).encode()).hexdigest())
+    except (OSError, csv.Error) as e:
+        return [f"ledger unreadable for bounds check: {e}"]
+    required = ("sha256", "csv_row", "observation_time_local", "landmark_key",
+                "lo_navd88", "hi_navd88", "basis", "landmarks", "text",
+                "recorded_utc", "recorded_by")
+    with open(path, encoding="utf-8") as f:
+        for n, line in enumerate(f, 1):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line, parse_constant=_reject_nonfinite)
+            except ValueError as e:
+                failures.append(f"line {n}: not strict JSON ({e})")
+                continue
+            missing = [k for k in required if k not in rec]
+            if missing:
+                failures.append(f"line {n}: missing {missing}")
+                continue
+            lo, hi = rec["lo_navd88"], rec["hi_navd88"]
+            if lo is None and hi is None:
+                failures.append(f"line {n}: no bound")
+            if isinstance(lo, (int, float)) and isinstance(hi, (int, float)) and lo > hi:
+                failures.append(f"line {n}: lo exceeds hi")
+            if rec["basis"] not in ("stated_landmarks", "stated"):
+                failures.append(f"line {n}: basis {rec['basis']!r}")
+            if rec["sha256"] not in hashes:
+                failures.append(f"line {n}: sha256 matches no ledger row")
+    return failures
+
+
+def _reject_nonfinite(name):
+    raise ValueError(f"non-finite value {name}")
+
+
 def validate_alert_state(path):
     failures = []
     try:
@@ -695,6 +745,10 @@ def check_artifacts(root=ROOT):
                         )
                     except Exception as e:
                         bad.append((path, f"strict-parse: {e}"))
+    bounds_path = os.path.join(root, "data", "observation_bounds.jsonl")
+    for why in validate_observation_bounds(
+            bounds_path, os.path.join(root, "data", "labeled_observations.csv")):
+        bad.append((bounds_path, why))
     for relpath, fields in CSV_SCHEMAS.items():
         path = os.path.join(root, relpath)
         for why in validate_csv_ledger(path, fields):

@@ -144,3 +144,5 @@ primary records in [`../2026-09-27/analysis/gauge_qc.json`](../2026-09-27/analys
   crest. MRMS coverage 04:00–13:00 local: 90 of 91 frames (14:24Z missing).
 - "First porch step top = garage entry" (Sep 27) is an observed association
   at one flood, a proxy, not a surveyed elevation.
+- Wording (owner rule 2026-09-27 23:02): readings here are "measured" against
+  landmarks of known height; the instrument is not recorded unless John says so.

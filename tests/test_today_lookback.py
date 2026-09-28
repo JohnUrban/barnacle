@@ -250,9 +250,9 @@ class PhraseTests(unittest.TestCase):
         wet = dict(dry, report="Water over the curb at the intersection", report_kind="water",
                    report_summary="Water over the curb at the intersection")
         self.assertEqual(rendering._lookback_phrase(dry, short=True),
-                         "REPORTED at ~20:06: \u201cNo flooding at the intersection\u201d (no tape)")
+                         "REPORTED at ~20:06: \u201cNo flooding at the intersection\u201d (not measured)")
         self.assertEqual(rendering._lookback_phrase(wet, short=True),
-                         "REPORTED at ~20:06: \u201cWater over the curb at the intersection\u201d (no tape)")
+                         "REPORTED at ~20:06: \u201cWater over the curb at the intersection\u201d (not measured)")
         self.assertIn("No flooding", rendering._lookback_phrase(dry))
         self.assertTrue(rendering._lookback_visible(dry))
         # legacy payload without a summary falls back to a neutral description
