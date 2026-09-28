@@ -158,10 +158,18 @@ def _lookback_phrase(lb, html=False, short=False):
         head = f"MEASURED {val} at {when}" + (
             "" if short else f" (tape, {regime_display(lb.get('regime') or '')})")
     elif ev == "reported":
+        # round 07 R2/R3: carry WHAT was reported on every arm (dry and wet
+        # must never read the same) and escape it at the HTML boundary
         tilde = "~" if lb.get("time_uncertain") else ""
-        head = f"REPORTED at {tilde}{when}" + (
+        summary = lb.get("report_summary") or (
+            "no flooding reported" if lb.get("report_kind") == "dry"
+            else "water reported (depth not measured)")
+        quote = (lb.get("report") or "")[:60]
+        if html:
+            summary, quote = _html_escape(summary), _html_escape(quote)
+        head = f"REPORTED at {tilde}{when}: {summary}" + (
             " (no tape)" if short else
-            f" (no tape; \u201c{(lb.get('report') or '')[:60]}\u201d; time as logged)")
+            (f" (no tape; \u201c{quote}\u201d; time as logged)" if quote else " (no tape)"))
     elif ev == "bay":
         head = f"BAY PEAK {val} at {when}" + (
             " (gauge)" if short else " (gauge; corner not measured)")
@@ -170,9 +178,12 @@ def _lookback_phrase(lb, html=False, short=False):
             "" if short else " (bay + radar tank; unverified)")
     mc = lb.get("model_claim")
     if mc:
+        why = mc.get("verification") or "unmeasured then"
+        if html:
+            why = _html_escape(why)
         head += (f"; model claims {mc['rel_grate_in']:+.1f}{inch} at "
                  f"{mc.get('time_local') or '?'}"
-                 + ("" if short else " (unmeasured then)"))
+                 + ("" if short else f" ({why})"))
     return head
 
 

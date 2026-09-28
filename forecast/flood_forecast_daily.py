@@ -5540,10 +5540,47 @@ def build_sms_text(forecast):
 
 def _lookback_time_uncertain(text):
     """Heuristic: a qualitative report whose own wording says its time is
-    not exact (round 05 R1: never render such a time as a precise reading)."""
+    not exact (round 05 R1: never render such a time as a precise reading;
+    round 07 R1: never let it establish exact-hour coverage either)."""
     t = (text or "").lower()
     return any(k in t for k in ("unconfirmed", "sometime", "exact time",
                                 "between ", "~", "around "))
+
+
+_DRY_REPORT_WORDS = ("no flooding", "no water", "no evidence of flooding",
+                     "receded completely", "intersection clear", "dry")
+_LANDMARK_SHORT = {
+    "curb": "the curb", "lawn_step": "the lawn step",
+    "sidewalk_under_walkway_lawn_step": "the lawn-step base",
+    "porch_step_base": "the porch-step base", "porch_step1_top": "the first porch step",
+    "porch_deck": "the porch deck", "gutter_walkway": "the gutter",
+    "grate_SW": "the SW grate", "grate_SE": "the SE grate", "grate_NE": "the NE grate",
+    "grate_NW": "the NW grate", "grate_bay_ave_upstream": "the upstream grate",
+    "road_middle": "the road middle", "intersection_highpoint": "the intersection crown",
+}
+
+
+def _report_kind(text):
+    """'dry' when the wording is a clear negative observation, else 'wet'
+    (water present, depth not measured). Round 07 R2: the two must never
+    collapse into the same message."""
+    t = (text or "").lower()
+    return "dry" if any(k in t for k in _DRY_REPORT_WORDS) else "wet"
+
+
+def _report_summary(kind, text, landmark_key):
+    """Concise, source-faithful description for the short/widget arms.
+    A landmark is named only when the wording itself says the water was
+    over / above / level with something (round 07 R2)."""
+    if kind == "dry":
+        return "no flooding reported"
+    t = (text or "").lower()
+    name = _LANDMARK_SHORT.get(landmark_key)
+    if name and any(k in t for k in ("over ", "above ", "breached", "up the ")):
+        return f"water over {name} (depth not measured)"
+    if name and "level with" in t:
+        return f"water level with {name}"
+    return "water reported (depth not measured)"
 
 
 def _today_lookback():
@@ -5553,33 +5590,38 @@ def _today_lookback():
     amnesia to a casual user).
 
     Owner DECISION 2026-09-27 (audit 2026-09-27-a1 reply 04, option 3;
-    round 05 R1): when an empirical value and a model guess compete for the
-    same window, empirical wins. The headline is chosen by EVIDENCE CLASS,
-    never by height and never by positivity:
-      (a) today's spot-check rows with a numeric depth (tape): max implied
-          water, evidence "measured" — even when that maximum is at or below
-          the SW grate (a dry check is evidence, not absence of evidence; it
-          is rendered as "no street water at HH:MM", not as a whole-day claim);
-      (b) else today's qualitative rows (no depth): evidence "reported", the
-          latest report's wording and its time as logged (flagged uncertain
-          when the wording says so); no numeric level is invented;
+    rounds 05 R1 and 07 R1): when an empirical value and a model guess
+    compete for the same window, empirical wins. The headline is chosen by
+    EVIDENCE CLASS, never by height and never by positivity:
+      (a) today's spot-check rows with a VALID numeric depth (tape): max
+          implied water, evidence "measured" — even at or below the SW grate
+          (rendered as "no street water at HH:MM", not a whole-day claim);
+      (b) else today's qualitative rows: evidence "reported", the latest
+          report's wording, its kind (dry / wet) and a concise summary, its
+          time as logged (flagged uncertain when the wording says so); no
+          numeric level is invented;
       (c) else today's despiked Sandy Hook peak over station-local midnight
-          → now, evidence "bay" — a BAY level labeled as such, never a
-          corner regime;
-      (d) else the nowcast's carried day max, evidence "modeled" (bay base +
-          radar tank; a rejected day max is skipped).
+          → now, evidence "bay" (a BAY level, never a corner regime);
+      (d) else the nowcast's carried day max, evidence "modeled" (a rejected
+          day max is skipped).
     A model day max that exceeds the headline (or the grate, for a reported
-    headline) and falls at a time with NO empirical row within an hour is
-    APPENDED as `model_claim`, never promoted; inside a measured hour it is
-    discarded. Returns {evidence, navd88, rel_grate_in, time_local, regime,
-    source, n_checks, model_claim?, report?, time_uncertain?} or None."""
+    headline) is APPENDED as `model_claim`, never promoted. It is SUPPRESSED
+    only when a row that establishes exact-hour coverage lies within an hour
+    of it: a valid tape reading at an exact time, or a clear dry report at an
+    exact time. A report whose time is unconfirmed, a wet report with no
+    measured depth, or an invalid numeric row never counts as coverage; the
+    claim then stays, with `verification` saying why it is unverified.
+    Returns {evidence, navd88, rel_grate_in, time_local, regime, source,
+    n_checks, model_claim?, report?, report_kind?, report_summary?,
+    time_uncertain?} or None."""
     try:
         now_local = _station_local_now()
     except Exception:
         return None
     today = now_local.date().isoformat()
     _utc = dt.timezone.utc
-    tape, reported, instants, n_checks = None, None, [], 0
+    tape, reported, n_checks = None, None, 0
+    covering, nearby_kinds = [], []     # (instant) / (instant, kind)
     # (a)/(b) the ledger
     try:
         elev_by_key = {k: e for k, _lbl, e, _sh in LANDMARKS}
@@ -5598,26 +5640,35 @@ def _today_lookback():
                 if key == "none" or "pocket" in key or key not in elev_by_key:
                     continue
                 inst = t.astimezone(_utc)
-                instants.append(inst)
-                n_checks += 1
+                qual = " ".join((r.get("observed_qualitative") or "").split())
+                unsure = _lookback_time_uncertain(qual)
                 depth = (r.get("observed_depth_in") or "").strip()
                 if depth:
                     try:
                         w = elev_by_key[key] + float(depth) / 12.0
                     except ValueError:
-                        continue
+                        continue            # invalid numeric row: no evidence of any kind
+                    n_checks += 1
+                    if unsure:
+                        nearby_kinds.append((inst, "uncertain-time"))
+                    else:
+                        covering.append(inst)
                     if tape is None or w > tape[0]:
                         tape = (w, t.strftime("%H:%M"))
-                else:
-                    qual = " ".join((r.get("observed_qualitative") or "").split())
-                    if qual and (reported is None or inst >= reported[0]):
-                        reported = (inst, qual, t.strftime("%H:%M"),
-                                    _lookback_time_uncertain(qual))
+                elif qual:
+                    n_checks += 1
+                    kind = _report_kind(qual)
+                    if unsure:
+                        nearby_kinds.append((inst, "uncertain-time"))
+                    elif kind == "dry":
+                        covering.append(inst)  # a clear, timed negative observation
+                    else:
+                        nearby_kinds.append((inst, "wet-unmeasured"))
+                    if reported is None or inst >= reported[0]:
+                        reported = (inst, qual, t.strftime("%H:%M"), unsure, kind, key)
     except OSError:
         pass
-    # (c) gauge: station-local midnight → now (round 05 R1: a ±12 h window
-    # around now missed early crests late in the day and let a bigger
-    # previous-day crest displace today's early in the day)
+    # (c) gauge: station-local midnight → now (round 05 R1)
     bay = None
     try:
         midnight = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -5658,11 +5709,13 @@ def _today_lookback():
                "navd88": round(w, 3), "rel_grate_in": round((w - GRATE_SW) * 12, 1),
                "time_local": t, "n_checks": n_checks}
     elif reported is not None:
-        _inst, qual, t, unsure = reported
+        _inst, qual, t, unsure, kind, key = reported
         out = {"evidence": "reported", "source": "reported (qualitative, no tape)",
                "regime": "reported", "navd88": None, "rel_grate_in": None,
                "time_local": t, "n_checks": n_checks,
-               "report": qual[:90], "time_uncertain": unsure}
+               "report": qual[:90], "report_kind": kind,
+               "report_summary": _report_summary(kind, qual, key),
+               "time_uncertain": unsure}
     elif bay and bay[0] > GRATE_SW:
         w, t = bay
         out = {"evidence": "bay",
@@ -5682,15 +5735,24 @@ def _today_lookback():
     floor = out["navd88"] if out["navd88"] is not None else GRATE_SW
     if model and out["evidence"] != "modeled" and model[0] > floor:
         m_inst = model[2].astimezone(_utc) if model[2] else None
-        covered = m_inst is not None and any(
-            abs((ti - m_inst).total_seconds()) <= 3600 for ti in instants)
-        if not covered:
+        hour = dt.timedelta(hours=1)
+        suppressed = m_inst is not None and any(
+            abs(ti - m_inst) <= hour for ti in covering)
+        if not suppressed:
+            near = {k for ti, k in nearby_kinds
+                    if m_inst is not None and abs(ti - m_inst) <= hour}
+            if "wet-unmeasured" in near:
+                why = "water reported then but depth not measured; claim unverified"
+            elif "uncertain-time" in near:
+                why = "nearby report time unconfirmed; claim unverified"
+            else:
+                why = "no measurement then"
             out["model_claim"] = {
                 "navd88": round(model[0], 3),
                 "rel_grate_in": round((model[0] - GRATE_SW) * 12, 1),
                 "time_local": model[1],
-                "note": "model day max at a time with no measurement; "
-                        "not promoted over the empirical value"}
+                "verification": why,
+                "note": "model day max not promoted over the empirical value"}
     return out
 
 
