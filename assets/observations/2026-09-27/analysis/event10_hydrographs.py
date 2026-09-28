@@ -98,6 +98,63 @@ def in_window(t_utc, a, b):
     return ta <= t_utc <= tb
 
 
+def gather(rows, a, b):
+    """Split ledger rows in the window into plotted tape records and strip
+    reports. Each tape record is (t_local, water, depth_kind, lo, hi,
+    time_kind, w0, w1, depth_basis); the basis travels with the record."""
+    tape, strip = [], []
+    for h, r in rows:
+        if r.get("observer") != "john":
+            continue
+        try:
+            t_aware = ff.parse_station_local_time(r["observation_time_local"])
+        except (ValueError, TypeError):
+            continue
+        t_utc = t_aware.astimezone(UTC)
+        if not in_window(t_utc, a, b):
+            continue
+        iv = INTERVAL_BY_HASH.get(h, {})
+        key = r["landmark_key"]
+        tk = iv.get("time_kind", "stated_exact")
+        win = iv.get("time_window_local")
+        w0 = local(ff.parse_station_local_time(win[0])) if win else local(t_aware)
+        w1 = local(ff.parse_station_local_time(win[1])) if win else local(t_aware)
+        dk = iv.get("depth_kind", "point" if r["observed_depth_in"].strip() else "qualitative")
+        basis = iv.get("depth_basis", "stated")
+        elev = ELEV.get(key)
+        lo, hi = iv.get("depth_lo_in"), iv.get("depth_hi_in")
+        try:
+            d = float(r["observed_depth_in"])
+        except ValueError:
+            d = lo if lo is not None else hi   # None: qualitative with no stated bound
+        if dk in ("point", "range", "approximate", "upper_bound", "lower_bound") \
+                and elev is not None and d is not None:
+            tape.append((local(t_aware), elev + d / 12, dk,
+                         None if lo is None else elev + lo / 12,
+                         None if hi is None else elev + hi / 12, tk, w0, w1, basis))
+        else:
+            qual = (r.get("observed_qualitative") or "").lower()
+            if "tide_gate" in key:
+                kind = "gate"
+            elif ("no flooding" in qual or "no evidence" in qual or "receded completely" in qual
+                  or "intersection clear" in qual or "safe to drive" in qual):
+                kind = "dry"
+            else:
+                kind = "wet"
+            strip.append((local(t_aware), kind, tk, w0, w1))
+    return tape, strip
+
+
+def range_bar(rec):
+    """(t, lo, hi) when THIS record earns a range whisker: a stated or
+    landmark-derived range with both ends; None otherwise (round 07 R4)."""
+    t, _w, dk, lo, hi, _tk, _w0, _w1, basis = rec
+    if dk == "range" and lo is not None and hi is not None \
+            and basis in ("stated", "stated_landmarks"):
+        return (t, lo, hi)
+    return None
+
+
 def main():
     sh, sh_file = gauge("sandy-hook")
     bat, bat_file = gauge("battery")
@@ -127,47 +184,9 @@ def main():
             ax_r.text(0.5, 0.5, "rain frames not cached for this window", transform=ax_r.transAxes,
                       ha="center", fontsize=8, color="#888")
         ax_r.set_title(f"{eid} · {title}", fontsize=10, loc="left")
-        # --- reports strip + water
-        tape, strip = [], []
-        for h, r in rows:
-            if r.get("observer") != "john":
-                continue
-            try:
-                t_aware = ff.parse_station_local_time(r["observation_time_local"])
-            except (ValueError, TypeError):
-                continue
-            t_utc = t_aware.astimezone(UTC)
-            if not in_window(t_utc, a, b):
-                continue
-            iv = INTERVAL_BY_HASH.get(h, {})
-            key = r["landmark_key"]
-            tk = iv.get("time_kind", "stated_exact")
-            win = iv.get("time_window_local")
-            w0 = local(ff.parse_station_local_time(win[0])) if win else local(t_aware)
-            w1 = local(ff.parse_station_local_time(win[1])) if win else local(t_aware)
-            dk = iv.get("depth_kind", "point" if r["observed_depth_in"].strip() else "qualitative")
-            basis = iv.get("depth_basis", "stated")
-            elev = ELEV.get(key)
-            lo, hi = iv.get("depth_lo_in"), iv.get("depth_hi_in")
-            try:
-                d = float(r["observed_depth_in"])
-            except ValueError:
-                d = lo if lo is not None else hi   # None: qualitative with no stated bound
-            if dk in ("point", "range", "approximate", "upper_bound", "lower_bound") \
-                    and elev is not None and d is not None:
-                tape.append((local(t_aware), elev + d / 12, dk,
-                             None if lo is None else elev + lo / 12,
-                             None if hi is None else elev + hi / 12, tk, w0, w1))
-            else:
-                qual = (r.get("observed_qualitative") or "").lower()
-                if "tide_gate" in key:
-                    kind = "gate"
-                elif ("no flooding" in qual or "no evidence" in qual or "receded completely" in qual
-                      or "intersection clear" in qual or "safe to drive" in qual):
-                    kind = "dry"
-                else:
-                    kind = "wet"
-                strip.append((local(t_aware), kind, tk, w0, w1))
+        # --- reports strip + water (gathered per record; round 07 R4: each
+        # record carries its own basis, so drawing never depends on row order)
+        tape, strip = gather(rows, a, b)
         # strip
         ycode = {"dry": 0.25, "wet": 0.55, "gate": 0.85}
         mk = {"dry": "v", "wet": "^", "gate": "s"}
@@ -194,10 +213,10 @@ def main():
         pts = sorted(p for p in tape if p[2] in ("point", "range", "approximate"))
         if pts:
             ax_w.plot([p[0] for p in pts], [p[1] for p in pts], "-", color="#d97706", lw=1, alpha=.7)
-        for t, w, dk, lo, hi, tk, w0, w1 in tape:
+        for rec in tape:
+            t, w, dk, lo, hi, tk, w0, w1, basis = rec
             exact_t = tk == "stated_exact"
-            if dk == "range" and lo is not None and hi is not None \
-                    and basis in ("stated", "stated_landmarks"):
+            if range_bar(rec) is not None:
                 ax_w.plot([t, t], [lo, hi], color="#b45309", lw=1.6)
             if dk == "upper_bound":
                 ax_w.plot([t], [w], marker="v", ms=7, mfc="white", mec="#b45309", mew=1.4, ls="none")
