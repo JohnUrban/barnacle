@@ -8,13 +8,19 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
+**Stopping point, 2026-09-28:** John has copied v7.35a and is stepping away
+from development. Implementation/deployment reviews are closed; remaining
+items are recorded for resumption. Existing automated production and data
+collection continue. Heron checkpoint: October 9. No new work round is
+requested by this handoff; native long-form widget checks can wait.
+
 - [ ] **September 25–27 audit 2026-09-27-a1 — initial and bounds implementation/deployment CLOSED; owner widget acceptance + science remain OPEN.**
       First ship c2569c07a closed by round13; bounds ship 7248c500d and
       test repair ad2b66a52 independently closed by round22:
       audits/2026-09-27-a1/22-close-out-codex.md. Approved implementation
       preserved; 487 tests OK (one skip), three replays PASS, seven wind hashes
       match; protected ledgers preserved; CI/Pages green. Widget v7.35a is
-      DEPLOYED and matches approved source. John re-copies the deployed asset;
+      DEPLOYED and matches approved source. John reports it COPIED (Sep28);
       native bounded/disputed/long-report/model-claim readability remains
       pending. Only v7.32a measured form has owner screenshot acceptance.
       Rejected +39-in Sep27 model maximum was removed before midnight in
@@ -850,3 +856,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-28 | DONE | landmark-bounds-shipped | Ship commit 7248c500d (11:37 EDT) after merging main at f815877cb; Pages 36445097941 success; CI 36445097545 FAILED on a time-dependent test constant (six per-tide pages asserted; payload had five, all present, gate clean) — fixed in ad2b66a52 (test follows the payload); CI 36446596736 success. Live: widget v7.35a, forecast 15:36:54Z v0.10.6 with degraded_inputs [], bounds health clean, so-far BAY PEAK +10.7 at 09:30 (no readings today). Record audits/2026-09-27-a1/21-landmark-bounds-ship-claude-curlew.md. PENDING owner: native widget check of the bounded/disputed/long-report/model-claim forms [VERIFIED]
 
 2026-09-28 | DONE | landmark-bounds-round22-closed | Codex independently verified ship 7248c500d, test-only repair ad2b66a52 and round21 at 0dfc307ce; synchronized bot main 07840a36a. Score 9/10. Implementation/deployment CLOSED: 487 tests OK/one skip, three frozen replays PASS, seven hashes match, gate/registry clean; pre-merge main 1f42ca699 ledgers identical at ship and preserved by later bots; approved production source unchanged. Public v7.35a widget and five other assets match main; CI/Pages green. Corrected stale unmerged OPEN LOOPS; round22 records merge-metadata erratum (actual main parent 1f42ca699, commit 11:36:01 EDT). Native longer-widget acceptance and science remain OPEN; no Curlew code revision requested. Report/receipt audits/2026-09-27-a1/22-close-out-codex.md [VERIFIED]
+
+2026-09-28 | FACT | widget-v7.35a-owner-copied | John reports copying the new widget code. Installation task complete by owner report; this does not claim native verification of bounded/disputed/long-report/model-claim layouts [STATED]
+2026-09-28 | PREF | development-stopping-point | John wants to step away from Barnacle development at the completed close-out. Codex confirms implementation/deployment is closed; remaining follow-ups are documented for resumption, with Heron checkpoint October 9. Existing automated production/collection unchanged; no new development round requested [STATED]

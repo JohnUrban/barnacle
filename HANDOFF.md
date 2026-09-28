@@ -1,7 +1,18 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-28 12:18 EDT (independent bounds close-out).** Rewrite
+**Snapshot: 2026-09-28 12:26 EDT (owner widget copied; development stopping point).** Rewrite
 wholesale each ship; <100 lines. BACKLOG OPEN LOOPS is authoritative.
+
+## Owner stopping point — 2026-09-28
+
+John reports copying v7.35a and wants to step away from development. This is
+an accepted stopping point: reviewed implementation is closed; remaining
+follow-ups are recorded for resumption, not requests to start another work
+round. Automated production and archive/shadow collection continue unchanged.
+Heron's recorded checkpoint is October 9; it is a revisit, not a release
+commitment. No additional widget installation is pending. Copying the code
+is not verification of every native message layout; inspect naturally when
+those forms occur or on resumption, without blocking this break.
 
 ## Landmark-bounds — implementation/deployment CLOSED, round22
 
@@ -17,8 +28,8 @@ Live: append-only `data/observation_bounds.jsonl`, shared schema and writer
 So-far summaries compare measured points and landmark bands; highest known
 floor leads, higher possibilities disclosed, disputed caps labeled and never
 used to dismiss model claims. Local pools and time certainty retained.
-Instrument-neutral “measured” wording. Widget **v7.35a deployed**: John
-re-copies the deployed asset. Native bounded/disputed/long-report/model-claim
+Instrument-neutral “measured” wording. Widget **v7.35a deployed and copied**
+by John (owner report, 2026-09-28). Native bounded/disputed/long-report/model-claim
 readability remains PENDING; only v7.32a measured form has screenshot acceptance.
 Crossing 4.37 vs curb 4.16 NAVD88 remains an OPEN survey discrepancy; no
 elevation changed. Round22 corrects stale BACKLOG status and round21's merge
