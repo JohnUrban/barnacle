@@ -1,0 +1,438 @@
+{
+  "candidate": "648c7db8dd89fa6b78feb0f398a537a8a8dccebd",
+  "status": "APPROVED for merge and deployment verification; not yet deployed",
+  "score_this_round": 9,
+  "tests": {
+    "count": 487,
+    "skipped": 1,
+    "result": "OK",
+    "log_sha256": "fa6bffb593df88e261db230bb36dc7309d8a57559fd102746a2e2489251a0712"
+  },
+  "checks": {
+    "replay101": {
+      "exit_code": 0,
+      "output": "v0.10.1 frozen production vector (current production stamp v0.10.6): K=1296000, gamma=0.78, k_out=3.50/h, lag=15 min\nfit replay: RMS 1.316778 in over 24 points (reported 1.32 in)\njul6  : peak +14.6 in at 11:38 local\njul9  : peak +19.0 in at 16:14 local\noct30 : peak +20.9 in at 15:24 local\ndec19 : peak +14.2 in at 07:34 local; observation-time +11.0 in\njul18 : peak +15.8 in at 15:50 local\naug3  : peak +13.4 in at 10:42 local\nmodel-version log cutover: 2026-07-21T15:27:30Z\nverification: PASS (read-only; no production files written)\n"
+    },
+    "replay103": {
+      "exit_code": 0,
+      "output": "v0.10.6 production fill: reference error 1.07e-14 in; maximum production correction 0.090 in\njul6  : peak +14.578 in at 11:38 local\njul9  : peak +18.972 in at 16:14 local\noct30 : peak +20.943 in at 15:24 local\ndec19 : peak +14.254 in at 07:34 local\njul18 : peak +15.850 in at 15:50 local\naug3  : peak +13.423 in at 10:42 local\nverification: PASS (production v0.10.6; fill frozen at v0.10.3)\n"
+    },
+    "replay106": {
+      "exit_code": 0,
+      "output": "verification: PASS (production v0.10.6; surge decay golden v0.10.6)\n"
+    },
+    "gate": {
+      "exit_code": 0,
+      "output": "publish gate: clean\n"
+    },
+    "registry": {
+      "exit_code": 0,
+      "output": "{\n  \"episodes\": 31,\n  \"indexed_rows\": 270,\n  \"new_rows_needing_review\": 0,\n  \"note\": \"Registered episodes include negative checks and reconstructions; this is not a flood count.\"\n}\n"
+    },
+    "data/labeled_observations.csv": {
+      "identical_to_merged_main": true,
+      "data_rows": 270
+    },
+    "data/predictions_log.csv": {
+      "identical_to_merged_main": true,
+      "data_rows": 16227
+    },
+    "data/forecast_accuracy.csv": {
+      "identical_to_merged_main": true,
+      "data_rows": 124
+    },
+    "wind_hashes": [
+      {
+        "path": "models/wind_shadow/manifest.json",
+        "matches": true
+      },
+      {
+        "path": "models/wind_shadow/DESIGN.md",
+        "matches": true
+      },
+      {
+        "path": "forecast/wind_shadow.py",
+        "matches": true
+      },
+      {
+        "path": "history/scripts/evaluate_wind_shadow.py",
+        "matches": true
+      },
+      {
+        "path": "history/scripts/fit_wind_shadow_c2.py",
+        "matches": true
+      },
+      {
+        "path": "models/wind_shadow/rain_ref.py",
+        "matches": true
+      },
+      {
+        "path": "models/wind_shadow/stage_storage_curve.csv",
+        "matches": true
+      }
+    ],
+    "bounds_unchanged_since_round17": true
+  },
+  "reproduced_probes": {
+    "candidate": "648c7db8d",
+    "imported_root": "/private/tmp/barnacle-curlew-round20/candidate",
+    "earlier_measured_dry_later_porch_breach": {
+      "payload": {
+        "evidence": "bounded",
+        "source": "bounded (landmarks of known height)",
+        "regime": "severe",
+        "navd88": 5.41,
+        "rel_grate_in": 22.7,
+        "band_text": "breached over the first porch step top (5.41): level just exceeded at that moment (owner rule 2026-09-27 22:44)",
+        "basis": "stated_landmarks",
+        "scope": "intersection",
+        "report": "breached over first porch step; water entered garage by a couple inches, waves push it several inches back and forth (user)",
+        "report_summary": "breached over first porch step; water entered garage by a…",
+        "lo_navd88": 5.41,
+        "lo_rel_grate_in": 22.7,
+        "hi_navd88": 5.41,
+        "hi_rel_grate_in": 22.7,
+        "time_local": "09:14",
+        "time_kind": "stated_exact",
+        "time_uncertain": false,
+        "n_checks": 2
+      },
+      "short": "BOUNDED +22.7″ at 09:14 (landmarks)"
+    },
+    "actual_row_237": {
+      "payload": {
+        "evidence": "bounded",
+        "source": "bounded (landmarks of known height)",
+        "regime": "light",
+        "navd88": 4.36,
+        "rel_grate_in": 10.1,
+        "band_text": "across Central SE-SW (>= 3.91) but minor and cars drive fine (< Bay Ave road middle 4.36); water already present, not onset",
+        "basis": "stated_landmarks",
+        "scope": "intersection",
+        "report": "water already across Central SE to SW grate but minor, cars drive fine; puddles over NE and NW grates only, ~1 in above them (user)",
+        "report_summary": "water already across Central SE to SW grate but minor, cars…",
+        "lo_navd88": 3.91,
+        "lo_rel_grate_in": 4.7,
+        "hi_navd88": 4.36,
+        "hi_rel_grate_in": 10.1,
+        "time_local": "07:48",
+        "time_kind": "stated_exact",
+        "time_uncertain": false,
+        "n_checks": 1
+      },
+      "short": "BOUNDED +4.7″ to +10.1″ at 07:48 (landmarks)"
+    },
+    "actual_row_238": {
+      "payload": {
+        "evidence": "bounded",
+        "source": "bounded (landmarks of known height)",
+        "regime": "street",
+        "navd88": 4.16,
+        "rel_grate_in": 7.7,
+        "band_text": "over the curb at the upstream grate (4.14); nearly to curb level at the lawn step, not over (4.16)",
+        "basis": "stated_landmarks",
+        "scope": "intersection",
+        "report": "substantially more: lining both sides of Bay, not yet spanning Bay; widely across Central SE-SW; proper flooding nearly to curb level at lawn step; over the curb elsewhere e.g. upstream grate (user)",
+        "report_summary": "substantially more: lining both sides of Bay, not yet…",
+        "lo_navd88": 4.14,
+        "lo_rel_grate_in": 7.4,
+        "hi_navd88": 4.16,
+        "hi_rel_grate_in": 7.7,
+        "time_local": "08:12",
+        "time_kind": "stated_exact",
+        "time_uncertain": false,
+        "n_checks": 1
+      },
+      "short": "BOUNDED +7.4″ to +7.7″ at 08:12 (landmarks)"
+    },
+    "actual_row_269": {
+      "payload": {
+        "evidence": "bounded",
+        "source": "bounded (local pool; landmarks of known height)",
+        "regime": "street",
+        "navd88": 4.05,
+        "rel_grate_in": 6.4,
+        "band_text": "owner clarification 23:27: 'only one or a couple (at most a few) inches above those grates' = 3.80 to about 4.05 for the LOCAL pools around the NE/NW grates, not a whole-intersection level; observation 18:18 (received 18:24, logged 18:26)",
+        "basis": "stated",
+        "scope": "local",
+        "report": "water jetting UP out of the NE and NW grates with local flooding around each, still minor, not yet connected; SE/SW grates NOT yet pushing water up; consistent with rain-flood kinetics (tide comes out",
+        "report_summary": "water jetting UP out of the NE and NW grates with local…",
+        "lo_navd88": 3.8,
+        "lo_rel_grate_in": 3.4,
+        "hi_navd88": 4.05,
+        "hi_rel_grate_in": 6.4,
+        "time_local": "18:18",
+        "time_kind": "stated_exact",
+        "time_uncertain": false,
+        "n_checks": 1
+      },
+      "short": "BOUNDED (local pool) +3.4″ to +6.4″ at 18:18 (landmarks)"
+    },
+    "actual_row_270": {
+      "payload": {
+        "evidence": "bounded",
+        "source": "bounded (landmarks of known height)",
+        "regime": "street",
+        "navd88": null,
+        "rel_grate_in": null,
+        "band_text": "spans SE to SW (>= 3.91) and NE to NW: the NE-NW road peak is 4.37 per the survey PDF, which the 18:33 curb-level reading (4.16) three minutes later contradicts by 0.21 ft — either the 4.37 or the curb elevation is off (open survey question, owner 23:47); only the SE-SW floor is encoded",
+        "basis": "stated_landmarks",
+        "scope": "intersection",
+        "report": "water now spans NE to NW (across Bay Ave) and SE to SW (across Central) (user)",
+        "report_summary": "water now spans NE to NW (across Bay Ave) and SE to SW…",
+        "lo_navd88": 3.91,
+        "lo_rel_grate_in": 4.7,
+        "hi_navd88": null,
+        "hi_rel_grate_in": null,
+        "time_local": "18:30",
+        "time_kind": "stated_exact",
+        "time_uncertain": false,
+        "n_checks": 1
+      },
+      "short": "BOUNDED at least +4.7″ at 18:30 (landmarks)"
+    },
+    "lower_bound_with_smaller_model": {
+      "payload": {
+        "evidence": "bounded",
+        "source": "bounded (landmarks of known height)",
+        "regime": "street",
+        "navd88": null,
+        "rel_grate_in": null,
+        "band_text": "spans SE to SW (>= 3.91) and NE to NW: the NE-NW road peak is 4.37 per the survey PDF, which the 18:33 curb-level reading (4.16) three minutes later contradicts by 0.21 ft — either the 4.37 or the curb elevation is off (open survey question, owner 23:47); only the SE-SW floor is encoded",
+        "basis": "stated_landmarks",
+        "scope": "intersection",
+        "report": "water now spans NE to NW (across Bay Ave) and SE to SW (across Central) (user)",
+        "report_summary": "water now spans NE to NW (across Bay Ave) and SE to SW…",
+        "lo_navd88": 3.91,
+        "lo_rel_grate_in": 4.7,
+        "hi_navd88": null,
+        "hi_rel_grate_in": null,
+        "time_local": "18:30",
+        "time_kind": "stated_exact",
+        "time_uncertain": false,
+        "n_checks": 1
+      },
+      "short": "BOUNDED at least +4.7″ at 18:30 (landmarks)"
+    },
+    "validator_string_bound": [
+      "line 1: lo_navd88 must be a finite number or null (got '4.14')"
+    ],
+    "runtime_string_bound": {
+      "payload": {
+        "evidence": "reported",
+        "source": "reported (qualitative, not measured)",
+        "regime": "reported",
+        "navd88": null,
+        "rel_grate_in": null,
+        "time_local": "08:12",
+        "n_checks": 1,
+        "report": "substantially more: lining both sides of Bay, not yet spanning Bay; widely across Central SE-SW; proper flooding nearly to curb level at lawn step; over the curb elsewhere e.g. upstream grate (user)",
+        "report_kind": "water",
+        "report_summary": "substantially more: lining both sides of Bay, not yet…",
+        "time_uncertain": false
+      },
+      "short": "REPORTED at 08:12: “substantially more: lining both sides of Bay, not yet…” (not measured)"
+    },
+    "validator_boolean_bound": [
+      "line 1: lo_navd88 must be a finite number or null (got True)"
+    ],
+    "validator_empty_provenance": [
+      "line 1: landmarks must be a non-empty list"
+    ],
+    "validator_wrong_copied_identity": [
+      "line 1: sha256 does not match ledger row 2"
+    ],
+    "validator_overflow_number": [
+      "line 1: hi_navd88 must be a finite number or null (got inf)"
+    ],
+    "validator_nonobject": [
+      "line 1: line is not a JSON object"
+    ],
+    "writer_nan": {
+      "rejected": true,
+      "bytes_unchanged": true
+    },
+    "remaining_time_cases": {
+      "around 10 inches over the grate": false,
+      "between 1 and 2 inches above the curb": false,
+      "around 1 inch over the grate": false,
+      "around 7 it was across Central": true
+    },
+    "depth_range_with_explicit_exact_time": {
+      "payload": {
+        "evidence": "bounded",
+        "source": "bounded (landmarks of known height)",
+        "regime": "light",
+        "navd88": 4.327,
+        "rel_grate_in": 9.7,
+        "band_text": "synthetic depth interval",
+        "basis": "stated_landmarks",
+        "scope": "intersection",
+        "report": "between 1 and 2 inches above the curb",
+        "report_summary": "between 1 and 2 inches above the curb",
+        "lo_navd88": 4.243,
+        "lo_rel_grate_in": 8.7,
+        "hi_navd88": 4.327,
+        "hi_rel_grate_in": 9.7,
+        "time_local": "08:12",
+        "time_kind": "stated_exact",
+        "time_uncertain": false,
+        "n_checks": 1
+      },
+      "short": "BOUNDED +8.7″ to +9.7″ at 08:12 (landmarks)"
+    },
+    "cap_disputed": {
+      "payload": {
+        "evidence": "bounded",
+        "source": "bounded (landmarks of known height)",
+        "regime": "light",
+        "navd88": 4.37,
+        "rel_grate_in": 10.2,
+        "band_text": "spans SE to SW (>= 3.91) and north side not connected (< 4.37, the NE-NW road peak per the survey PDF, DISPUTED vs the curb elevation — not used for claim coverage); first water sometime 21:20-21:40",
+        "basis": "stated_landmarks",
+        "scope": "intersection",
+        "report": "sometime 21:20-21:40: water spans SE to SW grate across Central; otherwise very minor; cars drive fine; north side only puddling above grates; other puddles are rain puddles present all night (user)",
+        "report_summary": "sometime 21:20-21:40: water spans SE to SW grate across…",
+        "lo_navd88": 3.91,
+        "lo_rel_grate_in": 4.7,
+        "hi_navd88": 4.37,
+        "hi_rel_grate_in": 10.2,
+        "time_local": "21:30",
+        "time_kind": "window",
+        "time_uncertain": true,
+        "n_checks": 1,
+        "time_window_local": [
+          "2026-09-26T21:20:00-04:00",
+          "2026-09-26T21:40:00-04:00"
+        ],
+        "hi_disputed": true,
+        "model_claim": {
+          "navd88": 4.27,
+          "rel_grate_in": 9.0,
+          "time_local": "21:30",
+          "verification": "the band at that time rests on a disputed survey point; claim unverified",
+          "note": "model day max not promoted over the empirical value"
+        }
+      },
+      "health": null,
+      "short": "BOUNDED +4.7″ to +10.2″ (cap disputed) at ~21:30 (landmarks); model claims +9.0″ at 21:30"
+    },
+    "cap_undisputed": {
+      "payload": {
+        "evidence": "bounded",
+        "source": "bounded (landmarks of known height)",
+        "regime": "light",
+        "navd88": 4.37,
+        "rel_grate_in": 10.2,
+        "band_text": "spans SE to SW (>= 3.91) and north side not connected (< 4.37, the NE-NW road peak per the survey PDF, DISPUTED vs the curb elevation — not used for claim coverage); first water sometime 21:20-21:40",
+        "basis": "stated_landmarks",
+        "scope": "intersection",
+        "report": "sometime 21:20-21:40: water spans SE to SW grate across Central; otherwise very minor; cars drive fine; north side only puddling above grates; other puddles are rain puddles present all night (user)",
+        "report_summary": "sometime 21:20-21:40: water spans SE to SW grate across…",
+        "lo_navd88": 3.91,
+        "lo_rel_grate_in": 4.7,
+        "hi_navd88": 4.37,
+        "hi_rel_grate_in": 10.2,
+        "time_local": "21:30",
+        "time_kind": "window",
+        "time_uncertain": true,
+        "n_checks": 1,
+        "time_window_local": [
+          "2026-09-26T21:20:00-04:00",
+          "2026-09-26T21:40:00-04:00"
+        ]
+      },
+      "health": null,
+      "short": "BOUNDED +4.7″ to +10.2″ at ~21:30 (landmarks)"
+    },
+    "cap_no_cap": {
+      "payload": {
+        "evidence": "bounded",
+        "source": "bounded (landmarks of known height)",
+        "regime": "street",
+        "navd88": null,
+        "rel_grate_in": null,
+        "band_text": "spans SE to SW (>= 3.91) and north side not connected (< 4.37, the NE-NW road peak per the survey PDF, DISPUTED vs the curb elevation — not used for claim coverage); first water sometime 21:20-21:40",
+        "basis": "stated_landmarks",
+        "scope": "intersection",
+        "report": "sometime 21:20-21:40: water spans SE to SW grate across Central; otherwise very minor; cars drive fine; north side only puddling above grates; other puddles are rain puddles present all night (user)",
+        "report_summary": "sometime 21:20-21:40: water spans SE to SW grate across…",
+        "lo_navd88": 3.91,
+        "lo_rel_grate_in": 4.7,
+        "hi_navd88": null,
+        "hi_rel_grate_in": null,
+        "time_local": "21:30",
+        "time_kind": "window",
+        "time_uncertain": true,
+        "n_checks": 1,
+        "time_window_local": [
+          "2026-09-26T21:20:00-04:00",
+          "2026-09-26T21:40:00-04:00"
+        ],
+        "model_claim": {
+          "navd88": 4.27,
+          "rel_grate_in": 9.0,
+          "time_local": "21:30",
+          "verification": "nearby report time unconfirmed; claim unverified",
+          "note": "model day max not promoted over the empirical value"
+        }
+      },
+      "health": null,
+      "short": "BOUNDED at least +4.7″ at ~21:30 (landmarks); model claims +9.0″ at 21:30"
+    },
+    "missing_bounds": {
+      "records": 0,
+      "health": {
+        "status": "degraded",
+        "detail": "landmark-bounds record missing (data/observation_bounds.jsonl); no bands available"
+      }
+    },
+    "unreadable_bounds": {
+      "raised": null,
+      "health": {
+        "status": "degraded",
+        "detail": "landmark-bounds record unavailable: bounds file unreadable (IsADirectoryError)"
+      }
+    }
+  },
+  "integration": {
+    "missing_file_whole_build": {
+      "health": {
+        "status": "degraded",
+        "detail": "landmark-bounds record missing (data/observation_bounds.jsonl); no bands available"
+      },
+      "listed_degraded": true,
+      "empirical_fallback": "measured"
+    },
+    "subsequent_clean_whole_build": {
+      "health": null,
+      "listed_degraded": false
+    },
+    "rendered_disputed_band": {
+      "landing": {
+        "labels_dispute": true,
+        "retains_model_9": true
+      },
+      "email_subject": {
+        "labels_dispute": true,
+        "retains_model_9": true
+      },
+      "email_text": {
+        "labels_dispute": true,
+        "retains_model_9": true
+      },
+      "email_html": {
+        "labels_dispute": true,
+        "retains_model_9": true
+      },
+      "widget": {
+        "labels_dispute": true,
+        "retains_model_9": true
+      },
+      "subject_text": "[342 Bay] TODAY LIGHT (so far: BOUNDED +4.7″ to +10.2″ (cap disputed) at ~21:30 (landmarks); model claims +9.0″ at 21:30) | WORST 72H STREET: tide peak 6.80 ft at Tue 9:58 AM (NW corner +0.8\")",
+      "widget_text": "so far: +4.7″–+10.2″ cap? @~21:30 (landmarks) · model +9″ @21:30 unverified"
+    }
+  },
+  "native_scriptable": "NOT VERIFIED",
+  "probe_note": "Reused round18 script with actual candidate path; corrected its historical hardcoded candidate label. All probes offline; whole-build forecast inputs mocked."
+}

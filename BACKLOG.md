@@ -17,13 +17,14 @@ looks stale, trust this file. Ledger lines are append-only:
       Owner check 22:59: measured form verified on the native medium widget
       (v7.32a, screenshot in audit 14); quoted-report and model-claim forms
       still pending a day that produces them. OPEN follow-ups (not
-      closed by the ship): landmark-relation-bounds (candidate f14837961 on
-      audit/2026-09-27-a1-bounds UNMERGED; Codex round18 REQUEST CHANGES:
-      depth-range/time distinction, disputed-cap claim eligibility, missing/
-      unreadable-file health). Round16 probe cases repaired; 472 tests OK
-      (one skip), three replays PASS; Curlew reply19 next. Review/score 8/10:
-      audits/2026-09-27-a1/18-review-round17-codex.md. Reports are quantitative;
-      survey bands; ask when unclear.
+      closed by the ship): landmark-relation-bounds candidate 648c7db8d on
+      audit/2026-09-27-a1-bounds APPROVED for merge (Codex round20), still
+      UNMERGED at review. All requested repairs verified; 487 tests OK (one
+      skip), three replays PASS; ledgers/frozen hashes preserved; full-build
+      health and rendering checked. Curlew next: merge current main, regenerate
+      no-send, gate/push, verify deployment and record round21. Review/score 9/10:
+      audits/2026-09-27-a1/20-candidate-approval-codex.md. Widget v7.35a not yet
+      deployed. Reports are quantitative; survey bands; ask when unclear.
       Crossing 4.37 vs curb 4.16 is an unresolved survey discrepancy recorded
       with owner clarifications on the branch; do not change elevations or
       treat disputed bounds as exact calibration. Other open work: gate-transfer physics
@@ -842,3 +843,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | DONE | landmark-bounds-independent-review | Codex reviewed Curlew candidate 2fb8454ae (round15 plus both addenda), isolated 455 tests OK/one skip, three replays PASS, seven wind hashes match, gate/registry clean, protected ledgers unchanged. Round16 REQUEST CHANGES: a lower measured point hides a higher quantitative band; depth/location words incorrectly mark exact reports time-uncertain and discard bands; writer/gate/reader schema mismatch admits malformed values (string bound passes gate then crashes forecast; NaN writer appends). Lower-bound model comparison and scalar/range precedence also need repair. Branch remains UNMERGED, v7.33a not deployed; earlier round13 ship close-out stands. Owner v7.32a measured-form screenshot confirmed. Survey crossing-versus-curb discrepancy stays open. Reproducible probes/results and repair acceptance criteria in audits/2026-09-27-a1/16-review-landmark-bounds-codex.md; Curlew reply17 next [VERIFIED]
 
 2026-09-28 | DONE | landmark-bounds-round18-review | Codex independently reviewed Curlew f14837961 (implementation 3c074c65c; main 2d2a54420 merged via aec834ceb). Score requested by John: 8/10 for this round. Round16 original probes now repaired, including empirical interval precedence, real-row time/scope handling, bad numeric/schema records, NaN write safety and scalar supersession. 472 tests OK/one skip, three replays PASS, seven frozen wind hashes match, gate/registry clean, protected ledgers identical to merged main, bounds prefix intact. REQUEST CHANGES on three residual paths: depth ranges still trigger uncertain-time regex; disputed upper bounds still affect model-claim eligibility before coverage guard; missing/unreadable bounds input lacks safe degraded health. Candidate remains unmerged, branch widget v7.34a not deployed, earlier round13 ship close-out stands. Report/probes/receipt audits/2026-09-27-a1/18-review-round17-codex.md; Curlew reply19 next [VERIFIED]
+
+2026-09-28 | DONE | landmark-bounds-round20-approved | Codex independently reviewed Curlew 648c7db8d (implementation 62b947da7; main 05d76140b merged at 0beaa23a5). Score requested by John: 9/10 for this round. Round18 R1–R3 verified fixed with independent probes; earlier repairs retained. 487 tests OK/one skip, three frozen replays PASS, seven wind hashes match, gate/registry clean, protected ledgers byte-identical to incorporated main; bounds records unchanged. Whole-build missing-input health and clean-read recovery verified; complete landing/email and widget text retain disputed cap and model claim. APPROVED for merge/deployment verification; branch still unmerged, v7.35a not yet deployed. Curlew ship handoff and round21 instructions in audits/2026-09-27-a1/20-candidate-approval-codex.md. Native layout and separate scientific follow-ups remain open; existing owner approval suffices for reviewed bug-fix scope [VERIFIED]
