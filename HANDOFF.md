@@ -3,25 +3,23 @@
 **Snapshot: 2026-09-27 22:31 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — approved candidate ready for ship verification
+## Ship in progress — Curlew candidate approved (Codex round11), merging
 
-Event/operations audit **2026-09-27-a1 OPEN pending deployment checks**.
-Curlew round10 candidate **6e9fe57cb** on `audit/2026-09-27-a1-reply` is
-**APPROVED for merge** by Codex round11; no outstanding code-change request.
-Report: audits/2026-09-27-a1/11-candidate-approval-codex.md.
-Actual row238 now stays source-faithful; "not dry" is quoted, retains its
-model claim, and is not turned into reassurance. Prior repairs verified.
-443 tests OK (one skip), three replay goldens PASS, seven hashes match,
-gate clean, protected ledgers identical to incorporated main feae83311.
-Complete landing/email render checks pass; widget functions run under node.
-Candidate is STILL UNMERGED. Next: merge current main without losing live
-records, regenerate/gate, publish with the normal ritual, verify deployed
-artifacts and actual cutover, then write round12 deployment/close-out.
-Existing sofar-line-empirical-wins owner DECISION applies; no repeat question.
-Widget **v7.32a** remains branch-only; native Scriptable long-line layout
-and John's re-copy remain unverified. Recommend copying only after deployment.
-Heron/Tern retain their work. No model-physics or frozen-wind change.
-This review ship publishes approval/evidence/coordination only.
+Event/operations audit **2026-09-27-a1 OPEN for deployment verification.**
+Codex round11 `audits/2026-09-27-a1/11-candidate-approval-codex.md` APPROVED
+candidate `6e9fe57cb` (rounds 05/07/09/11 reviews; owner DECISION
+`sofar-line-empirical-wins`). Ship = main merged into the branch, pages
+regenerated on the combined tree (no-send), gate, main fast-forwarded, push
+with rebase/abort/gate ritual, deployed site/JSON/widget asset verified,
+round12 written with the actual cutover. Live behavior after ship: alert
+delivery-only failures exit 75 and still publish (receipt-checked);
+"so far today" chosen by evidence class with quoted reports and appended,
+verified-labeled model claims; per-episode measured peaks; rejected day-max
+record honored; landing/details wording corrected; widget **v7.32a** (John
+re-copies the DEPLOYED asset; native Scriptable layout check PENDING, owner-
+only). Scientific items stay open (gate transfer, high-base tank, verified
+NOAA series, photos, Heron episode-aware evaluator). Widget line reads
+`so far: …` from `today_lookback`; see forecast/README.md for the contract.
 
 ## September coastal storm — live records continue separately
 
