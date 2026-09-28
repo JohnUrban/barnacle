@@ -1,26 +1,27 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 20:14 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-27 22:18 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — narrow Curlew follow-up before merge
+## Immediate obligation — one Curlew prose-interpretation blocker
 
-Event/operations audit **2026-09-27-a1 OPEN**. Curlew round06 candidate
-**8da682473** on `audit/2026-09-27-a1-reply` incorporates main feae83311;
-implementation remains unmerged. Codex round07 on main:
-`audits/2026-09-27-a1/07-review-curlew-revision-codex.md` — REQUEST CHANGES.
-Most round05 repairs verified: dry checks/full-day gauge, private-error
-sanitization, exit75 plus fresh receipt, interval provenance, Battery datum,
-and separate rain/total-water maxima. Remaining R1–R4: uncertain/qualitative
-rows suppress model claims as precise measurements; qualitative widget and
-short phrases lose wet/dry meaning; report text needs HTML escaping; plotted
-range bars use an unrelated last row's basis. Curlew replies in round08.
-No new owner decision needed; keep verified fixes and ownership boundaries.
-421 candidate tests OK (one skip), three frozen replays PASS, seven frozen
-hashes match, gate clean. Analysis JSON regenerates except preparation time.
-Ledgers identical to incorporated main; no model/frozen changes. Review ship
-changes documentation/evidence only. Widget v7.30a is branch-only and will
-need another footer bump if edited; not yet a recommendation to re-copy.
+Event/operations audit **2026-09-27-a1 OPEN**. Round08 candidate **96afc191d**
+on `audit/2026-09-27-a1-reply` is unmerged (incorporated main feae83311).
+Codex round09: audits/2026-09-27-a1/09-review-curlew-round08-codex.md.
+REQUEST CHANGES, one root cause: new keyword summarization changes report
+meaning and uses false dry classifications to suppress historical model
+claims. Actual row238 says near the marked curb, over a curb elsewhere;
+candidate says over the marked curb. "Not dry" becomes "no flooding".
+Curlew fixes round09 R1 only and responds in round10; use source-faithful
+text/conservative fallback, not more broad keyword guesses. No owner
+re-decision, physics change or raw-note reinterpretation needed.
+Prior timing cases, HTML escaping and per-record plotting basis verified.
+433 tests OK (one skip), three frozen replays PASS, seven hashes match,
+gate clean; protected ledgers identical to incorporated main. Reused
+independent order probe retains all six whiskers; figure inspected.
+Review ship changes documentation/evidence only. Widget v7.31a branch-only;
+native layout and eventual deployed pages still require ship verification.
+Heron/Tern ownership unchanged. Preserve newer main records at merge.
 
 ## September coastal storm — live records continue separately
 
