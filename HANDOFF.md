@@ -1,8 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 23:56 EDT.** Rewrite wholesale each ship; <100 lines.
-`BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
-
+**Snapshot: 2026-09-27 23:56 EDT.** Rewrite wholesale each ship; <100 lines. `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 ## Audit 2026-09-27-a1 — implementation closed; owner check pending
 
 Codex round11 approved `6e9fe57cb`; shipped as `c2569c07a` (2026-09-28
@@ -28,11 +26,19 @@ Owner bands/clarifications retained on that branch. Crossing 4.37 vs curb
 4.16 remains an open survey discrepancy; no elevation change authorized.
 Science follow-ups remain OPEN: gate transfer, high-base tank, verified NOAA,
 photos and Heron evaluator. No owner decision needed for code repairs.
+## Landmark-bounds candidate — round 17 answers Codex round 16 (unmerged)
 
+`audit/2026-09-27-a1-bounds` (`../barnacle-bounds`): `3c074c65c` + merge `aec834ceb`;
+`audits/2026-09-27-a1/17-round16-response-claude-curlew.md`. So-far line is
+interval-aware (highest known floor across measured points and recorded
+bands; higher possibilities disclosed); bound records carry time_kind/window/
+scope/disputed/supersedes_scalar; `forecast/observation_bounds.py` is the one
+writer/gate/reader contract (bad lines → `input_health.observation_bounds`).
+Survey conflict OPEN (`central-crossing-vs-curb-inconsistency`); the 4.37 cap
+is `disputed`, never covers. Widget v7.34a native layout = owner check.
 ## September coastal storm — live records continue separately
 
-Read PLAYBOOK before event support. Append BOTH ledger and raw notes on
-receipt. Main includes Sep27 evening **2026-09-27-e02**, Event #10 round4:
+Read PLAYBOOK before event support; append ledger AND raw notes on receipt. Main includes Sep27 evening **2026-09-27-e02**, Event #10 round4:
 18:18 NE/NW grate jets, 18:30 water spans NE–NW and SE–SW, 18:33 curb level
 (owner reports). Ledger/notes commits c001052d5 and 2892a765a; registry first
 row added in 367654721. Register later rows as reporting proceeds. Consult
@@ -57,7 +63,6 @@ retained. Apr18 likely lawn-step level (~13.7in above SW), possibly higher,
 is recollection + gauge reconstruction, not tape. Aug2025 identification
 remains tentative. See history/reports/2026-09-27-expanded-flood-records.md.
 Further negative controls/census and missing historical hindcasts remain open.
-
 ## Production — v0.10.6 live; release audit CLOSED
 
 Spec model/v0.10.6.md; promotion 75a9933ff, candidate 1053eb436, owner
@@ -67,7 +72,6 @@ guidance tails and as-issued rain skill remain experimental.
 18 landmarks; hourly site/JSON and ~10-min radar nowcast. Widget v7.32a
 installed; long-report/claim layout checks pending (above). SMS imminent impact; ntfy/email
 longer lead; alert tide horizon 48h. Forecast/model changes require review.
-
 ## Heron and wind-shadow — ownership unchanged
 
 Wind-shadow c2 implementation CLOSED: audits/2026-09-24-a3/07-close-out-codex.md,
@@ -81,7 +85,6 @@ event; see history/plans/2026-09-25-heron-validation-checkpoint.md.
 The merged Curlew work documents an episode interface; evaluator implementation and
 issuance-coverage assessment remain Heron's. Do not score assumed interval
 endpoints as ground truth (round05 R5).
-
 ## Tern and other follow-ups — separate work
 
 Tern social rehearsal local-only; sibling round28 closed repairs. Owner
@@ -92,5 +95,5 @@ adoption, merge or push authorized by this audit. Neutral landmark survey
 remains; guidance-first research is not a gate solution. Assess gauge skill
 separately from street transfer; SMS policy review is separate.
 
-Explicit staging; commit → gate → push; rejection → rebase/abort → gate.
-Preserve append-only ledgers and newer work; never overwrite saved whole files.
+Explicit staging; commit → gate → push; rejection → rebase/abort → gate. Preserve
+append-only ledgers and newer work; never overwrite saved whole files.
