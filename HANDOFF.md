@@ -9,9 +9,10 @@ Codex round11 approved `6e9fe57cb`; shipped as `c2569c07a` (2026-09-28
 02:47Z), CI + Pages green, live site verified (widget **v7.32a**, bay-not-
 street note, `SO FAR: MEASURED +25.2″ at 09:44`). Record:
 `audits/2026-09-27-a1/13-close-out-codex.md`: independent deployment verified;
-443 tests OK (one skip), three replays PASS, ledgers preserved. PENDING (John):
-re-copy the DEPLOYED widget v7.32a and check the medium layout with a long
-quoted report + model-claim clause. Rejected +39-in day max removed by the
+443 tests OK (one skip), three replays PASS, ledgers preserved. John re-copied
+v7.32a (22:59 screenshot, audit 14): measured form OK on the native medium
+widget; quoted-report and model-claim forms still pending such a day.
+Owner wording rule: "measured", never "stick"/"ruler"; "tape" only where stated. Rejected +39-in day max removed by the
 02:57:54Z nowcast (224f1e1a4), verified live before midnight rollover.
 Live behavior: delivery-only alert failures exit 75 and still publish
 (receipt-checked; untested by a real outage); "so far today" by evidence class
