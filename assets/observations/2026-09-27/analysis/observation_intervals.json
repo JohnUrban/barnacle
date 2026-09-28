@@ -1,6 +1,6 @@
 {
  "schema_version": 1,
- "created_local": "2026-09-27T23:28:37-04:00",
+ "created_local": "2026-09-27T23:48:51-04:00",
  "purpose": "Additive interval/provenance sidecar for the 2026-09-25..27 ledger rows. The ledger scalars are unchanged; consumers that score or classify should use time_window_local and depth_lo/hi_in, and treat surrogate/window times and range midpoints as such.",
  "time_kinds": [
   "stated_exact",
@@ -1038,20 +1038,21 @@
     "2026-09-26T21:40:00-04:00"
    ],
    "ledger_depth_in": null,
-   "depth_kind": "lower_bound",
+   "depth_kind": "range",
    "depth_basis": "stated_landmarks",
    "depth_lo_in": 3.24,
-   "depth_hi_in": null,
+   "depth_hi_in": 8.76,
    "observed_qualitative": "sometime 21:20-21:40: water spans SE to SW grate across Central; otherwise very minor; cars drive fine; north side only puddling above grates; other puddles are rain puddles present all night (user)",
    "time_note": "First water reported 'sometime between 9:20-9:40'; ledger 21:30 is the midpoint, not onset.",
    "depth_note": "Water spans SE-SW grates across Central (above SW grate).",
    "landmark_band_navd88": [
     3.91,
-    null
+    4.37
    ],
-   "landmark_band_text": "spans SE to SW across Central: at or above the Central middle at the far corner (3.91); north side not connected \u2014 the NE-NW crossing height is an open question to the owner; first-water window 21:20-21:40",
+   "landmark_band_text": "spans SE to SW (>= 3.91, SE-SW road peak) and north side not connected (< 4.37, the NE-NW road peak per the survey PDF; loose upper bound \u2014 the 4.37 estimate may be high, open survey question); first-water window 21:20-21:40",
    "landmark_band_sources": [
-    "model/elevations.md (middle of Central at the far corner)"
+    "model/elevations.md / owner 23:47",
+    "assets/observations/2026-09-27/analysis/owner-band-clarifications.txt (John, 2026-09-27 23:47 EDT, from the survey PDF)"
    ]
   },
   {

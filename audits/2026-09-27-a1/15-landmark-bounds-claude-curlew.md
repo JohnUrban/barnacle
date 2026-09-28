@@ -91,3 +91,21 @@ NE–NW connection across Central, from `assets/map_points.csv`:
 The 18:33 curb reading (4.16) three minutes after "NE to NW connected"
 rules out the 4.37 crown as the connecting path; the survey PDFs are
 `model/elevations.pdf` and `model/HLND2303-Road-Reconstruction-Supplement-Set-2024.05.06.pdf`.
+
+## Addendum 2 (23:50 EDT) — Q1 answered from the survey; a survey inconsistency surfaced
+
+John (23:47, verbatim in `owner-band-clarifications.txt`): intersection peak
+4.54, second 4.51; NE and NW grates 3.80; the road peak directly between
+them (across Central's mouth) **4.37**; NE grate to SE corner peak 4.32;
+SE–SW peak 3.91; street at the walkway 3.78; curb 4.16. He also notes the
+consequence: "spans NE to NW" at 18:30 (≥ 4.37 by the survey) and "level
+with the curb" at 18:33 (4.16) cannot both hold — "either that 4.37 estimate
+is too high or our curb estimate is too low", not solvable tonight.
+
+Recorded accordingly, without manufacturing a number: row 270 keeps only the
+SE–SW floor (≥ 3.91) with the conflict stated; row 230 ("north side not
+connected", Sep 26 21:30) gains a loose upper bound 4.37 that remains valid
+if the peak is overestimated; row 269's 3.80–4.05 is unaffected. New BACKLOG
+OPEN `central-crossing-vs-curb-inconsistency` for a re-check of the two
+elevations. All band lines are appended (history retained); sidecar and
+hydrograph regenerated.
