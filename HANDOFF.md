@@ -1,10 +1,12 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 23:56 EDT.** Rewrite wholesale each ship; <100 lines. `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
+**Snapshot: 2026-09-28 09:49 EDT.** Rewrite wholesale each ship; <100 lines.
+`BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
+
 ## Audit 2026-09-27-a1 — implementation closed; owner check pending
 
 Codex round11 approved `6e9fe57cb`; shipped as `c2569c07a` (2026-09-28
-02:47Z), CI + Pages green, live site verified (widget **v7.32a**, bay-not-
+02:47Z), CI + Pages green, Sep27 cutover verified (widget **v7.32a**, bay-not-
 street note, `SO FAR: MEASURED +25.2″ at 09:44`). Record:
 `audits/2026-09-27-a1/13-close-out-codex.md`: independent deployment verified;
 443 tests OK (one skip), three replays PASS, ledgers preserved. John re-copied
@@ -15,30 +17,22 @@ Owner wording rule: "measured", never "stick"/"ruler"; "tape" only where stated.
 Live behavior: delivery-only alert failures exit 75 and still publish
 (receipt-checked; untested by a real outage); "so far today" by evidence class
 with quoted reports; per-episode peaks; provenance + rejection on day max.
-Curlew bounds candidate **2fb8454ae** (`audit/2026-09-27-a1-bounds`) is
-UNMERGED; Codex round16 REQUEST CHANGES, separate from the closed ship:
-`audits/2026-09-27-a1/16-review-landmark-bounds-codex.md`. 455 tests OK (one
-skip), three replays PASS, but independent probes found R1 lower measured
-value hides higher bounds; R2 depth/location words erase bounds as uncertain
-time; R3 schema validation admits bad values. Curlew repairs these before
-review/merge; reply17 next. Branch widget v7.33a is NOT the deployed asset.
+Curlew bounds candidate **f14837961** (`audit/2026-09-27-a1-bounds`) remains
+UNMERGED; Codex round18 REQUEST CHANGES, separate from the closed ship:
+`audits/2026-09-27-a1/18-review-round17-codex.md`. Round16 probe cases fixed;
+472 tests OK (one skip), three replays PASS, wind hashes/ledgers preserved.
+Three narrower repairs: depth-range/time regex; disputed caps still filter
+model claims; unavailable bounds-file health. Curlew reply19 next before
+review/merge. Branch widget v7.34a is NOT deployed. Round score: 8/10.
 Owner bands/clarifications retained on that branch. Crossing 4.37 vs curb
 4.16 remains an open survey discrepancy; no elevation change authorized.
 Science follow-ups remain OPEN: gate transfer, high-base tank, verified NOAA,
 photos and Heron evaluator. No owner decision needed for code repairs.
-## Landmark-bounds candidate — round 17 answers Codex round 16 (unmerged)
 
-`audit/2026-09-27-a1-bounds` (`../barnacle-bounds`): `3c074c65c` + merge `aec834ceb`;
-`audits/2026-09-27-a1/17-round16-response-claude-curlew.md`. So-far line is
-interval-aware (highest known floor across measured points and recorded
-bands; higher possibilities disclosed); bound records carry time_kind/window/
-scope/disputed/supersedes_scalar; `forecast/observation_bounds.py` is the one
-writer/gate/reader contract (bad lines → `input_health.observation_bounds`).
-Survey conflict OPEN (`central-crossing-vs-curb-inconsistency`); the 4.37 cap
-is `disputed`, never covers. Widget v7.34a native layout = owner check.
 ## September coastal storm — live records continue separately
 
-Read PLAYBOOK before event support; append ledger AND raw notes on receipt. Main includes Sep27 evening **2026-09-27-e02**, Event #10 round4:
+Read PLAYBOOK before event support. Append BOTH ledger and raw notes on
+receipt. Main includes Sep27 evening **2026-09-27-e02**, Event #10 round4:
 18:18 NE/NW grate jets, 18:30 water spans NE–NW and SE–SW, 18:33 curb level
 (owner reports). Ledger/notes commits c001052d5 and 2892a765a; registry first
 row added in 367654721. Register later rows as reporting proceeds. Consult
@@ -63,6 +57,7 @@ retained. Apr18 likely lawn-step level (~13.7in above SW), possibly higher,
 is recollection + gauge reconstruction, not tape. Aug2025 identification
 remains tentative. See history/reports/2026-09-27-expanded-flood-records.md.
 Further negative controls/census and missing historical hindcasts remain open.
+
 ## Production — v0.10.6 live; release audit CLOSED
 
 Spec model/v0.10.6.md; promotion 75a9933ff, candidate 1053eb436, owner
@@ -72,6 +67,7 @@ guidance tails and as-issued rain skill remain experimental.
 18 landmarks; hourly site/JSON and ~10-min radar nowcast. Widget v7.32a
 installed; long-report/claim layout checks pending (above). SMS imminent impact; ntfy/email
 longer lead; alert tide horizon 48h. Forecast/model changes require review.
+
 ## Heron and wind-shadow — ownership unchanged
 
 Wind-shadow c2 implementation CLOSED: audits/2026-09-24-a3/07-close-out-codex.md,
@@ -85,6 +81,7 @@ event; see history/plans/2026-09-25-heron-validation-checkpoint.md.
 The merged Curlew work documents an episode interface; evaluator implementation and
 issuance-coverage assessment remain Heron's. Do not score assumed interval
 endpoints as ground truth (round05 R5).
+
 ## Tern and other follow-ups — separate work
 
 Tern social rehearsal local-only; sibling round28 closed repairs. Owner
@@ -95,5 +92,5 @@ adoption, merge or push authorized by this audit. Neutral landmark survey
 remains; guidance-first research is not a gate solution. Assess gauge skill
 separately from street transfer; SMS policy review is separate.
 
-Explicit staging; commit → gate → push; rejection → rebase/abort → gate. Preserve
-append-only ledgers and newer work; never overwrite saved whole files.
+Explicit staging; commit → gate → push; rejection → rebase/abort → gate.
+Preserve append-only ledgers and newer work; never overwrite saved whole files.

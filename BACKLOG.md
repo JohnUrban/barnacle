@@ -17,10 +17,13 @@ looks stale, trust this file. Ledger lines are append-only:
       Owner check 22:59: measured form verified on the native medium widget
       (v7.32a, screenshot in audit 14); quoted-report and model-claim forms
       still pending a day that produces them. OPEN follow-ups (not
-      closed by the ship): landmark-relation-bounds (candidate 2fb8454ae on
-      audit/2026-09-27-a1-bounds UNMERGED; Codex round16 REQUEST CHANGES:
-      empirical interval ranking, time provenance, bounds schema; Curlew
-      reply17 next). Reports are quantitative; survey bands; ask when unclear.
+      closed by the ship): landmark-relation-bounds (candidate f14837961 on
+      audit/2026-09-27-a1-bounds UNMERGED; Codex round18 REQUEST CHANGES:
+      depth-range/time distinction, disputed-cap claim eligibility, missing/
+      unreadable-file health). Round16 probe cases repaired; 472 tests OK
+      (one skip), three replays PASS; Curlew reply19 next. Review/score 8/10:
+      audits/2026-09-27-a1/18-review-round17-codex.md. Reports are quantitative;
+      survey bands; ask when unclear.
       Crossing 4.37 vs curb 4.16 is an unresolved survey discrepancy recorded
       with owner clarifications on the branch; do not change elevations or
       treat disputed bounds as exact calibration. Other open work: gate-transfer physics
@@ -841,3 +844,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 
 2026-09-27 | DONE | landmark-bounds-independent-review | Codex reviewed Curlew candidate 2fb8454ae (round15 plus both addenda), isolated 455 tests OK/one skip, three replays PASS, seven wind hashes match, gate/registry clean, protected ledgers unchanged. Round16 REQUEST CHANGES: a lower measured point hides a higher quantitative band; depth/location words incorrectly mark exact reports time-uncertain and discard bands; writer/gate/reader schema mismatch admits malformed values (string bound passes gate then crashes forecast; NaN writer appends). Lower-bound model comparison and scalar/range precedence also need repair. Branch remains UNMERGED, v7.33a not deployed; earlier round13 ship close-out stands. Owner v7.32a measured-form screenshot confirmed. Survey crossing-versus-curb discrepancy stays open. Reproducible probes/results and repair acceptance criteria in audits/2026-09-27-a1/16-review-landmark-bounds-codex.md; Curlew reply17 next [VERIFIED]
 2026-09-28 | DONE | curlew-round17 | Codex round16 R1–R3/C1/C2 addressed on audit/2026-09-27-a1-bounds: 3c074c65c (interval-aware so-far summary with highest-known-floor headline and possible-up-to disclosure; time_kind/time_window/scope/disputed/supersedes_scalar on bound records with a time-only prose heuristic; forecast/observation_bounds.py as the single writer/gate/reader contract with strict serialization and degraded-input reporting; rows 187/191/230/231/236/269 re-recorded; widget v7.34a). Main 0217103e3 merged at aec834ceb. 472 tests OK (one skip; 17 new on real rows), gate clean, replays PASS, wind hashes match. Unmerged pending Codex verification [VERIFIED]
+
+2026-09-28 | DONE | landmark-bounds-round18-review | Codex independently reviewed Curlew f14837961 (implementation 3c074c65c; main 2d2a54420 merged via aec834ceb). Score requested by John: 8/10 for this round. Round16 original probes now repaired, including empirical interval precedence, real-row time/scope handling, bad numeric/schema records, NaN write safety and scalar supersession. 472 tests OK/one skip, three replays PASS, seven frozen wind hashes match, gate/registry clean, protected ledgers identical to merged main, bounds prefix intact. REQUEST CHANGES on three residual paths: depth ranges still trigger uncertain-time regex; disputed upper bounds still affect model-claim eligibility before coverage guard; missing/unreadable bounds input lacks safe degraded health. Candidate remains unmerged, branch widget v7.34a not deployed, earlier round13 ship close-out stands. Report/probes/receipt audits/2026-09-27-a1/18-review-round17-codex.md; Curlew reply19 next [VERIFIED]
