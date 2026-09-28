@@ -103,6 +103,10 @@ def main():
     ap.add_argument("--title", default=None,
                     help="Optional title for the figure (only used with "
                          "--water-level by default).")
+    ap.add_argument("--label", choices=("value", "name", "both"), default="value",
+                    help="What the dot labels say: the NAVD88 value (default), the "
+                         "map_points.csv name, or both (name over value). Names let "
+                         "the owner point at a spot and cite it by label.")
     ap.add_argument("--show-labels", action="store_true",
                     help="When --water-level is set, also draw the labeled "
                          "elevation dots on top of the overlay. Off by "
@@ -172,8 +176,15 @@ def main():
         color = _category_color(cat)
         ax.plot(x, y, "o", color=color, markersize=6,
                 markeredgecolor="white", markeredgewidth=1.5, zorder=10)
+        if args.label == "name":
+            label_text = r.get("label", "?")
+        elif args.label == "both":
+            label_text = f"{r.get('label', '?')}\n{r.get('value', '?')}"
+        else:
+            label_text = r.get("value", "?")
         txt = ax.annotate(
-            r.get("value", "?"), (x, y), color=color, fontsize=11,
+            label_text, (x, y), color=color,
+            fontsize=11 if args.label == "value" else 7,
             fontweight="bold", xytext=(8, -4),
             textcoords="offset points", zorder=11,
         )
