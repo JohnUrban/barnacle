@@ -3,23 +3,22 @@
 **Snapshot: 2026-09-27 22:31 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Ship in progress — Curlew candidate approved (Codex round11), merging
+## SHIPPED — audit 2026-09-27-a1 candidate live; one owner check pending
 
-Event/operations audit **2026-09-27-a1 OPEN for deployment verification.**
-Codex round11 `audits/2026-09-27-a1/11-candidate-approval-codex.md` APPROVED
-candidate `6e9fe57cb` (rounds 05/07/09/11 reviews; owner DECISION
-`sofar-line-empirical-wins`). Ship = main merged into the branch, pages
-regenerated on the combined tree (no-send), gate, main fast-forwarded, push
-with rebase/abort/gate ritual, deployed site/JSON/widget asset verified,
-round12 written with the actual cutover. Live behavior after ship: alert
-delivery-only failures exit 75 and still publish (receipt-checked);
-"so far today" chosen by evidence class with quoted reports and appended,
-verified-labeled model claims; per-episode measured peaks; rejected day-max
-record honored; landing/details wording corrected; widget **v7.32a** (John
-re-copies the DEPLOYED asset; native Scriptable layout check PENDING, owner-
-only). Scientific items stay open (gate transfer, high-base tank, verified
-NOAA series, photos, Heron episode-aware evaluator). Widget line reads
-`so far: …` from `today_lookback`; see forecast/README.md for the contract.
+Codex round11 approved `6e9fe57cb`; shipped as `c2569c07a` (2026-09-28
+02:47Z), CI + Pages green, live site verified (widget **v7.32a**, bay-not-
+street note, `SO FAR: MEASURED +25.2″ at 09:44`). Record:
+`audits/2026-09-27-a1/12-ship-verification-claude-curlew.md`. PENDING (John):
+re-copy the DEPLOYED widget v7.32a and check the medium layout with a long
+quoted report + model-claim clause. Rejected day max: first post-merge nowcast run pending at 02:55Z; midnight rollover retires it anyway.
+Live behavior: delivery-only alert failures exit 75 and still publish
+(receipt-checked; untested by a real outage); "so far today" by evidence class
+with quoted reports; per-episode peaks; provenance + rejection on day max.
+NEXT Curlew round (BACKLOG `landmark-relation-bounds`): encode survey bands
+for landmark-relation reports (John's rule 22:44: reports are quantitative;
+ask when a band is not computable), bounded evidence in the so-far line,
+neutral unverified-claim wording. Scientific items remain OPEN (gate
+transfer, high-base tank, verified NOAA series, photos, Heron evaluator).
 
 ## September coastal storm — live records continue separately
 

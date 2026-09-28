@@ -8,22 +8,21 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **September 25–27 event/operations audit OPEN pending ship verification (2026-09-27-a1).**
-      Curlew round10 candidate 6e9fe57cb APPROVED for merge by Codex round11;
-      no outstanding code-change request. Source wording preserved rather
-      than reinterpreted; original row238 and negation cases verified through
-      payload/site/email/widget text. Candidate remains UNMERGED. Report:
-      audits/2026-09-27-a1/11-candidate-approval-codex.md.
-      443 tests OK (one skip), three frozen replays PASS, seven frozen hashes
-      match, gate clean; protected ledgers identical to incorporated main
-      feae83311. Next: preserve newer main/event records at merge, regenerate
-      and gate, verify publication/cutover, then round12 deployment close-out.
-      Widget v7.32a branch-only; native layout and owner re-copy still pending.
-      Owner sofar-line-empirical-wins DECISION already applies; no repeat ask.
-      Four-window study covers Sep25 PM through Sep27 AM only; later evening
-      records, photos, historical census/hindcasts and gauge/gate science
-      remain separate work. Heron owns as-issued evaluation; Tern owns social.
-      No gate model, alert-policy promotion or frozen wind change authorized.
+- [ ] **September 25–27 event/operations audit 2026-09-27-a1 — implementation SHIPPED (c2569c07a, 2026-09-28 02:47Z); owner widget check + scientific follow-ups remain.**
+      Codex round11 approved candidate 6e9fe57cb; ship record
+      audits/2026-09-27-a1/12-ship-verification-claude-curlew.md (CI + Pages
+      green; live site verified: widget v7.32a, bay-not-street note, so-far
+      line MEASURED +25.2 at 09:44; rejected day max awaiting the first post-merge nowcast run).
+      PENDING owner-only: re-copy deployed v7.32a and check the native medium
+      layout with a long quoted report + model claim. OPEN follow-ups (not
+      closed by the ship): landmark-relation-bounds (John's rule: reports are
+      quantitative; survey bands; ask when unclear); gate-transfer physics
+      (no gate model authorized); high-base tank; verified (q=v) NOAA series
+      beside the preliminary archive; photos (rule 9); Borough gate history;
+      historical negative-control census/hindcasts; Heron episode-aware,
+      interval-preserving as-issued evaluation (score stated bases only).
+      Four-window study ends Sep27 AM; evening e02 registered on main as rows
+      arrive. Three episodes = one storm for the frozen wind trial.
 
 
 - [ ] **Storm communication parity — reproduced 2026-09-25.** Public 10:13
@@ -823,3 +822,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | DONE | curlew-candidate-approved | Codex round11 approves 6e9fe57cb for merge/deployment verification; round09 blocker resolved, no further implementation revision requested. 443 tests OK (one skip), three frozen replays PASS, seven hashes match, gate clean; actual-source/negation probes and full landing/email render checks pass. Candidate remains unmerged; preserve current main, regenerate/gate and verify publication, native widget layout and actual cutover before close-out. Widget v7.32a not yet a copy recommendation. Audit OPEN for ship verification; scientific follow-ups/Heron/Tern ownership retained [VERIFIED].
 2026-09-27 | PREF | observations-are-quantitative | John (22:44): every field report is meant to yield an exact or banded estimate. A tracked landmark named with breach/level/over/under is quantitative: "breached over the first porch step" = level just exceeded 5.41 ft at that moment (and ≥ 5.41 if the breach was earlier). Connectivity reports carry bands from the survey: "spans SE to SW but not NE to NW" = between the Central middle at the far corner (3.91) and the Bay Ave middle (4.36); "over the curb at the upstream grate but not the curb at the lawn step" = between the upstream-grate sidewalk (4.14, map_points approximated) and the walkway curb top (4.16). Agents must ASK when a band is not computable, never file the report as purely qualitative. Production code still reads only structured bounds recorded by an agent (sidecar basis stated_landmarks), never prose [STATED; survey refs model/elevations.md, assets/map_points.csv]
 2026-09-27 | OPEN | landmark-relation-bounds | Extend the interval sidecar to every landmark-relation report in the four windows (188, 230, 237, 238, 241, 251, 222 …) with stated_landmarks bounds from the survey; make _today_lookback read stated-landmark bounds as "bounded" evidence (band rendered, claims outside the band suppressible); neutral wording for the unverified-claim note. Next Curlew round after the ship [STATED plan]
+2026-09-28 | DONE | audit-a1-shipped | Curlew candidate 6e9fe57cb (Codex round11 APPROVED; owner DECISION sofar-line-empirical-wins) merged with main d3cd2b92b at 87511aab5 (36 newer commits preserved; ledger union), pages regenerated no-send on the merged tree, shipped as c2569c07a at 02:47:16Z; CI 36371161800 and Pages 36371161755 success; live site verified by 02:50Z (widget v7.32a, bay-not-street wording, so-far MEASURED +25.2 at 09:44 replacing the phantom modeled +39.0). Rejected day max: At write time (02:55Z) the latest published nowcast was still the pre-merge run 2026-09-28T02:38:13Z (day max 39.0 @ 2026-09-27T06:40:00Z); the first post-merge nowcast run will apply the rejection. The line's local-midnight rollover (04:00Z) retires the value regardless. Widget native layout check PENDING (owner). Record: audits/2026-09-27-a1/12-ship-verification-claude-curlew.md [VERIFIED]
