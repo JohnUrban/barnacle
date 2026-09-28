@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 23:03 EDT.** Rewrite wholesale each ship; <100 lines.
+**Snapshot: 2026-09-27 23:56 EDT.** Rewrite wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
 ## Audit 2026-09-27-a1 — implementation closed; owner check pending
@@ -17,11 +17,17 @@ Owner wording rule: "measured", never "stick"/"ruler"; "tape" only where stated.
 Live behavior: delivery-only alert failures exit 75 and still publish
 (receipt-checked; untested by a real outage); "so far today" by evidence class
 with quoted reports; per-episode peaks; provenance + rejection on day max.
-NEXT Curlew round (BACKLOG `landmark-relation-bounds`): encode survey bands
-for landmark-relation reports (John's rule 22:44: reports are quantitative;
-ask when a band is not computable), bounded evidence in the so-far line,
-neutral unverified-claim wording. Scientific items remain OPEN (gate
-transfer, high-base tank, verified NOAA series, photos, Heron evaluator).
+Curlew bounds candidate **2fb8454ae** (`audit/2026-09-27-a1-bounds`) is
+UNMERGED; Codex round16 REQUEST CHANGES, separate from the closed ship:
+`audits/2026-09-27-a1/16-review-landmark-bounds-codex.md`. 455 tests OK (one
+skip), three replays PASS, but independent probes found R1 lower measured
+value hides higher bounds; R2 depth/location words erase bounds as uncertain
+time; R3 schema validation admits bad values. Curlew repairs these before
+review/merge; reply17 next. Branch widget v7.33a is NOT the deployed asset.
+Owner bands/clarifications retained on that branch. Crossing 4.37 vs curb
+4.16 remains an open survey discrepancy; no elevation change authorized.
+Science follow-ups remain OPEN: gate transfer, high-base tank, verified NOAA,
+photos and Heron evaluator. No owner decision needed for code repairs.
 
 ## September coastal storm — live records continue separately
 
@@ -59,7 +65,7 @@ approval b999ea1d0. Event audit does not reopen release mechanics close-out.
 36-h surge decay/fallback ladder unchanged. Seven-day advisory corrections,
 guidance tails and as-issued rain skill remain experimental.
 18 landmarks; hourly site/JSON and ~10-min radar nowcast. Widget v7.32a
-re-copy/native layout check pending (above). SMS imminent impact; ntfy/email
+installed; long-report/claim layout checks pending (above). SMS imminent impact; ntfy/email
 longer lead; alert tide horizon 48h. Forecast/model changes require review.
 
 ## Heron and wind-shadow — ownership unchanged

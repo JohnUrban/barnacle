@@ -17,8 +17,13 @@ looks stale, trust this file. Ledger lines are append-only:
       Owner check 22:59: measured form verified on the native medium widget
       (v7.32a, screenshot in audit 14); quoted-report and model-claim forms
       still pending a day that produces them. OPEN follow-ups (not
-      closed by the ship): landmark-relation-bounds (John's rule: reports are
-      quantitative; survey bands; ask when unclear); gate-transfer physics
+      closed by the ship): landmark-relation-bounds (candidate 2fb8454ae on
+      audit/2026-09-27-a1-bounds UNMERGED; Codex round16 REQUEST CHANGES:
+      empirical interval ranking, time provenance, bounds schema; Curlew
+      reply17 next). Reports are quantitative; survey bands; ask when unclear.
+      Crossing 4.37 vs curb 4.16 is an unresolved survey discrepancy recorded
+      with owner clarifications on the branch; do not change elevations or
+      treat disputed bounds as exact calibration. Other open work: gate-transfer physics
       (no gate model authorized); high-base tank; verified (q=v) NOAA series
       beside the preliminary archive; photos (rule 9); Borough gate history;
       historical negative-control census/hindcasts; Heron episode-aware,
@@ -830,3 +835,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | DONE | audit-a1-independent-closeout | Codex round13 independently verified ship c2569c07a and post-merge nowcast 224f1e1a4: code matches approved candidate, three protected ledgers byte-identical to pre-merge main, 443 tests OK (one skip), three frozen replays PASS, seven wind hashes match, gate/episode registry clean, CI and Pages success. Live receipt 2026-09-28 03:01Z: widget v7.32a, measured +25.2 in at 09:44; rejected +39-in day max removed by 02:57:54Z run before local midnight. Implementation/deployment review CLOSED; native widget owner acceptance, landmark-relation-bounds and scientific follow-ups OPEN. Earlier audit-a1-shipped ledger date used UTC Sep28; local ship was Sep27 22:47 EDT. Record audits/2026-09-27-a1/13-close-out-codex.md [VERIFIED]
 2026-09-27 | PREF | measurement-wording | John (23:02–23:07): "tape" is a claim about the instrument and is often wrong — he has used a tape measure and lately a two-foot level that reads inches; the instrument does not matter, the measurement does. Use "measured" for readings against landmarks of known height and "empirical" for the class incl. qualitative reports; NEVER write "stick" or "ruler"; keep "tape" only where the record itself states a tape (older events with tape photos). Sweep all arms in the bounds work unit [STATED]
 2026-09-27 | FACT | widget-native-check-partial | John re-copied deployed v7.32a (22:59 EDT screenshot, audits/2026-09-27-a1/14-widget-v7.32a-medium-measured-form.png): medium widget shows `so far: +25.2″ @09:44 (tape)` on one legible line, severe color, footer v7.32a. Quoted-report and model-claim forms remain unexercised on the native surface (owner-only, pending a day that produces them) [VERIFIED screenshot]
+
+2026-09-27 | DONE | landmark-bounds-independent-review | Codex reviewed Curlew candidate 2fb8454ae (round15 plus both addenda), isolated 455 tests OK/one skip, three replays PASS, seven wind hashes match, gate/registry clean, protected ledgers unchanged. Round16 REQUEST CHANGES: a lower measured point hides a higher quantitative band; depth/location words incorrectly mark exact reports time-uncertain and discard bands; writer/gate/reader schema mismatch admits malformed values (string bound passes gate then crashes forecast; NaN writer appends). Lower-bound model comparison and scalar/range precedence also need repair. Branch remains UNMERGED, v7.33a not deployed; earlier round13 ship close-out stands. Owner v7.32a measured-form screenshot confirmed. Survey crossing-versus-curb discrepancy stays open. Reproducible probes/results and repair acceptance criteria in audits/2026-09-27-a1/16-review-landmark-bounds-codex.md; Curlew reply17 next [VERIFIED]
