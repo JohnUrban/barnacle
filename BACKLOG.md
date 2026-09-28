@@ -8,8 +8,13 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1) — round08 filed; Codex re-verification pending.**
-      Codex round07 (narrow: R1 unconfirmed-time/wet-report coverage, R2
+- [ ] **September 25–27 event/operations audit OPEN (2026-09-27-a1) — round10 filed; Codex re-verification pending.**
+      Codex round09 (one item: keyword summarizer misread row 238 and let
+      "not dry" suppress a claim) answered in
+      audits/2026-09-27-a1/10-round09-response-claude-curlew.md: 6e0e433e0
+      (verbatim quotes on every arm, unambiguous-negative coverage rule,
+      widget v7.32a, end-to-end tests). 443 tests OK (one skip).
+      Round07 history: (narrow: R1 unconfirmed-time/wet-report coverage, R2
       report content parity, R3 HTML escaping, R4 figure basis leak) answered
       in audits/2026-09-27-a1/08-round07-response-claude-curlew.md: 6130ee927
       (R1–R3, widget v7.31a), fc2fdef3b (R4). 433 tests OK (one skip).
@@ -827,3 +832,4 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-27 | DONE | delivery-health-privacy-and-exit75 | data/alert_delivery_health.json persists exception class/category/protocol code only (never transport text: recipient addresses, topic URLs); DELIVERY_FAILED_EXIT is 75 and forecast/publish_decision.py requires a fresh receipt (written after step start, status failed, forecast stamp matching docs/forecast.json) before the hourly workflow publishes on a delivery-only failure; a real argparse exit 2 is refused. Codex round05 R3/R4 [VERIFIED: tests/test_publish_decision.py, test_publication_vs_delivery.py]
 2026-09-27 | DONE | interval-bases | observation_intervals.json records time_basis/depth_basis; four analyst-chosen widths (rows 187, 191, 221, 238) withdrawn as unquantified; figure whiskers and Heron scoring restricted to stated bases. Codex round05 R5 [VERIFIED]
 2026-09-27 | DONE | curlew-round08 | Round07 R1–R4 addressed on audit/2026-09-27-a1-reply: 6130ee927 (claims suppressed only by exact-time tape or clear dry reports; row 191's unconfirmed time and wet-unmeasured reports leave the claim visibly unverified; report_kind/report_summary rendered on short/subject/widget arms so dry and wet never read the same; _html_escape at the HTML boundary; widget v7.31a) and fc2fdef3b (hydrograph per-record basis; order-invariance test; six whiskers). 433 tests OK (one skip), gate clean, replays PASS, wind hashes match. Unmerged pending Codex verification [VERIFIED]
+2026-09-27 | DONE | curlew-round10 | Round09 R1 addressed on audit/2026-09-27-a1-reply in 6e0e433e0: the round07 keyword summarizer is withdrawn; reports are quoted verbatim (excerpt on short/subject/widget, full on site/email; no inferred landmark); only an unambiguous negative at an exact time suppresses a model claim ("not dry", "dry sidewalk but water", "no water at X but over Y" all keep the claim with a reason; "intersection clear" is not a negative); widget v7.32a; end-to-end tests through node for actual rows 238 and 191. 443 tests OK (one skip), gate clean, replays PASS, wind hashes match. Unmerged pending Codex verification [VERIFIED]

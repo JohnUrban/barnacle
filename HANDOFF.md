@@ -1,25 +1,25 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-27 21:55 EDT** (branch `audit/2026-09-27-a1-reply`). Rewrite
+**Snapshot: 2026-09-27 22:35 EDT** (branch `audit/2026-09-27-a1-reply`). Rewrite
 wholesale each ship; <100 lines.
 `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
 
-## Immediate obligation — Codex verifies the round-08 candidate
+## Immediate obligation — Codex verifies the round-10 candidate
 
-Event/operations audit **2026-09-27-a1 OPEN**. Codex round07 (narrow REQUEST
-CHANGES) is answered in **round08**
-`audits/2026-09-27-a1/08-round07-response-claude-curlew.md` on
-`audit/2026-09-27-a1-reply` (sibling `../barnacle-a1reply`), UNMERGED, base
-main `feae83311` (merge `2146b98b5`). Round07 repairs: `6130ee927` R1 model
-claims suppressed only by exact-time tape or clear dry reports (row 191's
-unconfirmed time, wet-unmeasured and invalid rows never cover; claims carry a
-verification reason) + R2 report_kind/report_summary on every arm, widget
-**v7.31a** + R3 `_html_escape` at the HTML boundary; `fc2fdef3b` R4 per-record
-basis in the hydrograph, order-invariance test. Round06 repairs stand
-(`285952037`, `b70accd76`, `2191bda8e`). 433 tests OK (one skip), gate clean,
-three replays PASS, seven wind hashes match. Next: Codex re-verification →
-merge against then-current main, regenerate pages, gate, inspect. Widget
-v7.31a is NOT a copy recommendation until deployed. Do not close on tests.
+Event/operations audit **2026-09-27-a1 OPEN**. Codex round09 (one blocking
+item: keyword report summarizer changed meaning and contaminated coverage) is
+answered in **round10** `audits/2026-09-27-a1/10-round09-response-claude-curlew.md`
+on `audit/2026-09-27-a1-reply` (sibling `../barnacle-a1reply`), UNMERGED, base
+main `feae83311` (merge `2146b98b5`). `6e0e433e0`: reports are QUOTED verbatim
+(excerpt on short/widget arms, full text on site/email), no landmark inferred;
+only an unambiguous negative at an exact time suppresses a model claim; widget
+**v7.32a**; end-to-end tests (row → payload → text via node → coverage) for
+actual rows 238/191, negation, mixed, whole-intersection negative, tape.
+Earlier repairs stand: `285952037` `b70accd76` `2191bda8e` (round06),
+`6130ee927` `fc2fdef3b` (round08). 443 tests OK (one skip), gate clean, three
+replays PASS, seven wind hashes match. Next: Codex re-verification → merge
+against then-current main, regenerate pages, gate, inspect, record cutover.
+Widget v7.32a is NOT a copy recommendation until deployed. Do not close on tests.
 
 ## September coastal storm — live records continue separately
 
@@ -57,7 +57,7 @@ approval b999ea1d0. Event audit does not reopen release mechanics close-out.
 36-h surge decay/fallback ladder unchanged. Seven-day advisory corrections,
 guidance tails and as-issued rain skill remain experimental.
 18 landmarks; hourly site/JSON and ~10-min radar nowcast. Widget: main has
-v7.29a (re-copy unconfirmed); the branch carries v7.31a. SMS imminent impact;
+v7.29a (re-copy unconfirmed); the branch carries v7.32a. SMS imminent impact;
 ntfy/email longer lead; alert tide horizon 48h. Model changes require review.
 
 ## Heron and wind-shadow — ownership unchanged
