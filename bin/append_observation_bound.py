@@ -64,6 +64,15 @@ def append_bound(csv_row, lo, hi, basis, landmarks, text, recorded_by,
     problems = ob.validate_record(rec, rows)
     if problems:
         raise ValueError("; ".join(problems))
+    # round 18 R1: metadata is authoritative for readers, so warn loudly when
+    # the row's own wording says the time is uncertain and the record does not
+    try:
+        from forecast.flood_forecast_daily import _lookback_time_uncertain
+        if time_kind == "stated_exact" and _lookback_time_uncertain(row.get("observed_qualitative", "")):
+            print("WARNING: the row's wording suggests an uncertain time but time_kind is "
+                  "stated_exact — confirm, or re-append with --time-kind", file=sys.stderr)
+    except Exception:
+        pass
     encoded = ob.serialize(rec).encode("utf-8")   # raises before any write on NaN/inf
     fd = os.open(bounds_path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
     try:

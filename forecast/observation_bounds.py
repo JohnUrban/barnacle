@@ -192,23 +192,39 @@ def load_ledger_rows(ledger_path):
         return _Rows(csv.DictReader(f))
 
 
-def load_bounds(path, ledger_rows=None, locator="strict"):
-    """(by_sha256, problems). Later valid lines win for the same row; every
-    malformed or invalid line is reported, never silently dropped."""
+def read_bounds(path, ledger_rows=None, locator="strict"):
+    """File-level contract (round 18 R3): returns
+    ``(by_sha256, problems, status)`` where status is "ok" (file read),
+    "absent" (no file at ``path``) or "unreadable" (the path exists but
+    cannot be read or decoded; ``problems`` then holds one sanitized
+    diagnostic naming the exception class, never a payload). A missing or
+    unreadable file yields no records — callers decide whether absence is a
+    configuration or an operational failure."""
     by_hash, problems = {}, []
     if not os.path.exists(path):
-        return by_hash, problems
-    with open(path, encoding="utf-8") as f:
-        for n, line in enumerate(f, 1):
-            if not line.strip():
-                continue
-            rec, why = parse_line(line)
-            if rec is None:
-                problems.append(f"line {n}: {why}")
-                continue
-            bad = validate_record(rec, ledger_rows, locator)
-            if bad:
-                problems.append(f"line {n}: " + "; ".join(bad))
-                continue
-            by_hash[rec["sha256"]] = with_defaults(rec)
+        return by_hash, problems, "absent"
+    try:
+        with open(path, encoding="utf-8") as f:
+            lines = f.read().split("\n")
+    except (OSError, UnicodeDecodeError, ValueError) as e:
+        return by_hash, [f"bounds file unreadable ({type(e).__name__})"], "unreadable"
+    for n, line in enumerate(lines, 1):
+        if not line.strip():
+            continue
+        rec, why = parse_line(line)
+        if rec is None:
+            problems.append(f"line {n}: {why}")
+            continue
+        bad = validate_record(rec, ledger_rows, locator)
+        if bad:
+            problems.append(f"line {n}: " + "; ".join(bad))
+            continue
+        by_hash[rec["sha256"]] = with_defaults(rec)
+    return by_hash, problems, "ok"
+
+
+def load_bounds(path, ledger_rows=None, locator="strict"):
+    """(by_sha256, problems) — record-level view of read_bounds; an
+    unreadable file surfaces as a single problem line."""
+    by_hash, problems, _status = read_bounds(path, ledger_rows, locator)
     return by_hash, problems

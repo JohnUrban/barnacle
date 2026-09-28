@@ -2735,8 +2735,10 @@ def build_forecast():
     # round 16 R3: the bounds record is read here so that a malformed line
     # is a VISIBLE degraded input, never a crash and never a silent "no
     # quantitative evidence"
+    _BOUNDS_STATUS["status"] = "unknown"
+    _BOUNDS_PROBLEMS[:] = []
     _today_lookback_result = _today_lookback()
-    _bh = _bounds_health()
+    _bh = _bounds_health() if _BOUNDS_STATUS.get("status") != "unknown" else None
     if _bh:
         input_health["observation_bounds"] = _bh
     degraded_inputs = sorted(
@@ -5554,12 +5556,18 @@ def build_sms_text(forecast):
 # statements ABOUT THE TIME — "exact observation time unconfirmed",
 # "sometime", "between 21:20 and 21:40", "around 7", "~20:06" — and NOT
 # depth or location words ("~1 in above them", "around each grate").
+_UNIT = r"(?:in\b|inch|inches|cm\b|mm\b|ft\b|feet|\"|″|′|')"
 _TIME_UNCERTAIN_RE = re.compile(
     r"(exact (?:observation )?time unconfirmed|time unconfirmed|unconfirmed time"
     r"|\bsometime\b"
-    r"|\bbetween \d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*(?:and|-|–|to)\s*\d{1,2}(?::\d{2})?"
-    r"|\baround \d{1,2}(?::\d{2})?(?:\s*(?:am|pm))?(?!\s*(?:in\b|inch|inches|cm\b|ft\b|feet|\"|″))"
-    r"|~\s*\d{1,2}:\d{2})", re.I)
+    # a clock range: at least one side has a colon or an am/pm marker, and
+    # the second number is not followed by a depth unit
+    r"|\bbetween (?:\d{1,2}:\d{2}|\d{1,2}\s*(?:am|pm))\s*(?:and|-|–|to)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm)?(?![\d:])(?!\s*" + _UNIT + ")"
+    r"|\bbetween \d{1,2}\s*(?:and|-|–|to)\s*(?:\d{1,2}:\d{2}|\d{1,2}\s*(?:am|pm))(?![\d:])(?!\s*" + _UNIT + ")"
+    # "around 7" / "around 7:30" / "around 7 pm": the number must be a whole
+    # token (no backtracking into "around 1|0 inches") and not carry a unit
+    r"|\baround (?:\d{1,2}:\d{2}|\d{1,2})(?:\s*(?:am|pm))?(?![\d:])(?!\s*" + _UNIT + ")"
+    r"|~\s*\d{1,2}:\d{2}(?![\d:])(?!\s*" + _UNIT + "))", re.I)
 
 
 def _lookback_time_uncertain(text):
@@ -5613,6 +5621,11 @@ def _report_summary(kind, text, landmark_key=None):
 
 
 _BOUNDS_PROBLEMS = []
+_BOUNDS_STATUS = {"status": "unknown"}
+# Production expects the committed record to exist; a replay or test harness
+# that intentionally runs without one sets this False so absence is a
+# configuration, not an operational failure (round 18 R3).
+OBSERVATION_BOUNDS_EXPECTED = True
 
 
 def _observation_bounds(path=None):
@@ -5630,22 +5643,39 @@ def _observation_bounds(path=None):
                                                  "labeled_observations.csv"))
     except (OSError, csv.Error):
         rows = None
-    by_hash, problems = _ob.load_bounds(path or OBSERVATION_BOUNDS_PATH, rows,
-                                        locator="hash")
+    by_hash, problems, status = _ob.read_bounds(path or OBSERVATION_BOUNDS_PATH, rows,
+                                                locator="hash")
     _BOUNDS_PROBLEMS[:] = problems
-    if problems:
+    _BOUNDS_STATUS["status"] = status
+    if status == "unreadable":
+        print(f"WARNING: observation_bounds.jsonl unreadable; no bands used: {problems[0]}", flush=True)
+    elif status == "absent" and OBSERVATION_BOUNDS_EXPECTED:
+        print("WARNING: observation_bounds.jsonl missing; no landmark bands available", flush=True)
+    elif problems:
         print(f"WARNING: observation_bounds.jsonl has {len(problems)} invalid "
               f"line(s); those bands are ignored: {problems[0]}", flush=True)
     return by_hash
 
 
 def _bounds_health():
-    """input_health entry for the bounds record after _today_lookback ran."""
-    if not _BOUNDS_PROBLEMS:
+    """input_health entry for the bounds record after _today_lookback ran
+    (round 18 R3): unreadable → degraded; absent → degraded when production
+    expects the file, otherwise not reported; invalid lines → degraded with
+    a sanitized first diagnostic; a clean read clears it."""
+    st = _BOUNDS_STATUS.get("status")
+    if st == "unreadable":
+        return {"status": "degraded",
+                "detail": f"landmark-bounds record unavailable: {_BOUNDS_PROBLEMS[0] if _BOUNDS_PROBLEMS else 'unreadable'}"}
+    if st == "absent":
+        if OBSERVATION_BOUNDS_EXPECTED:
+            return {"status": "degraded",
+                    "detail": "landmark-bounds record missing (data/observation_bounds.jsonl); no bands available"}
         return None
-    return {"status": "degraded",
-            "detail": (f"{len(_BOUNDS_PROBLEMS)} invalid line(s) in "
-                       f"observation_bounds.jsonl ignored; first: {_BOUNDS_PROBLEMS[0][:160]}")}
+    if _BOUNDS_PROBLEMS:
+        return {"status": "degraded",
+                "detail": (f"{len(_BOUNDS_PROBLEMS)} invalid line(s) in "
+                           f"observation_bounds.jsonl ignored; first: {_BOUNDS_PROBLEMS[0][:160]}")}
+    return None
 
 
 def _today_lookback():
@@ -5693,10 +5723,10 @@ def _today_lookback():
 
     def _add_band(rec, inst, t_local, qual):
         lo, hi = rec.get("lo_navd88"), rec.get("hi_navd88")
-        # the record's time_kind is authoritative, but wording that says the
-        # time is uncertain also disables coverage (belt and braces)
-        exact = (rec.get("time_kind", "stated_exact") == "stated_exact"
-                 and not _lookback_time_uncertain(qual))
+        # round 18 R1: the record's explicit time_kind is authoritative for a
+        # recorded band (the writer warns when prose and metadata disagree);
+        # the prose heuristic serves rows WITHOUT a record only
+        exact = rec.get("time_kind", "stated_exact") == "stated_exact"
         scope = rec.get("scope", "intersection")
         disputed = bool(rec.get("disputed"))
         empirical.append({"kind": "band", "inst": inst, "t": t_local.strftime("%H:%M"),
@@ -5852,8 +5882,10 @@ def _today_lookback():
         if win["window"]:
             out["time_window_local"] = list(win["window"])
         # another interval allows a higher level than the winner's known range
+        if win["kind"] == "band" and win["disputed"] and win["hi"] is not None:
+            out["hi_disputed"] = True     # round 18 R2: shown, never used to dismiss a claim
         higher = [e for e in pool if e is not win and e["hi"] is not None
-                  and e["hi"] > level + 1e-9]
+                  and not e["disputed"] and e["hi"] > level + 1e-9]
         if higher:
             h = max(higher, key=lambda e: e["hi"])
             out["possible_up_to_navd88"] = round(h["hi"], 3)
@@ -5883,7 +5915,13 @@ def _today_lookback():
         return None
     # ---- model claim
     if out["evidence"] in ("measured", "bounded"):
-        floor = out.get("hi_navd88") if out.get("hi_navd88") is not None else out.get("lo_navd88")
+        # the eligibility threshold is the headline's RELIABLE known range: a
+        # disputed upper endpoint never dismisses a higher model estimate
+        # (round 18 R2)
+        if out.get("hi_navd88") is not None and not out.get("hi_disputed"):
+            floor = out["hi_navd88"]
+        else:
+            floor = out.get("lo_navd88") if out.get("lo_navd88") is not None else GRATE_SW
         if out.get("possible_up_to_navd88") is not None:
             floor = max(floor, out["possible_up_to_navd88"])
     else:
@@ -5897,6 +5935,9 @@ def _today_lookback():
         if not suppressed:
             near = {k for ti, k in nearby_kinds
                     if m_inst is not None and abs(ti - m_inst) <= hour}
+            if out.get("hi_disputed") and out.get("hi_navd88") is not None \
+                    and model[0] <= out["hi_navd88"] + 1e-9:
+                near.add("band-disputed")
             why = ("a landmark band at that time has no upper bound; claim unverified" if "band-open" in near
                    else "only a local pool was bounded at that time; claim unverified" if "band-local" in near
                    else "the band at that time rests on a disputed survey point; claim unverified" if "band-disputed" in near

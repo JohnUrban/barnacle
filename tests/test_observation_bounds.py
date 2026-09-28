@@ -155,13 +155,15 @@ class BoundedEvidenceTests(unittest.TestCase):
         row = ('2026-09-27T20:06,grate_SW,,"NO flooding (exact observation time unconfirmed)"\n')
         tmp = _repo(row)
         ledger, path = str(tmp / "data" / "labeled_observations.csv"), str(tmp / "data" / "observation_bounds.jsonl")
+        # round 18 R1: the record's time_kind is authoritative; the agent
+        # records the surrogate time explicitly (the writer warns otherwise)
         aob.append_bound(2, None, 3.52, "stated_landmarks",
                          [{"key": "grate_SW", "navd88": 3.52, "relation": "not reached", "source": "model/elevations.md"}],
-                         "below the SW grate", "t", ledger, path)
+                         "below the SW grate", "t", ledger, path, time_kind="surrogate")
         claim = dict(MODEL_39, day_max_street_in=26.0, day_max_utc="2026-09-28T00:06:00Z")
         lb = _lookback(tmp, claim)
-        # round 16 R2: the band is kept as quantitative evidence with its
-        # uncertain time; it never covers the claim
+        # the band is kept as quantitative evidence with its uncertain time;
+        # it never covers the claim
         self.assertEqual(lb["evidence"], "bounded")
         self.assertTrue(lb["time_uncertain"])
         self.assertIn("unconfirmed", lb["model_claim"]["verification"])

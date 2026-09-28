@@ -576,14 +576,17 @@ def validate_observation_bounds(path, ledger_path):
     if not os.path.exists(path):
         return []
     try:
-        from .observation_bounds import load_bounds, load_ledger_rows
+        from .observation_bounds import read_bounds, load_ledger_rows
     except ImportError:
-        from observation_bounds import load_bounds, load_ledger_rows
+        from observation_bounds import read_bounds, load_ledger_rows
     try:
         rows = load_ledger_rows(ledger_path)
     except (OSError, csv.Error) as e:
         return [f"ledger unreadable for bounds check: {e}"]
-    _records, problems = load_bounds(path, rows)
+    _records, problems, status = read_bounds(path, rows)
+    if status == "unreadable":
+        return [f"expected bounds input exists but cannot be read: {problems[0]} — "
+                f"restore a readable data/observation_bounds.jsonl (append-only JSON lines)"]
     return problems
 
 

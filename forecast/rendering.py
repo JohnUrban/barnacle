@@ -176,6 +176,8 @@ def _lookback_phrase(lb, html=False, short=False):
             text = _html_escape(text)
         tilde = "~" if lb.get("time_uncertain") else ""
         local = lb.get("scope") == "local"
+        if lb.get("hi_disputed"):
+            band += " (cap disputed)"       # round 18 R2: shown, never used to dismiss a claim
         head = f"BOUNDED {'(local pool) ' if local else ''}{band} at {tilde}{when}" + (
             " (landmarks)" if short else
             f" (landmark band: {text}; no inches read)" if text else " (landmark band; no inches read)")

@@ -39,7 +39,9 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.34a";
+const WIDGET_VERSION = "v7.35a";
+// v7.35a (2026-09-28, round 18 R2): a band whose upper endpoint rests on a
+// disputed survey point shows "cap?" and never hides a model claim.
 // v7.34a (2026-09-28, round 16 R1): interval-aware so-far line — a local-pool
 // band is labeled, an uncertain band time gets "~", and when another band
 // allows a higher level than the headline it says "\u00b7 up to +X\u2033 @HH:MM".
@@ -83,7 +85,7 @@ function soFarText(lb) {
     const band = (lo !== null && hi !== null && Math.abs(hi - lo) < 0.05) ? fmt(hi)
                : (lo !== null && hi !== null) ? fmt(lo) + "\u2013" + fmt(hi)
                : (lo !== null ? "\u2265" + fmt(lo) : "\u2264" + fmt(hi));
-    head = (lb.scope === "local" ? "local pool " : "") + band + " "
+    head = (lb.scope === "local" ? "local pool " : "") + band + (lb.hi_disputed ? " cap?" : "") + " "
          + (lb.time_uncertain ? "@~" + (lb.time_local || "") : at) + " (landmarks)";
   } else if (ev === "reported") {
     const what = lb.report_summary || "report received; depth not measured";
