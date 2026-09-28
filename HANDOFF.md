@@ -1,29 +1,28 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-28 11:55 EDT (landmark-bounds shipped).** Rewrite wholesale each
-ship; <100 lines. `BACKLOG.md` OPEN LOOPS is authoritative; attic is archival.
+**Snapshot: 2026-09-28 12:18 EDT (independent bounds close-out).** Rewrite
+wholesale each ship; <100 lines. BACKLOG OPEN LOOPS is authoritative.
 
-## Landmark-bounds work unit — SHIPPED (Codex round 20 approved)
+## Landmark-bounds — implementation/deployment CLOSED, round22
 
-Candidate `648c7db8d` (branch `audit/2026-09-27-a1-bounds`) approved:
-`audits/2026-09-27-a1/20-candidate-approval-codex.md`; owner authorization =
-BACKLOG PREF `observations-are-quantitative`, PREF `measurement-wording`,
-DECISION `sofar-line-empirical-wins`. SHIPPED `7248c500d` (11:37 EDT), Pages
-green; CI failed on a fixed-count tide-page test, fixed in `ad2b66a52`
-(CI 36446596736 green). Record `audits/2026-09-27-a1/21-landmark-bounds-ship-claude-curlew.md`. Live after ship: append-only bounds record
-`data/observation_bounds.jsonl` (writer `bin/append_observation_bound.py`,
-shared contract `forecast/observation_bounds.py`, gate-validated; missing or
-unreadable file = degraded input); "so far today" is interval-aware over
-measured points and recorded bands (highest known floor leads; higher
-possibilities disclosed; disputed caps shown, never used to dismiss a model
-claim; local pools labeled; time_kind from the record, prose fallback reads
-clocks only); "measured" wording, never "tape" where the instrument is
-unstated; widget **v7.35a** — John re-copies the DEPLOYED asset; native
-bounded / disputed / long-report / model-claim readability PENDING inspection
-(only the v7.32a measured form was confirmed on screen). Survey conflict
-`central-crossing-vs-curb-inconsistency` (NE–NW peak 4.37 vs curb 4.16 given
-the 18:30/18:33 reports) stays OPEN; no elevation changed. 487 tests OK (one
-skip), gate clean, three replays PASS, seven wind hashes match.
+Approved candidate 648c7db8d shipped as 7248c500d; fixed-count page test
+repaired in ad2b66a52. Independent close-out and verification receipt:
+`audits/2026-09-27-a1/22-close-out-codex.md`. 487 tests OK (one skip),
+three frozen replays PASS, seven wind hashes unchanged, gate/registry clean,
+ledgers preserved; CI/Pages green. Public assets match bot main 07840a36a.
+Model remains v0.10.6. No further Curlew code revision requested.
+
+Live: append-only `data/observation_bounds.jsonl`, shared schema and writer
+`bin/append_observation_bound.py`; missing/unreadable bounds degrade visibly.
+So-far summaries compare measured points and landmark bands; highest known
+floor leads, higher possibilities disclosed, disputed caps labeled and never
+used to dismiss model claims. Local pools and time certainty retained.
+Instrument-neutral “measured” wording. Widget **v7.35a deployed**: John
+re-copies the deployed asset. Native bounded/disputed/long-report/model-claim
+readability remains PENDING; only v7.32a measured form has screenshot acceptance.
+Crossing 4.37 vs curb 4.16 NAVD88 remains an OPEN survey discrepancy; no
+elevation changed. Round22 corrects stale BACKLOG status and round21's merge
+metadata without rewriting historical records. This is not a science close-out.
 
 ## Audit 2026-09-27-a1 — implementation CLOSED (round 13); follow-ups open
 

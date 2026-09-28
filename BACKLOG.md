@@ -8,32 +8,28 @@ looks stale, trust this file. Ledger lines are append-only:
 
 ## OPEN LOOPS (force-ranked)
 
-- [ ] **September 25–27 event/operations audit 2026-09-27-a1 — implementation/deployment review CLOSED; owner widget acceptance + follow-ups remain OPEN.**
-      Shipped c2569c07a; independent close-out:
-      audits/2026-09-27-a1/13-close-out-codex.md. 443 tests OK (one skip),
-      three replays PASS, ledgers preserved; live widget v7.32a, bay-not-street
-      note, so-far MEASURED +25.2 at 09:44. Rejected +39-in day max removed
-      by post-merge nowcast 224f1e1a4, verified live before midnight rollover.
-      Owner check 22:59: measured form verified on the native medium widget
-      (v7.32a, screenshot in audit 14); quoted-report and model-claim forms
-      still pending a day that produces them. OPEN follow-ups (not
-      closed by the ship): landmark-relation-bounds candidate 648c7db8d on
-      audit/2026-09-27-a1-bounds APPROVED for merge (Codex round20), still
-      UNMERGED at review. All requested repairs verified; 487 tests OK (one
-      skip), three replays PASS; ledgers/frozen hashes preserved; full-build
-      health and rendering checked. Curlew next: merge current main, regenerate
-      no-send, gate/push, verify deployment and record round21. Review/score 9/10:
-      audits/2026-09-27-a1/20-candidate-approval-codex.md. Widget v7.35a not yet
-      deployed. Reports are quantitative; survey bands; ask when unclear.
-      Crossing 4.37 vs curb 4.16 is an unresolved survey discrepancy recorded
-      with owner clarifications on the branch; do not change elevations or
-      treat disputed bounds as exact calibration. Other open work: gate-transfer physics
-      (no gate model authorized); high-base tank; verified (q=v) NOAA series
-      beside the preliminary archive; photos (rule 9); Borough gate history;
-      historical negative-control census/hindcasts; Heron episode-aware,
-      interval-preserving as-issued evaluation (score stated bases only).
-      Four-window study ends Sep27 AM; evening e02 registered on main as rows
-      arrive. Three episodes = one storm for the frozen wind trial.
+- [ ] **September 25–27 audit 2026-09-27-a1 — initial and bounds implementation/deployment CLOSED; owner widget acceptance + science remain OPEN.**
+      First ship c2569c07a closed by round13; bounds ship 7248c500d and
+      test repair ad2b66a52 independently closed by round22:
+      audits/2026-09-27-a1/22-close-out-codex.md. Approved implementation
+      preserved; 487 tests OK (one skip), three replays PASS, seven wind hashes
+      match; protected ledgers preserved; CI/Pages green. Widget v7.35a is
+      DEPLOYED and matches approved source. John re-copies the deployed asset;
+      native bounded/disputed/long-report/model-claim readability remains
+      pending. Only v7.32a measured form has owner screenshot acceptance.
+      Rejected +39-in Sep27 model maximum was removed before midnight in
+      round13; +25.2 at 09:44 was that date's measured summary, not a current
+      reading. Consult live inputs for current conditions.
+      Reports are quantitative; survey bands; ask when unclear. Crossing
+      4.37 vs curb 4.16 remains an unresolved survey discrepancy; no elevation
+      changed and disputed caps must not dismiss model claims.
+      Other open work: gate-transfer physics (no gate model authorized);
+      high-base tank; verified (q=v) NOAA series beside the preliminary
+      archive; photos (rule 9); Borough gate history; historical negative-control
+      census/hindcasts; Heron episode-aware, interval-preserving as-issued
+      evaluation (score stated bases only). Four-window study ends Sep27 AM;
+      evening e02 registered separately. Multiple floods in one coastal storm
+      still count as one storm for the frozen wind trial.
 
 
 - [ ] **Storm communication parity — reproduced 2026-09-25.** Public 10:13
@@ -852,3 +848,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-09-28 | DONE | landmark-bounds-round20-approved | Codex independently reviewed Curlew 648c7db8d (implementation 62b947da7; main 05d76140b merged at 0beaa23a5). Score requested by John: 9/10 for this round. Round18 R1–R3 verified fixed with independent probes; earlier repairs retained. 487 tests OK/one skip, three frozen replays PASS, seven wind hashes match, gate/registry clean, protected ledgers byte-identical to incorporated main; bounds records unchanged. Whole-build missing-input health and clean-read recovery verified; complete landing/email and widget text retain disputed cap and model claim. APPROVED for merge/deployment verification; branch still unmerged, v7.35a not yet deployed. Curlew ship handoff and round21 instructions in audits/2026-09-27-a1/20-candidate-approval-codex.md. Native layout and separate scientific follow-ups remain open; existing owner approval suffices for reviewed bug-fix scope [VERIFIED]
 2026-09-28 | DONE | landmark-bounds-ship | Codex round20 APPROVED the bounds candidate (648c7db8d; implementation 62b947da7 on top of 3c074c65c/4c33036ba). Main merged at f815877cb; pages regenerated no-send on the merged tree (docs only; local-run ledger appends not committed, as before); gate clean; 487 tests OK (one skip). Authorization: BACKLOG PREF observations-are-quantitative, PREF measurement-wording, DECISION sofar-line-empirical-wins; model stays v0.10.6. Ship record to follow in audits/2026-09-27-a1/21-* with deployment verification; John re-copies the DEPLOYED widget v7.35a; native bounded/disputed/long-report/model-claim readability stays pending until inspected [VERIFIED]
 2026-09-28 | DONE | landmark-bounds-shipped | Ship commit 7248c500d (11:37 EDT) after merging main at f815877cb; Pages 36445097941 success; CI 36445097545 FAILED on a time-dependent test constant (six per-tide pages asserted; payload had five, all present, gate clean) — fixed in ad2b66a52 (test follows the payload); CI 36446596736 success. Live: widget v7.35a, forecast 15:36:54Z v0.10.6 with degraded_inputs [], bounds health clean, so-far BAY PEAK +10.7 at 09:30 (no readings today). Record audits/2026-09-27-a1/21-landmark-bounds-ship-claude-curlew.md. PENDING owner: native widget check of the bounded/disputed/long-report/model-claim forms [VERIFIED]
+
+2026-09-28 | DONE | landmark-bounds-round22-closed | Codex independently verified ship 7248c500d, test-only repair ad2b66a52 and round21 at 0dfc307ce; synchronized bot main 07840a36a. Score 9/10. Implementation/deployment CLOSED: 487 tests OK/one skip, three frozen replays PASS, seven hashes match, gate/registry clean; pre-merge main 1f42ca699 ledgers identical at ship and preserved by later bots; approved production source unchanged. Public v7.35a widget and five other assets match main; CI/Pages green. Corrected stale unmerged OPEN LOOPS; round22 records merge-metadata erratum (actual main parent 1f42ca699, commit 11:36:01 EDT). Native longer-widget acceptance and science remain OPEN; no Curlew code revision requested. Report/receipt audits/2026-09-27-a1/22-close-out-codex.md [VERIFIED]
