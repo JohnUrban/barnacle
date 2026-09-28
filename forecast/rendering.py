@@ -158,18 +158,16 @@ def _lookback_phrase(lb, html=False, short=False):
         head = f"MEASURED {val} at {when}" + (
             "" if short else f" (tape, {regime_display(lb.get('regime') or '')})")
     elif ev == "reported":
-        # round 07 R2/R3: carry WHAT was reported on every arm (dry and wet
-        # must never read the same) and escape it at the HTML boundary
+        # round 07 R2/R3 + round 09 R1: quote WHAT was reported, verbatim —
+        # an excerpt on the short arms, the report itself on the full arm —
+        # never a paraphrase; escaped at the HTML boundary
         tilde = "~" if lb.get("time_uncertain") else ""
-        summary = lb.get("report_summary") or (
-            "no flooding reported" if lb.get("report_kind") == "dry"
-            else "water reported (depth not measured)")
-        quote = (lb.get("report") or "")[:60]
+        excerpt = lb.get("report_summary") or "report received; depth not measured"
+        full = (lb.get("report") or excerpt)[:200]
         if html:
-            summary, quote = _html_escape(summary), _html_escape(quote)
-        head = f"REPORTED at {tilde}{when}: {summary}" + (
-            " (no tape)" if short else
-            (f" (no tape; \u201c{quote}\u201d; time as logged)" if quote else " (no tape)"))
+            excerpt, full = _html_escape(excerpt), _html_escape(full)
+        head = (f"REPORTED at {tilde}{when}: \u201c{excerpt}\u201d (no tape)" if short else
+                f"REPORTED at {tilde}{when}: \u201c{full}\u201d (no tape; depth not measured; time as logged)")
     elif ev == "bay":
         head = f"BAY PEAK {val} at {when}" + (
             " (gauge)" if short else " (gauge; corner not measured)")

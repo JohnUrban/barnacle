@@ -19,13 +19,13 @@ CASES = [
     ({"evidence": "measured", "rel_grate_in": -2.0, "time_local": "02:50", "regime": "dry", "n_checks": 3},
      "so far: no water @02:50 (tape, 3 checks)"),
     ({"evidence": "reported", "rel_grate_in": None, "time_local": "21:10", "time_uncertain": True,
-      "report_kind": "dry", "report_summary": "no flooding reported"},
-     "so far: reported ~@21:10: no flooding reported (no tape)"),
+      "report_kind": "negative", "report_summary": "still NO flooding at the Bay/Central intersection"},
+     "so far: reported ~@21:10: \u201cstill NO flooding at the Bay/Central intersection\u201d (no tape)"),
     ({"evidence": "reported", "rel_grate_in": None, "time_local": "18:18",
-      "report_kind": "wet", "report_summary": "water over the NE grate (depth not measured)"},
-     "so far: reported @18:18: water over the NE grate (depth not measured) (no tape)"),
-    ({"evidence": "reported", "time_local": "20:06", "report_kind": "wet"},
-     "so far: reported @20:06: water reported (depth not measured) (no tape)"),
+      "report_kind": "water", "report_summary": "water jetting UP out of the NE and NW grates with local\u2026"},
+     "so far: reported @18:18: \u201cwater jetting UP out of the NE and NW grates with local\u2026\u201d (no tape)"),
+    ({"evidence": "reported", "time_local": "20:06"},
+     "so far: reported @20:06: \u201creport received; depth not measured\u201d (no tape)"),
     ({"evidence": "measured", "rel_grate_in": 25.2, "time_local": "09:44", "regime": "severe",
       "model_claim": {"rel_grate_in": 39.0, "time_local": "02:40",
                       "verification": "water reported then but depth not measured; claim unverified"}},
@@ -65,8 +65,8 @@ class WidgetSoFarTests(unittest.TestCase):
     def test_opposite_reports_never_read_the_same(self):
         out = self._run()
         texts = dict(zip((json.dumps(c, sort_keys=True) for c, _ in CASES), out["text"]))
-        dry = [t for t in texts.values() if "no flooding" in t]
-        wet = [t for t in texts.values() if "water over" in t or "water reported" in t]
+        dry = [t for t in texts.values() if "NO flooding" in t]
+        wet = [t for t in texts.values() if "water jetting" in t]
         self.assertTrue(dry and wet)
         self.assertFalse(set(dry) & set(wet))
 
@@ -76,7 +76,7 @@ class WidgetSoFarTests(unittest.TestCase):
 
     def test_widget_render_block_uses_the_functions_and_version_bumped(self):
         src = WIDGET.read_text(encoding="utf-8")
-        self.assertIn('const WIDGET_VERSION = "v7.31a";', src)
+        self.assertIn('const WIDGET_VERSION = "v7.32a";', src)
         self.assertIn("if (soFarVisible(lb)) {", src)
         self.assertIn("left.addText(soFarText(lb));", src)
         self.assertNotIn("lb.rel_grate_in > 0)", src)

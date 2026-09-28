@@ -149,8 +149,8 @@ class CoverageConfidenceTests(unittest.TestCase):
         lb = lookback(ROW_191, MODEL_SEP25, now=NOW_SEP25)
         self.assertEqual(lb["evidence"], "reported")
         self.assertTrue(lb["time_uncertain"])
-        self.assertEqual(lb["report_kind"], "dry")
-        self.assertEqual(lb["report_summary"], "no flooding reported")
+        self.assertEqual(lb["report_kind"], "negative")
+        self.assertTrue(lb["report_summary"].startswith("NO flooding at the Bay/Central intersection"))
         self.assertEqual(lb["model_claim"]["rel_grate_in"], 26.0)
         self.assertIn("unconfirmed", lb["model_claim"]["verification"])
 
@@ -158,16 +158,16 @@ class CoverageConfidenceTests(unittest.TestCase):
         lb = lookback('2026-09-27T02:50,grate_SW,,Water seen above SW grate; depth not measured\n',
                       MODEL_39)
         self.assertEqual(lb["evidence"], "reported")
-        self.assertEqual(lb["report_kind"], "wet")
-        self.assertEqual(lb["report_summary"], "water over the SW grate (depth not measured)")
+        self.assertEqual(lb["report_kind"], "water")
+        self.assertEqual(lb["report_summary"], "Water seen above SW grate; depth not measured")
         self.assertEqual(lb["model_claim"]["rel_grate_in"], 39.0)
-        self.assertIn("depth not measured", lb["model_claim"]["verification"])
+        self.assertIn("did not measure depth", lb["model_claim"]["verification"])
 
     def test_exact_timed_dry_report_suppresses_same_hour_claim(self):
         lb = lookback('2026-09-27T02:50,grate_SW,,still NO flooding at the intersection (user)\n',
                       MODEL_39)
         self.assertEqual(lb["evidence"], "reported")
-        self.assertEqual(lb["report_kind"], "dry")
+        self.assertEqual(lb["report_kind"], "negative")
         self.assertNotIn("model_claim", lb)
 
     def test_valid_tape_reading_still_suppresses_same_hour_claim(self):
@@ -187,11 +187,11 @@ class CoverageConfidenceTests(unittest.TestCase):
         self.assertEqual(lb["evidence"], "measured")
         self.assertIn("unconfirmed", lb["model_claim"]["verification"])
 
-    def test_opposite_reports_have_opposite_summaries(self):
+    def test_opposite_reports_are_quoted_and_differ(self):
         dry = lookback('2026-09-27T20:06,grate_SW,,No flooding at the intersection\n', None)
         wet = lookback('2026-09-27T20:06,curb,,Water over the curb at the intersection\n', None)
-        self.assertEqual(dry["report_summary"], "no flooding reported")
-        self.assertEqual(wet["report_summary"], "water over the curb (depth not measured)")
+        self.assertEqual(dry["report_summary"], "No flooding at the intersection")
+        self.assertEqual(wet["report_summary"], "Water over the curb at the intersection")
         self.assertNotEqual(rendering._lookback_phrase(dry, short=True),
                             rendering._lookback_phrase(wet, short=True))
 
@@ -243,25 +243,25 @@ class PhraseTests(unittest.TestCase):
         self.assertIn("not a whole-day claim", text)
         self.assertTrue(rendering._lookback_visible(lb))
 
-    def test_reported_phrase_marks_uncertain_time_and_says_what(self):
+    def test_reported_phrase_marks_uncertain_time_and_quotes_the_report(self):
         dry = {"evidence": "reported", "rel_grate_in": None, "time_local": "20:06",
                "time_uncertain": True, "report": "No flooding at the intersection",
-               "report_kind": "dry", "report_summary": "no flooding reported"}
-        wet = dict(dry, report="Water over the curb at the intersection", report_kind="wet",
-                   report_summary="water over the curb (depth not measured)")
+               "report_kind": "negative", "report_summary": "No flooding at the intersection"}
+        wet = dict(dry, report="Water over the curb at the intersection", report_kind="water",
+                   report_summary="Water over the curb at the intersection")
         self.assertEqual(rendering._lookback_phrase(dry, short=True),
-                         "REPORTED at ~20:06: no flooding reported (no tape)")
+                         "REPORTED at ~20:06: \u201cNo flooding at the intersection\u201d (no tape)")
         self.assertEqual(rendering._lookback_phrase(wet, short=True),
-                         "REPORTED at ~20:06: water over the curb (depth not measured) (no tape)")
+                         "REPORTED at ~20:06: \u201cWater over the curb at the intersection\u201d (no tape)")
         self.assertIn("No flooding", rendering._lookback_phrase(dry))
         self.assertTrue(rendering._lookback_visible(dry))
-        # legacy payload without a summary still distinguishes by report_kind
-        self.assertIn("no flooding reported", rendering._lookback_phrase(
-            {"evidence": "reported", "time_local": "20:06", "report_kind": "dry"}, short=True))
+        # legacy payload without a summary falls back to a neutral description
+        self.assertIn("report received; depth not measured", rendering._lookback_phrase(
+            {"evidence": "reported", "time_local": "20:06"}, short=True))
 
     def test_report_text_is_escaped_at_the_html_boundary(self):
         lb = {"evidence": "reported", "rel_grate_in": None, "time_local": "20:06",
-              "report": '<b>dry</b> & water <curb> "quoted"', "report_kind": "wet",
+              "report": '<b>dry</b> & water <curb> "quoted"', "report_kind": "water",
               "report_summary": "water reported <i>now</i> & more",
               "model_claim": {"rel_grate_in": 12.0, "time_local": "21:00",
                               "verification": "<script>x</script> unverified"}}

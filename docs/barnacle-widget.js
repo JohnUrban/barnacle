@@ -39,7 +39,9 @@
 // WIDGET_VERSION: bump on every edit — shows in the widget footer so
 // you can verify which copy is installed (CDN caches the .js ~10 min
 // after a push; if the version below doesn't match the repo, re-copy).
-const WIDGET_VERSION = "v7.31a";
+const WIDGET_VERSION = "v7.32a";
+// v7.32a (2026-09-27, round 09 R1): a qualitative report is QUOTED (verbatim
+// excerpt), never paraphrased or attached to a landmark by keyword.
 // v7.31a (2026-09-27, round 07 R2): a qualitative report carries WHAT was
 // reported (report_summary: "no flooding reported" vs "water over the curb
 // (depth not measured)"), and a model claim carries why it is unverified.
@@ -67,9 +69,8 @@ function soFarText(lb) {
   } else if (ev === "measured") {
     head = val + " " + at + " (tape)";
   } else if (ev === "reported") {
-    const what = lb.report_summary
-      || (lb.report_kind === "dry" ? "no flooding reported" : "water reported (depth not measured)");
-    head = "reported " + (lb.time_uncertain ? "~" : "") + at + ": " + what + " (no tape)";
+    const what = lb.report_summary || "report received; depth not measured";
+    head = "reported " + (lb.time_uncertain ? "~" : "") + at + ": \u201c" + what + "\u201d (no tape)";
   } else if (ev === "bay") {
     head = "BAY " + val + " " + at + " (gauge)";
   } else {
@@ -77,8 +78,7 @@ function soFarText(lb) {
   }
   const mc = lb.model_claim;
   if (mc && typeof mc.rel_grate_in === "number") {
-    const why = (mc.verification || "").indexOf("depth not measured") >= 0 ? "unverified"
-              : (mc.verification || "").indexOf("unconfirmed") >= 0 ? "unverified" : "unmeasured";
+    const why = (mc.verification || "").indexOf("unverified") >= 0 ? "unverified" : "unmeasured";
     head += " \u00b7 model " + (mc.rel_grate_in >= 0 ? "+" : "") + mc.rel_grate_in.toFixed(0)
           + "\u2033 @" + (mc.time_local || "?") + " " + why;
   }

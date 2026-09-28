@@ -5547,40 +5547,55 @@ def _lookback_time_uncertain(text):
                                 "between ", "~", "around "))
 
 
-_DRY_REPORT_WORDS = ("no flooding", "no water", "no evidence of flooding",
-                     "receded completely", "intersection clear", "dry")
-_LANDMARK_SHORT = {
-    "curb": "the curb", "lawn_step": "the lawn step",
-    "sidewalk_under_walkway_lawn_step": "the lawn-step base",
-    "porch_step_base": "the porch-step base", "porch_step1_top": "the first porch step",
-    "porch_deck": "the porch deck", "gutter_walkway": "the gutter",
-    "grate_SW": "the SW grate", "grate_SE": "the SE grate", "grate_NE": "the NE grate",
-    "grate_NW": "the NW grate", "grate_bay_ave_upstream": "the upstream grate",
-    "road_middle": "the road middle", "intersection_highpoint": "the intersection crown",
-}
+# Round 09 R1: NO keyword inference of meaning. A report is summarized by a
+# source-faithful excerpt, never rephrased, and never attached to a landmark
+# the wording does not itself name. The only classification kept is the one
+# coverage needs: an UNAMBIGUOUS negative (a negative phrase and nothing in
+# the rest of the sentence that reports water, a crossing, an exception or a
+# location qualifier). Everything else is "water" or "ambiguous" and can
+# never suppress a model claim.
+_NEGATIVE_PHRASES = ("no flooding", "no water", "no evidence of flooding",
+                     "receded completely")
+_POSITIVE_OR_QUALIFYING = ("water", "flood", "over", "above", "wet", "puddl",
+                           "span", "cross", "level with", "not dry", "but ",
+                           "except", "elsewhere", "other", "some ", "minor",
+                           "lingering", "nearly", "almost")
 
 
 def _report_kind(text):
-    """'dry' when the wording is a clear negative observation, else 'wet'
-    (water present, depth not measured). Round 07 R2: the two must never
-    collapse into the same message."""
-    t = (text or "").lower()
-    return "dry" if any(k in t for k in _DRY_REPORT_WORDS) else "wet"
+    """'negative' only for an unambiguous whole-report negative; 'water' when
+    the wording reports water/flooding; 'ambiguous' when a negative phrase is
+    qualified by anything positive ("no water at X but over Y", "not dry");
+    'unclassified' otherwise. Bare "dry" is deliberately NOT a negative
+    phrase ("not dry", "sidewalk dry but…")."""
+    t = " ".join((text or "").lower().replace("(user)", " ").split())
+    hits = [p for p in _NEGATIVE_PHRASES if p in t]
+    if not hits:
+        return "water" if any(m in t for m in ("water", "flood", "over ", "above ",
+                                                "wet", "puddl")) else "unclassified"
+    rest = t
+    for p in hits:
+        rest = rest.replace(p, " ")
+    if any(m in rest for m in _POSITIVE_OR_QUALIFYING):
+        return "ambiguous"
+    return "negative"
 
 
-def _report_summary(kind, text, landmark_key):
-    """Concise, source-faithful description for the short/widget arms.
-    A landmark is named only when the wording itself says the water was
-    over / above / level with something (round 07 R2)."""
-    if kind == "dry":
-        return "no flooding reported"
-    t = (text or "").lower()
-    name = _LANDMARK_SHORT.get(landmark_key)
-    if name and any(k in t for k in ("over ", "above ", "breached", "up the ")):
-        return f"water over {name} (depth not measured)"
-    if name and "level with" in t:
-        return f"water level with {name}"
-    return "water reported (depth not measured)"
+def _report_excerpt(text, limit=60):
+    """Concise, verbatim opening of the report (word boundary, ellipsis when
+    cut); the display arms quote it instead of paraphrasing."""
+    t = " ".join((text or "").replace("(user)", " ").split()).strip(" ;,-")
+    if len(t) <= limit:
+        return t
+    cut = t[:limit].rsplit(" ", 1)[0].rstrip(" ;,:-")
+    return (cut or t[:limit]) + "\u2026"
+
+
+def _report_summary(kind, text, landmark_key=None):
+    """Kept for callers: the summary IS the excerpt. No landmark is inferred
+    (round 09 R1: "over the curb elsewhere" must never become "water over
+    the curb")."""
+    return _report_excerpt(text) or "report received; depth not measured"
 
 
 def _today_lookback():
@@ -5597,9 +5612,9 @@ def _today_lookback():
           implied water, evidence "measured" — even at or below the SW grate
           (rendered as "no street water at HH:MM", not a whole-day claim);
       (b) else today's qualitative rows: evidence "reported", the latest
-          report's wording, its kind (dry / wet) and a concise summary, its
-          time as logged (flagged uncertain when the wording says so); no
-          numeric level is invented;
+          report's wording verbatim (excerpt for short arms; no paraphrase,
+          no inferred landmark), its time as logged (flagged uncertain when
+          the wording says so); no numeric level is invented;
       (c) else today's despiked Sandy Hook peak over station-local midnight
           → now, evidence "bay" (a BAY level, never a corner regime);
       (d) else the nowcast's carried day max, evidence "modeled" (a rejected
@@ -5607,10 +5622,11 @@ def _today_lookback():
     A model day max that exceeds the headline (or the grate, for a reported
     headline) is APPENDED as `model_claim`, never promoted. It is SUPPRESSED
     only when a row that establishes exact-hour coverage lies within an hour
-    of it: a valid tape reading at an exact time, or a clear dry report at an
-    exact time. A report whose time is unconfirmed, a wet report with no
-    measured depth, or an invalid numeric row never counts as coverage; the
-    claim then stays, with `verification` saying why it is unverified.
+    of it: a valid tape reading at an exact time, or an UNAMBIGUOUS negative
+    report at an exact time (`_report_kind` == "negative"). A report whose
+    time is unconfirmed, any report that mentions water or a qualification,
+    a mixed/negated report ("not dry"), or an invalid numeric row never
+    counts as coverage; the claim then stays, with `verification` saying why.
     Returns {evidence, navd88, rel_grate_in, time_local, regime, source,
     n_checks, model_claim?, report?, report_kind?, report_summary?,
     time_uncertain?} or None."""
@@ -5660,10 +5676,12 @@ def _today_lookback():
                     kind = _report_kind(qual)
                     if unsure:
                         nearby_kinds.append((inst, "uncertain-time"))
-                    elif kind == "dry":
-                        covering.append(inst)  # a clear, timed negative observation
+                    elif kind == "negative":
+                        covering.append(inst)  # unambiguous, timed negative observation
+                    elif kind == "ambiguous":
+                        nearby_kinds.append((inst, "ambiguous"))
                     else:
-                        nearby_kinds.append((inst, "wet-unmeasured"))
+                        nearby_kinds.append((inst, "report-unmeasured"))
                     if reported is None or inst >= reported[0]:
                         reported = (inst, qual, t.strftime("%H:%M"), unsure, kind, key)
     except OSError:
@@ -5713,7 +5731,7 @@ def _today_lookback():
         out = {"evidence": "reported", "source": "reported (qualitative, no tape)",
                "regime": "reported", "navd88": None, "rel_grate_in": None,
                "time_local": t, "n_checks": n_checks,
-               "report": qual[:90], "report_kind": kind,
+               "report": qual[:200], "report_kind": kind,
                "report_summary": _report_summary(kind, qual, key),
                "time_uncertain": unsure}
     elif bay and bay[0] > GRATE_SW:
@@ -5741,8 +5759,10 @@ def _today_lookback():
         if not suppressed:
             near = {k for ti, k in nearby_kinds
                     if m_inst is not None and abs(ti - m_inst) <= hour}
-            if "wet-unmeasured" in near:
-                why = "water reported then but depth not measured; claim unverified"
+            if "report-unmeasured" in near:
+                why = "report at that time did not measure depth; claim unverified"
+            elif "ambiguous" in near:
+                why = "nearby report is mixed or qualified; claim unverified"
             elif "uncertain-time" in near:
                 why = "nearby report time unconfirmed; claim unverified"
             else:
