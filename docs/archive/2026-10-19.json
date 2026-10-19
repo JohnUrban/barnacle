@@ -1,0 +1,5547 @@
+{
+  "generated_utc": "2026-10-19T09:19:00Z",
+  "outlook_7d": {
+    "generated_utc": "2026-10-19T09:19:00Z",
+    "horizon_hours": 168,
+    "model_version": "v0.10.6",
+    "sources": {
+      "astro": {
+        "status": "ok",
+        "detail": "14 astronomical highs",
+        "fetched_at": "2026-10-19T09:19:00Z",
+        "age_h": 0.0
+      },
+      "astro_hourly": {
+        "status": "ok",
+        "detail": "176 hourly astronomical points",
+        "fetched_at": "2026-10-19T09:19:00Z",
+        "age_h": 0.0
+      },
+      "grid": {
+        "status": "ok",
+        "detail": "grid QPF to 2026-10-22T12Z, wind to 2026-10-27T01Z",
+        "fetched_at": "2026-10-19T09:19:00Z",
+        "age_h": 0.0
+      },
+      "nwps": {
+        "status": "ok",
+        "detail": "72 hourly points issued 2026-10-19T07:43:00Z",
+        "fetched_at": "2026-10-19T09:19:00Z",
+        "age_h": 0.0
+      },
+      "xcheck": {
+        "status": "ok",
+        "detail": "8 days x 4 models, ensemble n=31",
+        "fetched_at": "2026-10-19T09:19:00Z",
+        "age_h": 0.0
+      },
+      "nbm": {
+        "status": "ok",
+        "detail": "NBM cycle 2026-10-19T06Z, 30/30 6-h buckets to +180 h; cycle 3.3 h old; 30 future buckets",
+        "issued": "2026-10-19T06:00:00Z",
+        "age_h": 3.32
+      },
+      "petss": {
+        "status": "ok",
+        "detail": "P-ETSS cycle 2026-10-19T00Z, 102 h, p10/p90 surge; cycle 9.3 h old; 93 future hours",
+        "issued": "2026-10-19T00:00:00Z",
+        "age_h": 9.32
+      },
+      "wpc": {
+        "status": "ok",
+        "detail": "WPC cycle 2026-10-19T00Z, 6 daily totals; cycle 9.3 h old; 6 future buckets",
+        "issued": "2026-10-19T00:00:00Z",
+        "age_h": 9.32
+      },
+      "nbm_qmd": {
+        "status": "ok",
+        "detail": "percentiles from NBM 2026-10-19T00Z on 30 buckets, cycle 9.3 h old",
+        "issued": "2026-10-19T00:00:00Z",
+        "age_h": 9.32
+      },
+      "_budget": {
+        "status": "ok",
+        "detail": "2.6 s of 60 s used"
+      }
+    },
+    "reach": {
+      "nws_product_h": 72,
+      "nwps_h": 72,
+      "petss_h": 102,
+      "grid_qpf_end_utc": "2026-10-22T12:00:00Z",
+      "grid_wind_end_utc": "2026-10-27T01:00:00Z",
+      "nbm_cycle": "2026-10-19T06:00:00Z",
+      "petss_cycle": "2026-10-19T00:00:00Z",
+      "nwps_issued": "2026-10-19T07:43:00Z"
+    },
+    "assumptions": {
+      "persistence_decay_tau_h": 36.0,
+      "persistence_decay_mean_ft": 0.549,
+      "persisted_surge_ft": null,
+      "persisted_surge_age_min": null,
+      "petss_central": "midpoint of the p10/p90 surge band, used hourly (v0.10.6)",
+      "hourly_surge_sources": {
+        "nws_product": "NWS gauge forecast + advisory correction",
+        "nwps": "NWS gauge forecast (hourly)",
+        "petss_hourly": "P-ETSS hourly surge (mid of p10-p90)",
+        "guidance_decay": "last guidance value decaying toward the typical offset (assumed)",
+        "observed_decay": "observed reading decaying toward the typical offset",
+        "typical_offset": "astronomy + typical offset (no surge information)"
+      },
+      "advisory_corrections": [],
+      "shadow": "NWPS gauge forecast and P-ETSS are guidance only; production surge stays product-or-persistence until the shadow ledger shows a lower error (BACKLOG DECISION nwps-gauge-forecast-shadow)"
+    },
+    "tides": [
+      {
+        "time": "2026-10-19 14:54-04:00",
+        "utc": "2026-10-19T18:54:00Z",
+        "lead_h": 9.6,
+        "astro_mllw": 4.48,
+        "outlook_mllw": 5.3,
+        "outlook_source": "nwps",
+        "band_lo_mllw": 5.08,
+        "band_hi_mllw": 5.38,
+        "regime": "dry",
+        "regime_lo": "dry",
+        "regime_hi": "dry",
+        "grate_sw_in": 0.0,
+        "curb_in": 0.0,
+        "guidance": {
+          "nwps": 5.3,
+          "petss_p10": 5.08,
+          "petss_p90": 5.38,
+          "petss_mid": 5.23,
+          "persist_decay": 5.12
+        },
+        "production_mllw": 5.12,
+        "production_source": "surge-persistence",
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nws_grid",
+          "hours": null
+        },
+        "pop_pct": 0,
+        "wind": {
+          "wind_mph": 13.0,
+          "gust_mph": 18.0,
+          "dir_deg": 30
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-20 03:35-04:00",
+        "utc": "2026-10-20T07:35:00Z",
+        "lead_h": 22.3,
+        "astro_mllw": 4.01,
+        "outlook_mllw": 5.1,
+        "outlook_source": "nwps",
+        "band_lo_mllw": 5.01,
+        "band_hi_mllw": 5.41,
+        "regime": "dry",
+        "regime_lo": "dry",
+        "regime_hi": "dry",
+        "grate_sw_in": 0.0,
+        "curb_in": 0.0,
+        "guidance": {
+          "nwps": 5.1,
+          "petss_p10": 5.01,
+          "petss_p90": 5.41,
+          "petss_mid": 5.21,
+          "persist_decay": 4.63
+        },
+        "production_mllw": 4.63,
+        "production_source": "surge-persistence",
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nws_grid",
+          "hours": null
+        },
+        "pop_pct": 0,
+        "wind": {
+          "wind_mph": 17.0,
+          "gust_mph": 25.0,
+          "dir_deg": 10
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-20 15:48-04:00",
+        "utc": "2026-10-20T19:48:00Z",
+        "lead_h": 34.5,
+        "astro_mllw": 4.53,
+        "outlook_mllw": 5.9,
+        "outlook_source": "nwps",
+        "band_lo_mllw": 5.83,
+        "band_hi_mllw": 6.53,
+        "regime": "dry",
+        "regime_lo": "dry",
+        "regime_hi": "street",
+        "grate_sw_in": 0.0,
+        "curb_in": 0.0,
+        "guidance": {
+          "nwps": 5.9,
+          "petss_p10": 5.83,
+          "petss_p90": 6.53,
+          "petss_mid": 6.18,
+          "persist_decay": 5.13
+        },
+        "production_mllw": 5.13,
+        "production_source": "surge-persistence",
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nws_grid",
+          "hours": null
+        },
+        "pop_pct": 0,
+        "wind": {
+          "wind_mph": 15.0,
+          "gust_mph": 23.0,
+          "dir_deg": 20
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-21 04:29-04:00",
+        "utc": "2026-10-21T08:29:00Z",
+        "lead_h": 47.2,
+        "astro_mllw": 4.26,
+        "outlook_mllw": 6.1,
+        "outlook_source": "nwps",
+        "band_lo_mllw": 5.96,
+        "band_hi_mllw": 6.86,
+        "regime": "dry",
+        "regime_lo": "dry",
+        "regime_hi": "street",
+        "grate_sw_in": 0.0,
+        "curb_in": 0.0,
+        "guidance": {
+          "nwps": 6.1,
+          "petss_p10": 5.96,
+          "petss_p90": 6.86,
+          "petss_mid": 6.41,
+          "persist_decay": 4.84
+        },
+        "production_mllw": 4.84,
+        "production_source": "surge-persistence",
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nws_grid",
+          "hours": null
+        },
+        "pop_pct": 0,
+        "wind": {
+          "wind_mph": 18.0,
+          "gust_mph": 30.0,
+          "dir_deg": 30
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-21 16:44-04:00",
+        "utc": "2026-10-21T20:44:00Z",
+        "lead_h": 59.4,
+        "astro_mllw": 4.66,
+        "outlook_mllw": 6.6,
+        "outlook_source": "nwps",
+        "band_lo_mllw": 6.36,
+        "band_hi_mllw": 7.26,
+        "regime": "street",
+        "regime_lo": "street",
+        "regime_hi": "light",
+        "grate_sw_in": 3.1,
+        "curb_in": 0.0,
+        "guidance": {
+          "nwps": 6.6,
+          "petss_p10": 6.36,
+          "petss_p90": 7.26,
+          "petss_mid": 6.81,
+          "persist_decay": 5.23
+        },
+        "production_mllw": 5.23,
+        "production_source": "surge-persistence",
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nws_grid",
+          "hours": null
+        },
+        "pop_pct": 4,
+        "wind": {
+          "wind_mph": 14.0,
+          "gust_mph": 21.0,
+          "dir_deg": 30
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-22 05:21-04:00",
+        "utc": "2026-10-22T09:21:00Z",
+        "lead_h": 72.0,
+        "astro_mllw": 4.61,
+        "outlook_mllw": 6.41,
+        "outlook_source": "petss_mid",
+        "band_lo_mllw": 5.91,
+        "band_hi_mllw": 6.91,
+        "regime": "street",
+        "regime_lo": "dry",
+        "regime_hi": "street",
+        "grate_sw_in": 0.8,
+        "curb_in": 0.0,
+        "guidance": {
+          "petss_p10": 5.91,
+          "petss_p90": 6.91,
+          "petss_mid": 6.41,
+          "persist_decay": 5.18
+        },
+        "production_mllw": null,
+        "production_source": null,
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nbm",
+          "hours": 6
+        },
+        "pop_pct": 6,
+        "wind": {
+          "wind_mph": 9.0,
+          "gust_mph": 21.0,
+          "dir_deg": 0
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-22 17:37-04:00",
+        "utc": "2026-10-22T21:37:00Z",
+        "lead_h": 84.3,
+        "astro_mllw": 4.84,
+        "outlook_mllw": 6.44,
+        "outlook_source": "petss_mid",
+        "band_lo_mllw": 6.04,
+        "band_hi_mllw": 6.84,
+        "regime": "street",
+        "regime_lo": "dry",
+        "regime_hi": "street",
+        "grate_sw_in": 1.2,
+        "curb_in": 0.0,
+        "guidance": {
+          "petss_p10": 6.04,
+          "petss_p90": 6.84,
+          "petss_mid": 6.44,
+          "persist_decay": 5.4
+        },
+        "production_mllw": null,
+        "production_source": null,
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nbm",
+          "hours": 6
+        },
+        "pop_pct": 1,
+        "wind": {
+          "wind_mph": 6.0,
+          "gust_mph": 15.0,
+          "dir_deg": 340
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-23 06:07-04:00",
+        "utc": "2026-10-23T10:07:00Z",
+        "lead_h": 96.8,
+        "astro_mllw": 5.03,
+        "outlook_mllw": 6.29,
+        "outlook_source": "guidance_decay",
+        "band_lo_mllw": null,
+        "band_hi_mllw": null,
+        "regime": "dry",
+        "regime_lo": null,
+        "regime_hi": null,
+        "grate_sw_in": 0.0,
+        "curb_in": 0.0,
+        "guidance": {
+          "guidance_decay": 6.29,
+          "persist_decay": 5.59
+        },
+        "production_mllw": null,
+        "production_source": null,
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nbm",
+          "hours": 6
+        },
+        "pop_pct": 0,
+        "wind": {
+          "wind_mph": 18.0,
+          "gust_mph": 24.0,
+          "dir_deg": 10
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-23 18:25-04:00",
+        "utc": "2026-10-23T22:25:00Z",
+        "lead_h": 109.1,
+        "astro_mllw": 5.03,
+        "outlook_mllw": 6.09,
+        "outlook_source": "guidance_decay",
+        "band_lo_mllw": null,
+        "band_hi_mllw": null,
+        "regime": "dry",
+        "regime_lo": null,
+        "regime_hi": null,
+        "grate_sw_in": 0.0,
+        "curb_in": 0.0,
+        "guidance": {
+          "guidance_decay": 6.09,
+          "persist_decay": 5.58
+        },
+        "production_mllw": null,
+        "production_source": null,
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nbm",
+          "hours": 6
+        },
+        "pop_pct": 0,
+        "wind": {
+          "wind_mph": 10.0,
+          "gust_mph": 15.0,
+          "dir_deg": 30
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-24 06:49-04:00",
+        "utc": "2026-10-24T10:49:00Z",
+        "lead_h": 121.5,
+        "astro_mllw": 5.46,
+        "outlook_mllw": 6.37,
+        "outlook_source": "guidance_decay",
+        "band_lo_mllw": null,
+        "band_hi_mllw": null,
+        "regime": "street",
+        "regime_lo": null,
+        "regime_hi": null,
+        "grate_sw_in": 0.3,
+        "curb_in": 0.0,
+        "guidance": {
+          "guidance_decay": 6.37,
+          "persist_decay": 6.01
+        },
+        "production_mllw": null,
+        "production_source": null,
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nbm",
+          "hours": 6
+        },
+        "pop_pct": 0,
+        "wind": {
+          "wind_mph": 13.0,
+          "gust_mph": 15.0,
+          "dir_deg": 30
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-24 19:09-04:00",
+        "utc": "2026-10-24T23:09:00Z",
+        "lead_h": 133.8,
+        "astro_mllw": 5.17,
+        "outlook_mllw": 5.98,
+        "outlook_source": "guidance_decay",
+        "band_lo_mllw": null,
+        "band_hi_mllw": null,
+        "regime": "dry",
+        "regime_lo": null,
+        "regime_hi": null,
+        "grate_sw_in": 0.0,
+        "curb_in": 0.0,
+        "guidance": {
+          "guidance_decay": 5.98,
+          "persist_decay": 5.72
+        },
+        "production_mllw": null,
+        "production_source": null,
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nbm",
+          "hours": 6
+        },
+        "pop_pct": 0,
+        "wind": {
+          "wind_mph": 3.0,
+          "gust_mph": 7.0,
+          "dir_deg": 80
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-25 07:29-04:00",
+        "utc": "2026-10-25T11:29:00Z",
+        "lead_h": 146.2,
+        "astro_mllw": 5.83,
+        "outlook_mllw": 6.56,
+        "outlook_source": "guidance_decay",
+        "band_lo_mllw": null,
+        "band_hi_mllw": null,
+        "regime": "street",
+        "regime_lo": null,
+        "regime_hi": null,
+        "grate_sw_in": 2.6,
+        "curb_in": 0.0,
+        "guidance": {
+          "guidance_decay": 6.56,
+          "persist_decay": 6.38
+        },
+        "production_mllw": null,
+        "production_source": null,
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nbm",
+          "hours": 6
+        },
+        "pop_pct": 0,
+        "wind": {
+          "wind_mph": 5.0,
+          "gust_mph": 8.0,
+          "dir_deg": 320
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      },
+      {
+        "time": "2026-10-25 19:52-04:00",
+        "utc": "2026-10-25T23:52:00Z",
+        "lead_h": 158.5,
+        "astro_mllw": 5.23,
+        "outlook_mllw": 5.91,
+        "outlook_source": "guidance_decay",
+        "band_lo_mllw": null,
+        "band_hi_mllw": null,
+        "regime": "dry",
+        "regime_lo": null,
+        "regime_hi": null,
+        "grate_sw_in": 0.0,
+        "curb_in": 0.0,
+        "guidance": {
+          "guidance_decay": 5.91,
+          "persist_decay": 5.78
+        },
+        "production_mllw": null,
+        "production_source": null,
+        "rain": {
+          "qpf_in": 0.0,
+          "source": "nbm",
+          "hours": 6
+        },
+        "pop_pct": 1,
+        "wind": {
+          "wind_mph": 5.0,
+          "gust_mph": 8.0,
+          "dir_deg": 220
+        },
+        "xcheck_p_half_inch_pct": 0,
+        "nbm_p_ge_half_in_6h_pct": 0.0
+      }
+    ],
+    "days": [
+      {
+        "date": "2026-10-19",
+        "label": "Today",
+        "hours_in_scope": 18.7,
+        "partial": true,
+        "tides": [
+          {
+            "time": "14:54",
+            "outlook_mllw": 5.3,
+            "astro_mllw": 4.48,
+            "regime": "dry",
+            "source": "nwps"
+          }
+        ],
+        "astro_max_mllw": 4.48,
+        "outlook_max_mllw": 5.3,
+        "outlook_source": "nwps",
+        "regime_max": "dry",
+        "band_hi_max_mllw": 5.38,
+        "regime_hi_max": "dry",
+        "qpf_in": 0.0,
+        "qpf_source": "nws_grid",
+        "qpf_covered_h": 24.0,
+        "qpf_null_h": 0.0,
+        "qpf_partial": false,
+        "pop_max_pct": 0,
+        "nbm_pop_max_pct": 0.0,
+        "gust_max_mph": 21.0,
+        "gust_dir": "NNE",
+        "nbm_band": {
+          "p10_6h_sum_in": 0.0,
+          "p50_6h_sum_in": 0.0,
+          "p90_6h_sum_in": 0.0,
+          "p90_6h_max_in": 0.0,
+          "p_ge_quarter_in_6h_max_pct": 0.0,
+          "p_ge_half_in_6h_max_pct": 0.0,
+          "p_ge_1in_6h_max_pct": 0.0,
+          "buckets": 4
+        },
+        "xcheck_models": {
+          "gfs": {
+            "precip_in": 0.0,
+            "gust_mph": 24.2
+          },
+          "ecmwf": {
+            "precip_in": 0.0,
+            "gust_mph": 21.5
+          },
+          "icon": {
+            "precip_in": 0.0,
+            "gust_mph": 19.5
+          },
+          "gem": {
+            "precip_in": 0.0,
+            "gust_mph": 22.8
+          }
+        },
+        "xcheck_ensemble": {
+          "members": 31,
+          "p_half_inch_pct": 0,
+          "median_in": 0.0,
+          "p90_in": 0.0,
+          "max_in": 0.0,
+          "gust_median_mph": 18,
+          "gust_p90_mph": 23,
+          "gust_max_mph": 30
+        },
+        "rain_pathway": {
+          "peak_rate_in_hr": 0.0,
+          "max_6h_in": 0.0,
+          "max_6h_window_complete": true,
+          "tank_peak_navd88": null,
+          "tank_peak_time": null,
+          "tank_regime": "dry",
+          "burst_signal": false,
+          "burst_est_in_hr": 0.0,
+          "burst_potential_navd88": null,
+          "burst_regime": "dry",
+          "nbm_p90_6h_in": 0.0,
+          "nbm_p90_est_in_hr": null,
+          "nbm_p90_potential_navd88": null,
+          "nbm_p90_regime": null,
+          "high_tide_navd88": 2.48,
+          "burst_at_high_tide_navd88": null,
+          "burst_at_high_tide_regime": null,
+          "nbm_p90_at_high_tide_navd88": null,
+          "nbm_p90_at_high_tide_regime": null,
+          "nbm_p_ge_half_in_6h_pct": 0.0,
+          "nbm_p_ge_1in_6h_pct": 0.0,
+          "rain_available": true,
+          "rain_coverage": 1.0,
+          "rain_known_hours": 24,
+          "rain_hours": 24
+        },
+        "tidal_regime_max": "dry",
+        "water_peak_navd88": 2.48,
+        "worst_pathway": "tide"
+      },
+      {
+        "date": "2026-10-20",
+        "label": "Tomorrow",
+        "hours_in_scope": 24.0,
+        "partial": false,
+        "tides": [
+          {
+            "time": "03:35",
+            "outlook_mllw": 5.1,
+            "astro_mllw": 4.01,
+            "regime": "dry",
+            "source": "nwps"
+          },
+          {
+            "time": "15:48",
+            "outlook_mllw": 5.9,
+            "astro_mllw": 4.53,
+            "regime": "dry",
+            "source": "nwps"
+          }
+        ],
+        "astro_max_mllw": 4.53,
+        "outlook_max_mllw": 5.9,
+        "outlook_source": "nwps",
+        "regime_max": "dry",
+        "band_hi_max_mllw": 6.53,
+        "regime_hi_max": "street",
+        "qpf_in": 0.0,
+        "qpf_source": "nws_grid",
+        "qpf_covered_h": 24.0,
+        "qpf_null_h": 0.0,
+        "qpf_partial": false,
+        "pop_max_pct": 0,
+        "nbm_pop_max_pct": 0.0,
+        "gust_max_mph": 26.0,
+        "gust_dir": "N",
+        "nbm_band": {
+          "p10_6h_sum_in": 0.0,
+          "p50_6h_sum_in": 0.0,
+          "p90_6h_sum_in": 0.0,
+          "p90_6h_max_in": 0.0,
+          "p_ge_quarter_in_6h_max_pct": 0.0,
+          "p_ge_half_in_6h_max_pct": 0.0,
+          "p_ge_1in_6h_max_pct": 0.0,
+          "buckets": 5
+        },
+        "xcheck_models": {
+          "gfs": {
+            "precip_in": 0.0,
+            "gust_mph": 32.7
+          },
+          "ecmwf": {
+            "precip_in": 0.0,
+            "gust_mph": 24.6
+          },
+          "icon": {
+            "precip_in": 0.0,
+            "gust_mph": 25.9
+          },
+          "gem": {
+            "precip_in": 0.0,
+            "gust_mph": 32.0
+          }
+        },
+        "xcheck_ensemble": {
+          "members": 31,
+          "p_half_inch_pct": 0,
+          "median_in": 0.0,
+          "p90_in": 0.0,
+          "max_in": 0.0,
+          "gust_median_mph": 28,
+          "gust_p90_mph": 32,
+          "gust_max_mph": 41
+        },
+        "rain_pathway": {
+          "peak_rate_in_hr": 0.0,
+          "max_6h_in": 0.0,
+          "max_6h_window_complete": true,
+          "tank_peak_navd88": null,
+          "tank_peak_time": null,
+          "tank_regime": "dry",
+          "burst_signal": false,
+          "burst_est_in_hr": 0.0,
+          "burst_potential_navd88": null,
+          "burst_regime": "dry",
+          "nbm_p90_6h_in": 0.0,
+          "nbm_p90_est_in_hr": null,
+          "nbm_p90_potential_navd88": null,
+          "nbm_p90_regime": null,
+          "high_tide_navd88": 3.08,
+          "burst_at_high_tide_navd88": null,
+          "burst_at_high_tide_regime": null,
+          "nbm_p90_at_high_tide_navd88": null,
+          "nbm_p90_at_high_tide_regime": null,
+          "nbm_p_ge_half_in_6h_pct": 0.0,
+          "nbm_p_ge_1in_6h_pct": 0.0,
+          "rain_available": true,
+          "rain_coverage": 1.0,
+          "rain_known_hours": 24,
+          "rain_hours": 24
+        },
+        "tidal_regime_max": "dry",
+        "water_peak_navd88": 3.08,
+        "worst_pathway": "tide"
+      },
+      {
+        "date": "2026-10-21",
+        "label": "Wednesday",
+        "hours_in_scope": 24.0,
+        "partial": false,
+        "tides": [
+          {
+            "time": "04:29",
+            "outlook_mllw": 6.1,
+            "astro_mllw": 4.26,
+            "regime": "dry",
+            "source": "nwps"
+          },
+          {
+            "time": "16:44",
+            "outlook_mllw": 6.6,
+            "astro_mllw": 4.66,
+            "regime": "street",
+            "source": "nwps"
+          }
+        ],
+        "astro_max_mllw": 4.66,
+        "outlook_max_mllw": 6.6,
+        "outlook_source": "nwps",
+        "regime_max": "street",
+        "band_hi_max_mllw": 7.26,
+        "regime_hi_max": "light",
+        "qpf_in": 0.0,
+        "qpf_source": "nws_grid",
+        "qpf_covered_h": 24.0,
+        "qpf_null_h": 0.0,
+        "qpf_partial": false,
+        "pop_max_pct": 9,
+        "nbm_pop_max_pct": 7.0,
+        "gust_max_mph": 30.0,
+        "gust_dir": "NNE",
+        "nbm_band": {
+          "p10_6h_sum_in": 0.0,
+          "p50_6h_sum_in": 0.0,
+          "p90_6h_sum_in": 0.0,
+          "p90_6h_max_in": 0.0,
+          "p_ge_quarter_in_6h_max_pct": 0.5,
+          "p_ge_half_in_6h_max_pct": 0.0,
+          "p_ge_1in_6h_max_pct": 0.0,
+          "buckets": 5
+        },
+        "xcheck_models": {
+          "gfs": {
+            "precip_in": 0.0,
+            "gust_mph": 28.7
+          },
+          "ecmwf": {
+            "precip_in": 0.0,
+            "gust_mph": 27.5
+          },
+          "icon": {
+            "precip_in": 0.0,
+            "gust_mph": 30.2
+          },
+          "gem": {
+            "precip_in": 0.0,
+            "gust_mph": 23.0
+          }
+        },
+        "xcheck_ensemble": {
+          "members": 31,
+          "p_half_inch_pct": 0,
+          "median_in": 0.0,
+          "p90_in": 0.0,
+          "max_in": 0.02,
+          "gust_median_mph": 26,
+          "gust_p90_mph": 31,
+          "gust_max_mph": 41
+        },
+        "rain_pathway": {
+          "peak_rate_in_hr": 0.0,
+          "max_6h_in": 0.0,
+          "max_6h_window_complete": true,
+          "tank_peak_navd88": null,
+          "tank_peak_time": null,
+          "tank_regime": "dry",
+          "burst_signal": false,
+          "burst_est_in_hr": 0.0,
+          "burst_potential_navd88": null,
+          "burst_regime": "dry",
+          "nbm_p90_6h_in": 0.0,
+          "nbm_p90_est_in_hr": null,
+          "nbm_p90_potential_navd88": null,
+          "nbm_p90_regime": null,
+          "high_tide_navd88": 3.78,
+          "burst_at_high_tide_navd88": null,
+          "burst_at_high_tide_regime": null,
+          "nbm_p90_at_high_tide_navd88": null,
+          "nbm_p90_at_high_tide_regime": null,
+          "nbm_p_ge_half_in_6h_pct": 0.0,
+          "nbm_p_ge_1in_6h_pct": 0.0,
+          "rain_available": true,
+          "rain_coverage": 1.0,
+          "rain_known_hours": 24,
+          "rain_hours": 24
+        },
+        "tidal_regime_max": "street",
+        "water_peak_navd88": 3.78,
+        "worst_pathway": "tide"
+      },
+      {
+        "date": "2026-10-22",
+        "label": "Thursday",
+        "hours_in_scope": 24.0,
+        "partial": false,
+        "tides": [
+          {
+            "time": "05:21",
+            "outlook_mllw": 6.41,
+            "astro_mllw": 4.61,
+            "regime": "street",
+            "source": "petss_mid"
+          },
+          {
+            "time": "17:37",
+            "outlook_mllw": 6.44,
+            "astro_mllw": 4.84,
+            "regime": "street",
+            "source": "petss_mid"
+          }
+        ],
+        "astro_max_mllw": 4.84,
+        "outlook_max_mllw": 6.44,
+        "outlook_source": "petss_mid",
+        "regime_max": "street",
+        "band_hi_max_mllw": 6.91,
+        "regime_hi_max": "street",
+        "qpf_in": 0.0,
+        "qpf_source": "nbm",
+        "qpf_covered_h": 24.0,
+        "qpf_null_h": 0.0,
+        "qpf_partial": false,
+        "pop_max_pct": 9,
+        "nbm_pop_max_pct": 7.0,
+        "gust_max_mph": 22.0,
+        "gust_dir": "N",
+        "nbm_band": {
+          "p10_6h_sum_in": 0.0,
+          "p50_6h_sum_in": 0.0,
+          "p90_6h_sum_in": 0.0,
+          "p90_6h_max_in": 0.0,
+          "p_ge_quarter_in_6h_max_pct": 0.5,
+          "p_ge_half_in_6h_max_pct": 0.0,
+          "p_ge_1in_6h_max_pct": 0.0,
+          "buckets": 5
+        },
+        "xcheck_models": {
+          "gfs": {
+            "precip_in": 0.0,
+            "gust_mph": 30.2
+          },
+          "ecmwf": {
+            "precip_in": 0.0,
+            "gust_mph": 28.0
+          },
+          "icon": {
+            "precip_in": 0.0,
+            "gust_mph": 25.3
+          },
+          "gem": {
+            "precip_in": 0.0,
+            "gust_mph": 19.0
+          }
+        },
+        "xcheck_ensemble": {
+          "members": 31,
+          "p_half_inch_pct": 0,
+          "median_in": 0.0,
+          "p90_in": 0.0,
+          "max_in": 0.07,
+          "gust_median_mph": 25,
+          "gust_p90_mph": 29,
+          "gust_max_mph": 36
+        },
+        "rain_pathway": {
+          "peak_rate_in_hr": 0.0,
+          "max_6h_in": 0.0,
+          "max_6h_window_complete": true,
+          "tank_peak_navd88": null,
+          "tank_peak_time": null,
+          "tank_regime": "dry",
+          "burst_signal": false,
+          "burst_est_in_hr": 0.0,
+          "burst_potential_navd88": null,
+          "burst_regime": "dry",
+          "nbm_p90_6h_in": 0.0,
+          "nbm_p90_est_in_hr": null,
+          "nbm_p90_potential_navd88": null,
+          "nbm_p90_regime": null,
+          "high_tide_navd88": 3.58,
+          "burst_at_high_tide_navd88": null,
+          "burst_at_high_tide_regime": null,
+          "nbm_p90_at_high_tide_navd88": null,
+          "nbm_p90_at_high_tide_regime": null,
+          "nbm_p_ge_half_in_6h_pct": 0.0,
+          "nbm_p_ge_1in_6h_pct": 0.0,
+          "rain_available": true,
+          "rain_coverage": 1.0,
+          "rain_known_hours": 24,
+          "rain_hours": 24
+        },
+        "tidal_regime_max": "street",
+        "water_peak_navd88": 3.58,
+        "worst_pathway": "tide"
+      },
+      {
+        "date": "2026-10-23",
+        "label": "Friday",
+        "hours_in_scope": 24.0,
+        "partial": false,
+        "tides": [
+          {
+            "time": "06:07",
+            "outlook_mllw": 6.29,
+            "astro_mllw": 5.03,
+            "regime": "dry",
+            "source": "guidance_decay"
+          },
+          {
+            "time": "18:25",
+            "outlook_mllw": 6.09,
+            "astro_mllw": 5.03,
+            "regime": "dry",
+            "source": "guidance_decay"
+          }
+        ],
+        "astro_max_mllw": 5.03,
+        "outlook_max_mllw": 6.29,
+        "outlook_source": "guidance_decay",
+        "regime_max": "dry",
+        "band_hi_max_mllw": null,
+        "regime_hi_max": null,
+        "qpf_in": 0.0,
+        "qpf_source": "nbm",
+        "qpf_covered_h": 24.0,
+        "qpf_null_h": 0.0,
+        "qpf_partial": false,
+        "pop_max_pct": 0,
+        "nbm_pop_max_pct": 0.0,
+        "gust_max_mph": 24.0,
+        "gust_dir": "N",
+        "nbm_band": {
+          "p10_6h_sum_in": 0.0,
+          "p50_6h_sum_in": 0.0,
+          "p90_6h_sum_in": 0.0,
+          "p90_6h_max_in": 0.0,
+          "p_ge_quarter_in_6h_max_pct": 0.0,
+          "p_ge_half_in_6h_max_pct": 0.0,
+          "p_ge_1in_6h_max_pct": 0.0,
+          "buckets": 5
+        },
+        "xcheck_models": {
+          "gfs": {
+            "precip_in": 0.0,
+            "gust_mph": 27.3
+          },
+          "ecmwf": {
+            "precip_in": 0.0,
+            "gust_mph": 28.2
+          },
+          "icon": {
+            "precip_in": 0.0,
+            "gust_mph": 24.2
+          },
+          "gem": {
+            "precip_in": 0.0,
+            "gust_mph": 23.7
+          }
+        },
+        "xcheck_ensemble": {
+          "members": 31,
+          "p_half_inch_pct": 0,
+          "median_in": 0.0,
+          "p90_in": 0.0,
+          "max_in": 0.0,
+          "gust_median_mph": 22,
+          "gust_p90_mph": 26,
+          "gust_max_mph": 32
+        },
+        "rain_pathway": {
+          "peak_rate_in_hr": 0.0,
+          "max_6h_in": 0.0,
+          "max_6h_window_complete": true,
+          "tank_peak_navd88": null,
+          "tank_peak_time": null,
+          "tank_regime": "dry",
+          "burst_signal": false,
+          "burst_est_in_hr": 0.0,
+          "burst_potential_navd88": null,
+          "burst_regime": "dry",
+          "nbm_p90_6h_in": 0.0,
+          "nbm_p90_est_in_hr": null,
+          "nbm_p90_potential_navd88": null,
+          "nbm_p90_regime": null,
+          "high_tide_navd88": 3.47,
+          "burst_at_high_tide_navd88": null,
+          "burst_at_high_tide_regime": null,
+          "nbm_p90_at_high_tide_navd88": null,
+          "nbm_p90_at_high_tide_regime": null,
+          "nbm_p_ge_half_in_6h_pct": 0.0,
+          "nbm_p_ge_1in_6h_pct": 0.0,
+          "rain_available": true,
+          "rain_coverage": 1.0,
+          "rain_known_hours": 24,
+          "rain_hours": 24
+        },
+        "tidal_regime_max": "dry",
+        "water_peak_navd88": 3.47,
+        "worst_pathway": "tide"
+      },
+      {
+        "date": "2026-10-24",
+        "label": "Saturday",
+        "hours_in_scope": 24.0,
+        "partial": false,
+        "tides": [
+          {
+            "time": "06:49",
+            "outlook_mllw": 6.37,
+            "astro_mllw": 5.46,
+            "regime": "street",
+            "source": "guidance_decay"
+          },
+          {
+            "time": "19:09",
+            "outlook_mllw": 5.98,
+            "astro_mllw": 5.17,
+            "regime": "dry",
+            "source": "guidance_decay"
+          }
+        ],
+        "astro_max_mllw": 5.46,
+        "outlook_max_mllw": 6.37,
+        "outlook_source": "guidance_decay",
+        "regime_max": "street",
+        "band_hi_max_mllw": null,
+        "regime_hi_max": null,
+        "qpf_in": 0.0,
+        "qpf_source": "nbm",
+        "qpf_covered_h": 24.0,
+        "qpf_null_h": 0.0,
+        "qpf_partial": false,
+        "pop_max_pct": 0,
+        "nbm_pop_max_pct": 1.0,
+        "gust_max_mph": 16.0,
+        "gust_dir": "NE",
+        "nbm_band": {
+          "p10_6h_sum_in": 0.0,
+          "p50_6h_sum_in": 0.0,
+          "p90_6h_sum_in": 0.0,
+          "p90_6h_max_in": 0.0,
+          "p_ge_quarter_in_6h_max_pct": 0.0,
+          "p_ge_half_in_6h_max_pct": 0.0,
+          "p_ge_1in_6h_max_pct": 0.0,
+          "buckets": 5
+        },
+        "xcheck_models": {
+          "gfs": {
+            "precip_in": 0.0,
+            "gust_mph": 15.4
+          },
+          "ecmwf": {
+            "precip_in": 0.0,
+            "gust_mph": 25.5
+          },
+          "icon": {
+            "precip_in": 0.0,
+            "gust_mph": 14.8
+          },
+          "gem": {
+            "precip_in": 0.0,
+            "gust_mph": 9.4
+          }
+        },
+        "xcheck_ensemble": {
+          "members": 31,
+          "p_half_inch_pct": 0,
+          "median_in": 0.0,
+          "p90_in": 0.0,
+          "max_in": 0.01,
+          "gust_median_mph": 16,
+          "gust_p90_mph": 21,
+          "gust_max_mph": 23
+        },
+        "rain_pathway": {
+          "peak_rate_in_hr": 0.0,
+          "max_6h_in": 0.0,
+          "max_6h_window_complete": true,
+          "tank_peak_navd88": null,
+          "tank_peak_time": null,
+          "tank_regime": "dry",
+          "burst_signal": false,
+          "burst_est_in_hr": 0.0,
+          "burst_potential_navd88": null,
+          "burst_regime": "dry",
+          "nbm_p90_6h_in": 0.0,
+          "nbm_p90_est_in_hr": null,
+          "nbm_p90_potential_navd88": null,
+          "nbm_p90_regime": null,
+          "high_tide_navd88": 3.53,
+          "burst_at_high_tide_navd88": null,
+          "burst_at_high_tide_regime": null,
+          "nbm_p90_at_high_tide_navd88": null,
+          "nbm_p90_at_high_tide_regime": null,
+          "nbm_p_ge_half_in_6h_pct": 0.0,
+          "nbm_p_ge_1in_6h_pct": 0.0,
+          "rain_available": true,
+          "rain_coverage": 1.0,
+          "rain_known_hours": 24,
+          "rain_hours": 24
+        },
+        "tidal_regime_max": "street",
+        "water_peak_navd88": 3.53,
+        "worst_pathway": "tide"
+      },
+      {
+        "date": "2026-10-25",
+        "label": "Sunday",
+        "hours_in_scope": 24.0,
+        "partial": false,
+        "tides": [
+          {
+            "time": "07:29",
+            "outlook_mllw": 6.56,
+            "astro_mllw": 5.83,
+            "regime": "street",
+            "source": "guidance_decay"
+          },
+          {
+            "time": "19:52",
+            "outlook_mllw": 5.91,
+            "astro_mllw": 5.23,
+            "regime": "dry",
+            "source": "guidance_decay"
+          }
+        ],
+        "astro_max_mllw": 5.83,
+        "outlook_max_mllw": 6.56,
+        "outlook_source": "guidance_decay",
+        "regime_max": "street",
+        "band_hi_max_mllw": null,
+        "regime_hi_max": null,
+        "qpf_in": 0.0,
+        "qpf_source": "nbm",
+        "qpf_covered_h": 24.0,
+        "qpf_null_h": 0.0,
+        "qpf_partial": false,
+        "pop_max_pct": 1,
+        "nbm_pop_max_pct": 1.0,
+        "gust_max_mph": 8.0,
+        "gust_dir": "NW",
+        "nbm_band": {
+          "p10_6h_sum_in": 0.0,
+          "p50_6h_sum_in": 0.0,
+          "p90_6h_sum_in": 0.0,
+          "p90_6h_max_in": 0.0,
+          "p_ge_quarter_in_6h_max_pct": 0.0,
+          "p_ge_half_in_6h_max_pct": 0.0,
+          "p_ge_1in_6h_max_pct": 0.0,
+          "buckets": 5
+        },
+        "xcheck_models": {
+          "gfs": {
+            "precip_in": 0.0,
+            "gust_mph": 17.7
+          },
+          "ecmwf": {
+            "precip_in": 0.0,
+            "gust_mph": 12.1
+          },
+          "icon": {
+            "precip_in": 0.0,
+            "gust_mph": 8.7
+          },
+          "gem": {
+            "precip_in": 0.0,
+            "gust_mph": 8.1
+          }
+        },
+        "xcheck_ensemble": {
+          "members": 31,
+          "p_half_inch_pct": 0,
+          "median_in": 0.0,
+          "p90_in": 0.0,
+          "max_in": 0.01,
+          "gust_median_mph": 12,
+          "gust_p90_mph": 17,
+          "gust_max_mph": 24
+        },
+        "rain_pathway": {
+          "peak_rate_in_hr": 0.0,
+          "max_6h_in": 0.0,
+          "max_6h_window_complete": true,
+          "tank_peak_navd88": null,
+          "tank_peak_time": null,
+          "tank_regime": "dry",
+          "burst_signal": false,
+          "burst_est_in_hr": 0.0,
+          "burst_potential_navd88": null,
+          "burst_regime": "dry",
+          "nbm_p90_6h_in": 0.0,
+          "nbm_p90_est_in_hr": null,
+          "nbm_p90_potential_navd88": null,
+          "nbm_p90_regime": null,
+          "high_tide_navd88": 3.66,
+          "burst_at_high_tide_navd88": null,
+          "burst_at_high_tide_regime": null,
+          "nbm_p90_at_high_tide_navd88": null,
+          "nbm_p90_at_high_tide_regime": null,
+          "nbm_p_ge_half_in_6h_pct": 0.0,
+          "nbm_p_ge_1in_6h_pct": 0.0,
+          "rain_available": true,
+          "rain_coverage": 1.0,
+          "rain_known_hours": 24,
+          "rain_hours": 24
+        },
+        "tidal_regime_max": "street",
+        "water_peak_navd88": 3.66,
+        "worst_pathway": "tide"
+      },
+      {
+        "date": "2026-10-26",
+        "label": "Monday",
+        "hours_in_scope": 5.3,
+        "partial": true,
+        "tides": [],
+        "astro_max_mllw": null,
+        "outlook_max_mllw": null,
+        "outlook_source": null,
+        "regime_max": "dry",
+        "band_hi_max_mllw": null,
+        "regime_hi_max": null,
+        "qpf_in": 0.0,
+        "qpf_source": "nbm",
+        "qpf_covered_h": 14.0,
+        "qpf_null_h": 0.0,
+        "qpf_partial": true,
+        "pop_max_pct": 1,
+        "nbm_pop_max_pct": 0.0,
+        "gust_max_mph": 12.0,
+        "gust_dir": "WNW",
+        "nbm_band": {
+          "p10_6h_sum_in": 0.0,
+          "p50_6h_sum_in": 0.0,
+          "p90_6h_sum_in": 0.0,
+          "p90_6h_max_in": 0.0,
+          "p_ge_quarter_in_6h_max_pct": 0.0,
+          "p_ge_half_in_6h_max_pct": 0.0,
+          "p_ge_1in_6h_max_pct": 0.0,
+          "buckets": 3
+        },
+        "xcheck_models": {
+          "gfs": {
+            "precip_in": 0.0,
+            "gust_mph": 19.0
+          },
+          "ecmwf": {
+            "precip_in": 0.0,
+            "gust_mph": 11.6
+          },
+          "icon": {
+            "precip_in": null,
+            "gust_mph": null
+          },
+          "gem": {
+            "precip_in": 0.0,
+            "gust_mph": 7.4
+          }
+        },
+        "xcheck_ensemble": {
+          "members": 31,
+          "p_half_inch_pct": 0,
+          "median_in": 0.0,
+          "p90_in": 0.0,
+          "max_in": 0.0,
+          "gust_median_mph": 15,
+          "gust_p90_mph": 23,
+          "gust_max_mph": 32
+        },
+        "rain_pathway": {
+          "peak_rate_in_hr": 0.0,
+          "max_6h_in": 0.0,
+          "max_6h_window_complete": true,
+          "tank_peak_navd88": null,
+          "tank_peak_time": null,
+          "tank_regime": "dry",
+          "burst_signal": false,
+          "burst_est_in_hr": 0.0,
+          "burst_potential_navd88": null,
+          "burst_regime": "dry",
+          "nbm_p90_6h_in": 0.0,
+          "nbm_p90_est_in_hr": null,
+          "nbm_p90_potential_navd88": null,
+          "nbm_p90_regime": null,
+          "high_tide_navd88": 0.82,
+          "burst_at_high_tide_navd88": null,
+          "burst_at_high_tide_regime": null,
+          "nbm_p90_at_high_tide_navd88": null,
+          "nbm_p90_at_high_tide_regime": null,
+          "nbm_p_ge_half_in_6h_pct": 0.0,
+          "nbm_p_ge_1in_6h_pct": 0.0,
+          "rain_available": true,
+          "rain_coverage": 1.0,
+          "rain_known_hours": 6,
+          "rain_hours": 6
+        },
+        "tidal_regime_max": "dry",
+        "water_peak_navd88": 0.82,
+        "worst_pathway": "tide"
+      }
+    ],
+    "series": [
+      {
+        "time": "2026-10-19 00:00-04:00",
+        "utc": "2026-10-19T04:00:00Z",
+        "lead_h": -5.3,
+        "astro_mllw": 2.9,
+        "tide_navd88": 0.53,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.53
+      },
+      {
+        "time": "2026-10-19 01:00-04:00",
+        "utc": "2026-10-19T05:00:00Z",
+        "lead_h": -4.3,
+        "astro_mllw": 3.422,
+        "tide_navd88": 1.052,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.052
+      },
+      {
+        "time": "2026-10-19 02:00-04:00",
+        "utc": "2026-10-19T06:00:00Z",
+        "lead_h": -3.3,
+        "astro_mllw": 3.787,
+        "tide_navd88": 1.417,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.417
+      },
+      {
+        "time": "2026-10-19 03:00-04:00",
+        "utc": "2026-10-19T07:00:00Z",
+        "lead_h": -2.3,
+        "astro_mllw": 3.861,
+        "tide_navd88": 2.18,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.18
+      },
+      {
+        "time": "2026-10-19 04:00-04:00",
+        "utc": "2026-10-19T08:00:00Z",
+        "lead_h": -1.3,
+        "astro_mllw": 3.537,
+        "tide_navd88": 1.58,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.58
+      },
+      {
+        "time": "2026-10-19 05:00-04:00",
+        "utc": "2026-10-19T09:00:00Z",
+        "lead_h": -0.3,
+        "astro_mllw": 2.956,
+        "tide_navd88": 0.88,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.88
+      },
+      {
+        "time": "2026-10-19 06:00-04:00",
+        "utc": "2026-10-19T10:00:00Z",
+        "lead_h": 0.7,
+        "astro_mllw": 2.41,
+        "tide_navd88": 0.08,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.08
+      },
+      {
+        "time": "2026-10-19 07:00-04:00",
+        "utc": "2026-10-19T11:00:00Z",
+        "lead_h": 1.7,
+        "astro_mllw": 2.035,
+        "tide_navd88": -0.32,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.32
+      },
+      {
+        "time": "2026-10-19 08:00-04:00",
+        "utc": "2026-10-19T12:00:00Z",
+        "lead_h": 2.7,
+        "astro_mllw": 1.798,
+        "tide_navd88": -0.42,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.42
+      },
+      {
+        "time": "2026-10-19 09:00-04:00",
+        "utc": "2026-10-19T13:00:00Z",
+        "lead_h": 3.7,
+        "astro_mllw": 1.738,
+        "tide_navd88": -0.52,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.52
+      },
+      {
+        "time": "2026-10-19 10:00-04:00",
+        "utc": "2026-10-19T14:00:00Z",
+        "lead_h": 4.7,
+        "astro_mllw": 2.005,
+        "tide_navd88": -0.02,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.02
+      },
+      {
+        "time": "2026-10-19 11:00-04:00",
+        "utc": "2026-10-19T15:00:00Z",
+        "lead_h": 5.7,
+        "astro_mllw": 2.601,
+        "tide_navd88": 0.68,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.68
+      },
+      {
+        "time": "2026-10-19 12:00-04:00",
+        "utc": "2026-10-19T16:00:00Z",
+        "lead_h": 6.7,
+        "astro_mllw": 3.307,
+        "tide_navd88": 1.38,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.38
+      },
+      {
+        "time": "2026-10-19 13:00-04:00",
+        "utc": "2026-10-19T17:00:00Z",
+        "lead_h": 7.7,
+        "astro_mllw": 3.911,
+        "tide_navd88": 1.98,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.98
+      },
+      {
+        "time": "2026-10-19 14:00-04:00",
+        "utc": "2026-10-19T18:00:00Z",
+        "lead_h": 8.7,
+        "astro_mllw": 4.329,
+        "tide_navd88": 2.28,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.28
+      },
+      {
+        "time": "2026-10-19 15:00-04:00",
+        "utc": "2026-10-19T19:00:00Z",
+        "lead_h": 9.7,
+        "astro_mllw": 4.475,
+        "tide_navd88": 2.48,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.48
+      },
+      {
+        "time": "2026-10-19 16:00-04:00",
+        "utc": "2026-10-19T20:00:00Z",
+        "lead_h": 10.7,
+        "astro_mllw": 4.221,
+        "tide_navd88": 2.18,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.18
+      },
+      {
+        "time": "2026-10-19 17:00-04:00",
+        "utc": "2026-10-19T21:00:00Z",
+        "lead_h": 11.7,
+        "astro_mllw": 3.6,
+        "tide_navd88": 1.78,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.78
+      },
+      {
+        "time": "2026-10-19 18:00-04:00",
+        "utc": "2026-10-19T22:00:00Z",
+        "lead_h": 12.7,
+        "astro_mllw": 2.861,
+        "tide_navd88": 1.18,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.18
+      },
+      {
+        "time": "2026-10-19 19:00-04:00",
+        "utc": "2026-10-19T23:00:00Z",
+        "lead_h": 13.7,
+        "astro_mllw": 2.217,
+        "tide_navd88": 0.48,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.48
+      },
+      {
+        "time": "2026-10-19 20:00-04:00",
+        "utc": "2026-10-20T00:00:00Z",
+        "lead_h": 14.7,
+        "astro_mllw": 1.691,
+        "tide_navd88": -0.02,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.02
+      },
+      {
+        "time": "2026-10-19 21:00-04:00",
+        "utc": "2026-10-20T01:00:00Z",
+        "lead_h": 15.7,
+        "astro_mllw": 1.305,
+        "tide_navd88": -0.42,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.42
+      },
+      {
+        "time": "2026-10-19 22:00-04:00",
+        "utc": "2026-10-20T02:00:00Z",
+        "lead_h": 16.7,
+        "astro_mllw": 1.234,
+        "tide_navd88": -0.52,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.52
+      },
+      {
+        "time": "2026-10-19 23:00-04:00",
+        "utc": "2026-10-20T03:00:00Z",
+        "lead_h": 17.7,
+        "astro_mllw": 1.605,
+        "tide_navd88": -0.12,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.12
+      },
+      {
+        "time": "2026-10-20 00:00-04:00",
+        "utc": "2026-10-20T04:00:00Z",
+        "lead_h": 18.7,
+        "astro_mllw": 2.284,
+        "tide_navd88": 0.68,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.68
+      },
+      {
+        "time": "2026-10-20 01:00-04:00",
+        "utc": "2026-10-20T05:00:00Z",
+        "lead_h": 19.7,
+        "astro_mllw": 2.998,
+        "tide_navd88": 1.48,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.48
+      },
+      {
+        "time": "2026-10-20 02:00-04:00",
+        "utc": "2026-10-20T06:00:00Z",
+        "lead_h": 20.7,
+        "astro_mllw": 3.58,
+        "tide_navd88": 1.98,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.98
+      },
+      {
+        "time": "2026-10-20 03:00-04:00",
+        "utc": "2026-10-20T07:00:00Z",
+        "lead_h": 21.7,
+        "astro_mllw": 3.946,
+        "tide_navd88": 2.28,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.28
+      },
+      {
+        "time": "2026-10-20 04:00-04:00",
+        "utc": "2026-10-20T08:00:00Z",
+        "lead_h": 22.7,
+        "astro_mllw": 3.978,
+        "tide_navd88": 2.28,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.28
+      },
+      {
+        "time": "2026-10-20 05:00-04:00",
+        "utc": "2026-10-20T09:00:00Z",
+        "lead_h": 23.7,
+        "astro_mllw": 3.626,
+        "tide_navd88": 1.88,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.88
+      },
+      {
+        "time": "2026-10-20 06:00-04:00",
+        "utc": "2026-10-20T10:00:00Z",
+        "lead_h": 24.7,
+        "astro_mllw": 3.052,
+        "tide_navd88": 1.38,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.38
+      },
+      {
+        "time": "2026-10-20 07:00-04:00",
+        "utc": "2026-10-20T11:00:00Z",
+        "lead_h": 25.7,
+        "astro_mllw": 2.498,
+        "tide_navd88": 0.88,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.88
+      },
+      {
+        "time": "2026-10-20 08:00-04:00",
+        "utc": "2026-10-20T12:00:00Z",
+        "lead_h": 26.7,
+        "astro_mllw": 2.049,
+        "tide_navd88": 0.38,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.38
+      },
+      {
+        "time": "2026-10-20 09:00-04:00",
+        "utc": "2026-10-20T13:00:00Z",
+        "lead_h": 27.7,
+        "astro_mllw": 1.698,
+        "tide_navd88": 0.18,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.18
+      },
+      {
+        "time": "2026-10-20 10:00-04:00",
+        "utc": "2026-10-20T14:00:00Z",
+        "lead_h": 28.7,
+        "astro_mllw": 1.568,
+        "tide_navd88": 0.18,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.18
+      },
+      {
+        "time": "2026-10-20 11:00-04:00",
+        "utc": "2026-10-20T15:00:00Z",
+        "lead_h": 29.7,
+        "astro_mllw": 1.85,
+        "tide_navd88": 0.58,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.58
+      },
+      {
+        "time": "2026-10-20 12:00-04:00",
+        "utc": "2026-10-20T16:00:00Z",
+        "lead_h": 30.7,
+        "astro_mllw": 2.52,
+        "tide_navd88": 1.18,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.18
+      },
+      {
+        "time": "2026-10-20 13:00-04:00",
+        "utc": "2026-10-20T17:00:00Z",
+        "lead_h": 31.7,
+        "astro_mllw": 3.311,
+        "tide_navd88": 1.98,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.98
+      },
+      {
+        "time": "2026-10-20 14:00-04:00",
+        "utc": "2026-10-20T18:00:00Z",
+        "lead_h": 32.7,
+        "astro_mllw": 3.976,
+        "tide_navd88": 2.58,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.58
+      },
+      {
+        "time": "2026-10-20 15:00-04:00",
+        "utc": "2026-10-20T19:00:00Z",
+        "lead_h": 33.7,
+        "astro_mllw": 4.409,
+        "tide_navd88": 2.98,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.98
+      },
+      {
+        "time": "2026-10-20 16:00-04:00",
+        "utc": "2026-10-20T20:00:00Z",
+        "lead_h": 34.7,
+        "astro_mllw": 4.525,
+        "tide_navd88": 3.08,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.08
+      },
+      {
+        "time": "2026-10-20 17:00-04:00",
+        "utc": "2026-10-20T21:00:00Z",
+        "lead_h": 35.7,
+        "astro_mllw": 4.23,
+        "tide_navd88": 2.78,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.78
+      },
+      {
+        "time": "2026-10-20 18:00-04:00",
+        "utc": "2026-10-20T22:00:00Z",
+        "lead_h": 36.7,
+        "astro_mllw": 3.585,
+        "tide_navd88": 2.28,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.28
+      },
+      {
+        "time": "2026-10-20 19:00-04:00",
+        "utc": "2026-10-20T23:00:00Z",
+        "lead_h": 37.7,
+        "astro_mllw": 2.817,
+        "tide_navd88": 1.58,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.58
+      },
+      {
+        "time": "2026-10-20 20:00-04:00",
+        "utc": "2026-10-21T00:00:00Z",
+        "lead_h": 38.7,
+        "astro_mllw": 2.1,
+        "tide_navd88": 0.88,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.88
+      },
+      {
+        "time": "2026-10-20 21:00-04:00",
+        "utc": "2026-10-21T01:00:00Z",
+        "lead_h": 39.7,
+        "astro_mllw": 1.476,
+        "tide_navd88": 0.38,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.38
+      },
+      {
+        "time": "2026-10-20 22:00-04:00",
+        "utc": "2026-10-21T02:00:00Z",
+        "lead_h": 40.7,
+        "astro_mllw": 1.044,
+        "tide_navd88": -0.12,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.12
+      },
+      {
+        "time": "2026-10-20 23:00-04:00",
+        "utc": "2026-10-21T03:00:00Z",
+        "lead_h": 41.7,
+        "astro_mllw": 1.033,
+        "tide_navd88": -0.02,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.02
+      },
+      {
+        "time": "2026-10-21 00:00-04:00",
+        "utc": "2026-10-21T04:00:00Z",
+        "lead_h": 42.7,
+        "astro_mllw": 1.55,
+        "tide_navd88": 0.58,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.58
+      },
+      {
+        "time": "2026-10-21 01:00-04:00",
+        "utc": "2026-10-21T05:00:00Z",
+        "lead_h": 43.7,
+        "astro_mllw": 2.387,
+        "tide_navd88": 1.48,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.48
+      },
+      {
+        "time": "2026-10-21 02:00-04:00",
+        "utc": "2026-10-21T06:00:00Z",
+        "lead_h": 44.7,
+        "astro_mllw": 3.216,
+        "tide_navd88": 2.28,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.28
+      },
+      {
+        "time": "2026-10-21 03:00-04:00",
+        "utc": "2026-10-21T07:00:00Z",
+        "lead_h": 45.7,
+        "astro_mllw": 3.848,
+        "tide_navd88": 2.88,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.88
+      },
+      {
+        "time": "2026-10-21 04:00-04:00",
+        "utc": "2026-10-21T08:00:00Z",
+        "lead_h": 46.7,
+        "astro_mllw": 4.209,
+        "tide_navd88": 3.28,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.28
+      },
+      {
+        "time": "2026-10-21 05:00-04:00",
+        "utc": "2026-10-21T09:00:00Z",
+        "lead_h": 47.7,
+        "astro_mllw": 4.203,
+        "tide_navd88": 3.18,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.18
+      },
+      {
+        "time": "2026-10-21 06:00-04:00",
+        "utc": "2026-10-21T10:00:00Z",
+        "lead_h": 48.7,
+        "astro_mllw": 3.799,
+        "tide_navd88": 2.78,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.78
+      },
+      {
+        "time": "2026-10-21 07:00-04:00",
+        "utc": "2026-10-21T11:00:00Z",
+        "lead_h": 49.7,
+        "astro_mllw": 3.156,
+        "tide_navd88": 2.28,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.28
+      },
+      {
+        "time": "2026-10-21 08:00-04:00",
+        "utc": "2026-10-21T12:00:00Z",
+        "lead_h": 50.7,
+        "astro_mllw": 2.492,
+        "tide_navd88": 1.68,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.68
+      },
+      {
+        "time": "2026-10-21 09:00-04:00",
+        "utc": "2026-10-21T13:00:00Z",
+        "lead_h": 51.7,
+        "astro_mllw": 1.899,
+        "tide_navd88": 1.08,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.08
+      },
+      {
+        "time": "2026-10-21 10:00-04:00",
+        "utc": "2026-10-21T14:00:00Z",
+        "lead_h": 52.7,
+        "astro_mllw": 1.431,
+        "tide_navd88": 0.68,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.68
+      },
+      {
+        "time": "2026-10-21 11:00-04:00",
+        "utc": "2026-10-21T15:00:00Z",
+        "lead_h": 53.7,
+        "astro_mllw": 1.287,
+        "tide_navd88": 0.58,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.58
+      },
+      {
+        "time": "2026-10-21 12:00-04:00",
+        "utc": "2026-10-21T16:00:00Z",
+        "lead_h": 54.7,
+        "astro_mllw": 1.665,
+        "tide_navd88": 0.98,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.98
+      },
+      {
+        "time": "2026-10-21 13:00-04:00",
+        "utc": "2026-10-21T17:00:00Z",
+        "lead_h": 55.7,
+        "astro_mllw": 2.474,
+        "tide_navd88": 1.78,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.78
+      },
+      {
+        "time": "2026-10-21 14:00-04:00",
+        "utc": "2026-10-21T18:00:00Z",
+        "lead_h": 56.7,
+        "astro_mllw": 3.377,
+        "tide_navd88": 2.58,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.58
+      },
+      {
+        "time": "2026-10-21 15:00-04:00",
+        "utc": "2026-10-21T19:00:00Z",
+        "lead_h": 57.7,
+        "astro_mllw": 4.1,
+        "tide_navd88": 3.28,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.28
+      },
+      {
+        "time": "2026-10-21 16:00-04:00",
+        "utc": "2026-10-21T20:00:00Z",
+        "lead_h": 58.7,
+        "astro_mllw": 4.548,
+        "tide_navd88": 3.68,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.68
+      },
+      {
+        "time": "2026-10-21 17:00-04:00",
+        "utc": "2026-10-21T21:00:00Z",
+        "lead_h": 59.7,
+        "astro_mllw": 4.644,
+        "tide_navd88": 3.78,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.78
+      },
+      {
+        "time": "2026-10-21 18:00-04:00",
+        "utc": "2026-10-21T22:00:00Z",
+        "lead_h": 60.7,
+        "astro_mllw": 4.292,
+        "tide_navd88": 3.48,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.48
+      },
+      {
+        "time": "2026-10-21 19:00-04:00",
+        "utc": "2026-10-21T23:00:00Z",
+        "lead_h": 61.7,
+        "astro_mllw": 3.558,
+        "tide_navd88": 2.78,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.78
+      },
+      {
+        "time": "2026-10-21 20:00-04:00",
+        "utc": "2026-10-22T00:00:00Z",
+        "lead_h": 62.7,
+        "astro_mllw": 2.677,
+        "tide_navd88": 1.88,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.88
+      },
+      {
+        "time": "2026-10-21 21:00-04:00",
+        "utc": "2026-10-22T01:00:00Z",
+        "lead_h": 63.7,
+        "astro_mllw": 1.838,
+        "tide_navd88": 1.08,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.08
+      },
+      {
+        "time": "2026-10-21 22:00-04:00",
+        "utc": "2026-10-22T02:00:00Z",
+        "lead_h": 64.7,
+        "astro_mllw": 1.127,
+        "tide_navd88": 0.38,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.38
+      },
+      {
+        "time": "2026-10-21 23:00-04:00",
+        "utc": "2026-10-22T03:00:00Z",
+        "lead_h": 65.7,
+        "astro_mllw": 0.717,
+        "tide_navd88": -0.02,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.02
+      },
+      {
+        "time": "2026-10-22 00:00-04:00",
+        "utc": "2026-10-22T04:00:00Z",
+        "lead_h": 66.7,
+        "astro_mllw": 0.862,
+        "tide_navd88": 0.18,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.18
+      },
+      {
+        "time": "2026-10-22 01:00-04:00",
+        "utc": "2026-10-22T05:00:00Z",
+        "lead_h": 67.7,
+        "astro_mllw": 1.598,
+        "tide_navd88": 0.88,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.88
+      },
+      {
+        "time": "2026-10-22 02:00-04:00",
+        "utc": "2026-10-22T06:00:00Z",
+        "lead_h": 68.7,
+        "astro_mllw": 2.618,
+        "tide_navd88": 1.88,
+        "surge_source": "nwps",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.88
+      },
+      {
+        "time": "2026-10-22 03:00-04:00",
+        "utc": "2026-10-22T07:00:00Z",
+        "lead_h": 69.7,
+        "astro_mllw": 3.551,
+        "tide_navd88": 2.631,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.631
+      },
+      {
+        "time": "2026-10-22 04:00-04:00",
+        "utc": "2026-10-22T08:00:00Z",
+        "lead_h": 70.7,
+        "astro_mllw": 4.227,
+        "tide_navd88": 3.257,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.257
+      },
+      {
+        "time": "2026-10-22 05:00-04:00",
+        "utc": "2026-10-22T09:00:00Z",
+        "lead_h": 71.7,
+        "astro_mllw": 4.582,
+        "tide_navd88": 3.562,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.562
+      },
+      {
+        "time": "2026-10-22 06:00-04:00",
+        "utc": "2026-10-22T10:00:00Z",
+        "lead_h": 72.7,
+        "astro_mllw": 4.508,
+        "tide_navd88": 3.488,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.488
+      },
+      {
+        "time": "2026-10-22 07:00-04:00",
+        "utc": "2026-10-22T11:00:00Z",
+        "lead_h": 73.7,
+        "astro_mllw": 3.975,
+        "tide_navd88": 2.905,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nws_grid",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.905
+      },
+      {
+        "time": "2026-10-22 08:00-04:00",
+        "utc": "2026-10-22T12:00:00Z",
+        "lead_h": 74.7,
+        "astro_mllw": 3.171,
+        "tide_navd88": 2.151,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.151
+      },
+      {
+        "time": "2026-10-22 09:00-04:00",
+        "utc": "2026-10-22T13:00:00Z",
+        "lead_h": 75.7,
+        "astro_mllw": 2.335,
+        "tide_navd88": 1.365,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.365
+      },
+      {
+        "time": "2026-10-22 10:00-04:00",
+        "utc": "2026-10-22T14:00:00Z",
+        "lead_h": 76.7,
+        "astro_mllw": 1.59,
+        "tide_navd88": 0.52,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.52
+      },
+      {
+        "time": "2026-10-22 11:00-04:00",
+        "utc": "2026-10-22T15:00:00Z",
+        "lead_h": 77.7,
+        "astro_mllw": 1.053,
+        "tide_navd88": -0.167,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.167
+      },
+      {
+        "time": "2026-10-22 12:00-04:00",
+        "utc": "2026-10-22T16:00:00Z",
+        "lead_h": 78.7,
+        "astro_mllw": 0.973,
+        "tide_navd88": -0.247,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.247
+      },
+      {
+        "time": "2026-10-22 13:00-04:00",
+        "utc": "2026-10-22T17:00:00Z",
+        "lead_h": 79.7,
+        "astro_mllw": 1.514,
+        "tide_navd88": 0.344,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.344
+      },
+      {
+        "time": "2026-10-22 14:00-04:00",
+        "utc": "2026-10-22T18:00:00Z",
+        "lead_h": 80.7,
+        "astro_mllw": 2.486,
+        "tide_navd88": 1.216,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.216
+      },
+      {
+        "time": "2026-10-22 15:00-04:00",
+        "utc": "2026-10-22T19:00:00Z",
+        "lead_h": 81.7,
+        "astro_mllw": 3.493,
+        "tide_navd88": 2.223,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.223
+      },
+      {
+        "time": "2026-10-22 16:00-04:00",
+        "utc": "2026-10-22T20:00:00Z",
+        "lead_h": 82.7,
+        "astro_mllw": 4.275,
+        "tide_navd88": 3.005,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.005
+      },
+      {
+        "time": "2026-10-22 17:00-04:00",
+        "utc": "2026-10-22T21:00:00Z",
+        "lead_h": 83.7,
+        "astro_mllw": 4.749,
+        "tide_navd88": 3.529,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.529
+      },
+      {
+        "time": "2026-10-22 18:00-04:00",
+        "utc": "2026-10-22T22:00:00Z",
+        "lead_h": 84.7,
+        "astro_mllw": 4.803,
+        "tide_navd88": 3.583,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.583
+      },
+      {
+        "time": "2026-10-22 19:00-04:00",
+        "utc": "2026-10-22T23:00:00Z",
+        "lead_h": 85.7,
+        "astro_mllw": 4.329,
+        "tide_navd88": 3.059,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.059
+      },
+      {
+        "time": "2026-10-22 20:00-04:00",
+        "utc": "2026-10-23T00:00:00Z",
+        "lead_h": 86.7,
+        "astro_mllw": 3.433,
+        "tide_navd88": 2.113,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.113
+      },
+      {
+        "time": "2026-10-22 21:00-04:00",
+        "utc": "2026-10-23T01:00:00Z",
+        "lead_h": 87.7,
+        "astro_mllw": 2.401,
+        "tide_navd88": 0.981,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.981
+      },
+      {
+        "time": "2026-10-22 22:00-04:00",
+        "utc": "2026-10-23T02:00:00Z",
+        "lead_h": 88.7,
+        "astro_mllw": 1.45,
+        "tide_navd88": 0.03,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.03
+      },
+      {
+        "time": "2026-10-22 23:00-04:00",
+        "utc": "2026-10-23T03:00:00Z",
+        "lead_h": 89.7,
+        "astro_mllw": 0.716,
+        "tide_navd88": -0.654,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.654
+      },
+      {
+        "time": "2026-10-23 00:00-04:00",
+        "utc": "2026-10-23T04:00:00Z",
+        "lead_h": 90.7,
+        "astro_mllw": 0.421,
+        "tide_navd88": -0.999,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.999
+      },
+      {
+        "time": "2026-10-23 01:00-04:00",
+        "utc": "2026-10-23T05:00:00Z",
+        "lead_h": 91.7,
+        "astro_mllw": 0.798,
+        "tide_navd88": -0.622,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.622
+      },
+      {
+        "time": "2026-10-23 02:00-04:00",
+        "utc": "2026-10-23T06:00:00Z",
+        "lead_h": 92.7,
+        "astro_mllw": 1.78,
+        "tide_navd88": 0.31,
+        "surge_source": "petss_hourly",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.31
+      },
+      {
+        "time": "2026-10-23 03:00-04:00",
+        "utc": "2026-10-23T07:00:00Z",
+        "lead_h": 93.7,
+        "astro_mllw": 2.97,
+        "tide_navd88": 1.478,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.478
+      },
+      {
+        "time": "2026-10-23 04:00-04:00",
+        "utc": "2026-10-23T08:00:00Z",
+        "lead_h": 94.7,
+        "astro_mllw": 3.997,
+        "tide_navd88": 2.484,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.484
+      },
+      {
+        "time": "2026-10-23 05:00-04:00",
+        "utc": "2026-10-23T09:00:00Z",
+        "lead_h": 95.7,
+        "astro_mllw": 4.713,
+        "tide_navd88": 3.179,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.179
+      },
+      {
+        "time": "2026-10-23 06:00-04:00",
+        "utc": "2026-10-23T10:00:00Z",
+        "lead_h": 96.7,
+        "astro_mllw": 5.026,
+        "tide_navd88": 3.472,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.472
+      },
+      {
+        "time": "2026-10-23 07:00-04:00",
+        "utc": "2026-10-23T11:00:00Z",
+        "lead_h": 97.7,
+        "astro_mllw": 4.804,
+        "tide_navd88": 3.23,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.23
+      },
+      {
+        "time": "2026-10-23 08:00-04:00",
+        "utc": "2026-10-23T12:00:00Z",
+        "lead_h": 98.7,
+        "astro_mllw": 4.058,
+        "tide_navd88": 2.465,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.465
+      },
+      {
+        "time": "2026-10-23 09:00-04:00",
+        "utc": "2026-10-23T13:00:00Z",
+        "lead_h": 99.7,
+        "astro_mllw": 3.044,
+        "tide_navd88": 1.432,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.432
+      },
+      {
+        "time": "2026-10-23 10:00-04:00",
+        "utc": "2026-10-23T14:00:00Z",
+        "lead_h": 100.7,
+        "astro_mllw": 2.035,
+        "tide_navd88": 0.405,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.405
+      },
+      {
+        "time": "2026-10-23 11:00-04:00",
+        "utc": "2026-10-23T15:00:00Z",
+        "lead_h": 101.7,
+        "astro_mllw": 1.178,
+        "tide_navd88": -0.469,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.469
+      },
+      {
+        "time": "2026-10-23 12:00-04:00",
+        "utc": "2026-10-23T16:00:00Z",
+        "lead_h": 102.7,
+        "astro_mllw": 0.645,
+        "tide_navd88": -1.019,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.019
+      },
+      {
+        "time": "2026-10-23 13:00-04:00",
+        "utc": "2026-10-23T17:00:00Z",
+        "lead_h": 103.7,
+        "astro_mllw": 0.697,
+        "tide_navd88": -0.984,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.984
+      },
+      {
+        "time": "2026-10-23 14:00-04:00",
+        "utc": "2026-10-23T18:00:00Z",
+        "lead_h": 104.7,
+        "astro_mllw": 1.426,
+        "tide_navd88": -0.271,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.271
+      },
+      {
+        "time": "2026-10-23 15:00-04:00",
+        "utc": "2026-10-23T19:00:00Z",
+        "lead_h": 105.7,
+        "astro_mllw": 2.552,
+        "tide_navd88": 0.839,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.839
+      },
+      {
+        "time": "2026-10-23 16:00-04:00",
+        "utc": "2026-10-23T20:00:00Z",
+        "lead_h": 106.7,
+        "astro_mllw": 3.659,
+        "tide_navd88": 1.931,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.931
+      },
+      {
+        "time": "2026-10-23 17:00-04:00",
+        "utc": "2026-10-23T21:00:00Z",
+        "lead_h": 107.7,
+        "astro_mllw": 4.506,
+        "tide_navd88": 2.763,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.763
+      },
+      {
+        "time": "2026-10-23 18:00-04:00",
+        "utc": "2026-10-23T22:00:00Z",
+        "lead_h": 108.7,
+        "astro_mllw": 4.979,
+        "tide_navd88": 3.221,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.221
+      },
+      {
+        "time": "2026-10-23 19:00-04:00",
+        "utc": "2026-10-23T23:00:00Z",
+        "lead_h": 109.7,
+        "astro_mllw": 4.923,
+        "tide_navd88": 3.151,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.151
+      },
+      {
+        "time": "2026-10-23 20:00-04:00",
+        "utc": "2026-10-24T00:00:00Z",
+        "lead_h": 110.7,
+        "astro_mllw": 4.257,
+        "tide_navd88": 2.472,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.472
+      },
+      {
+        "time": "2026-10-23 21:00-04:00",
+        "utc": "2026-10-24T01:00:00Z",
+        "lead_h": 111.7,
+        "astro_mllw": 3.172,
+        "tide_navd88": 1.373,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.373
+      },
+      {
+        "time": "2026-10-23 22:00-04:00",
+        "utc": "2026-10-24T02:00:00Z",
+        "lead_h": 112.7,
+        "astro_mllw": 2.009,
+        "tide_navd88": 0.197,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.197
+      },
+      {
+        "time": "2026-10-23 23:00-04:00",
+        "utc": "2026-10-24T03:00:00Z",
+        "lead_h": 113.7,
+        "astro_mllw": 1.006,
+        "tide_navd88": -0.818,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.818
+      },
+      {
+        "time": "2026-10-24 00:00-04:00",
+        "utc": "2026-10-24T04:00:00Z",
+        "lead_h": 114.7,
+        "astro_mllw": 0.332,
+        "tide_navd88": -1.504,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.504
+      },
+      {
+        "time": "2026-10-24 01:00-04:00",
+        "utc": "2026-10-24T05:00:00Z",
+        "lead_h": 115.7,
+        "astro_mllw": 0.229,
+        "tide_navd88": -1.619,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.619
+      },
+      {
+        "time": "2026-10-24 02:00-04:00",
+        "utc": "2026-10-24T06:00:00Z",
+        "lead_h": 116.7,
+        "astro_mllw": 0.872,
+        "tide_navd88": -0.988,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.988
+      },
+      {
+        "time": "2026-10-24 03:00-04:00",
+        "utc": "2026-10-24T07:00:00Z",
+        "lead_h": 117.7,
+        "astro_mllw": 2.087,
+        "tide_navd88": 0.216,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.216
+      },
+      {
+        "time": "2026-10-24 04:00-04:00",
+        "utc": "2026-10-24T08:00:00Z",
+        "lead_h": 118.7,
+        "astro_mllw": 3.43,
+        "tide_navd88": 1.548,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.548
+      },
+      {
+        "time": "2026-10-24 05:00-04:00",
+        "utc": "2026-10-24T09:00:00Z",
+        "lead_h": 119.7,
+        "astro_mllw": 4.541,
+        "tide_navd88": 2.648,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.648
+      },
+      {
+        "time": "2026-10-24 06:00-04:00",
+        "utc": "2026-10-24T10:00:00Z",
+        "lead_h": 120.7,
+        "astro_mllw": 5.257,
+        "tide_navd88": 3.354,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.354
+      },
+      {
+        "time": "2026-10-24 07:00-04:00",
+        "utc": "2026-10-24T11:00:00Z",
+        "lead_h": 121.7,
+        "astro_mllw": 5.446,
+        "tide_navd88": 3.533,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.533
+      },
+      {
+        "time": "2026-10-24 08:00-04:00",
+        "utc": "2026-10-24T12:00:00Z",
+        "lead_h": 122.7,
+        "astro_mllw": 4.992,
+        "tide_navd88": 3.069,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.069
+      },
+      {
+        "time": "2026-10-24 09:00-04:00",
+        "utc": "2026-10-24T13:00:00Z",
+        "lead_h": 123.7,
+        "astro_mllw": 3.997,
+        "tide_navd88": 2.064,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.064
+      },
+      {
+        "time": "2026-10-24 10:00-04:00",
+        "utc": "2026-10-24T14:00:00Z",
+        "lead_h": 124.7,
+        "astro_mllw": 2.785,
+        "tide_navd88": 0.843,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.843
+      },
+      {
+        "time": "2026-10-24 11:00-04:00",
+        "utc": "2026-10-24T15:00:00Z",
+        "lead_h": 125.7,
+        "astro_mllw": 1.648,
+        "tide_navd88": -0.303,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.303
+      },
+      {
+        "time": "2026-10-24 12:00-04:00",
+        "utc": "2026-10-24T16:00:00Z",
+        "lead_h": 126.7,
+        "astro_mllw": 0.748,
+        "tide_navd88": -1.212,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.212
+      },
+      {
+        "time": "2026-10-24 13:00-04:00",
+        "utc": "2026-10-24T17:00:00Z",
+        "lead_h": 127.7,
+        "astro_mllw": 0.284,
+        "tide_navd88": -1.684,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.684
+      },
+      {
+        "time": "2026-10-24 14:00-04:00",
+        "utc": "2026-10-24T18:00:00Z",
+        "lead_h": 128.7,
+        "astro_mllw": 0.5,
+        "tide_navd88": -1.477,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.477
+      },
+      {
+        "time": "2026-10-24 15:00-04:00",
+        "utc": "2026-10-24T19:00:00Z",
+        "lead_h": 129.7,
+        "astro_mllw": 1.411,
+        "tide_navd88": -0.574,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.574
+      },
+      {
+        "time": "2026-10-24 16:00-04:00",
+        "utc": "2026-10-24T20:00:00Z",
+        "lead_h": 130.7,
+        "astro_mllw": 2.679,
+        "tide_navd88": 0.687,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.687
+      },
+      {
+        "time": "2026-10-24 17:00-04:00",
+        "utc": "2026-10-24T21:00:00Z",
+        "lead_h": 131.7,
+        "astro_mllw": 3.883,
+        "tide_navd88": 1.883,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.883
+      },
+      {
+        "time": "2026-10-24 18:00-04:00",
+        "utc": "2026-10-24T22:00:00Z",
+        "lead_h": 132.7,
+        "astro_mllw": 4.764,
+        "tide_navd88": 2.756,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.756
+      },
+      {
+        "time": "2026-10-24 19:00-04:00",
+        "utc": "2026-10-24T23:00:00Z",
+        "lead_h": 133.7,
+        "astro_mllw": 5.165,
+        "tide_navd88": 3.15,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.15
+      },
+      {
+        "time": "2026-10-24 20:00-04:00",
+        "utc": "2026-10-25T00:00:00Z",
+        "lead_h": 134.7,
+        "astro_mllw": 4.926,
+        "tide_navd88": 2.904,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.904
+      },
+      {
+        "time": "2026-10-24 21:00-04:00",
+        "utc": "2026-10-25T01:00:00Z",
+        "lead_h": 135.7,
+        "astro_mllw": 4.045,
+        "tide_navd88": 2.016,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.016
+      },
+      {
+        "time": "2026-10-24 22:00-04:00",
+        "utc": "2026-10-25T02:00:00Z",
+        "lead_h": 136.7,
+        "astro_mllw": 2.801,
+        "tide_navd88": 0.766,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.766
+      },
+      {
+        "time": "2026-10-24 23:00-04:00",
+        "utc": "2026-10-25T03:00:00Z",
+        "lead_h": 137.7,
+        "astro_mllw": 1.569,
+        "tide_navd88": -0.473,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.473
+      },
+      {
+        "time": "2026-10-25 00:00-04:00",
+        "utc": "2026-10-25T04:00:00Z",
+        "lead_h": 138.7,
+        "astro_mllw": 0.592,
+        "tide_navd88": -1.456,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.456
+      },
+      {
+        "time": "2026-10-25 01:00-04:00",
+        "utc": "2026-10-25T05:00:00Z",
+        "lead_h": 139.7,
+        "astro_mllw": 0.049,
+        "tide_navd88": -2.005,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -2.005
+      },
+      {
+        "time": "2026-10-25 02:00-04:00",
+        "utc": "2026-10-25T06:00:00Z",
+        "lead_h": 140.7,
+        "astro_mllw": 0.173,
+        "tide_navd88": -1.887,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.887
+      },
+      {
+        "time": "2026-10-25 03:00-04:00",
+        "utc": "2026-10-25T07:00:00Z",
+        "lead_h": 141.7,
+        "astro_mllw": 1.072,
+        "tide_navd88": -0.994,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.994
+      },
+      {
+        "time": "2026-10-25 04:00-04:00",
+        "utc": "2026-10-25T08:00:00Z",
+        "lead_h": 142.7,
+        "astro_mllw": 2.499,
+        "tide_navd88": 0.428,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.428
+      },
+      {
+        "time": "2026-10-25 05:00-04:00",
+        "utc": "2026-10-25T09:00:00Z",
+        "lead_h": 143.7,
+        "astro_mllw": 3.974,
+        "tide_navd88": 1.897,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.897
+      },
+      {
+        "time": "2026-10-25 06:00-04:00",
+        "utc": "2026-10-25T10:00:00Z",
+        "lead_h": 144.7,
+        "astro_mllw": 5.12,
+        "tide_navd88": 3.038,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.038
+      },
+      {
+        "time": "2026-10-25 07:00-04:00",
+        "utc": "2026-10-25T11:00:00Z",
+        "lead_h": 145.7,
+        "astro_mllw": 5.75,
+        "tide_navd88": 3.663,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.663
+      },
+      {
+        "time": "2026-10-25 08:00-04:00",
+        "utc": "2026-10-25T12:00:00Z",
+        "lead_h": 146.7,
+        "astro_mllw": 5.732,
+        "tide_navd88": 3.639,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.639
+      },
+      {
+        "time": "2026-10-25 09:00-04:00",
+        "utc": "2026-10-25T13:00:00Z",
+        "lead_h": 147.7,
+        "astro_mllw": 5.018,
+        "tide_navd88": 2.921,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.921
+      },
+      {
+        "time": "2026-10-25 10:00-04:00",
+        "utc": "2026-10-25T14:00:00Z",
+        "lead_h": 148.7,
+        "astro_mllw": 3.802,
+        "tide_navd88": 1.7,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.7
+      },
+      {
+        "time": "2026-10-25 11:00-04:00",
+        "utc": "2026-10-25T15:00:00Z",
+        "lead_h": 149.7,
+        "astro_mllw": 2.452,
+        "tide_navd88": 0.345,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.345
+      },
+      {
+        "time": "2026-10-25 12:00-04:00",
+        "utc": "2026-10-25T16:00:00Z",
+        "lead_h": 150.7,
+        "astro_mllw": 1.256,
+        "tide_navd88": -0.855,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.855
+      },
+      {
+        "time": "2026-10-25 13:00-04:00",
+        "utc": "2026-10-25T17:00:00Z",
+        "lead_h": 151.7,
+        "astro_mllw": 0.376,
+        "tide_navd88": -1.74,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.74
+      },
+      {
+        "time": "2026-10-25 14:00-04:00",
+        "utc": "2026-10-25T18:00:00Z",
+        "lead_h": 152.7,
+        "astro_mllw": 0.017,
+        "tide_navd88": -2.103,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -2.103
+      },
+      {
+        "time": "2026-10-25 15:00-04:00",
+        "utc": "2026-10-25T19:00:00Z",
+        "lead_h": 153.7,
+        "astro_mllw": 0.399,
+        "tide_navd88": -1.725,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.725
+      },
+      {
+        "time": "2026-10-25 16:00-04:00",
+        "utc": "2026-10-25T20:00:00Z",
+        "lead_h": 154.7,
+        "astro_mllw": 1.484,
+        "tide_navd88": -0.644,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.644
+      },
+      {
+        "time": "2026-10-25 17:00-04:00",
+        "utc": "2026-10-25T21:00:00Z",
+        "lead_h": 155.7,
+        "astro_mllw": 2.882,
+        "tide_navd88": 0.75,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.75
+      },
+      {
+        "time": "2026-10-25 18:00-04:00",
+        "utc": "2026-10-25T22:00:00Z",
+        "lead_h": 156.7,
+        "astro_mllw": 4.14,
+        "tide_navd88": 2.004,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.004
+      },
+      {
+        "time": "2026-10-25 19:00-04:00",
+        "utc": "2026-10-25T23:00:00Z",
+        "lead_h": 157.7,
+        "astro_mllw": 4.977,
+        "tide_navd88": 2.837,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.837
+      },
+      {
+        "time": "2026-10-25 20:00-04:00",
+        "utc": "2026-10-26T00:00:00Z",
+        "lead_h": 158.7,
+        "astro_mllw": 5.228,
+        "tide_navd88": 3.085,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 3.085
+      },
+      {
+        "time": "2026-10-25 21:00-04:00",
+        "utc": "2026-10-26T01:00:00Z",
+        "lead_h": 159.7,
+        "astro_mllw": 4.782,
+        "tide_navd88": 2.635,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 2.635
+      },
+      {
+        "time": "2026-10-25 22:00-04:00",
+        "utc": "2026-10-26T02:00:00Z",
+        "lead_h": 160.7,
+        "astro_mllw": 3.721,
+        "tide_navd88": 1.571,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 1.571
+      },
+      {
+        "time": "2026-10-25 23:00-04:00",
+        "utc": "2026-10-26T03:00:00Z",
+        "lead_h": 161.7,
+        "astro_mllw": 2.388,
+        "tide_navd88": 0.235,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.235
+      },
+      {
+        "time": "2026-10-26 00:00-04:00",
+        "utc": "2026-10-26T04:00:00Z",
+        "lead_h": 162.7,
+        "astro_mllw": 1.164,
+        "tide_navd88": -0.993,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.993
+      },
+      {
+        "time": "2026-10-26 01:00-04:00",
+        "utc": "2026-10-26T05:00:00Z",
+        "lead_h": 163.7,
+        "astro_mllw": 0.275,
+        "tide_navd88": -1.885,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.885
+      },
+      {
+        "time": "2026-10-26 02:00-04:00",
+        "utc": "2026-10-26T06:00:00Z",
+        "lead_h": 164.7,
+        "astro_mllw": -0.106,
+        "tide_navd88": -2.269,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -2.269
+      },
+      {
+        "time": "2026-10-26 03:00-04:00",
+        "utc": "2026-10-26T07:00:00Z",
+        "lead_h": 165.7,
+        "astro_mllw": 0.243,
+        "tide_navd88": -1.923,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -1.923
+      },
+      {
+        "time": "2026-10-26 04:00-04:00",
+        "utc": "2026-10-26T08:00:00Z",
+        "lead_h": 166.7,
+        "astro_mllw": 1.382,
+        "tide_navd88": -0.787,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": -0.787
+      },
+      {
+        "time": "2026-10-26 05:00-04:00",
+        "utc": "2026-10-26T09:00:00Z",
+        "lead_h": 167.7,
+        "astro_mllw": 2.99,
+        "tide_navd88": 0.818,
+        "surge_source": "guidance_decay",
+        "rain_in_hr": 0.0,
+        "rain_source": "nbm",
+        "rain_unknown": false,
+        "burst_risk": false,
+        "pluvial_navd88": null,
+        "water_navd88": 0.818
+      }
+    ],
+    "worst": {
+      "tide": {
+        "time": "2026-10-21 17:00-04:00",
+        "navd88": 3.78
+      },
+      "flood_chance": {
+        "time": "2026-10-21 17:00-04:00",
+        "navd88": 3.78,
+        "pathway": "tide"
+      },
+      "burst_potential_by_day": {
+        "2026-10-19": null,
+        "2026-10-20": null,
+        "2026-10-21": null,
+        "2026-10-22": null,
+        "2026-10-23": null,
+        "2026-10-24": null,
+        "2026-10-25": null,
+        "2026-10-26": null
+      }
+    },
+    "shadow": {
+      "scored_rows": 6572,
+      "scored_tides": 47,
+      "sampling": "unit = one issued forecast of one tide; absolute errors averaged within a tide, then across tides; candidate and baseline paired on the same issuance row",
+      "cohorts": {
+        "persist_decay_mllw": "rows from v0.10.6 on (formula changed)",
+        "outlook_mllw": "rows from v0.10.6 on (formula changed)",
+        "production_mllw": "rows from v0.10.6 on (formula changed)"
+      },
+      "buckets": [
+        {
+          "label": "0-24 h",
+          "sources": {
+            "astro": {
+              "n": 48,
+              "n_forecasts": 1133,
+              "mae": 0.93,
+              "bias": -0.92
+            },
+            "nws_product": {
+              "n": 12,
+              "n_forecasts": 270,
+              "mae": 0.185,
+              "bias": -0.069
+            },
+            "nwps": {
+              "n": 48,
+              "n_forecasts": 1133,
+              "mae": 0.159,
+              "bias": -0.011
+            },
+            "petss_p10": {
+              "n": 48,
+              "n_forecasts": 1133,
+              "mae": 0.309,
+              "bias": -0.282
+            },
+            "petss_p90": {
+              "n": 48,
+              "n_forecasts": 1133,
+              "mae": 0.271,
+              "bias": 0.02
+            },
+            "persist_flat": {
+              "n": 48,
+              "n_forecasts": 1129,
+              "mae": 0.337,
+              "bias": 0.067
+            },
+            "persist_decay": {
+              "n": 47,
+              "n_forecasts": 1081,
+              "mae": 0.277,
+              "bias": -0.053
+            },
+            "production": {
+              "n": 47,
+              "n_forecasts": 1081,
+              "mae": 0.209,
+              "bias": -0.037
+            },
+            "outlook": {
+              "n": 47,
+              "n_forecasts": 1081,
+              "mae": 0.159,
+              "bias": -0.014
+            }
+          }
+        },
+        {
+          "label": "24-48 h",
+          "sources": {
+            "astro": {
+              "n": 46,
+              "n_forecasts": 1084,
+              "mae": 0.898,
+              "bias": -0.887
+            },
+            "nws_product": {
+              "n": 12,
+              "n_forecasts": 269,
+              "mae": 0.256,
+              "bias": -0.178
+            },
+            "nwps": {
+              "n": 46,
+              "n_forecasts": 1084,
+              "mae": 0.196,
+              "bias": -0.06
+            },
+            "petss_p10": {
+              "n": 46,
+              "n_forecasts": 1084,
+              "mae": 0.378,
+              "bias": -0.355
+            },
+            "petss_p90": {
+              "n": 46,
+              "n_forecasts": 1084,
+              "mae": 0.274,
+              "bias": 0.036
+            },
+            "persist_flat": {
+              "n": 46,
+              "n_forecasts": 1080,
+              "mae": 0.538,
+              "bias": 0.121
+            },
+            "persist_decay": {
+              "n": 45,
+              "n_forecasts": 1033,
+              "mae": 0.404,
+              "bias": -0.168
+            },
+            "production": {
+              "n": 45,
+              "n_forecasts": 1033,
+              "mae": 0.285,
+              "bias": -0.085
+            },
+            "outlook": {
+              "n": 45,
+              "n_forecasts": 1033,
+              "mae": 0.191,
+              "bias": -0.068
+            }
+          }
+        },
+        {
+          "label": "48-72 h",
+          "sources": {
+            "astro": {
+              "n": 44,
+              "n_forecasts": 1035,
+              "mae": 0.861,
+              "bias": -0.849
+            },
+            "nws_product": {
+              "n": 11,
+              "n_forecasts": 198,
+              "mae": 0.357,
+              "bias": -0.326
+            },
+            "nwps": {
+              "n": 44,
+              "n_forecasts": 829,
+              "mae": 0.244,
+              "bias": -0.124
+            },
+            "petss_p10": {
+              "n": 44,
+              "n_forecasts": 1035,
+              "mae": 0.484,
+              "bias": -0.456
+            },
+            "petss_p90": {
+              "n": 44,
+              "n_forecasts": 1035,
+              "mae": 0.259,
+              "bias": 0.032
+            },
+            "persist_flat": {
+              "n": 44,
+              "n_forecasts": 1031,
+              "mae": 0.622,
+              "bias": 0.164
+            },
+            "persist_decay": {
+              "n": 43,
+              "n_forecasts": 983,
+              "mae": 0.401,
+              "bias": -0.201
+            },
+            "production": {
+              "n": 43,
+              "n_forecasts": 983,
+              "mae": 0.321,
+              "bias": -0.135
+            },
+            "outlook": {
+              "n": 43,
+              "n_forecasts": 983,
+              "mae": 0.266,
+              "bias": -0.154
+            }
+          }
+        },
+        {
+          "label": "72-102 h",
+          "sources": {
+            "astro": {
+              "n": 42,
+              "n_forecasts": 1223,
+              "mae": 0.776,
+              "bias": -0.764
+            },
+            "petss_p10": {
+              "n": 42,
+              "n_forecasts": 806,
+              "mae": 0.529,
+              "bias": -0.507
+            },
+            "petss_p90": {
+              "n": 42,
+              "n_forecasts": 806,
+              "mae": 0.264,
+              "bias": -0.001
+            },
+            "persist_flat": {
+              "n": 42,
+              "n_forecasts": 1221,
+              "mae": 0.62,
+              "bias": 0.264
+            },
+            "persist_decay": {
+              "n": 41,
+              "n_forecasts": 1165,
+              "mae": 0.341,
+              "bias": -0.154
+            },
+            "outlook": {
+              "n": 41,
+              "n_forecasts": 1165,
+              "mae": 0.329,
+              "bias": -0.237
+            }
+          }
+        },
+        {
+          "label": "102-168 h",
+          "sources": {
+            "astro": {
+              "n": 40,
+              "n_forecasts": 2451,
+              "mae": 0.689,
+              "bias": -0.676
+            },
+            "persist_flat": {
+              "n": 40,
+              "n_forecasts": 2445,
+              "mae": 0.715,
+              "bias": 0.406
+            },
+            "persist_decay": {
+              "n": 39,
+              "n_forecasts": 2310,
+              "mae": 0.299,
+              "bias": -0.105
+            },
+            "outlook": {
+              "n": 39,
+              "n_forecasts": 2310,
+              "mae": 0.282,
+              "bias": -0.105
+            }
+          }
+        }
+      ],
+      "readiness": {
+        "nwps_vs_persistence_le72h": {
+          "n": 48,
+          "n_obs": 138,
+          "n_forecasts": 3035,
+          "mae_candidate": 0.199,
+          "mae_baseline": 0.487,
+          "verdict": "READY: candidate beats baseline"
+        },
+        "product_vs_persistence_le72h": {
+          "n": 15,
+          "n_obs": 35,
+          "n_forecasts": 737,
+          "mae_candidate": 0.264,
+          "mae_baseline": 0.919,
+          "verdict": "NOT YET (15/28 scored tides)"
+        },
+        "decay_vs_flat_persistence_le168h": {
+          "n": 47,
+          "n_obs": 215,
+          "n_forecasts": 6552,
+          "mae_candidate": 0.344,
+          "mae_baseline": 0.564,
+          "verdict": "READY: candidate beats baseline"
+        },
+        "outlook_vs_production_le72h": {
+          "n": 47,
+          "n_obs": 135,
+          "n_forecasts": 3097,
+          "mae_candidate": 0.204,
+          "mae_baseline": 0.27,
+          "verdict": "READY: candidate beats baseline"
+        }
+      }
+    }
+  },
+  "day_worst": [
+    {
+      "day": "2026-10-19",
+      "regime": "dry",
+      "rank": 0,
+      "pathway": "tide",
+      "water_navd88": 2.296,
+      "rain_watch": false,
+      "rain_watch_label": ""
+    },
+    {
+      "day": "2026-10-20",
+      "regime": "dry",
+      "rank": 0,
+      "pathway": "tide",
+      "water_navd88": 1.805,
+      "rain_watch": false,
+      "rain_watch_label": ""
+    },
+    {
+      "day": "2026-10-21",
+      "regime": "dry",
+      "rank": 0,
+      "pathway": "tide",
+      "water_navd88": null,
+      "rain_watch": false,
+      "rain_watch_label": ""
+    }
+  ],
+  "forecast_schema_version": "1.0",
+  "model_version": "v0.10.6",
+  "input_health": {
+    "temperature": {
+      "status": "ok",
+      "detail": "72-hour Sandy Hook mean"
+    },
+    "nws_hourly": {
+      "status": "ok",
+      "detail": "156 forecast periods"
+    },
+    "nws_qpf": {
+      "status": "ok",
+      "detail": "82 hourly buckets"
+    },
+    "nws_coastal_product": {
+      "status": "ok",
+      "detail": "not active"
+    },
+    "surge_mean": {
+      "status": "ok",
+      "detail": "+0.549 ft, trailing 365-d mean 2025-10-19..2026-09-30, computed 15 h ago"
+    },
+    "surge_state": {
+      "status": "ok",
+      "detail": "saved reading +0.803 ft at 2026-10-18T06:36:00Z; USED (stale-state rung)"
+    },
+    "surge_observation": {
+      "status": "unavailable",
+      "detail": "no usable observations; using: surge +0.80 ft from a reading 27 h ago, decaying toward the typical offset +0.55 ft (time constant 36 h)"
+    },
+    "nws_flood_alerts": {
+      "status": "ok",
+      "detail": "0 active inland flood alerts"
+    },
+    "live_gauge": {
+      "status": "unavailable",
+      "detail": "no usable observations"
+    },
+    "tide_predictions": {
+      "status": "ok",
+      "detail": "live NOAA astronomical predictions"
+    },
+    "outlook_astro": {
+      "status": "ok",
+      "detail": "14 astronomical highs"
+    },
+    "outlook_astro_hourly": {
+      "status": "ok",
+      "detail": "176 hourly astronomical points"
+    },
+    "outlook_grid": {
+      "status": "ok",
+      "detail": "grid QPF to 2026-10-22T12Z, wind to 2026-10-27T01Z"
+    },
+    "outlook_nwps": {
+      "status": "ok",
+      "detail": "72 hourly points issued 2026-10-19T07:43:00Z"
+    },
+    "outlook_xcheck": {
+      "status": "ok",
+      "detail": "8 days x 4 models, ensemble n=31"
+    },
+    "outlook_nbm": {
+      "status": "ok",
+      "detail": "NBM cycle 2026-10-19T06Z, 30/30 6-h buckets to +180 h; cycle 3.3 h old; 30 future buckets"
+    },
+    "outlook_petss": {
+      "status": "ok",
+      "detail": "P-ETSS cycle 2026-10-19T00Z, 102 h, p10/p90 surge; cycle 9.3 h old; 93 future hours"
+    },
+    "outlook_wpc": {
+      "status": "ok",
+      "detail": "WPC cycle 2026-10-19T00Z, 6 daily totals; cycle 9.3 h old; 6 future buckets"
+    },
+    "outlook_nbm_qmd": {
+      "status": "ok",
+      "detail": "percentiles from NBM 2026-10-19T00Z on 30 buckets, cycle 9.3 h old"
+    },
+    "outlook_budget": {
+      "status": "ok",
+      "detail": "2.6 s of 60 s used"
+    },
+    "outlook_7d": {
+      "status": "ok",
+      "detail": "13 tides to +168 h, 13 with surge guidance"
+    }
+  },
+  "degraded_inputs": [
+    "live_gauge",
+    "surge_observation"
+  ],
+  "outlook_degraded_inputs": [],
+  "water_series_input": {
+    "source": "surge-persistence",
+    "surge_ft": 0.6696,
+    "observation_time": "2026-10-18 02:36-04:00",
+    "age_min": 1603.0,
+    "live_fetch": {
+      "observation_time": null,
+      "age_min": null,
+      "status": "unavailable",
+      "detail": "no usable observations"
+    },
+    "status": "degraded",
+    "detail": "surge +0.80 ft from a reading 27 h ago, decaying toward the typical offset +0.55 ft (time constant 36 h)",
+    "decay": {
+      "rung": "stale-state",
+      "surge_obs_ft": 0.8026,
+      "observation_utc": "2026-10-18T06:36:00Z",
+      "age_h": 26.72,
+      "mean_ft": 0.5487,
+      "mean_source": "trailing 365-d mean 2025-10-19..2026-09-30",
+      "tau_h": 36.0,
+      "surge_now_ft": 0.6696,
+      "label": "surge +0.80 ft from a reading 27 h ago, decaying toward the typical offset +0.55 ft (time constant 36 h)"
+    }
+  },
+  "peak_predicted_mllw": 4.659,
+  "peak_forecast_observed_mllw": 5.230904538768659,
+  "peak_time_local": "2026-10-21 16:44-04:00",
+  "current_surge_ft": 0.5719045387686587,
+  "peak_rain_rate_in_hr": 0.0,
+  "temp_avg_72h_f": 58.508388520971266,
+  "cold_lockout": false,
+  "depths_in": {
+    "grate_SW": 0.0,
+    "grate_SE": 0.0,
+    "corner_SE": 0.0,
+    "corner_SW": 0.0,
+    "grate_bay_ave_upstream": 0.0,
+    "gutter_walkway": 0.0,
+    "grate_NE": 0.0,
+    "grate_NW": 0.0,
+    "corner_NE": 0.0,
+    "corner_NW": 0.0,
+    "curb": 0.0,
+    "sidewalk_under_walkway_lawn_step": 0.0,
+    "road_middle": 0.0,
+    "intersection_highpoint": 0.0,
+    "lawn_step": 0.0,
+    "porch_step_base": 0.0,
+    "porch_step1_top": 0.0,
+    "porch_deck": 0.0,
+    "regime": "dry"
+  },
+  "depths_in_wind_adjusted": null,
+  "wind_adjustment": {
+    "sector": "onshore",
+    "adjustment_ft": 0.0,
+    "wind_dir_at_peak": "NE",
+    "wind_speed_at_peak": "15 mph",
+    "note": "Forecast wind at peak (NE at 15 mph) is in the onshore sector \u2014 water gets piled into the bay corner where Highlands sits. Main prediction applies."
+  },
+  "surge_source": "surge-persistence",
+  "nws_status": "not active",
+  "all_tides": [
+    {
+      "time": "2026-10-19 14:54-04:00",
+      "predicted_mllw": 4.477,
+      "surge_ft": 0.6413294527538921,
+      "forecast_peak_mllw": 5.118329452753892,
+      "peak_rain_in_hr": 0.0,
+      "peak_rain_offset_h": null,
+      "rain_window_3h": [
+        [
+          -2.9,
+          0.0
+        ],
+        [
+          -1.9,
+          0.0
+        ],
+        [
+          -0.9,
+          0.0
+        ],
+        [
+          0.1,
+          0.0
+        ],
+        [
+          1.1,
+          0.0
+        ],
+        [
+          2.1,
+          0.0
+        ]
+      ],
+      "source": "surge-persistence",
+      "depths_in": {
+        "grate_SW": 0.0,
+        "grate_SE": 0.0,
+        "corner_SE": 0.0,
+        "corner_SW": 0.0,
+        "grate_bay_ave_upstream": 0.0,
+        "gutter_walkway": 0.0,
+        "grate_NE": 0.0,
+        "grate_NW": 0.0,
+        "corner_NE": 0.0,
+        "corner_NW": 0.0,
+        "curb": 0.0,
+        "sidewalk_under_walkway_lawn_step": 0.0,
+        "road_middle": 0.0,
+        "intersection_highpoint": 0.0,
+        "lawn_step": 0.0,
+        "porch_step_base": 0.0,
+        "porch_step1_top": 0.0,
+        "porch_deck": 0.0,
+        "regime": "dry"
+      },
+      "depths_in_wind_adjusted": null,
+      "wind_adjustment": {
+        "sector": "onshore",
+        "adjustment_ft": 0.0,
+        "wind_dir_at_peak": "NE",
+        "wind_speed_at_peak": "15 mph",
+        "note": "Forecast wind at peak (NE at 15 mph) is in the onshore sector \u2014 water gets piled into the bay corner where Highlands sits. Main prediction applies."
+      },
+      "hours_from_now": 9.582800378888889
+    },
+    {
+      "time": "2026-10-20 03:35-04:00",
+      "predicted_mllw": 4.013,
+      "surge_ft": 0.6138239476203461,
+      "forecast_peak_mllw": 4.626823947620346,
+      "peak_rain_in_hr": 0.0,
+      "peak_rain_offset_h": null,
+      "rain_window_3h": [
+        [
+          -2.5833333333333335,
+          0.0
+        ],
+        [
+          -1.5833333333333333,
+          0.0
+        ],
+        [
+          -0.5833333333333334,
+          0.0
+        ],
+        [
+          0.4166666666666667,
+          0.0
+        ],
+        [
+          1.4166666666666667,
+          0.0
+        ],
+        [
+          2.4166666666666665,
+          0.0
+        ]
+      ],
+      "source": "surge-persistence",
+      "depths_in": {
+        "grate_SW": 0.0,
+        "grate_SE": 0.0,
+        "corner_SE": 0.0,
+        "corner_SW": 0.0,
+        "grate_bay_ave_upstream": 0.0,
+        "gutter_walkway": 0.0,
+        "grate_NE": 0.0,
+        "grate_NW": 0.0,
+        "corner_NE": 0.0,
+        "corner_NW": 0.0,
+        "curb": 0.0,
+        "sidewalk_under_walkway_lawn_step": 0.0,
+        "road_middle": 0.0,
+        "intersection_highpoint": 0.0,
+        "lawn_step": 0.0,
+        "porch_step_base": 0.0,
+        "porch_step1_top": 0.0,
+        "porch_deck": 0.0,
+        "regime": "dry"
+      },
+      "depths_in_wind_adjusted": null,
+      "wind_adjustment": {
+        "sector": "onshore",
+        "adjustment_ft": 0.0,
+        "wind_dir_at_peak": "N",
+        "wind_speed_at_peak": "20 mph",
+        "note": "Forecast wind at peak (N at 20 mph) is in the onshore sector \u2014 water gets piled into the bay corner where Highlands sits. Main prediction applies."
+      },
+      "hours_from_now": 22.26613362166667
+    },
+    {
+      "time": "2026-10-20 15:48-04:00",
+      "predicted_mllw": 4.532,
+      "surge_ft": 0.5950833467569893,
+      "forecast_peak_mllw": 5.127083346756989,
+      "peak_rain_in_hr": 0.0,
+      "peak_rain_offset_h": null,
+      "rain_window_3h": [
+        [
+          -2.8,
+          0.0
+        ],
+        [
+          -1.8,
+          0.0
+        ],
+        [
+          -0.8,
+          0.0
+        ],
+        [
+          0.2,
+          0.0
+        ],
+        [
+          1.2,
+          0.0
+        ],
+        [
+          2.2,
+          0.0
+        ]
+      ],
+      "source": "surge-persistence",
+      "depths_in": {
+        "grate_SW": 0.0,
+        "grate_SE": 0.0,
+        "corner_SE": 0.0,
+        "corner_SW": 0.0,
+        "grate_bay_ave_upstream": 0.0,
+        "gutter_walkway": 0.0,
+        "grate_NE": 0.0,
+        "grate_NW": 0.0,
+        "corner_NE": 0.0,
+        "corner_NW": 0.0,
+        "curb": 0.0,
+        "sidewalk_under_walkway_lawn_step": 0.0,
+        "road_middle": 0.0,
+        "intersection_highpoint": 0.0,
+        "lawn_step": 0.0,
+        "porch_step_base": 0.0,
+        "porch_step1_top": 0.0,
+        "porch_deck": 0.0,
+        "regime": "dry"
+      },
+      "depths_in_wind_adjusted": null,
+      "wind_adjustment": {
+        "sector": "onshore",
+        "adjustment_ft": 0.0,
+        "wind_dir_at_peak": "N",
+        "wind_speed_at_peak": "15 mph",
+        "note": "Forecast wind at peak (N at 15 mph) is in the onshore sector \u2014 water gets piled into the bay corner where Highlands sits. Main prediction applies."
+      },
+      "hours_from_now": 34.48280021055555
+    },
+    {
+      "time": "2026-10-21 04:29-04:00",
+      "predicted_mllw": 4.258,
+      "surge_ft": 0.581310217969053,
+      "forecast_peak_mllw": 4.839310217969053,
+      "peak_rain_in_hr": 0.0,
+      "peak_rain_offset_h": null,
+      "rain_window_3h": [
+        [
+          -2.4833333333333334,
+          0.0
+        ],
+        [
+          -1.4833333333333334,
+          0.0
+        ],
+        [
+          -0.48333333333333334,
+          0.0
+        ],
+        [
+          0.5166666666666667,
+          0.0
+        ],
+        [
+          1.5166666666666666,
+          0.0
+        ],
+        [
+          2.5166666666666666,
+          0.0
+        ]
+      ],
+      "source": "surge-persistence",
+      "depths_in": {
+        "grate_SW": 0.0,
+        "grate_SE": 0.0,
+        "corner_SE": 0.0,
+        "corner_SW": 0.0,
+        "grate_bay_ave_upstream": 0.0,
+        "gutter_walkway": 0.0,
+        "grate_NE": 0.0,
+        "grate_NW": 0.0,
+        "corner_NE": 0.0,
+        "corner_NW": 0.0,
+        "curb": 0.0,
+        "sidewalk_under_walkway_lawn_step": 0.0,
+        "road_middle": 0.0,
+        "intersection_highpoint": 0.0,
+        "lawn_step": 0.0,
+        "porch_step_base": 0.0,
+        "porch_step1_top": 0.0,
+        "porch_deck": 0.0,
+        "regime": "dry"
+      },
+      "depths_in_wind_adjusted": null,
+      "wind_adjustment": {
+        "sector": "onshore",
+        "adjustment_ft": 0.0,
+        "wind_dir_at_peak": "NE",
+        "wind_speed_at_peak": "20 mph",
+        "note": "Forecast wind at peak (NE at 20 mph) is in the onshore sector \u2014 water gets piled into the bay corner where Highlands sits. Main prediction applies."
+      },
+      "hours_from_now": 47.16613347055556
+    },
+    {
+      "time": "2026-10-21 16:44-04:00",
+      "predicted_mllw": 4.659,
+      "surge_ft": 0.5719045387686587,
+      "forecast_peak_mllw": 5.230904538768659,
+      "peak_rain_in_hr": 0.0,
+      "peak_rain_offset_h": null,
+      "rain_window_3h": [
+        [
+          -2.7333333333333334,
+          0.0
+        ],
+        [
+          -1.7333333333333334,
+          0.0
+        ],
+        [
+          -0.7333333333333333,
+          0.0
+        ],
+        [
+          0.26666666666666666,
+          0.0
+        ],
+        [
+          1.2666666666666666,
+          0.0
+        ],
+        [
+          2.2666666666666666,
+          0.0
+        ]
+      ],
+      "source": "surge-persistence",
+      "depths_in": {
+        "grate_SW": 0.0,
+        "grate_SE": 0.0,
+        "corner_SE": 0.0,
+        "corner_SW": 0.0,
+        "grate_bay_ave_upstream": 0.0,
+        "gutter_walkway": 0.0,
+        "grate_NE": 0.0,
+        "grate_NW": 0.0,
+        "corner_NE": 0.0,
+        "corner_NW": 0.0,
+        "curb": 0.0,
+        "sidewalk_under_walkway_lawn_step": 0.0,
+        "road_middle": 0.0,
+        "intersection_highpoint": 0.0,
+        "lawn_step": 0.0,
+        "porch_step_base": 0.0,
+        "porch_step1_top": 0.0,
+        "porch_deck": 0.0,
+        "regime": "dry"
+      },
+      "depths_in_wind_adjusted": null,
+      "wind_adjustment": {
+        "sector": "onshore",
+        "adjustment_ft": 0.0,
+        "wind_dir_at_peak": "NE",
+        "wind_speed_at_peak": "15 mph",
+        "note": "Forecast wind at peak (NE at 15 mph) is in the onshore sector \u2014 water gets piled into the bay corner where Highlands sits. Main prediction applies."
+      },
+      "hours_from_now": 59.416133402499995
+    }
+  ],
+  "low_tides": [
+    {
+      "time": "2026-10-19 08:45-04:00",
+      "value_mllw": 1.728
+    },
+    {
+      "time": "2026-10-19 21:41-04:00",
+      "value_mllw": 1.21
+    },
+    {
+      "time": "2026-10-20 09:52-04:00",
+      "value_mllw": 1.565
+    },
+    {
+      "time": "2026-10-20 22:32-04:00",
+      "value_mllw": 0.972
+    },
+    {
+      "time": "2026-10-21 10:49-04:00",
+      "value_mllw": 1.278
+    },
+    {
+      "time": "2026-10-21 23:17-04:00",
+      "value_mllw": 0.694
+    }
+  ],
+  "seasonal_context": {
+    "month_name": "October",
+    "strata": [
+      {
+        "landmark_key": "grate_SW",
+        "landmark_label": "SW distal grate across Bay",
+        "threshold_ft": 6.34,
+        "avg_events": 8.3,
+        "avg_days": 6.733333333333333,
+        "avg_hours": 17.8,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "grate_SE",
+        "landmark_label": "SE proximal grate across Bay",
+        "threshold_ft": 6.42,
+        "avg_events": 7.033333333333333,
+        "avg_days": 5.866666666666666,
+        "avg_hours": 15.133333333333333,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "corner_SE",
+        "landmark_label": "SE corner across Bay",
+        "threshold_ft": 6.46,
+        "avg_events": 6.4,
+        "avg_days": 5.366666666666666,
+        "avg_hours": 13.6,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "corner_SW",
+        "landmark_label": "SW corner across Bay",
+        "threshold_ft": 6.46,
+        "avg_events": 6.4,
+        "avg_days": 5.366666666666666,
+        "avg_hours": 13.6,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "grate_bay_ave_upstream",
+        "landmark_label": "Bay Ave upstream grate",
+        "threshold_ft": 6.46,
+        "avg_events": 6.4,
+        "avg_days": 5.366666666666666,
+        "avg_hours": 13.6,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "gutter_walkway",
+        "landmark_label": "Gutter / curb edge at walkway",
+        "threshold_ft": 6.6,
+        "avg_events": 5.033333333333333,
+        "avg_days": 4.3,
+        "avg_hours": 9.866666666666667,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "grate_NE",
+        "landmark_label": "Storm grate at user's corner (NE)",
+        "threshold_ft": 6.62,
+        "avg_events": 4.9,
+        "avg_days": 4.166666666666667,
+        "avg_hours": 9.333333333333334,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "grate_NW",
+        "landmark_label": "NW corner grate across Central",
+        "threshold_ft": 6.62,
+        "avg_events": 4.9,
+        "avg_days": 4.166666666666667,
+        "avg_hours": 9.333333333333334,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "corner_NE",
+        "landmark_label": "NE corner pavement",
+        "threshold_ft": 6.73,
+        "avg_events": 3.8,
+        "avg_days": 3.3333333333333335,
+        "avg_hours": 7.1,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "corner_NW",
+        "landmark_label": "NW corner pavement",
+        "threshold_ft": 6.73,
+        "avg_events": 3.8,
+        "avg_days": 3.3333333333333335,
+        "avg_hours": 7.1,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "curb",
+        "landmark_label": "Curb at walkway",
+        "threshold_ft": 6.98,
+        "avg_events": 1.8666666666666667,
+        "avg_days": 1.5666666666666667,
+        "avg_hours": 3.8,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "sidewalk_under_walkway_lawn_step",
+        "landmark_label": "Sidewalk under walkway lawn-step",
+        "threshold_ft": 7.15,
+        "avg_events": 1.3333333333333333,
+        "avg_days": 1.1666666666666667,
+        "avg_hours": 2.7,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "road_middle",
+        "landmark_label": "Bay Ave road middle",
+        "threshold_ft": 7.18,
+        "avg_events": 1.3,
+        "avg_days": 1.1333333333333333,
+        "avg_hours": 2.533333333333333,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "intersection_highpoint",
+        "landmark_label": "Intersection high point",
+        "threshold_ft": 7.36,
+        "avg_events": 0.8333333333333334,
+        "avg_days": 0.7333333333333333,
+        "avg_hours": 1.6333333333333333,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "lawn_step",
+        "landmark_label": "Lawn / walkway step",
+        "threshold_ft": 7.48,
+        "avg_events": 0.5,
+        "avg_days": 0.4,
+        "avg_hours": 1.0,
+        "descriptor": "above-average",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "porch_step_base",
+        "landmark_label": "Bottom of porch steps",
+        "threshold_ft": 7.5,
+        "avg_events": 0.4666666666666667,
+        "avg_days": 0.4,
+        "avg_hours": 0.9333333333333333,
+        "descriptor": "above-average",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "porch_step1_top",
+        "landmark_label": "Top of first porch step",
+        "threshold_ft": 8.23,
+        "avg_events": 0.1,
+        "avg_days": 0.06666666666666667,
+        "avg_hours": 0.3,
+        "descriptor": "above-average",
+        "window": "1996-2025 (30 yrs)"
+      },
+      {
+        "landmark_key": "porch_deck",
+        "landmark_label": "Porch deck (platform)",
+        "threshold_ft": 10.9,
+        "avg_events": 0.03333333333333333,
+        "avg_days": 0.03333333333333333,
+        "avg_hours": 0.03333333333333333,
+        "descriptor": "wettest month",
+        "window": "1996-2025 (30 yrs)"
+      }
+    ],
+    "mtd": {
+      "peak_obs_mllw": 6.6283,
+      "peak_6min_mllw": 6.672,
+      "peak_6min_time": "2026-10-12 09:00-04:00",
+      "minutes_above_curb": 0,
+      "month_start": "2026-10-01",
+      "as_of": "2026-10-19 05:19 UTC",
+      "strata": [
+        {
+          "threshold_ft": 6.34,
+          "n_events": 2,
+          "n_flood_days": 2,
+          "n_hours_above": 3
+        },
+        {
+          "threshold_ft": 6.42,
+          "n_events": 1,
+          "n_flood_days": 1,
+          "n_hours_above": 1
+        },
+        {
+          "threshold_ft": 6.46,
+          "n_events": 1,
+          "n_flood_days": 1,
+          "n_hours_above": 1
+        },
+        {
+          "threshold_ft": 6.46,
+          "n_events": 1,
+          "n_flood_days": 1,
+          "n_hours_above": 1
+        },
+        {
+          "threshold_ft": 6.46,
+          "n_events": 1,
+          "n_flood_days": 1,
+          "n_hours_above": 1
+        },
+        {
+          "threshold_ft": 6.6,
+          "n_events": 1,
+          "n_flood_days": 1,
+          "n_hours_above": 1
+        },
+        {
+          "threshold_ft": 6.62,
+          "n_events": 1,
+          "n_flood_days": 1,
+          "n_hours_above": 1
+        },
+        {
+          "threshold_ft": 6.62,
+          "n_events": 1,
+          "n_flood_days": 1,
+          "n_hours_above": 1
+        },
+        {
+          "threshold_ft": 6.73,
+          "n_events": 0,
+          "n_flood_days": 0,
+          "n_hours_above": 0
+        },
+        {
+          "threshold_ft": 6.73,
+          "n_events": 0,
+          "n_flood_days": 0,
+          "n_hours_above": 0
+        },
+        {
+          "threshold_ft": 6.98,
+          "n_events": 0,
+          "n_flood_days": 0,
+          "n_hours_above": 0
+        },
+        {
+          "threshold_ft": 7.15,
+          "n_events": 0,
+          "n_flood_days": 0,
+          "n_hours_above": 0
+        },
+        {
+          "threshold_ft": 7.18,
+          "n_events": 0,
+          "n_flood_days": 0,
+          "n_hours_above": 0
+        },
+        {
+          "threshold_ft": 7.36,
+          "n_events": 0,
+          "n_flood_days": 0,
+          "n_hours_above": 0
+        },
+        {
+          "threshold_ft": 7.48,
+          "n_events": 0,
+          "n_flood_days": 0,
+          "n_hours_above": 0
+        },
+        {
+          "threshold_ft": 7.5,
+          "n_events": 0,
+          "n_flood_days": 0,
+          "n_hours_above": 0
+        },
+        {
+          "threshold_ft": 8.23,
+          "n_events": 0,
+          "n_flood_days": 0,
+          "n_hours_above": 0
+        },
+        {
+          "threshold_ft": 10.9,
+          "n_events": 0,
+          "n_flood_days": 0,
+          "n_hours_above": 0
+        }
+      ]
+    },
+    "slr_ft_since_1990": 0.7860048618417959,
+    "slr_reference_year": 1990,
+    "show_slr_line": false,
+    "slr_today_peak_ft": 5.230904538768659
+  },
+  "cumulative_rain_24h_in": 0.0,
+  "pluvial_risk": {
+    "level": null,
+    "status": "ok",
+    "qpf_available": true,
+    "alerts_available": true,
+    "hourly_forecast_available": true,
+    "peak_rain_rate_24h_in_hr": 0.0,
+    "cumulative_rain_24h_in": 0.0,
+    "max_6h_accum_in": 0.0,
+    "max_pop_24h_pct": 0,
+    "convective_wording": false,
+    "burst_est_in_hr": 0.0,
+    "potential_low_tide_navd88": null,
+    "potential_low_tide_navd88_tanh": null,
+    "nws_flood_alerts": [],
+    "risk_today": false,
+    "day_max_level": "elevated",
+    "day_max_potential_low_tide_navd88": 5.01,
+    "day_max_potential_low_tide_navd88_tanh": 4.89,
+    "day_max_burst_est_in_hr": 3.0
+  },
+  "rain_outlook_72h": [
+    {
+      "day": "2026-10-19",
+      "label": "today",
+      "cum_in": 0.0,
+      "peak_in_hr": 0.0,
+      "max_pop_pct": 0,
+      "thunder": false
+    },
+    {
+      "day": "2026-10-20",
+      "label": "tomorrow",
+      "cum_in": 0.0,
+      "peak_in_hr": 0.0,
+      "max_pop_pct": 0,
+      "thunder": false
+    },
+    {
+      "day": "2026-10-21",
+      "label": "Wed Oct 21",
+      "cum_in": 0.0,
+      "peak_in_hr": 0.0,
+      "max_pop_pct": 9,
+      "thunder": false
+    }
+  ],
+  "surge_swing_6h_ft": null,
+  "recent_history_7d": [
+    {
+      "date": "2026-10-12",
+      "peak_time": "2026-10-12 09:00-04:00",
+      "peak_mllw": 6.672,
+      "rel_in": 3.983999999999998,
+      "highest_landmark": "NW grate +0.6\""
+    },
+    {
+      "date": "2026-10-13",
+      "peak_time": "2026-10-13 10:18-04:00",
+      "peak_mllw": 6.377,
+      "rel_in": 0.44399999999999906,
+      "highest_landmark": "SW grate +0.4\""
+    },
+    {
+      "date": "2026-10-14",
+      "peak_time": "2026-10-14 10:54-04:00",
+      "peak_mllw": 5.911,
+      "rel_in": -5.148000000000003,
+      "highest_landmark": "dry"
+    },
+    {
+      "date": "2026-10-15",
+      "peak_time": "2026-10-15 11:54-04:00",
+      "peak_mllw": 5.616,
+      "rel_in": -8.688000000000002,
+      "highest_landmark": "dry"
+    },
+    {
+      "date": "2026-10-16",
+      "peak_time": "2026-10-16 12:30-04:00",
+      "peak_mllw": 5.714,
+      "rel_in": -7.511999999999993,
+      "highest_landmark": "dry"
+    },
+    {
+      "date": "2026-10-17",
+      "peak_time": "2026-10-17 12:12-04:00",
+      "peak_mllw": 4.838,
+      "rel_in": -18.023999999999997,
+      "highest_landmark": "dry"
+    },
+    {
+      "date": "2026-10-18",
+      "peak_time": "2026-10-18 01:42-04:00",
+      "peak_mllw": 4.75,
+      "rel_in": -19.08,
+      "highest_landmark": "dry"
+    }
+  ],
+  "lookahead_watch": [],
+  "live_gauge_24h": [],
+  "water_series": [
+    {
+      "time": "2026-10-18 23:00-04:00",
+      "tide_navd88": 0.148,
+      "water_navd88": 0.148
+    },
+    {
+      "time": "2026-10-18 23:30-04:00",
+      "tide_navd88": 0.467,
+      "water_navd88": 0.467
+    },
+    {
+      "time": "2026-10-19 00:00-04:00",
+      "tide_navd88": 0.769,
+      "water_navd88": 0.769
+    },
+    {
+      "time": "2026-10-19 00:30-04:00",
+      "tide_navd88": 1.044,
+      "water_navd88": 1.044
+    },
+    {
+      "time": "2026-10-19 01:00-04:00",
+      "tide_navd88": 1.287,
+      "water_navd88": 1.287
+    },
+    {
+      "time": "2026-10-19 01:30-04:00",
+      "tide_navd88": 1.493,
+      "water_navd88": 1.493
+    },
+    {
+      "time": "2026-10-19 02:00-04:00",
+      "tide_navd88": 1.648,
+      "water_navd88": 1.648
+    },
+    {
+      "time": "2026-10-19 02:30-04:00",
+      "tide_navd88": 1.729,
+      "water_navd88": 1.729
+    },
+    {
+      "time": "2026-10-19 03:00-04:00",
+      "tide_navd88": 1.719,
+      "water_navd88": 1.719
+    },
+    {
+      "time": "2026-10-19 03:30-04:00",
+      "tide_navd88": 1.603,
+      "water_navd88": 1.603
+    },
+    {
+      "time": "2026-10-19 04:00-04:00",
+      "tide_navd88": 1.391,
+      "water_navd88": 1.391
+    },
+    {
+      "time": "2026-10-19 04:30-04:00",
+      "tide_navd88": 1.112,
+      "water_navd88": 1.112
+    },
+    {
+      "time": "2026-10-19 05:00-04:00",
+      "tide_navd88": 0.807,
+      "water_navd88": 0.807
+    },
+    {
+      "time": "2026-10-19 05:30-04:00",
+      "tide_navd88": 0.513,
+      "water_navd88": 0.513
+    },
+    {
+      "time": "2026-10-19 06:00-04:00",
+      "tide_navd88": 0.257,
+      "water_navd88": 0.257
+    },
+    {
+      "time": "2026-10-19 06:30-04:00",
+      "tide_navd88": 0.048,
+      "water_navd88": 0.048
+    },
+    {
+      "time": "2026-10-19 07:00-04:00",
+      "tide_navd88": -0.121,
+      "water_navd88": -0.121
+    },
+    {
+      "time": "2026-10-19 07:30-04:00",
+      "tide_navd88": -0.257,
+      "water_navd88": -0.257
+    },
+    {
+      "time": "2026-10-19 08:00-04:00",
+      "tide_navd88": -0.361,
+      "water_navd88": -0.361
+    },
+    {
+      "time": "2026-10-19 08:30-04:00",
+      "tide_navd88": -0.425,
+      "water_navd88": -0.425
+    },
+    {
+      "time": "2026-10-19 09:00-04:00",
+      "tide_navd88": -0.424,
+      "water_navd88": -0.424
+    },
+    {
+      "time": "2026-10-19 09:30-04:00",
+      "tide_navd88": -0.34,
+      "water_navd88": -0.34
+    },
+    {
+      "time": "2026-10-19 10:00-04:00",
+      "tide_navd88": -0.16,
+      "water_navd88": -0.16
+    },
+    {
+      "time": "2026-10-19 10:30-04:00",
+      "tide_navd88": 0.105,
+      "water_navd88": 0.105
+    },
+    {
+      "time": "2026-10-19 11:00-04:00",
+      "tide_navd88": 0.433,
+      "water_navd88": 0.433
+    },
+    {
+      "time": "2026-10-19 11:30-04:00",
+      "tide_navd88": 0.788,
+      "water_navd88": 0.788
+    },
+    {
+      "time": "2026-10-19 12:00-04:00",
+      "tide_navd88": 1.136,
+      "water_navd88": 1.136
+    },
+    {
+      "time": "2026-10-19 12:30-04:00",
+      "tide_navd88": 1.457,
+      "water_navd88": 1.457
+    },
+    {
+      "time": "2026-10-19 13:00-04:00",
+      "tide_navd88": 1.737,
+      "water_navd88": 1.737
+    },
+    {
+      "time": "2026-10-19 13:30-04:00",
+      "tide_navd88": 1.971,
+      "water_navd88": 1.971
+    },
+    {
+      "time": "2026-10-19 14:00-04:00",
+      "tide_navd88": 2.153,
+      "water_navd88": 2.153
+    },
+    {
+      "time": "2026-10-19 14:30-04:00",
+      "tide_navd88": 2.267,
+      "water_navd88": 2.267
+    },
+    {
+      "time": "2026-10-19 15:00-04:00",
+      "tide_navd88": 2.296,
+      "water_navd88": 2.296
+    },
+    {
+      "time": "2026-10-19 15:30-04:00",
+      "tide_navd88": 2.222,
+      "water_navd88": 2.222
+    },
+    {
+      "time": "2026-10-19 16:00-04:00",
+      "tide_navd88": 2.04,
+      "water_navd88": 2.04
+    },
+    {
+      "time": "2026-10-19 16:30-04:00",
+      "tide_navd88": 1.761,
+      "water_navd88": 1.761
+    },
+    {
+      "time": "2026-10-19 17:00-04:00",
+      "tide_navd88": 1.416,
+      "water_navd88": 1.416
+    },
+    {
+      "time": "2026-10-19 17:30-04:00",
+      "tide_navd88": 1.043,
+      "water_navd88": 1.043
+    },
+    {
+      "time": "2026-10-19 18:00-04:00",
+      "tide_navd88": 0.675,
+      "water_navd88": 0.675
+    },
+    {
+      "time": "2026-10-19 18:30-04:00",
+      "tide_navd88": 0.335,
+      "water_navd88": 0.335
+    },
+    {
+      "time": "2026-10-19 19:00-04:00",
+      "tide_navd88": 0.028,
+      "water_navd88": 0.028
+    },
+    {
+      "time": "2026-10-19 19:30-04:00",
+      "tide_navd88": -0.249,
+      "water_navd88": -0.249
+    },
+    {
+      "time": "2026-10-19 20:00-04:00",
+      "tide_navd88": -0.5,
+      "water_navd88": -0.5
+    },
+    {
+      "time": "2026-10-19 20:30-04:00",
+      "tide_navd88": -0.72,
+      "water_navd88": -0.72
+    },
+    {
+      "time": "2026-10-19 21:00-04:00",
+      "tide_navd88": -0.888,
+      "water_navd88": -0.888
+    },
+    {
+      "time": "2026-10-19 21:30-04:00",
+      "tide_navd88": -0.977,
+      "water_navd88": -0.977
+    },
+    {
+      "time": "2026-10-19 22:00-04:00",
+      "tide_navd88": -0.961,
+      "water_navd88": -0.961
+    },
+    {
+      "time": "2026-10-19 22:30-04:00",
+      "tide_navd88": -0.83,
+      "water_navd88": -0.83
+    },
+    {
+      "time": "2026-10-19 23:00-04:00",
+      "tide_navd88": -0.592,
+      "water_navd88": -0.592
+    },
+    {
+      "time": "2026-10-19 23:30-04:00",
+      "tide_navd88": -0.275,
+      "water_navd88": -0.275
+    },
+    {
+      "time": "2026-10-20 00:00-04:00",
+      "tide_navd88": 0.085,
+      "water_navd88": 0.085
+    },
+    {
+      "time": "2026-10-20 00:30-04:00",
+      "tide_navd88": 0.451,
+      "water_navd88": 0.451
+    },
+    {
+      "time": "2026-10-20 01:00-04:00",
+      "tide_navd88": 0.797,
+      "water_navd88": 0.797
+    },
+    {
+      "time": "2026-10-20 01:30-04:00",
+      "tide_navd88": 1.109,
+      "water_navd88": 1.109
+    },
+    {
+      "time": "2026-10-20 02:00-04:00",
+      "tide_navd88": 1.377,
+      "water_navd88": 1.377
+    },
+    {
+      "time": "2026-10-20 02:30-04:00",
+      "tide_navd88": 1.593,
+      "water_navd88": 1.593
+    },
+    {
+      "time": "2026-10-20 03:00-04:00",
+      "tide_navd88": 1.741,
+      "water_navd88": 1.741
+    },
+    {
+      "time": "2026-10-20 03:30-04:00",
+      "tide_navd88": 1.805,
+      "water_navd88": 1.805
+    },
+    {
+      "time": "2026-10-20 04:00-04:00",
+      "tide_navd88": 1.771,
+      "water_navd88": 1.771
+    },
+    {
+      "time": "2026-10-20 04:30-04:00",
+      "tide_navd88": 1.637,
+      "water_navd88": 1.637
+    },
+    {
+      "time": "2026-10-20 05:00-04:00",
+      "tide_navd88": 1.417,
+      "water_navd88": 1.417
+    },
+    {
+      "time": "2026-10-20 05:30-04:00",
+      "tide_navd88": 1.14,
+      "water_navd88": 1.14
+    },
+    {
+      "time": "2026-10-20 06:00-04:00",
+      "tide_navd88": 0.842,
+      "water_navd88": 0.842
+    },
+    {
+      "time": "2026-10-20 06:30-04:00",
+      "tide_navd88": 0.552,
+      "water_navd88": 0.552
+    },
+    {
+      "time": "2026-10-20 07:00-04:00",
+      "tide_navd88": 0.286,
+      "water_navd88": 0.286
+    },
+    {
+      "time": "2026-10-20 07:30-04:00",
+      "tide_navd88": 0.049,
+      "water_navd88": 0.049
+    },
+    {
+      "time": "2026-10-20 08:00-04:00",
+      "tide_navd88": -0.165,
+      "water_navd88": -0.165
+    },
+    {
+      "time": "2026-10-20 08:30-04:00",
+      "tide_navd88": -0.356,
+      "water_navd88": -0.356
+    },
+    {
+      "time": "2026-10-20 09:00-04:00",
+      "tide_navd88": -0.517,
+      "water_navd88": -0.517
+    },
+    {
+      "time": "2026-10-20 09:30-04:00",
+      "tide_navd88": -0.625,
+      "water_navd88": -0.625
+    },
+    {
+      "time": "2026-10-20 10:00-04:00",
+      "tide_navd88": -0.649,
+      "water_navd88": -0.649
+    },
+    {
+      "time": "2026-10-20 10:30-04:00",
+      "tide_navd88": -0.567,
+      "water_navd88": -0.567
+    },
+    {
+      "time": "2026-10-20 11:00-04:00",
+      "tide_navd88": -0.368,
+      "water_navd88": -0.368
+    }
+  ],
+  "flood_windows": {},
+  "today_peak_water_navd88": 2.296,
+  "today_peak_time": "2026-10-19 15:00-04:00",
+  "today_regime": "dry",
+  "today_lookback": null,
+  "day_outlook": [
+    {
+      "day": "2026-10-19",
+      "tide_flood": false,
+      "tide_rank": 0,
+      "rain_risk": false
+    },
+    {
+      "day": "2026-10-20",
+      "tide_flood": false,
+      "tide_rank": 0,
+      "rain_risk": false
+    },
+    {
+      "day": "2026-10-21",
+      "tide_flood": false,
+      "tide_rank": 0,
+      "rain_risk": false
+    }
+  ],
+  "tide_predictions_stale": false,
+  "today_highest_crossed": null,
+  "today_rel_grate_sw_in": -14.7,
+  "accuracy_by_lead": {
+    "window_days": 14,
+    "n_total": 1750,
+    "n_tides": 25,
+    "buckets": [
+      {
+        "label": "0-3 h before peak",
+        "lo_h": 0,
+        "hi_h": 3,
+        "n": 73,
+        "mae_ft": 0.132,
+        "bias_ft": 0.024
+      },
+      {
+        "label": "3-6 h",
+        "lo_h": 3,
+        "hi_h": 6,
+        "n": 75,
+        "mae_ft": 0.163,
+        "bias_ft": -0.017
+      },
+      {
+        "label": "6-12 h",
+        "lo_h": 6,
+        "hi_h": 12,
+        "n": 152,
+        "mae_ft": 0.21,
+        "bias_ft": 0.009
+      },
+      {
+        "label": "12-24 h",
+        "lo_h": 12,
+        "hi_h": 24,
+        "n": 299,
+        "mae_ft": 0.296,
+        "bias_ft": 0.007
+      },
+      {
+        "label": "24-48 h",
+        "lo_h": 24,
+        "hi_h": 48,
+        "n": 583,
+        "mae_ft": 0.306,
+        "bias_ft": -0.003
+      },
+      {
+        "label": "48-120 h",
+        "lo_h": 48,
+        "hi_h": 120,
+        "n": 568,
+        "mae_ft": 0.274,
+        "bias_ft": -0.03
+      }
+    ]
+  },
+  "plain_language_summary": "Next 72 h \u2014 high tides: 2:54 PM this afternoon \u2014 dry; 3:35 AM tomorrow morning \u2014 dry; 3:48 PM tomorrow afternoon \u2014 dry; 4:29 AM Wed Oct 21 morning \u2014 dry; 4:44 PM Wed Oct 21 afternoon \u2014 dry.",
+  "peak_percentile": {
+    "p25_mllw": 5.1355,
+    "p50_mllw": 5.636,
+    "p75_mllw": 6.254,
+    "p90_mllw": 6.764,
+    "p95_mllw": 6.986299999999998,
+    "p99_mllw": 7.611719999999997,
+    "max_mllw": 12.027,
+    "label": "below median",
+    "window": "1996-2025 (30 yrs)"
+  },
+  "accuracy_summary": {
+    "n_scored_total": 143,
+    "n_scored_recent": 30,
+    "mean_error_ft": 0.2200446655480847,
+    "mean_abs_error_ft": 0.40662060403620554,
+    "max_abs_error_ft": 1.6310000000000002,
+    "recent_window": 30
+  }
+}
