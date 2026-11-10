@@ -59,11 +59,20 @@ jobs:
             echo "go=true" >> "$GITHUB_OUTPUT"
           elif [ "$code" = "3" ]; then
             echo "go=false" >> "$GITHUB_OUTPUT"
-            if [ "$(date -u +'%M')" = "03" ]; then
-              python forecast/nowcast.py --record-gated-quiet
+            # Hourly liveness row, keyed to this arm's last heartbeat in
+            # the ledger (exit 0 = recorded, 3 = not due yet). The old
+            # test was "the UTC minute is exactly 03", but GitHub starts
+            # the :03 slot at :08-:20, so it fired 8 times in six weeks.
+            set +e
+            python forecast/nowcast.py --record-gated-quiet --if-due
+            hb=$?
+            set -e
+            if [ "$hb" = "0" ]; then
               echo "heartbeat=true" >> "$GITHUB_OUTPUT"
-            else
+            elif [ "$hb" = "3" ]; then
               echo "heartbeat=false" >> "$GITHUB_OUTPUT"
+            else
+              exit "$hb"
             fi
           else
             exit $code

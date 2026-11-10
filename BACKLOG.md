@@ -14,6 +14,41 @@ items are recorded for resumption. Existing automated production and data
 collection continue. Heron checkpoint: October 9. No new work round is
 requested by this handoff; native long-form widget checks can wait.
 
+**Health check, 2026-11-10:** John asked for a health check six weeks into
+the break. Core production was healthy; three defects were found. Two are
+fixed (local-arm self-heal, ledger-due quiet heartbeat: ledger lines of
+2026-11-10). The third is the next item. This is ops repair, not a new
+development round; the stopping point above otherwise stands.
+
+- [ ] **Accuracy ledger scores before the tide peaks (found 2026-11-10; fix NOT yet authorized).**
+      `update_forecast_accuracy()` scores an archived forecast as soon as the
+      +/-2 h window around its target tide returns any gauge data. A forecast
+      whose peak tide is a day or two after its run date is therefore scored
+      on the rising limb, ~2 h before the peak. 51 of 166 rows carry the
+      signature (observed "peak" >= 1.5 h before the predicted one): bias
+      +0.77 ft vs +0.12 ft for the other 115; 45 are lead >= 1 day (mechanism
+      confirmed in code and live: the 2026-11-08 and 11-09 archives were
+      scored 4.805 ft @ 06:00 against a 07:55 peak on 2026-11-10); 6 are
+      same-day rows, mechanism unconfirmed. Present since May. Public effect:
+      details page "last 30" reads mean error +0.34 / mean |error| 0.56 /
+      worst 1.77 ft; without the suspect rows about +0.04 / 0.30. The
+      by-lead sentence (accuracy_by_lead, predictions_log vs observed-peaks
+      cache) is a separate path and unaffected. John prefers correcting the
+      rows with an erratum [STATED 2026-11-10]; design is under discussion.
+      Needs: a "window complete" guard in the scorer, an append-only
+      correction record (the ledger itself is never rewritten), reader
+      overlay, tests. Class (c): no bump.
+
+- [ ] **Local-arm failure detection (proposed 2026-11-10; owner decision).**
+      The 2026-11-03 outage ran a week before anyone looked: 26 h of quiet
+      weather had to pass before the watchdog paged, and the page named the
+      nowcast artifact, not the arm. Self-heal now covers a vanished or stale
+      interpreter, but a rebuild can still fail (no network; pinned wheels
+      missing for a future Python). Option: the Mac watchdog reads
+      ~/.barnacle/logs/tick-status.jsonl and pages when the arm has failed
+      continuously for an hour. It adds a new page class to John's phone, so
+      it waits for his word.
+
 - [ ] **September 25–27 audit 2026-09-27-a1 — initial and bounds implementation/deployment CLOSED; owner widget acceptance + science remain OPEN.**
       First ship c2569c07a closed by round13; bounds ship 7248c500d and
       test repair ad2b66a52 independently closed by round22:
@@ -859,3 +894,10 @@ all findings verified — see audits/2026-08-03-a2/)**
 
 2026-09-28 | FACT | widget-v7.35a-owner-copied | John reports copying the new widget code. Installation task complete by owner report; this does not claim native verification of bounded/disputed/long-report/model-claim layouts [STATED]
 2026-09-28 | PREF | development-stopping-point | John wants to step away from Barnacle development at the completed close-out. Codex confirms implementation/deployment is closed; remaining follow-ups are documented for resumption, with Heron checkpoint October 9. Existing automated production/collection unchanged; no new development round requested [STATED]
+
+2026-11-10 | FACT | health-check-2026-11-10 | owner-requested read-only health check six weeks after the Sep 28 stopping point (Claude Fable 5.2). Healthy: 1,011 hourly forecast runs in the 1,026 h since 2026-09-28 17Z, longest gap 2.7 h (predictions_log.csv); public forecast.json identical to origin; v0.10.6; publish gate clean; last alert 2026-11-07T13:06Z delivered on email+ntfy (alert_delivery_health.json); fall-back tide 2026-11-01 01:26-04:00 stamped correctly; all 2,213 commits after 435d03b9d were bot commits. Three defects: local-arm-outage-2026-11-03, quiet-heartbeat-clock-minute, accuracy-premature-scoring (following lines) [VERIFIED]
+2026-11-10 | FACT | local-arm-outage-2026-11-03 | the local launchd nowcast arm was dead from 2026-11-03T13:06:47Z (last ok push; last local-launchd row in nowcast_heartbeats.csv 2026-11-03T13:06:29Z) until repaired 2026-11-10. A Homebrew upgrade that morning removed python@3.14; ~/.barnacle/venv/bin/python is a symlink into it and dangled; 661 ticks had failed preflight `missing-interpreter` by 2026-11-10T13:40Z (local ~/.barnacle/logs/tick-status.jsonl). Two design faults kept it down: the interpreter check ran BEFORE the clone sync, so no fix pushed to origin could reach the arm, and the installer built a venv only when the directory was absent. Effect: the only arm that reads radar unconditionally was off for a week; the GitHub arm kept running on its NWS-alert / convective-wording trigger. The Mac watchdog paged "nowcast artifact is N minutes old" from 2026-11-04 (26-h quiet limit) — the symptom, not the cause [VERIFIED]
+2026-11-10 | DONE | local-arm-self-heal | class (c) bug fix, no bump. New bin/ensure_local_venv.sh: "ready" = interpreter starts AND a marker matches the hash of the two checked-in locks (nowcast-requirements.txt + requirements.txt); otherwise rebuild from an explicitly chosen, version-checked base Python (launchd's PATH python3 is Apple's 3.9), pip check, import + compile self-test, marker written last; previous package list saved to logs. local_nowcast_tick.sh syncs the clone first, then heals (failed rebuilds retried hourly, logged `environment-rebuilt` / `environment-rebuild-failed`), then runs. install_local_scheduler.sh delegates to the helper. A lock bump now reaches the local arm too. Verified in an isolated sandbox (throwaway HOME + local stand-in origin, launchd's minimal environment): no venv -> rebuild -> publish; dangling interpreter -> rebuild; fresh failed-heal stamp -> throttled exit 69; changed lock -> rebuild demanded; uninstallable pin -> exit 69 and no ready marker [VERIFIED]
+2026-11-10 | DONE | quiet-heartbeat-ledger-due | class (c) bug fix, no bump. nowcast.yml recorded the hourly gated-quiet heartbeat only when the UTC minute was exactly 03; of the last 500 scheduled runs none started before :08, and the heartbeat fired 8 times in six weeks, so in quiet weather the GitHub arm left no liveness row and (with the local arm down) nothing refreshed. The local tick's parallel rule (publish quiet only when the minute is below 8) also skipped: 158 stretches of 8+ back-to-back coalesced ticks, up to 2.6 h, as the launchd phase drifted past :08. Both arms now ask nowcast.quiet_heartbeat_due(): due when the arm has no heartbeat row in the last 50 minutes, read from the ledger. Parallel arms (rule 8): GitHub workflow and launchd tick changed; watchdog limits (90 min) already assume hourly rows; details-page cadence stats exclude quiet-to-quiet gaps; no other surface carries the concept. 11 new tests incl. a replay of every start phase with jitter (gaps 50-70 min); 498 tests OK with the decoder required, one skip; gate clean [VERIFIED]
+2026-11-10 | OPEN | accuracy-premature-scoring | forecast_accuracy.csv rows for multi-day-ahead peaks are scored on the rising limb (see OPEN LOOPS). 51 of 166 rows carry the signature; public "last 30" MAE 0.56 ft vs about 0.30 ft without them. No code or ledger change made yet [VERIFIED for the mechanism and the 45 lead>=1-day rows; INFERRED for the 6 same-day rows]
+2026-11-10 | PREF | accuracy-erratum | John prefers correcting the mis-scored accuracy rows with an erratum rather than leaving them; he asked for Claude's view before anything is built. Not yet a go-ahead [STATED]

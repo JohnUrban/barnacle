@@ -373,5 +373,81 @@ class NowcastHeartbeatTests(unittest.TestCase):
         self.assertEqual(rows[1]["outcome"], "gated-quiet")
 
 
+class QuietHeartbeatDueTests(unittest.TestCase):
+    """2026-11-10: hourly quiet liveness is decided from the ledger, per
+    scheduler arm, never from the wall-clock minute."""
+    HEADER = "generated_utc,arm,phase,outcome,active,source_age_min,detail\n"
+    NOW = dt.datetime(2026, 11, 10, 12, 30, tzinfo=UTC)
+
+    def _due(self, body, arm="github-actions", missing=False):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "heartbeat.csv"
+            if not missing:
+                path.write_text(self.HEADER + body)
+            with mock.patch.object(nowcast, "HEARTBEAT_PATH", str(path)):
+                return nowcast.quiet_heartbeat_due(self.NOW, arm)
+
+    def test_missing_or_empty_ledger_is_due(self):
+        self.assertTrue(self._due("", missing=True))
+        self.assertTrue(self._due(""))
+
+    def test_recent_row_for_this_arm_is_not_due(self):
+        self.assertFalse(self._due(
+            "2026-11-10T11:45:00Z,github-actions,gate,gated-quiet,0,,\n"))
+        # a publish row counts as liveness just as a gate row does
+        self.assertFalse(self._due(
+            "2026-11-10T12:00:00Z,github-actions,publish,ok,1,3.0,\n"))
+
+    def test_row_at_or_past_the_gap_is_due(self):
+        self.assertTrue(self._due(
+            "2026-11-10T11:40:00Z,github-actions,gate,gated-quiet,0,,\n"))
+        self.assertTrue(self._due(
+            "2026-11-09T02:45:15Z,github-actions,publish,ok,0,3.3,\n"))
+
+    def test_other_arms_rows_do_not_satisfy_this_arm(self):
+        body = "2026-11-10T12:25:00Z,local-launchd,publish,ok,0,3.0,\n"
+        self.assertTrue(self._due(body, arm="github-actions"))
+        self.assertFalse(self._due(body, arm="local-launchd"))
+
+    def test_latest_row_wins_when_union_merges_reorder_rows(self):
+        self.assertFalse(self._due(
+            "2026-11-10T12:20:00Z,github-actions,publish,ok,0,3.0,\n"
+            "2026-11-10T09:00:00Z,github-actions,gate,gated-quiet,0,,\n"))
+
+    def test_garbage_and_future_stamps_never_suppress_the_row(self):
+        self.assertTrue(self._due(
+            "not-a-time,github-actions,gate,gated-quiet,0,,\n"))
+        self.assertTrue(self._due(
+            "2026-11-10T14:00:00Z,github-actions,gate,gated-quiet,0,,\n"))
+
+    def test_no_scheduler_start_minute_can_starve_the_hourly_row(self):
+        """Replay every 10-minute phase with jitter: the old minute tests
+        starved whole phases; the ledger rule records within 70 minutes."""
+        import random
+        rng = random.Random(20261110)
+        for phase in range(10):
+            with tempfile.TemporaryDirectory() as tmp:
+                path = Path(tmp) / "heartbeat.csv"
+                path.write_text(self.HEADER)
+                written = []
+                t = dt.datetime(2026, 11, 10, 0, phase, tzinfo=UTC)
+                end = t + dt.timedelta(hours=12)
+                with mock.patch.object(nowcast, "HEARTBEAT_PATH", str(path)):
+                    while t < end:
+                        if nowcast.quiet_heartbeat_due(t, "github-actions"):
+                            with path.open("a") as dest:
+                                dest.write(t.strftime("%Y-%m-%dT%H:%M:%SZ")
+                                           + ",github-actions,gate,"
+                                             "gated-quiet,0,,\n")
+                            written.append(t)
+                        t += dt.timedelta(minutes=10,
+                                          seconds=rng.randint(-120, 420))
+                gaps = [(b - a).total_seconds() / 60
+                        for a, b in zip(written, written[1:])]
+                self.assertGreaterEqual(len(written), 9, phase)
+                self.assertGreaterEqual(min(gaps), 50, phase)
+                self.assertLessEqual(max(gaps), 70, phase)
+
+
 if __name__ == "__main__":
     unittest.main()

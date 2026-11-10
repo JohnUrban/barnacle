@@ -2,6 +2,13 @@
 # One nowcast tick from the disposable dedicated clone. launchd invokes this
 # every 10 minutes while the Mac is awake; quiet publications are coalesced
 # to roughly hourly, while active radar publishes every tick.
+#
+# Order matters (2026-11-10): the clone syncs BEFORE the Python environment
+# is checked, so a repair pushed to origin can reach an arm whose
+# interpreter is broken, and a broken or out-of-date environment is rebuilt
+# in place by bin/ensure_local_venv.sh instead of failing every tick (a
+# Homebrew upgrade removed the venv's base interpreter on 2026-11-03 and
+# the arm then failed more than 650 ticks over a week).
 set -uo pipefail
 
 BARNACLE_DIR="${HOME}/.barnacle"
@@ -11,6 +18,8 @@ LOCK="${BARNACLE_DIR}/tick.lock"
 LOG_DIR="${BARNACLE_DIR}/logs"
 STATUS_LOG="${LOG_DIR}/tick-status.jsonl"
 LOCK_STALE_SECONDS=300
+HEAL_STAMP="${BARNACLE_DIR}/venv-heal.last"
+HEAL_RETRY_SECONDS=3600
 
 mkdir -p "$LOG_DIR" || exit 73
 if [ -f "$STATUS_LOG" ] && [ "$(wc -c < "$STATUS_LOG")" -gt 1048576 ]; then
@@ -29,7 +38,6 @@ fail() {
 }
 
 [ -d "$R/.git" ] || fail preflight 69 missing-clone
-[ -x "$V" ] || fail preflight 69 missing-interpreter
 
 if ! mkdir "$LOCK" 2>/dev/null; then
   lock_mtime=$(stat -f %m "$LOCK" 2>/dev/null || stat -c %Y "$LOCK" 2>/dev/null || echo 0)
@@ -64,7 +72,34 @@ git fetch -q origin main || fail sync 69 fetch-failed
 # carrying it into the next run and wedging the arm.
 git reset --hard -q origin/main || fail sync 69 reset-failed
 
+# Self-healing environment. A rebuild needs the network and about a minute,
+# so a failed attempt is retried at most hourly rather than every tick.
+if ! /bin/bash "$R/bin/ensure_local_venv.sh" --check; then
+  heal_last=$(stat -f %m "$HEAL_STAMP" 2>/dev/null || stat -c %Y "$HEAL_STAMP" 2>/dev/null || echo 0)
+  if [ $(( $(date +%s) - heal_last )) -lt "$HEAL_RETRY_SECONDS" ]; then
+    fail preflight 69 environment-broken-rebuild-throttled
+  fi
+  touch "$HEAL_STAMP"
+  if /bin/bash "$R/bin/ensure_local_venv.sh" >> "${LOG_DIR}/venv-heal.log" 2>&1; then
+    rm -f "$HEAL_STAMP"
+    log_event preflight recovered environment-rebuilt
+  else
+    fail preflight 69 environment-rebuild-failed
+  fi
+fi
+
 export BARNACLE_SCHEDULER_ARM="local-launchd"
+# Hourly quiet publication is keyed to this arm's last COMMITTED heartbeat
+# row, asked before this run appends its own. The old wall-clock rule
+# (publish only when the UTC minute was below 8) skipped whole hours
+# whenever the 10-minute launchd phase drifted past :08.
+"$V" forecast/nowcast.py --quiet-heartbeat-due >> "${LOG_DIR}/tick.log" 2>&1
+due_rc=$?
+case "$due_rc" in
+  0) quiet_due=1 ;;
+  3) quiet_due=0 ;;
+  *) fail inspect 70 quiet-due-check-failed ;;
+esac
 "$V" forecast/nowcast.py >> "${LOG_DIR}/tick.log" 2>&1 || \
   fail nowcast 70 nowcast-failed
 "$V" forecast/check_artifacts.py >> "${LOG_DIR}/tick.log" 2>&1 || \
@@ -72,8 +107,7 @@ export BARNACLE_SCHEDULER_ARM="local-launchd"
 
 active=$("$V" -c 'import json; print(1 if json.load(open("docs/nowcast.json")).get("active") else 0)' 2>/dev/null) || \
   fail inspect 65 nowcast-json-unreadable
-minute=$(date -u +'%M')
-if [ "$active" = "0" ] && [ "$minute" -ge 8 ]; then
+if [ "$active" = "0" ] && [ "$quiet_due" = "0" ]; then
   git restore docs/nowcast.json data/nowcast_heartbeats.csv
   log_event publish gated-quiet quiet-publication-coalesced
   exit 0

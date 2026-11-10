@@ -57,6 +57,7 @@ jobs:
         run: |
           actionlint -shellcheck=shellcheck
           shellcheck \
+            bin/ensure_local_venv.sh \
             bin/install_local_scheduler.sh \
             bin/local_nowcast_tick.sh \
             bin/watchdog_tick.sh \

@@ -19,6 +19,12 @@ Modes:
   nowcast.py --check   -> exit 0 = triggers met (run the full pass)
                           exit 3 = quiet (skip heavy deps)
   nowcast.py           -> full pass, writes docs/nowcast.json
+  nowcast.py --quiet-heartbeat-due
+                       -> exit 0 = this scheduler arm's hourly quiet
+                          liveness row is due, exit 3 = not yet
+  nowcast.py --record-gated-quiet [--if-due]
+                       -> append the gated-quiet heartbeat row; with
+                          --if-due, exit 3 without writing when not due
 """
 import datetime as dt
 import csv
@@ -206,6 +212,53 @@ def _append_heartbeat(payload, now, phase="publish", outcome=None,
         return True, ""
     except Exception as exc:
         return False, str(exc)
+
+
+QUIET_HEARTBEAT_MIN_GAP_MIN = 50
+
+
+def quiet_heartbeat_due(now=None, arm=None,
+                        min_gap_min=QUIET_HEARTBEAT_MIN_GAP_MIN):
+    """Is this scheduler arm's hourly quiet-weather liveness row due?
+
+    True when the arm has left no heartbeat row (any phase) in the last
+    ``min_gap_min`` minutes. Schedulers tick about every 10 minutes, so a
+    50-minute gap yields roughly one quiet row an hour.
+
+    Keyed to the LEDGER, never to the wall-clock minute. Both arms used
+    to test the minute (GitHub: "exactly 03"; launchd: "below 8"), and
+    both tests silently missed: GitHub starts its :03 slot at :08-:20, so
+    its heartbeat fired 8 times in six weeks, and the launchd phase
+    drifts past :08 and skips hours (found 2026-11-10). A missing or
+    unreadable ledger, or no parseable row for the arm, counts as due:
+    liveness evidence fails toward being written.
+    """
+    now = now or dt.datetime.now(dt.timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=dt.timezone.utc)
+    arm = arm or os.environ.get("BARNACLE_SCHEDULER_ARM", "unknown")
+    latest = None
+    try:
+        with open(HEARTBEAT_PATH) as f:
+            for row in csv.DictReader(f):
+                if (row.get("arm") or "legacy-unknown") != arm:
+                    continue
+                try:
+                    stamp = dt.datetime.strptime(
+                        row.get("generated_utc") or "",
+                        "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
+                except ValueError:
+                    continue
+                # Union merges interleave writers: take the max, not the last.
+                if latest is None or stamp > latest:
+                    latest = stamp
+    except (OSError, csv.Error):
+        return True
+    if latest is None:
+        return True
+    age_min = (now - latest).total_seconds() / 60.0
+    # A row stamped in the future (clock skew) proves nothing: due.
+    return not (-2 <= age_min < min_gap_min)
 
 
 def _write(payload, now_utc=None):
@@ -612,7 +665,12 @@ def radar_alert_check(now_utc=None):
 
 
 if __name__ == "__main__":
+    if "--quiet-heartbeat-due" in sys.argv:
+        sys.exit(0 if quiet_heartbeat_due() else 3)
     if "--record-gated-quiet" in sys.argv:
+        if "--if-due" in sys.argv and not quiet_heartbeat_due():
+            print("gated-quiet heartbeat not due", flush=True)
+            sys.exit(3)
         stamp = dt.datetime.now(dt.timezone.utc)
         ok, error = _append_heartbeat(
             {"generated_utc": _utc_iso(stamp), "active": False,
