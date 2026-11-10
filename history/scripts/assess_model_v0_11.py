@@ -35,7 +35,15 @@ from history.scripts import reproduce_v0_10_1 as reproduction  # noqa: E402
 MRMS_PATH = REPO_ROOT / "history" / "data" / "mrms" / "mrms_extracted.csv"
 PREDICTIONS_PATH = REPO_ROOT / "data" / "predictions_log.csv"
 OBSERVED_PEAKS_PATH = REPO_ROOT / "data" / "observed_peaks_cache.csv"
-LEGACY_ACCURACY_PATH = REPO_ROOT / "data" / "forecast_accuracy.csv"
+# The assessment's G10 finding quoted the legacy one-row/day ledger AS IT
+# WAS RECORDED (+0.32 ft bias). On 2026-11-10 that bias was traced to rows
+# scored before the tide peaked and the live ledger was corrected in place
+# (history/reports/2026-11-10-forecast-accuracy-rescore.md), so the
+# as-recorded evidence is read from its frozen copy and the corrected
+# ledger is summarised beside it.
+LEGACY_ACCURACY_PATH = (REPO_ROOT / "history" / "data" /
+                        "forecast_accuracy_as_recorded_2026-11-10.csv")
+CORRECTED_ACCURACY_PATH = REPO_ROOT / "data" / "forecast_accuracy.csv"
 HEAD_REPLAY_PATH = (
     REPO_ROOT / "history" / "data" / "noaa_head_replay_fixture.json"
 )
@@ -578,6 +586,10 @@ def assess_tide_accuracy():
         legacy_errors = [
             float(row["mllw_error_ft"]) for row in csv.DictReader(handle)
         ]
+    with CORRECTED_ACCURACY_PATH.open(newline="", encoding="utf-8") as handle:
+        corrected_errors = [
+            float(row["mllw_error_ft"]) for row in csv.DictReader(handle)
+        ]
 
     with OBSERVED_PEAKS_PATH.open(newline="", encoding="utf-8") as handle:
         observed = {
@@ -613,6 +625,7 @@ def assess_tide_accuracy():
 
     return {
         "legacy_daily": _summary(legacy_errors),
+        "legacy_daily_corrected": _summary(corrected_errors),
         "hourly_join": {
             **_summary(row["error"] for row in joined),
             "n_targets": len({row["target"] for row in joined}),
@@ -688,7 +701,11 @@ def _print_compact(result):
     print(
         "tide accuracy\n"
         f"  legacy daily bias: {accuracy['legacy_daily']['mean_bias']:+.3f} ft "
-        f"(n={accuracy['legacy_daily']['n']})\n"
+        f"(n={accuracy['legacy_daily']['n']}, as recorded before the "
+        "2026-11-10 correction)\n"
+        f"  legacy daily bias, corrected ledger: "
+        f"{accuracy['legacy_daily_corrected']['mean_bias']:+.3f} ft "
+        f"(n={accuracy['legacy_daily_corrected']['n']})\n"
         f"  hourly joined bias: {accuracy['hourly_join']['mean_bias']:+.3f} ft "
         f"(n={accuracy['hourly_join']['n']}, "
         f"targets={accuracy['hourly_join']['n_targets']})"

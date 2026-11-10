@@ -38,7 +38,11 @@ class ModelV011AssessmentTests(unittest.TestCase):
 
     def test_segmented_hourly_record_rejects_legacy_bias_retune(self):
         tide = self.result["tide_accuracy"]
+        # As recorded, the legacy daily ledger showed a +0.3 ft bias (frozen
+        # copy). 2026-11-10: that bias was rows scored before the tide
+        # peaked; corrected, the ledger agrees with the hourly record.
         self.assertGreater(tide["legacy_daily"]["mean_bias"], 0.30)
+        self.assertLess(abs(tide["legacy_daily_corrected"]["mean_bias"]), 0.15)
         current = tide["hourly_join"]["by_model_version"]["v0.10.2"]
         self.assertLess(abs(current["mean_bias"]), 0.05)
 

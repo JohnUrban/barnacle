@@ -1,15 +1,15 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-11-10 08:46 EST (health check; two ops repairs live; one
-finding waits on John).** Rewrite wholesale each ship; <100 lines. BACKLOG
+**Snapshot: 2026-11-10 10:00 EST (health check; three repairs shipped; two
+small items wait on John).** Rewrite wholesale each ship; <100 lines. BACKLOG
 OPEN LOOPS is authoritative.
 
 ## Health check 2026-11-10 — repaired and verified
 
 John asked for a health check six weeks into the break. Core production was
 healthy (1,011 hourly runs in 1,026 h, site current, v0.10.6, gate clean,
-alerts delivering). Two ops defects were fixed in `988e8197c`; class (c), no
-bump; CI green on that push (first actionlint/shellcheck run of the change).
+alerts delivering). Three defects were fixed the same day; all class (c), no
+bump. The first two went out in `988e8197c` (CI green).
 
 - **Local launchd arm** had been dead since 2026-11-03T13:06Z: a Homebrew
   upgrade removed python@3.14 under `~/.barnacle/venv`. Now self-healing:
@@ -25,16 +25,23 @@ bump; CI green on that push (first actionlint/shellcheck run of the change).
   one `gated-quiet heartbeat` commit an hour from GitHub in quiet weather,
   and about one quiet local publish an hour while the Mac is awake.
 
+- **Accuracy ledger** (`data/forecast_accuracy.csv`): the scorer recorded
+  the "observed peak" before the tide finished rising. It now waits for the
+  whole ±2 h window. All 166 rows were re-derived from NOAA and 109 corrected
+  IN PLACE by owner decision (BACKLOG `DECISION accuracy-ledger-in-place`: a
+  derived score is regenerated, not preserved wrong; rule 2 otherwise
+  stands). Last 30: mean error +0.34 → −0.09 ft, mean |error| 0.56 → 0.28.
+  The as-issued half of every row, the archives and `predictions_log.csv`
+  are untouched. Old values and the row-by-row record:
+  `history/reports/2026-11-10-forecast-accuracy-rescore.md`.
+
 ## Waiting on John
 
-1. **Accuracy ledger scores before the tide peaks** (BACKLOG OPEN LOOPS,
-   first item). 51 of 166 rows; details page "last 30" MAE 0.56 ft vs about
-   0.30. John prefers an erratum; NOT yet a go-ahead; no code or ledger
-   change made. The gate rejects duplicate `forecast_run_date`, so
-   corrections cannot be appended to the same CSV: use a separate append-only
-   correction record plus a reader overlay.
-2. **Local-arm failure detection** (proposed): watchdog pages when the tick
+1. **Local-arm failure detection** (proposed): watchdog pages when the tick
    log shows an hour of continuous failure. New page class, owner's call.
+2. **Rule 2 wording**: John finds the old rules' scope unclear. A sentence
+   separating primary records (never rewrite) from derived scores
+   (regenerate when wrong) is his to write; AGENTS.md is unchanged.
 3. Housekeeping in John's checkout: Sep 26–28 observation photos untracked
    pending rule 9; stray `del` file; `.claude/worktrees/`.
 
@@ -45,7 +52,10 @@ Nov 7 (`forecast_accuracy.csv`); one SMS (Oct 11); last alert Nov 7. Oct 21
 PM reached 6.80 ft MLLW while the morning forecast said dry: surge built
 +0.57 → +1.96 ft and persistence lagged, flipping to street 6.5 h ahead
 (`predictions_log.csv`). No field observations logged since 2026-09-27.
-Heron's October 9 revisit has passed without action.
+Heron's October 9 revisit has passed without action. NOAA's verified series
+for the Sep 26 storm morning is now out: bay crest 8.805 ft MLLW at 08:36
+EDT, 0.14 ft above the preliminary reading (BACKLOG FACT
+sep26-verified-bay-peak).
 
 ## Standing state from the 2026-09-28 stopping point (unchanged)
 
@@ -86,4 +96,3 @@ local-only; no posts, merge or push. Storm-communication parity
 `history/plans/2026-09-25-storm-followup-handoff.md`.
 
 Explicit staging; commit → gate → push; rejection → rebase/abort → gate.
-Preserve append-only ledgers and newer work; never overwrite saved whole files.

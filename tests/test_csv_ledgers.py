@@ -319,3 +319,53 @@ class AccuracyStampFormsTests(unittest.TestCase):
             self.assertTrue(rows[0]["actual_peak_observed_time"].endswith("-04:00"))
             self.assertEqual(check_artifacts.validate_csv_semantics(
                 str(out), "data/forecast_accuracy.csv"), [])
+
+    def test_scorer_waits_for_the_whole_window_around_the_target_tide(self):
+        """2026-11-10: a forecast whose peak tide falls after its run date
+        was scored by the first hourly run that found any gauge data in the
+        window, on the rising limb (the 2026-11-08 archive was scored
+        4.805 ft at 06:00 against a 07:55 peak). The scorer must not even
+        ask NOAA until two hours after the predicted peak."""
+        import datetime as dt
+        import json
+        from unittest import mock
+        from forecast import flood_forecast_daily as ff
+        utc = dt.timezone.utc
+        with tempfile.TemporaryDirectory() as tmp:
+            archive = Path(tmp) / "archive"; archive.mkdir()
+            (archive / "2026-11-08.json").write_text(json.dumps({
+                "peak_forecast_observed_mllw": 5.981757821375307,
+                "peak_time_local": "2026-11-10 07:55-05:00",
+                "depths_in": {"regime": "dry"}}))
+            out = Path(tmp) / "forecast_accuracy.csv"
+            fetch = mock.Mock(return_value=(5.819, "2026-11-10 07:48-05:00"))
+            with mock.patch.object(ff, "ARCHIVE_DIR", str(archive)), \
+                    mock.patch.object(ff, "ACCURACY_CSV_PATH", str(out)), \
+                    mock.patch.object(ff, "_fetch_actual_peak_around", fetch), \
+                    mock.patch.object(ff, "_summarize_accuracy",
+                                      return_value=None):
+                # 06:07 EST (rising limb), 07:56 (just past the predicted
+                # peak) and 09:54 (one minute short of the window end)
+                for early in (dt.datetime(2026, 11, 10, 11, 7, tzinfo=utc),
+                              dt.datetime(2026, 11, 10, 12, 56, tzinfo=utc),
+                              dt.datetime(2026, 11, 10, 14, 54, tzinfo=utc)):
+                    ff.update_forecast_accuracy(now_utc=early)
+                    fetch.assert_not_called()
+                    self.assertFalse(out.exists())
+                # 09:56 EST: the +/-2 h window has closed
+                ff.update_forecast_accuracy(
+                    now_utc=dt.datetime(2026, 11, 10, 14, 56, tzinfo=utc))
+                fetch.assert_called_once()
+                self.assertEqual(fetch.call_args.kwargs.get("window_hours"),
+                                 ff.ACCURACY_WINDOW_HOURS)
+                # idempotent afterwards
+                ff.update_forecast_accuracy(
+                    now_utc=dt.datetime(2026, 11, 10, 16, 0, tzinfo=utc))
+                fetch.assert_called_once()
+            rows = list(csv.DictReader(out.open()))
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["actual_peak_observed_mllw"], "5.819")
+            self.assertAlmostEqual(float(rows[0]["mllw_error_ft"]),
+                                   5.981757821375307 - 5.819)
+            self.assertEqual(check_artifacts.validate_csv_semantics(
+                str(out), "data/forecast_accuracy.csv"), [])

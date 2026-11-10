@@ -215,3 +215,16 @@ The assessment itself changed no production formula, constant, landmark,
 stamp, or historical ledger row. Its independent fill proof subsequently
 supported the fill-only v0.10.3 promotion; no retuning, moving-head rule, or
 other v0.11 candidate was included.
+
+## Erratum, 2026-11-10 (G10 reason corrected; conclusion stands)
+
+G10 attributed the legacy one-row/day ledger's +0.320 ft bias to
+"cadence/version confounding". The actual cause, found in the 2026-11-10
+health check, is that the daily scorer recorded the "observed peak" before
+the tide had finished rising (109 of 166 rows; see
+`history/reports/2026-11-10-forecast-accuracy-rescore.md`). With those rows
+re-derived from the full observation window, the legacy ledger's bias is
+−0.07 ft, in line with the hourly record quoted in section 6 (−0.037 ft).
+The decision to reject a tide-bias retune was right and is now better
+supported: there was no real bias of that size to retune away. The text
+above is left as written on 2026-09-18.

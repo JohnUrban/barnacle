@@ -88,6 +88,13 @@ The legacy one-row-per-day `data/forecast_accuracy.csv` is the
 degenerate version of this; it stays frozen as a historical artifact
 once the new log is in production.
 
+Correction, 2026-11-10: 109 of that ledger's 166 rows had recorded the
+observed peak before the tide finished rising. Because the ledger is a
+derived score (archived forecast + gauge), the observed peak, observed
+time and error of those rows were re-derived in place by owner decision;
+the as-issued half of every row is unchanged. What it said before, row by
+row: `history/reports/2026-11-10-forecast-accuracy-rescore.md`.
+
 ## Related
 
 - `data/labeled_observations.csv` — empirical observations *of* water

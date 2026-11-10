@@ -1062,7 +1062,10 @@ def _fetch_actual_peak_around(time_str, window_hours=2):
     return (peak, peak_t)
 
 
-def update_forecast_accuracy():
+ACCURACY_WINDOW_HOURS = 2
+
+
+def update_forecast_accuracy(now_utc=None):
     """Walk archived JSON forecasts, evaluate any not yet scored against
     actual NOAA observed peaks, append new rows to data/forecast_accuracy.csv.
     Returns a summary dict for rendering, or None when nothing has been
@@ -1073,10 +1076,13 @@ def update_forecast_accuracy():
     - Each subsequent day: 1 new row appended for yesterday's forecast,
       typically. Idempotent: re-running on the same forecasts won't
       double-count.
+    - A forecast is scored only once the whole observation window around
+      its target tide has passed (see the guard below).
     - Stats are computed over the last 30 scored forecasts.
     """
     if not os.path.isdir(ARCHIVE_DIR):
         return None
+    now_utc = now_utc or dt.datetime.now(dt.timezone.utc)
 
     existing_dates = set()
     if os.path.exists(ACCURACY_CSV_PATH):
@@ -1089,7 +1095,7 @@ def update_forecast_accuracy():
             pass
 
     new_rows = []
-    today = _station_local_today()
+    today = _station_local_today(now_utc)
     for fname in sorted(os.listdir(ARCHIVE_DIR)):
         if not fname.endswith(".json"):
             continue
@@ -1113,7 +1119,23 @@ def update_forecast_accuracy():
         pred_regime = ((fc.get("depths_in") or {}).get("regime") or "")
         if pred_peak is None or not pred_time:
             continue
-        actual_peak, actual_time = _fetch_actual_peak_around(pred_time)
+        # WINDOW-COMPLETE GUARD (2026-11-10). The target tide is often a
+        # day or two AFTER the run date, so "the run date is in the past"
+        # does not mean the tide has happened. Without this the row was
+        # written by the first hourly run that found ANY gauge data in the
+        # window, about two hours before the peak, on the rising limb:
+        # 109 of 166 ledger rows understated the observed peak (median
+        # 0.5 ft) and the published mean error had the wrong sign
+        # (history/reports/2026-11-10-forecast-accuracy-rescore.md). Same
+        # rule as the lead-time and chart readers: the tide has "ended"
+        # two hours after its predicted time.
+        try:
+            if hours_until_station_time(pred_time, now_utc) > -ACCURACY_WINDOW_HOURS:
+                continue
+        except (TypeError, ValueError):
+            continue
+        actual_peak, actual_time = _fetch_actual_peak_around(
+            pred_time, window_hours=ACCURACY_WINDOW_HOURS)
         if actual_peak is None:
             continue
         # Persist both stamps in the canonical offset-bearing form (GMT
