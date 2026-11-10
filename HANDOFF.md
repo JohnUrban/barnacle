@@ -1,91 +1,89 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-09-28 12:26 EDT (owner widget copied; development stopping point).** Rewrite
-wholesale each ship; <100 lines. BACKLOG OPEN LOOPS is authoritative.
+**Snapshot: 2026-11-10 08:46 EST (health check; two ops repairs live; one
+finding waits on John).** Rewrite wholesale each ship; <100 lines. BACKLOG
+OPEN LOOPS is authoritative.
 
-## Owner stopping point — 2026-09-28
+## Health check 2026-11-10 — repaired and verified
 
-John reports copying v7.35a and wants to step away from development. This is
-an accepted stopping point: reviewed implementation is closed; remaining
-follow-ups are recorded for resumption, not requests to start another work
-round. Automated production and archive/shadow collection continue unchanged.
-Heron's recorded checkpoint is October 9; it is a revisit, not a release
-commitment. No additional widget installation is pending. Copying the code
-is not verification of every native message layout; inspect naturally when
-those forms occur or on resumption, without blocking this break.
+John asked for a health check six weeks into the break. Core production was
+healthy (1,011 hourly runs in 1,026 h, site current, v0.10.6, gate clean,
+alerts delivering). Two ops defects were fixed in `988e8197c`; class (c), no
+bump; CI green on that push (first actionlint/shellcheck run of the change).
 
-## Landmark-bounds — implementation/deployment CLOSED, round22
+- **Local launchd arm** had been dead since 2026-11-03T13:06Z: a Homebrew
+  upgrade removed python@3.14 under `~/.barnacle/venv`. Now self-healing:
+  `bin/ensure_local_venv.sh` rebuilds the environment when the interpreter is
+  gone or the checked-in locks change; the tick syncs the clone BEFORE that
+  check; the installer delegates to the helper. Installer re-run 13:42Z
+  (Python 3.15.2); first live tick pushed `673736215` at 13:43Z; public
+  nowcast.json refreshed. Rebuild failures retry hourly and log
+  `environment-rebuild-failed` in `~/.barnacle/logs/tick-status.jsonl`.
+- **Quiet heartbeat** is keyed to the ledger (`nowcast.quiet_heartbeat_due`,
+  50-minute gap per arm), not the wall-clock minute, in BOTH arms. First
+  GitHub run on the new workflow recorded `a3e27dff3` at 13:45Z. Expect about
+  one `gated-quiet heartbeat` commit an hour from GitHub in quiet weather,
+  and about one quiet local publish an hour while the Mac is awake.
 
-Approved candidate 648c7db8d shipped as 7248c500d; fixed-count page test
-repaired in ad2b66a52. Independent close-out and verification receipt:
-`audits/2026-09-27-a1/22-close-out-codex.md`. 487 tests OK (one skip),
-three frozen replays PASS, seven wind hashes unchanged, gate/registry clean,
-ledgers preserved; CI/Pages green. Public assets match bot main 07840a36a.
-Model remains v0.10.6. No further Curlew code revision requested.
+## Waiting on John
 
-Live: append-only `data/observation_bounds.jsonl`, shared schema and writer
-`bin/append_observation_bound.py`; missing/unreadable bounds degrade visibly.
-So-far summaries compare measured points and landmark bands; highest known
-floor leads, higher possibilities disclosed, disputed caps labeled and never
-used to dismiss model claims. Local pools and time certainty retained.
-Instrument-neutral “measured” wording. Widget **v7.35a deployed and copied**
-by John (owner report, 2026-09-28). Native bounded/disputed/long-report/model-claim
-readability remains PENDING; only v7.32a measured form has screenshot acceptance.
-Crossing 4.37 vs curb 4.16 NAVD88 remains an OPEN survey discrepancy; no
-elevation changed. Round22 corrects stale BACKLOG status and round21's merge
-metadata without rewriting historical records. This is not a science close-out.
+1. **Accuracy ledger scores before the tide peaks** (BACKLOG OPEN LOOPS,
+   first item). 51 of 166 rows; details page "last 30" MAE 0.56 ft vs about
+   0.30. John prefers an erratum; NOT yet a go-ahead; no code or ledger
+   change made. The gate rejects duplicate `forecast_run_date`, so
+   corrections cannot be appended to the same CSV: use a separate append-only
+   correction record plus a reader overlay.
+2. **Local-arm failure detection** (proposed): watchdog pages when the tick
+   log shows an hour of continuous failure. New page class, owner's call.
+3. Housekeeping in John's checkout: Sep 26–28 observation photos untracked
+   pending rule 9; stray `del` file; `.claude/worktrees/`.
 
-## Audit 2026-09-27-a1 — implementation CLOSED (round 13); follow-ups open
+## During the break (2026-09-28 → 2026-11-10), from the ledgers
 
-First ship `c2569c07a` (2026-09-28 02:47Z): exit-75 publish-on-delivery-failure
-with receipt check (untested by a real outage); evidence-class so-far line;
-per-episode peaks; day-max provenance + rejection record (the +39-in phantom
-was removed live before the midnight rollover); bay-not-street wording;
-station-time tape window. Science stays OPEN: gate transfer (no gate model
-authorized), high-base tank, verified NOAA series beside the preliminary
-archive, photos (rule 9), Borough gate history, historical census/hindcasts,
-Heron's episode-aware as-issued evaluation (score stated bases only).
+Street-level tide peaks on Sep 28–30, Oct 11–13, Oct 21–22, Oct 28–29 and
+Nov 7 (`forecast_accuracy.csv`); one SMS (Oct 11); last alert Nov 7. Oct 21
+PM reached 6.80 ft MLLW while the morning forecast said dry: surge built
++0.57 → +1.96 ft and persistence lagged, flipping to street 6.5 h ahead
+(`predictions_log.csv`). No field observations logged since 2026-09-27.
+Heron's October 9 revisit has passed without action.
 
-## September coastal storm — live records continue separately
+## Standing state from the 2026-09-28 stopping point (unchanged)
 
-Read PLAYBOOK before event support (three-clocks rule, reports-are-quantitative
-rule, handoff checklist); append ledger AND raw notes on receipt; record
-landmark bands with the writer and ASK John when a band is not computable.
-Main includes Sep27 evening **2026-09-27-e02** (18:18 NE/NW grate jets, 18:30
-spans NE–NW and SE–SW, 18:33 curb level); register later rows as they arrive.
-Four-window analysis covers Sep25 PM–Sep27 AM only. Sep26 AM ~5.701 and
-Sep27 AM ~5.618 NAVD88 exceed Oct30's reconstructed benchmark (first
-garage-entry floods; garage association is a proxy). Gate closure directly
-reported Sep26 18:19 only; later visits "almost certainly"; earlier closure
-inferred. Gauge transients occurred; keep as-seen inputs separate from later
-NOAA downloads. Bay is not street. Rain increments are model sensitivities.
-Original owner notes retained (John edits his own originals; agents flag
-typos). Expanded historical views on main; Apr18 ~13.7in is recollection +
-gauge, Aug2025 tentative; negative-control census/hindcasts open.
+Development is paused by owner choice; today's work was ops repair only.
+Landmark-bounds implementation/deployment CLOSED (round 22,
+`audits/2026-09-27-a1/22-close-out-codex.md`); widget v7.35a copied by John;
+native bounded/disputed/long-report/model-claim readability still PENDING
+(only v7.32a measured form has screenshot acceptance). Crossing 4.37 vs curb
+4.16 NAVD88 remains an OPEN survey discrepancy; no elevation changed.
 
-## Production — v0.10.6 live; release audit CLOSED
+Audit 2026-09-27-a1 implementation CLOSED; science OPEN: gate transfer (no
+gate model authorized), high-base tank, verified NOAA series beside the
+preliminary archive, photos (rule 9), Borough gate history, historical
+census/hindcasts, Heron's episode-aware as-issued evaluation (score stated
+bases only). Exit-75 publish-on-delivery-failure is still untested by a real
+outage.
 
-Spec model/v0.10.6.md; promotion 75a9933ff, owner approval b999ea1d0. 36-h
-surge decay/fallback ladder unchanged; seven-day tails and as-issued rain
-skill experimental. 18 landmarks; hourly site/JSON; ~10-min radar nowcast.
-SMS imminent impact; ntfy/email longer lead; alert tide horizon 48h.
-Consult live inputs, not this snapshot, for conditions.
+September storm records: read PLAYBOOK before event support; append ledger
+AND raw notes on receipt; record landmark bands with
+`bin/append_observation_bound.py` and ASK John when a band is not computable.
+Bay is not street. Rain increments are model sensitivities.
 
-## Heron and wind-shadow — ownership unchanged
+## Production — v0.10.6 live
 
-Wind-shadow c2 CLOSED (audits/2026-09-24-a3/07-close-out-codex.md; merge
-8d5f6535e; frozen bundle 82d156a6…; SHADOW ONLY; 60 days AND five storms; one
-storm = one storm however many floods). Heron evaluator CLOSED at cd17a5a14,
-research unmerged, A/B1/B2 not yet evaluable; revisit Oct 9. Episode
-interface documented (`history/plans/2026-09-27-heron-episode-interface.md`);
-score only stated bases, never analyst widths.
+Spec `model/v0.10.6.md`. 36-h surge decay/fallback ladder; seven-day tails
+and as-issued rain skill experimental. 18 landmarks; hourly site/JSON;
+~10-min radar nowcast from two arms (GitHub: trigger-gated; launchd:
+unconditional while the Mac is awake). SMS imminent impact; ntfy/email longer
+lead; alert tide horizon 48 h. Consult live inputs, not this snapshot.
 
-## Tern and other follow-ups — separate work
+## Heron, wind-shadow, Tern — ownership unchanged
 
-Tern social rehearsal local-only; owner copy/geography acceptance open; no
-posts, merge or push. Neutral landmark survey (VFW/parking lot) is John's.
-Storm follow-up (`history/plans/2026-09-25-storm-followup-handoff.md`):
-email/day-worst headline parity open; guidance-first stays offline research.
+Wind-shadow c2 CLOSED (`audits/2026-09-24-a3/07-close-out-codex.md`); SHADOW
+ONLY; 60 days AND five storms; one storm = one storm however many floods.
+Heron evaluator CLOSED at cd17a5a14, research unmerged. Tern social rehearsal
+local-only; no posts, merge or push. Storm-communication parity
+(email/day-worst headline) still open:
+`history/plans/2026-09-25-storm-followup-handoff.md`.
 
 Explicit staging; commit → gate → push; rejection → rebase/abort → gate.
 Preserve append-only ledgers and newer work; never overwrite saved whole files.
