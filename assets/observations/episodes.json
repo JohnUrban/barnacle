@@ -1,11 +1,11 @@
 {
  "schema_version": 1,
  "created_local": "2026-09-27T15:45:11-04:00",
- "scope": "Dated observation archive and recovered historical local reports through 2026-09-27; includes negative checks and one tentative-date August2025 association. Not a census of Highlands floods.",
+ "scope": "Dated observation archive and recovered historical local reports through 2026-11-10; includes negative checks and one tentative-date August2025 association. Not a census of Highlands floods.",
  "id_policy": "YYYY-MM-DD-eNN; ordinals per date, never renumber after assignment; historical Event #N/round labels are aliases. Date folders and original source paths remain valid.",
  "statistical_policy": "Episode counts are not independent storm counts. No wind/evaluator grouping rule changed. null storm_id means unassigned, not independent.",
  "ledger_file": "data/labeled_observations.csv",
- "indexed_through_csv_row": 271,
+ "indexed_through_csv_row": 272,
  "row_identity": "SHA256 of UTF-8 JSON of parsed CSV row with sorted keys, ensure_ascii=false and separators comma/colon. csv_row is a locator, not identity.",
  "association_notes": [
   "May19 retention rows belong to May18 evening, per their notes.",
@@ -13,7 +13,8 @@
   "May30 before/after noon; Sep13 before/after09:00; Sep26 before/after17:00 are source-selection partitions, NOT inferred flood-onset times.",
   "September gate reports remain infrastructure observations associated with an episode, not water measurements.",
   "Excluded key=none rows remain in ledger; new rows after indexed cutoff require explicit registration.",
-  "2026-09-27-e02 registered live at 18:40 EDT with its first row (18:18 report); later rows of the evening need explicit registration at handoff."
+  "2026-09-27-e02 registered live at 18:40 EDT with its first row (18:18 report); later rows of the evening need explicit registration at handoff.",
+  "2026-11-10-e01 is an infrastructure status check (tide gate) with no flood; it is registered alone because no flood episode exists on that date to attach it to."
  ],
  "episodes": [
   {
@@ -1549,6 +1550,26 @@
     {
      "csv_row": 271,
      "sha256": "656104e97f1472c478c506bb7177e81d3fc709ce089165ab0ed5fe3f1e52306a"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-11-10-e01",
+   "date": "2026-11-10",
+   "ordinal": 1,
+   "label": "Tide-gate status check (closed; no flood)",
+   "record_kind": "infrastructure_status_check",
+   "storm_id": null,
+   "aliases": [],
+   "directory": "assets/observations/2026-11-10/e01",
+   "source_paths": [
+    "assets/observations/2026-11-10/flood-measurements.txt",
+    "assets/observations/2026-11-10/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 272,
+     "sha256": "458a5a5f899ce1a11f274f18cad67d9a092c40c5c7ff40b3e53e6b98adc42c0f"
     }
    ]
   }

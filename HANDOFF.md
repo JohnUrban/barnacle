@@ -1,7 +1,7 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-11-10 10:00 EST (health check; three repairs shipped; two
-small items wait on John).** Rewrite wholesale each ship; <100 lines. BACKLOG
+**Snapshot: 2026-11-10 10:30 EST (health check; three repairs shipped; gate
+found closed; two small items wait on John).** Rewrite wholesale each ship; <100 lines. BACKLOG
 OPEN LOOPS is authoritative.
 
 ## Health check 2026-11-10 — repaired and verified
@@ -35,6 +35,16 @@ bump. The first two went out in `988e8197c` (CI green).
   are untouched. Old values and the row-by-row record:
   `history/reports/2026-11-10-forecast-accuracy-rescore.md`.
 
+## Tide gate — closed on 2026-11-10 (tracking only)
+
+John found the Snug Harbor Beach gate closed at 08:33 EST (photo) and infers
+it never reopened after late September `[INFERRED]`; no street flooding
+noticed in a month. Barnacle is gate-blind: while it is closed, tidal street
+calls for the intersection are expected to be wrong. 15 tides since Sep 28
+PM peaked above the SW grate, none with a street observation. Record:
+`assets/observations/2026-11-10/README.md`. No model or wording change
+authorized. Log any gate sighting as a `tide_gate_snug_harbor` ledger row.
+
 ## Waiting on John
 
 1. **Local-arm failure detection** (proposed): watchdog pages when the tick
@@ -42,41 +52,35 @@ bump. The first two went out in `988e8197c` (CI green).
 2. **Rule 2 wording**: John finds the old rules' scope unclear. A sentence
    separating primary records (never rewrite) from derived scores
    (regenerate when wrong) is his to write; AGENTS.md is unchanged.
-3. Housekeeping in John's checkout: Sep 26–28 observation photos untracked
-   pending rule 9; stray `del` file; `.claude/worktrees/`.
+3. John's checkout: Sep 26–28 photos untracked pending rule 9 (Sep 28 AM
+   has photos but no notes or rows); stray `del` file; `.claude/worktrees/`.
 
 ## During the break (2026-09-28 → 2026-11-10), from the ledgers
 
-Street-level tide peaks on Sep 28–30, Oct 11–13, Oct 21–22, Oct 28–29 and
-Nov 7 (`forecast_accuracy.csv`); one SMS (Oct 11); last alert Nov 7. Oct 21
-PM reached 6.80 ft MLLW while the morning forecast said dry: surge built
-+0.57 → +1.96 ft and persistence lagged, flipping to street 6.5 h ahead
-(`predictions_log.csv`). No field observations logged since 2026-09-27.
-Heron's October 9 revisit has passed without action. NOAA's verified series
-for the Sep 26 storm morning is now out: bay crest 8.805 ft MLLW at 08:36
-EDT, 0.14 ft above the preliminary reading (BACKLOG FACT
-sep26-verified-bay-peak).
+Bay above the SW grate on 15 tides (Sep 28–30, Oct 11–13, Oct 21–24, Oct
+27–29, Nov 7); one SMS (Oct 11); last alert Nov 7. Oct 21 PM reached 6.80 ft
+MLLW while the morning forecast said dry (surge built +0.57 → +1.96 ft;
+persistence lagged). No field observations between 2026-09-27 and today's
+gate check. Heron's October 9 revisit passed without action. NOAA's verified Sep 26 bay crest is out: 8.805 ft MLLW at
+08:36 EDT, +0.14 ft on the preliminary (BACKLOG `sep26-verified-bay-peak`).
 
 ## Standing state from the 2026-09-28 stopping point (unchanged)
 
 Development is paused by owner choice; today's work was ops repair only.
-Landmark-bounds implementation/deployment CLOSED (round 22,
-`audits/2026-09-27-a1/22-close-out-codex.md`); widget v7.35a copied by John;
-native bounded/disputed/long-report/model-claim readability still PENDING
-(only v7.32a measured form has screenshot acceptance). Crossing 4.37 vs curb
-4.16 NAVD88 remains an OPEN survey discrepancy; no elevation changed.
+Landmark-bounds CLOSED (round 22, `audits/2026-09-27-a1/22-close-out-codex.md`);
+widget v7.35a copied by John; native bounded/disputed/long-report/model-claim
+readability still PENDING (only v7.32a measured form has screenshot
+acceptance). Crossing 4.37 vs curb 4.16 NAVD88: OPEN survey discrepancy.
 
 Audit 2026-09-27-a1 implementation CLOSED; science OPEN: gate transfer (no
 gate model authorized), high-base tank, verified NOAA series beside the
 preliminary archive, photos (rule 9), Borough gate history, historical
-census/hindcasts, Heron's episode-aware as-issued evaluation (score stated
-bases only). Exit-75 publish-on-delivery-failure is still untested by a real
-outage.
+census/hindcasts, Heron's episode-aware as-issued evaluation (stated bases
+only). Exit-75 publish-on-delivery-failure is untested by a real outage.
 
-September storm records: read PLAYBOOK before event support; append ledger
-AND raw notes on receipt; record landmark bands with
-`bin/append_observation_bound.py` and ASK John when a band is not computable.
-Bay is not street. Rain increments are model sensitivities.
+Event support: read PLAYBOOK first; append ledger AND raw notes on receipt;
+record landmark bands with `bin/append_observation_bound.py`; ASK John when
+a band is not computable. Bay is not street.
 
 ## Production — v0.10.6 live
 
@@ -91,8 +95,5 @@ lead; alert tide horizon 48 h. Consult live inputs, not this snapshot.
 Wind-shadow c2 CLOSED (`audits/2026-09-24-a3/07-close-out-codex.md`); SHADOW
 ONLY; 60 days AND five storms; one storm = one storm however many floods.
 Heron evaluator CLOSED at cd17a5a14, research unmerged. Tern social rehearsal
-local-only; no posts, merge or push. Storm-communication parity
-(email/day-worst headline) still open:
+local-only; no posts, merge or push. Storm-communication parity still open:
 `history/plans/2026-09-25-storm-followup-handoff.md`.
-
-Explicit staging; commit → gate → push; rejection → rebase/abort → gate.

@@ -46,6 +46,9 @@ John approved stable date-scoped episode IDs and subfolders on 2026-09-27.
 now cover the existing dated field archives, the December historical ledger
 observation, and the September 25 negative window: **30 registered episodes** (27 at first indexing on 2026-09-27; Apr 17, Apr 18 and Aug 2025 were added later that day),
 including dry checks and reconstructed/unmeasured events, not 27 measured floods.
+Later registrations: 2026-09-27-e02 (evening rain-plus-tide flooding) and
+2026-11-10-e01, a tide-gate status check with no flood, the first record of
+kind `infrastructure_status_check` (32 registered as of 2026-11-10).
 
 Each episode has an `e01/`, `e02/`, etc. home under its date. IDs are
 `YYYY-MM-DD-eNN`; never renumber an assigned ID. A later-discovered earlier
