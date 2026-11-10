@@ -24,9 +24,8 @@ held water back. Its value is as a second endpoint.
 - **Closed continuously since late September** — `[INFERRED]` (owner). The
   earlier sightings are 2026-09-26 18:19 (photo) and later that evening
   (~21:58 in the notes; photos at 22:06, "almost certainly" closed),
-  2026-09-27 ~08:30 ("almost certainly"), and photos John filed under
-  `2026-09-28/gate-closed/` with EXIF 2026-09-28 09:01 EDT (those photos are
-  not yet committed; no ledger row exists for that visit). His reasoning:
+  2026-09-27 ~08:30 ("almost certainly"), and 2026-09-28 09:01 EDT (photos
+  under `2026-09-28/gate-closed/`, ledger row added 2026-11-10). His reasoning:
   nothing about today's ordinary tide would call for closing it, so it was
   probably never reopened. Two sightings six weeks apart do not rule out an
   open spell in between.
@@ -89,6 +88,23 @@ days (2026-09-28, 10-02, 10-10, 10-11, 10-15, 10-16, 11-05, 11-06;
 2026-10-11, when one imminent-impact text was sent
 (`data/alert_state.json`). No street observation exists for any of them.
 
-The morning of 2026-09-28 (bay 7.23 ft MLLW at 09:30 EDT) has photos John
-filed under `2026-09-28/e01/` but no notes, ledger rows or registered
-episode yet.
+## The one tide where the street WAS photographed: 2026-09-28 morning
+
+Filed on 2026-11-10 from photos John took that morning
+([../2026-09-28/README.md](../2026-09-28/README.md), episode 2026-09-28-e01).
+Gate photographed closed at 09:01 EDT; at 09:06 the corner was not flooded
+while the bay stood at 7.21 ft MLLW, 10.4 in above the SW grate, and
+Barnacle's call was MODERATE. That is the best single piece of evidence for
+John's reading, and it is photo evidence, 24 minutes before the bay peak.
+
+## Follow-up the same morning (received 10:35 EST)
+
+- **2026-10-11 evening** (the one rain event Barnacle texted about): John has
+  no memory of flooding and no photos; he recalls some alerts and does not
+  think the rain got severe enough to flood `[STATED, recollection]`. This is
+  a weak negative, not an observation.
+- **Thursday 2026-11-12**: John will try to look for flooding. The
+  experimental outlook showed the 09:11 EST tide possibly reaching the
+  grates (6.7 ft MLLW from NWPS guidance at 47 h lead; the core forecast said
+  5.73, dry). If the bay tops 6.34 ft and the corner stays dry, that is a
+  direct test with the gate known closed two days earlier.

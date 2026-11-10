@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-11-10 10:30 EST (health check; three repairs shipped; gate
+**Snapshot: 2026-11-10 10:45 EST (health check; three repairs shipped; gate
 found closed; two small items wait on John).** Rewrite wholesale each ship; <100 lines. BACKLOG
 OPEN LOOPS is authoritative.
 
@@ -38,12 +38,13 @@ bump. The first two went out in `988e8197c` (CI green).
 ## Tide gate — closed on 2026-11-10 (tracking only)
 
 John found the Snug Harbor Beach gate closed at 08:33 EST (photo) and infers
-it never reopened after late September `[INFERRED]`; no street flooding
-noticed in a month. Barnacle is gate-blind: while it is closed, tidal street
-calls for the intersection are expected to be wrong. 15 tides since Sep 28
-PM peaked above the SW grate, none with a street observation. Record:
-`assets/observations/2026-11-10/README.md`. No model or wording change
-authorized. Log any gate sighting as a `tide_gate_snug_harbor` ledger row.
+it never reopened after late September `[INFERRED]`. Barnacle is gate-blind:
+while it is closed, tidal street calls for the intersection are expected to
+be wrong. 15 tides since Sep 28 PM peaked above the SW grate, none with a
+street observation. Best evidence: Sep 28 09:06 EDT, corner dry in his photo
+with the bay 10.4 in over the grate (2026-09-28-e01). **Thursday 2026-11-12
+~09:11 EST: John will look; log his report either way.** Record:
+`assets/observations/2026-11-10/README.md`. No model or wording change.
 
 ## Waiting on John
 
@@ -52,17 +53,16 @@ authorized. Log any gate sighting as a `tide_gate_snug_harbor` ledger row.
 2. **Rule 2 wording**: John finds the old rules' scope unclear. A sentence
    separating primary records (never rewrite) from derived scores
    (regenerate when wrong) is his to write; AGENTS.md is unchanged.
-3. John's checkout: Sep 26–28 photos untracked pending rule 9 (Sep 28 AM
-   has photos but no notes or rows); stray `del` file; `.claude/worktrees/`.
+3. Stray `del` file and `.claude/worktrees/` in John's checkout. The 117
+   September photos are committed (8 blurred; originals held locally).
 
 ## During the break (2026-09-28 → 2026-11-10), from the ledgers
 
 Bay above the SW grate on 15 tides (Sep 28–30, Oct 11–13, Oct 21–24, Oct
 27–29, Nov 7); one SMS (Oct 11); last alert Nov 7. Oct 21 PM reached 6.80 ft
-MLLW while the morning forecast said dry (surge built +0.57 → +1.96 ft;
-persistence lagged). No field observations between 2026-09-27 and today's
-gate check. Heron's October 9 revisit passed without action. NOAA's verified Sep 26 bay crest is out: 8.805 ft MLLW at
-08:36 EDT, +0.14 ft on the preliminary (BACKLOG `sep26-verified-bay-peak`).
+MLLW while the morning forecast said dry (surge built +0.57 → +1.96 ft).
+Heron's October 9 revisit passed without action. NOAA's verified Sep 26 bay
+crest: 8.805 ft MLLW, +0.14 ft on the preliminary (`sep26-verified-bay-peak`).
 
 ## Standing state from the 2026-09-28 stopping point (unchanged)
 
@@ -74,7 +74,7 @@ acceptance). Crossing 4.37 vs curb 4.16 NAVD88: OPEN survey discrepancy.
 
 Audit 2026-09-27-a1 implementation CLOSED; science OPEN: gate transfer (no
 gate model authorized), high-base tank, verified NOAA series beside the
-preliminary archive, photos (rule 9), Borough gate history, historical
+preliminary archive, Borough gate history, historical
 census/hindcasts, Heron's episode-aware as-issued evaluation (stated bases
 only). Exit-75 publish-on-delivery-failure is untested by a real outage.
 

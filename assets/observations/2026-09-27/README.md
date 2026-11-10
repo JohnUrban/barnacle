@@ -3,7 +3,7 @@
 **Original owner notes received 2026-09-27:** see [rawnotes/](rawnotes/).
 The existing `flood-measurements.txt` is a retrospectively assembled transcript;
 original wording and explicit normalization are preserved separately in the
-[reconciliation](../2026-09-27/analysis/README.md). Photos remain pending.
+[reconciliation](../2026-09-27/analysis/README.md). Photos committed 2026-11-10: `e01/photos/` (48) and `gate-closed/` (1, 08:29 EDT); see the episode README for the privacy review.
 
 Part of Event #10 (nor'easter coastal surge, 2026-09-25 → 27). Rounds 0–2,
 the tide-gate discovery, rain attribution and the cross-tide figure live in

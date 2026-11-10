@@ -37,4 +37,5 @@ IDs identify episodes, not independent storms. Historical sources remain at thei
 | [2026-09-26-e02](2026-09-26/e02/README.md) | Evening coastal flood | flood_episode | Event #10 round 2 |
 | [2026-09-27-e01](2026-09-27/e01/README.md) | Morning coastal flood | flood_episode | Event #10 round 3 |
 | [2026-09-27-e02](2026-09-27/e02/README.md) | Evening rain-plus-rising-tide flooding (in progress at registration) | flood_episode | Event #10 round 4 |
+| [2026-09-28-e01](2026-09-28/e01/README.md) | Morning surge tide: corner dry in photo, gate closed (photos only) | negative_observation_window | — |
 | [2026-11-10-e01](2026-11-10/e01/README.md) | Tide-gate status check (closed; no flood) | infrastructure_status_check | — |

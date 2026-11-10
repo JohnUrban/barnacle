@@ -3,7 +3,7 @@
 **Original owner notes received 2026-09-27:** see [rawnotes/](rawnotes/).
 The existing `flood-measurements.txt` is a retrospectively assembled transcript;
 original wording and explicit normalization are preserved separately in the
-[reconciliation](../2026-09-27/analysis/README.md). Photos remain pending.
+[reconciliation](../2026-09-27/analysis/README.md). Photos committed 2026-11-10: `e01/photos/` (53), `e02/photos/` (4) and `gate-closed/` (5: 18:19–18:20 and 22:05–22:07 EDT); see each episode README for the privacy review.
 
 Verbatim reports (rounds 0–2): [`flood-measurements.txt`](flood-measurements.txt).
 Round 3 (9/27 AM): [`../2026-09-27/`](../2026-09-27/README.md).

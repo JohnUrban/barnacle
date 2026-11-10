@@ -5,7 +5,7 @@
  "id_policy": "YYYY-MM-DD-eNN; ordinals per date, never renumber after assignment; historical Event #N/round labels are aliases. Date folders and original source paths remain valid.",
  "statistical_policy": "Episode counts are not independent storm counts. No wind/evaluator grouping rule changed. null storm_id means unassigned, not independent.",
  "ledger_file": "data/labeled_observations.csv",
- "indexed_through_csv_row": 272,
+ "indexed_through_csv_row": 274,
  "row_identity": "SHA256 of UTF-8 JSON of parsed CSV row with sorted keys, ensure_ascii=false and separators comma/colon. csv_row is a locator, not identity.",
  "association_notes": [
   "May19 retention rows belong to May18 evening, per their notes.",
@@ -14,7 +14,8 @@
   "September gate reports remain infrastructure observations associated with an episode, not water measurements.",
   "Excluded key=none rows remain in ledger; new rows after indexed cutoff require explicit registration.",
   "2026-09-27-e02 registered live at 18:40 EDT with its first row (18:18 report); later rows of the evening need explicit registration at handoff.",
-  "2026-11-10-e01 is an infrastructure status check (tide gate) with no flood; it is registered alone because no flood episode exists on that date to attach it to."
+  "2026-11-10-e01 is an infrastructure status check (tide gate) with no flood; it is registered alone because no flood episode exists on that date to attach it to.",
+  "2026-09-28-e01 was registered on 2026-11-10 from photographs the owner filed on 2026-09-28; its two ledger rows are photo-derived (EXIF times), with no contemporaneous owner text."
  ],
  "episodes": [
   {
@@ -1550,6 +1551,29 @@
     {
      "csv_row": 271,
      "sha256": "656104e97f1472c478c506bb7177e81d3fc709ce089165ab0ed5fe3f1e52306a"
+    }
+   ]
+  },
+  {
+   "episode_id": "2026-09-28-e01",
+   "date": "2026-09-28",
+   "ordinal": 1,
+   "label": "Morning surge tide: corner dry in photo, gate closed (photos only)",
+   "record_kind": "negative_observation_window",
+   "storm_id": "2026-09-25-coastal",
+   "aliases": [],
+   "directory": "assets/observations/2026-09-28/e01",
+   "source_paths": [
+    "assets/observations/2026-09-28/README.md"
+   ],
+   "ledger_rows": [
+    {
+     "csv_row": 273,
+     "sha256": "eed451aa394f5d10573e57accb0cb4dc95c0cbda43cda40f247662fe96d49833"
+    },
+    {
+     "csv_row": 274,
+     "sha256": "051d0e84846462d0f1c400ab56a6dcc446bacc06103523cee8636aa9a6fe0f94"
     }
    ]
   },
