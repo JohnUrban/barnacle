@@ -20,6 +20,20 @@ fixed (local-arm self-heal, ledger-due quiet heartbeat: ledger lines of
 2026-11-10). The third is the next item. This is ops repair, not a new
 development round; the stopping point above otherwise stands.
 
+- [ ] **SMS channel is DEAD since at latest 2026-11-12: Verizon decommissioned the vtext.com email-to-text gateway (owner decision needed).**
+      The 2026-11-12 18:09Z imminent-impact text bounced for both recipients
+      within two seconds: `550 5.1.1 Blocked. Decommission of Email to Text
+      Vtext/VZWPix` (Verizon's own notice:
+      verizon.com/support/vtext-vzwpix-shutdown). Not the owner's plan
+      renewal. Last text with no bounce: 2026-10-11. Barnacle recorded the
+      send as succeeded because Gmail accepted it; the rejection arrives
+      later as a bounce, so `alert_delivery_health.json` cannot see it.
+      ntfy carried the same imminent alert at the same moment and is now
+      the only working imminent channel. Decide: (a) rely on ntfy for
+      imminent alerts and retire SMS, or (b) a paid SMS API. Until then SMS
+      "succeeded" in delivery health is meaningless. Recipient numbers live
+      only in the `ALERT_SMS_TO` secret; never write them in the repo.
+
 - [ ] **Tide gate: closed again on 2026-11-10; predictions are gate-blind (tracking only, no change authorized).**
       John found the Snug Harbor Beach tide gate closed at 08:33 EST on
       2026-11-10 (photo) and infers it has stayed closed since late September
@@ -951,3 +965,6 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-11-12 | FACT | thursday-gate-test-result | John, 10:50 EST: "there is no flooding or water above grates. It just started raining." Bay peaked 6.659 ft MLLW at 09:30 EST (preliminary; +3.8 in over the SW grate) and was at or above the grate 08:12-10:18; it read 6.144 ft at 10:42. The check is therefore post-peak (80 min after the peak, ~30 min after the bay fell below the grate): nothing standing above the grates at 10:50, but whether shallow water reached the street during the two above-grate hours is unobserved. Barnacle's gauge call was 6.67 ft for 09:11 (regime street); observed 6.659. Ledger row 275 with a recorded bound (below the SW grate, 3.52 NAVD88); episode 2026-11-12-e01. Closes OPEN thursday-2026-11-12-gate-test as INCONCLUSIVE for the peak [STATED for the report; VERIFIED for the gauge]
 2026-11-12 | OPEN | gate-test-needs-in-window-look | to test whether the closed gate keeps tidal water off the corner, the look has to fall while the bay is above the SW grate (6.34 ft MLLW at Sandy Hook), ideally at the predicted high-tide time plus about 20 min (observed peaks ran 19-29 min after the predicted time on 2026-11-10, 11-11 and 11-12). Next agent: when a street-level tide is forecast, tell John the above-grate window in clock times, not just the high-tide time [INFERRED from this miss]
 2026-11-12 | FACT | health-followup-2026-11-12 | two days after the 2026-11-10 repairs: both nowcast arms publishing (GitHub arm running radar on convective wording; launchd arm pushing, last 15:41Z), watchdog HEALTHY, forecast_accuracy summary on the published forecast.json reads mean error -0.07 ft / mean |error| 0.29 ft / worst 1.57 ft over 169 scored rows, and the three rows scored since the guard shipped each carry an observed time after the predicted peak [VERIFIED: docs/forecast.json, data/forecast_accuracy.csv tail, ~/.barnacle/logs]
+2026-11-12 | FACT | sms-gateway-decommissioned | Barnacle's 2026-11-12T18:09:45Z imminent text ("[342 Bay] STREET FLOODING OVER CURB: +8\" now. 1:09PM") was rejected for both recipients at 18:09:47Z by Verizon's mail server: "550 5.1.1 Blocked. Decommission of Email to Text Vtext/VZWPix ... see verizon.com/support/vtext-vzwpix-shutdown". John suspected his StraightTalk renewal that day (service drop, or a move off Verizon's network); the server's own message says the gateway is being shut down, so the renewal is coincidental. Sent-mail history shows the six earlier texts (2026-09-26 x2, 09-27 x3, 10-11) with no bounce. Delivery health recorded sms as succeeded [VERIFIED: bounce messages in the sending Gmail account, read 2026-11-12 13:22 EST; alert_delivery_health.json at 18:09:43Z]
+2026-11-12 | FACT | rain-event-2026-11-12-alert-latency | radar nowcast active from 11:12 EST; modeled street water (standard tank, bay far below the grates) 4.4 in at 11:27, 7.1 at 12:35, 9.7 at 12:45, 7.2 at 13:16; day max 13.3 in at 12:32 EST. The alertable class (curb or higher) was first published at 12:45 by the LAUNCHD arm, which has no alert-dispatch step; the GitHub run at 12:55 that would have dispatched failed in "Commit nowcast.json" (push race with the launchd arm), so no forecast run was dispatched and the text went with the scheduled 13:09 run, about 24 min after the first over-curb nowcast. All forecast runs that day were event=schedule. Whether the street actually flooded is NOT yet observed (owner's last report 10:50: no water) [VERIFIED: git history of docs/nowcast.json, gh run list]
+2026-11-12 | OPEN | nowcast-arm-race-drops-alert-dispatch | two defects exposed by the 2026-11-12 rain: (1) the launchd arm publishes alertable nowcasts but cannot dispatch the alert evaluation; (2) during active weather both arms write docs/nowcast.json every ~10 min, and a lost push race fails the GitHub run BEFORE its dispatch steps. Either can delay an imminent alert to the next hourly run. Alert-path change: needs owner go-ahead and review; not touched during the live event [VERIFIED for the mechanism]

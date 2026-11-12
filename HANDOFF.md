@@ -1,7 +1,7 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-11-12 10:55 EST (Nov 10 repairs holding; gate test this
-morning inconclusive; rain starting; two small items wait on John).** Rewrite wholesale each ship; <100 lines. BACKLOG
+**Snapshot: 2026-11-12 13:30 EST (RAIN EVENT LIVE: Barnacle models street
+water over the curb, unverified; SMS channel dead; gate test inconclusive).** Rewrite wholesale each ship; <100 lines. BACKLOG
 OPEN LOOPS is authoritative.
 
 ## Health check 2026-11-10 — repaired and verified
@@ -50,12 +50,14 @@ any report under `assets/observations/2026-11-12/`.** No model change.
 
 ## Waiting on John
 
+0. **SMS is dead**: Verizon decommissioned vtext.com; the 13:09 EST text on
+   2026-11-12 bounced. ntfy is the only working imminent channel. Also open:
+   the two nowcast arms race, which delayed that alert ~24 min (BACKLOG
+   OPEN LOOPS first item and `nowcast-arm-race-drops-alert-dispatch`).
 1. **Local-arm failure detection** (proposed): watchdog pages when the tick
    log shows an hour of continuous failure. New page class, owner's call.
-2. **Rule 2 wording**: John finds the old rules' scope unclear. A sentence
-   separating primary records (never rewrite) from derived scores
-   (regenerate when wrong) is his to write; AGENTS.md is unchanged.
-3. Stray `del` file and `.claude/worktrees/` in John's checkout.
+2. **Rule 2 wording** (primary records vs derived scores) is John's to
+   write; AGENTS.md is unchanged.
 
 ## During the break (2026-09-28 → 2026-11-10), from the ledgers
 
