@@ -1,7 +1,7 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-11-10 10:45 EST (health check; three repairs shipped; gate
-found closed; two small items wait on John).** Rewrite wholesale each ship; <100 lines. BACKLOG
+**Snapshot: 2026-11-12 10:55 EST (Nov 10 repairs holding; gate test this
+morning inconclusive; rain starting; two small items wait on John).** Rewrite wholesale each ship; <100 lines. BACKLOG
 OPEN LOOPS is authoritative.
 
 ## Health check 2026-11-10 — repaired and verified
@@ -42,9 +42,11 @@ it never reopened after late September `[INFERRED]`. Barnacle is gate-blind:
 while it is closed, tidal street calls for the intersection are expected to
 be wrong. 15 tides since Sep 28 PM peaked above the SW grate, none with a
 street observation. Best evidence: Sep 28 09:06 EDT, corner dry in his photo
-with the bay 10.4 in over the grate (2026-09-28-e01). **Thursday 2026-11-12
-~09:11 EST: John will look; log his report either way.** Record:
-`assets/observations/2026-11-10/README.md`. No model or wording change.
+with the bay 10.4 in over the grate (2026-09-28-e01). 2026-11-12: bay
+peaked +3.8 in over the grate at 09:30 EST; John looked at 10:50, after it
+fell back: no water, so not a direct test. **Give John the above-grate
+window in clock times next time. Rain began 10:50 on a falling tide: log
+any report under `assets/observations/2026-11-12/`.** No model change.
 
 ## Waiting on John
 
@@ -53,14 +55,13 @@ with the bay 10.4 in over the grate (2026-09-28-e01). **Thursday 2026-11-12
 2. **Rule 2 wording**: John finds the old rules' scope unclear. A sentence
    separating primary records (never rewrite) from derived scores
    (regenerate when wrong) is his to write; AGENTS.md is unchanged.
-3. Stray `del` file and `.claude/worktrees/` in John's checkout. The 117
-   September photos are committed (8 blurred; originals held locally).
+3. Stray `del` file and `.claude/worktrees/` in John's checkout.
 
 ## During the break (2026-09-28 → 2026-11-10), from the ledgers
 
 Bay above the SW grate on 15 tides (Sep 28–30, Oct 11–13, Oct 21–24, Oct
-27–29, Nov 7); one SMS (Oct 11); last alert Nov 7. Oct 21 PM reached 6.80 ft
-MLLW while the morning forecast said dry (surge built +0.57 → +1.96 ft).
+27–29, Nov 7); one SMS (Oct 11). Oct 21 PM reached 6.80 ft MLLW while the
+morning forecast said dry (surge built +0.57 → +1.96 ft).
 Heron's October 9 revisit passed without action. NOAA's verified Sep 26 bay
 crest: 8.805 ft MLLW, +0.14 ft on the preliminary (`sep26-verified-bay-peak`).
 

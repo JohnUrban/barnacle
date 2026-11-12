@@ -1,6 +1,6 @@
 # Episode index
 
-Dated observation archive and recovered historical local reports through 2026-11-10; includes negative checks and one tentative-date August2025 association. Not a census of Highlands floods.
+Dated observation archive and recovered historical local reports through 2026-11-12; includes negative checks and one tentative-date August2025 association. Not a census of Highlands floods.
 
 IDs identify episodes, not independent storms. Historical sources remain at their original paths.
 
@@ -39,3 +39,4 @@ IDs identify episodes, not independent storms. Historical sources remain at thei
 | [2026-09-27-e02](2026-09-27/e02/README.md) | Evening rain-plus-rising-tide flooding (in progress at registration) | flood_episode | Event #10 round 4 |
 | [2026-09-28-e01](2026-09-28/e01/README.md) | Morning surge tide: corner dry in photo, gate closed (photos only) | negative_observation_window | — |
 | [2026-11-10-e01](2026-11-10/e01/README.md) | Tide-gate status check (closed; no flood) | infrastructure_status_check | — |
+| [2026-11-12-e01](2026-11-12/e01/README.md) | Post-peak check after a street-level morning tide: no water above grates; rain starting | negative_observation_window | — |

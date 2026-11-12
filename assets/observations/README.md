@@ -49,7 +49,7 @@ including dry checks and reconstructed/unmeasured events, not 27 measured floods
 Later registrations: 2026-09-27-e02 (evening rain-plus-tide flooding);
 2026-09-28-e01, a negative window registered on 2026-11-10 from photos alone;
 and 2026-11-10-e01, a tide-gate status check with no flood, the first record
-of kind `infrastructure_status_check` (33 registered as of 2026-11-10).
+of kind `infrastructure_status_check` (33 registered as of 2026-11-10). 2026-11-12-e01, a post-peak negative check, makes 34.
 
 Each episode has an `e01/`, `e02/`, etc. home under its date. IDs are
 `YYYY-MM-DD-eNN`; never renumber an assigned ID. A later-discovered earlier
