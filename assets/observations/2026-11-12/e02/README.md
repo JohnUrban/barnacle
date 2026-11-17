@@ -22,9 +22,18 @@ John created this folder, the note and the photos; registered 2026-11-17.
 | 18:24 | "level with lawn step" `[STATED]`, photos one minute earlier | 4.66 ft NAVD88, +13.7 in over the SW grate |
 | about 19:10 | "Gone" `[STATED]`: his next look, the water had already cleared | not quantified |
 
-There was no look between 18:24 and about 19:10, so 18:24 is one reading on
-the way up or at the crest, not a measured crest, and the clearing time is
-only bounded: some time before about 19:10.
+There was no look between 18:24 and about 19:10, so the crest is not
+bracketed by readings and the clearing time is only bounded: some time
+before about 19:10.
+
+**Owner's impression (his word: speculation):** he believes he caught the
+peak. The flooding came up fast ("It wasn't flooded.. then it was"); while
+he watched around 18:24 it "seemed like it was threat[en]ing to come up the
+lawnstep, but never did", and by the time he walked away "it was clear it
+never would" ([clarifications.txt](clarifications.txt)). Read that way the
+crest was at the lawn step, about 4.66 ft NAVD88, at roughly 18:24, and did
+not go over it while he stood there `[STATED as impression, not a second
+reading]`.
 
 Bay at 18:24: 4.54 ft MLLW (1.72 ft NAVD88, preliminary), 22 in below the SW grate
 and rising slowly. This was a rain flood with the tide out of the picture.
@@ -49,7 +58,9 @@ SMS copy bounced, see BACKLOG `sms-gateway-decommissioned`.)
 
 - **Peak height: hit.** Observed 13.7 in at 18:24; modeled peak 13.4 in.
 - **Rise: model about 10–15 min late.** At 18:24 it showed roughly 10 in and
-  did not reach 13.4 until 18:36.
+  did not reach 13.4 until 18:36. If the owner's impression is right that
+  18:24 was the crest, the model's crest (18:36–18:45) was 12–20 min late
+  and its projections of 14–16 in were 0.5–2.5 in too high.
 - **Recession: model too slow.** When John looked again at about 19:10 the
   water was gone; the model still carried 9.1 in at 19:08 and 6.8 in at
   19:19.
