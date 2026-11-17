@@ -5358,6 +5358,29 @@ def _nowcast_snapshot(path=None, now_utc=None):
     return snapshot
 
 
+# Rails that carry the imminent-impact alert. SMS was retired on 2026-11-12
+# (owner decision): Verizon decommissioned the vtext.com email-to-text
+# gateway and the 18:09Z text that day bounced for every recipient ("550
+# 5.1.1 Blocked. Decommission of Email to Text") while Gmail's acceptance
+# had already been recorded as a successful send. ntfy carries the same
+# message. The SMS code path stays so a working transport can be added
+# back by listing "sms" here; while it is absent the SMS gate never
+# requests a send, never blocks a run, and never drives a radar dispatch.
+IMMINENT_CHANNELS = ("ntfy",)
+
+
+def imminent_gate(channel, forecast, state=None, now_utc=None, nowcast=None):
+    """evaluate_sms_gate for an ENABLED imminent rail; a non-sending gate
+    with the same shape, and a reason that says so, for a retired one."""
+    if channel in IMMINENT_CHANNELS:
+        return evaluate_sms_gate(forecast, state=state, now_utc=now_utc,
+                                 nowcast=nowcast, channel=channel)
+    now_utc = now_utc or dt.datetime.now(dt.timezone.utc)
+    return {"send": False, "class": 0, "phrase": "", "street_in": None,
+            "proj_in": None, "bay_navd88": None, "now_utc": now_utc,
+            "reason": f"{channel} rail retired (not in IMMINENT_CHANNELS)"}
+
+
 def evaluate_sms_gate(forecast, state=None, now_utc=None, nowcast=None,
                       channel="sms"):
     """Imminent-impact decision for the SMS or ntfy rail.
@@ -8754,12 +8777,13 @@ def _main_core(holder):
         # they may not consume an alert that the next delivery-capable run
         # still needs to send.
         decision = evaluate_alert(forecast)
-        _gate = evaluate_sms_gate(forecast)
+        _gates = {c: imminent_gate(c, forecast) for c in ("sms", "ntfy")}
         print(f"Skipping alert delivery (--no-send set). Alert eval: "
               f"{decision['reason']}"
               + (" — WOULD SEND" if decision["send"] else "")
-              + f"; SMS gate: {_gate['reason']}"
-              + (" — WOULD TEXT" if _gate["send"] else ""))
+              + "".join(f"; {c} imminent gate: {g['reason']}"
+                        + (" — WOULD SEND" if g["send"] else "")
+                        for c, g in _gates.items()))
         return
 
     # EVENT-DRIVEN ALERTING (user, 2026-07-17): the daily-morning
@@ -8770,9 +8794,8 @@ def _main_core(holder):
     # secret) rides along. --force-email preserves a manual path.
     _state = _refresh_alert_state_from_origin(_load_alert_state())
     decision = evaluate_alert(forecast, state=_state)
-    sms_gate = evaluate_sms_gate(forecast, state=_state, channel="sms")
-    ntfy_imminent_gate = evaluate_sms_gate(
-        forecast, state=_state, channel="ntfy")
+    sms_gate = imminent_gate("sms", forecast, state=_state)
+    ntfy_imminent_gate = imminent_gate("ntfy", forecast, state=_state)
     if getattr(args, "force_email", False):
         decision["send"] = True
         decision["reason"] = "forced (--force-email)"

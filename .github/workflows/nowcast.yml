@@ -118,7 +118,24 @@ jobs:
               exit 0
             fi
             git fetch origin main
-            git rebase origin/main || { git rebase --abort; echo "rebase conflict - abort publish"; exit 1; }
+            if ! git rebase origin/main; then
+              conflicted=$(git diff --name-only --diff-filter=U | sort | tr '\n' ' ')
+              git rebase --abort
+              # TWO ARMS, ONE FILE (2026-11-12): in active weather the
+              # launchd arm and this one both publish docs/nowcast.json
+              # every ~10 min. Losing that race used to FAIL the run here,
+              # before the dispatch steps below, so an over-the-curb
+              # nowcast waited 24 min for the hourly run to alert. The
+              # other arm's file is seconds old and already gate-checked:
+              # adopt it and carry on to the alert checks.
+              if [ "$conflicted" = "docs/nowcast.json " ]; then
+                git reset --hard origin/main
+                echo "::notice::nowcast publication superseded by the other scheduler arm; adopted its file"
+                exit 0
+              fi
+              echo "rebase conflict in: ${conflicted}- abort publish"
+              exit 1
+            fi
             python forecast/check_artifacts.py
             sleep 2
           done
@@ -148,8 +165,13 @@ jobs:
             echo "dispatch=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Runs on EVERY scheduled run, not only when this arm paid for radar
+      # (2026-11-12). It reads the COMMITTED docs/nowcast.json, which may
+      # have been published by the launchd arm: that arm watches radar
+      # unconditionally but has no way to dispatch, so its alertable
+      # nowcasts previously waited for the hourly forecast run. Stdlib
+      # only; stale or degraded radar still never dispatches.
       - name: Radar alert dispatch check
-        if: steps.gate.outputs.go == 'true'
         id: rac
         run: |
           set +e

@@ -122,10 +122,37 @@ class RadarDispatchCheckTests(unittest.TestCase):
     def test_event7_dispatches(self):
         self.assertEqual(self._run(_fresh_nc(), {}), 0)
 
-    def test_confirmed_sms_event_does_not_redispatch(self):
+    def test_confirmed_event_on_the_enabled_rail_does_not_redispatch(self):
+        self.assertEqual(
+            self._run(_fresh_nc(), {"imminent_channels": {"ntfy": {
+                "ts": "2026-08-07T22:35:00Z", "class": 3}}}), 3)
+
+    def test_retired_sms_marker_alone_does_not_stand_in_for_ntfy(self):
+        """2026-11-12: SMS retired (carrier gateway decommissioned). A
+        legacy SMS marker says nothing about whether the working rail has
+        alerted, so the dispatch still happens."""
         self.assertEqual(
             self._run(_fresh_nc(), {"sms_event": {
-                "ts": "2026-08-07T22:35:00Z", "class": 3}}), 3)
+                "ts": "2026-08-07T22:35:00Z", "class": 3}}), 0)
+
+    def test_sms_rail_still_works_when_listed(self):
+        with mock.patch.object(ff, "IMMINENT_CHANNELS", ("sms", "ntfy")):
+            # sms already sent this class, ntfy not yet: ntfy still dispatches
+            self.assertEqual(
+                self._run(_fresh_nc(), {"sms_event": {
+                    "ts": "2026-08-07T22:35:00Z", "class": 3}}), 0)
+            # both rails already sent: nothing to dispatch
+            self.assertEqual(
+                self._run(_fresh_nc(), {
+                    "sms_event": {"ts": "2026-08-07T22:35:00Z", "class": 3},
+                    "imminent_channels": {
+                        "sms": {"ts": "2026-08-07T22:35:00Z", "class": 3},
+                        "ntfy": {"ts": "2026-08-07T22:35:00Z", "class": 3}}}),
+                3)
+
+    def test_no_enabled_rail_never_dispatches(self):
+        with mock.patch.object(ff, "IMMINENT_CHANNELS", ()):
+            self.assertEqual(self._run(_fresh_nc(), {}), 3)
 
     def test_observed_signature_does_not_suppress_before_delivery(self):
         self.assertEqual(
@@ -136,8 +163,8 @@ class RadarDispatchCheckTests(unittest.TestCase):
         # signed at light earlier; now projecting severe -> dispatch
         self.assertEqual(
             self._run(_fresh_nc(),
-                      {"sms_event": {
-                          "ts": "2026-08-07T22:35:00Z", "class": 1}}), 0)
+                      {"imminent_channels": {"ntfy": {
+                          "ts": "2026-08-07T22:35:00Z", "class": 1}}}), 0)
 
     def test_stale_never_dispatches(self):
         self.assertEqual(

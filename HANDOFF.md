@@ -1,30 +1,20 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-11-12 13:30 EST (RAIN EVENT LIVE: Barnacle models street
-water over the curb, unverified; SMS channel dead; gate test inconclusive).** Rewrite wholesale each ship; <100 lines. BACKLOG
+**Snapshot: 2026-11-17 08:55 EST (quiet weather; SMS retired, ntfy only;
+alert-dispatch fixes shipped; rain over-call question open).** Rewrite wholesale each ship; <100 lines. BACKLOG
 OPEN LOOPS is authoritative.
 
-## Health check 2026-11-10 — repaired and verified
+## Health check 2026-11-10 and follow-ups — repaired and verified
 
-John asked for a health check six weeks into the break. Core production was
-healthy (1,011 hourly runs in 1,026 h, site current, v0.10.6, gate clean,
-alerts delivering). Three defects were fixed the same day; all class (c), no
-bump. The first two went out in `988e8197c` (CI green).
+Core production was healthy; defects fixed since (all class (c), no bump):
 
-- **Local launchd arm** had been dead since 2026-11-03T13:06Z: a Homebrew
-  upgrade removed python@3.14 under `~/.barnacle/venv`. Now self-healing:
-  `bin/ensure_local_venv.sh` rebuilds the environment when the interpreter is
-  gone or the checked-in locks change; the tick syncs the clone BEFORE that
-  check; the installer delegates to the helper. Installer re-run 13:42Z
-  (Python 3.15.2); first live tick pushed `673736215` at 13:43Z; public
-  nowcast.json refreshed. Rebuild failures retry hourly and log
-  `environment-rebuild-failed` in `~/.barnacle/logs/tick-status.jsonl`.
-- **Quiet heartbeat** is keyed to the ledger (`nowcast.quiet_heartbeat_due`,
-  50-minute gap per arm), not the wall-clock minute, in BOTH arms. First
-  GitHub run on the new workflow recorded `a3e27dff3` at 13:45Z. Expect about
-  one `gated-quiet heartbeat` commit an hour from GitHub in quiet weather,
-  and about one quiet local publish an hour while the Mac is awake.
-
+- **Local launchd arm** self-heals its Python environment
+  (`bin/ensure_local_venv.sh`; a Homebrew upgrade had killed it for a week).
+- **Quiet heartbeat** is keyed to the ledger (50-minute gap per arm), not
+  the wall-clock minute, in both arms.
+- **Alert dispatch** (2026-11-17): the radar alert check runs on every
+  GitHub nowcast run and a lost push race between the two arms no longer
+  fails the run before it can alert.
 - **Accuracy ledger** (`data/forecast_accuracy.csv`): the scorer recorded
   the "observed peak" before the tide finished rising. It now waits for the
   whole ±2 h window. All 166 rows were re-derived from NOAA and 109 corrected
@@ -45,15 +35,15 @@ street observation. Best evidence: Sep 28 09:06 EDT, corner dry in his photo
 with the bay 10.4 in over the grate (2026-09-28-e01). 2026-11-12: bay
 peaked +3.8 in over the grate at 09:30 EST; John looked at 10:50, after it
 fell back: no water, so not a direct test. **Give John the above-grate
-window in clock times next time. Rain began 10:50 on a falling tide: log
-any report under `assets/observations/2026-11-12/`.** No model change.
+window in clock times next time.** No model change.
 
 ## Waiting on John
 
-0. **SMS is dead**: Verizon decommissioned vtext.com; the 13:09 EST text on
-   2026-11-12 bounced. ntfy is the only working imminent channel. Also open:
-   the two nowcast arms race, which delayed that alert ~24 min (BACKLOG
-   OPEN LOOPS first item and `nowcast-arm-race-drops-alert-dispatch`).
+0. **Rain over-call?** Alerts on 2026-10-11 and 2026-11-12 ("+10", "+8 in
+   now") have no confirming observation; John saw "regular rain stuff" on
+   Nov 12 and worries skill dropped. Check not started: BACKLOG
+   `rain-nowcast-overcall-check`. SMS is retired (ntfy only,
+   `IMMINENT_CHANNELS`); the dispatch race is fixed (shipped 2026-11-17).
 1. **Local-arm failure detection** (proposed): watchdog pages when the tick
    log shows an hour of continuous failure. New page class, owner's call.
 2. **Rule 2 wording** (primary records vs derived scores) is John's to

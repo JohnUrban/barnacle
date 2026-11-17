@@ -29,6 +29,17 @@ to within 0.01 ft; whether its street call was right is still unobserved.
 
 ## Rain
 
+**What happened (added 2026-11-17):** the radar nowcast was active from
+11:12 EST and modeled street water from rain of 4.4 in at 11:27, 9.7 in at
+12:45 and 9.0 in at 14:10, with the bay far below the grates; a second,
+heavier burst in the evening (up to 2.8 in/hr) was modeled at 13–14 in
+around 18:40–19:00. Barnacle alerted at 13:09 ("+8 in now") and again at
+18:11. John's report at 14:55: "I don't think it flooded today. I looked
+out a couple times and did not see much but regular rain stuff... I
+definitely cannot confirm it did" `[STATED; times unstated]`. Nothing is
+recorded for the evening burst. So the midday model claim is unconfirmed
+and probably too high; the evening one is unobserved.
+
 Rain began about 10:50 EST on a falling tide (low tide mid-afternoon), with
 the gate last seen closed two days earlier. At the 15:08Z run Barnacle
 carried rain-flood risk "elevated" (about 1.3 in expected in 24 h; burst

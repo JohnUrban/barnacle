@@ -31,6 +31,31 @@ class NowcastWorkflowContractTests(unittest.TestCase):
         self.assertIn("for attempt in 1 2 3", block)
         self.assertIn("exit 1", block)
 
+    def test_radar_alert_check_runs_on_every_run(self):
+        """2026-11-12: the launchd arm publishes alertable nowcasts but
+        cannot dispatch; the check must read the committed file on every
+        scheduled run, including the ones where this arm skipped radar."""
+        start = self.text.index("- name: Radar alert dispatch check")
+        end = self.text.index("- name: Dispatch forecast workflow")
+        block = self.text[start:end]
+        self.assertNotIn("if:", block)
+        self.assertIn("python forecast/nowcast.py --radar-alert-check", block)
+
+    def test_lost_nowcast_push_race_adopts_the_other_arm_and_continues(self):
+        """2026-11-12 12:55 EST: a push race on docs/nowcast.json failed
+        the run before its dispatch steps and delayed the alert 24 min."""
+        commit = self.text.index("- name: Commit nowcast.json")
+        official = self.text.index("- name: Alert-ingest dispatch check")
+        block = self.text[commit:official]
+        self.assertIn("--diff-filter=U", block)
+        self.assertIn('[ "$conflicted" = "docs/nowcast.json " ]', block)
+        adopt = block.index("git reset --hard origin/main")
+        self.assertLess(block.index("git rebase --abort"), adopt)
+        self.assertIn("exit 0", block[adopt:adopt + 200])
+        # any OTHER conflict still fails the run
+        self.assertIn("abort publish", block)
+        self.assertIn("exit 1", block[block.index("abort publish"):])
+
     def test_quiet_gate_records_named_arm_without_heavy_install(self):
         gate = self.text.index("- name: Trigger check")
         install = self.text.index("- name: Install radar deps")

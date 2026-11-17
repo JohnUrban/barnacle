@@ -101,6 +101,12 @@ live obligation) → `BACKLOG.md` OPEN LOOPS. On a flood event:
    escalation), single-segment present-tense body, exempt from
    quiet-hours/cap SUPPRESSION (still counts); long-lead watch
    prose is ntfy/email territory (`evaluate_sms_gate`).
+   **SMS RETIRED (John, 2026-11-12):** Verizon decommissioned the
+   email-to-text gateway and every text bounced. ntfy alone carries
+   the imminent-impact alert under the same rules; enabled rails are
+   listed in `IMMINENT_CHANNELS`. Do not re-add SMS without a
+   transport whose delivery can be confirmed, and never write the
+   recipients' numbers in the repo.
 9. **Published-imagery privacy (standing rule, 2026-09-02).** The
    repo is public: before committing any photo, BLUR the face of
    every identifiable person EXCEPT John (he has standing consent to

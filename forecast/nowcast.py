@@ -649,8 +649,20 @@ def radar_alert_check(now_utc=None):
             state = json.load(f)
     except (OSError, ValueError):
         state = {}
-    gate = ff.evaluate_sms_gate(
-        {}, state=state, now_utc=now_utc, nowcast=nc, channel="sms")
+    # Ask every ENABLED imminent rail (2026-11-12: SMS retired, ntfy only).
+    # Asking a retired rail would dispatch on every alertable nowcast for
+    # ever, because nothing can ever mark its event as sent.
+    gate = None
+    for channel in ff.IMMINENT_CHANNELS:
+        candidate = ff.imminent_gate(
+            channel, {}, state=state, now_utc=now_utc, nowcast=nc)
+        if gate is None or candidate["send"]:
+            gate = candidate
+        if candidate["send"]:
+            break
+    if gate is None:
+        print("radar-alert: no imminent rail enabled")
+        return 3
     if not gate["send"]:
         print(f"radar-alert: {gate['reason']}")
         return 3
