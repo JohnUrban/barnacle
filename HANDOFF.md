@@ -1,7 +1,7 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-11-17 08:55 EST (quiet weather; SMS retired, ntfy only;
-alert-dispatch fixes shipped; rain over-call question open).** Rewrite wholesale each ship; <100 lines. BACKLOG
+**Snapshot: 2026-11-17 09:20 EST (quiet weather; SMS retired, ntfy only;
+dispatch fixes shipped; Nov 12 evening rain flood filed, a model hit).** Rewrite wholesale each ship; <100 lines. BACKLOG
 OPEN LOOPS is authoritative.
 
 ## Health check 2026-11-10 and follow-ups — repaired and verified
@@ -39,11 +39,12 @@ window in clock times next time.** No model change.
 
 ## Waiting on John
 
-0. **Rain over-call?** Alerts on 2026-10-11 and 2026-11-12 ("+10", "+8 in
-   now") have no confirming observation; John saw "regular rain stuff" on
-   Nov 12 and worries skill dropped. Check not started: BACKLOG
-   `rain-nowcast-overcall-check`. SMS is retired (ntfy only,
-   `IMMINENT_CHANNELS`); the dispatch race is fixed (shipped 2026-11-17).
+0. **Rain calls.** 2026-11-12 evening was a verified hit: lawn-step level
+   at 18:24 EST, modeled peak 13.4 vs 13.7 in observed, alert 12 min ahead
+   (episode 2026-11-12-e02; rise late, recession slow). Unconfirmed: the
+   same day's midday call and 2026-10-11 (BACKLOG
+   `rain-nowcast-overcall-check`). SMS retired (ntfy only); dispatch race
+   fixed (2026-11-17). e02 gauge archive, MRMS forcing, plots PENDING.
 1. **Local-arm failure detection** (proposed): watchdog pages when the tick
    log shows an hour of continuous failure. New page class, owner's call.
 2. **Rule 2 wording** (primary records vs derived scores) is John's to

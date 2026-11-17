@@ -36,9 +36,14 @@ heavier burst in the evening (up to 2.8 in/hr) was modeled at 13–14 in
 around 18:40–19:00. Barnacle alerted at 13:09 ("+8 in now") and again at
 18:11. John's report at 14:55: "I don't think it flooded today. I looked
 out a couple times and did not see much but regular rain stuff... I
-definitely cannot confirm it did" `[STATED; times unstated]`. Nothing is
-recorded for the evening burst. So the midday model claim is unconfirmed
-and probably too high; the evening one is unobserved.
+definitely cannot confirm it did" `[STATED; times unstated]`. So the midday
+model claim is unconfirmed and probably too high.
+
+**The evening burst DID flood the street** (added 2026-11-17 from John's
+note and photos): level with the lawn step at 18:24, +13.7 in over the SW
+grate, gone before 19:10. Barnacle's modeled peak was 13.4 in and its alert
+went out 12 minutes before his photos. Full record:
+[e02/README.md](e02/README.md).
 
 Rain began about 10:50 EST on a falling tide (low tide mid-afternoon), with
 the gate last seen closed two days earlier. At the 15:08Z run Barnacle

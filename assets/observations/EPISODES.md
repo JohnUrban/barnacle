@@ -40,3 +40,4 @@ IDs identify episodes, not independent storms. Historical sources remain at thei
 | [2026-09-28-e01](2026-09-28/e01/README.md) | Morning surge tide: corner dry in photo, gate closed (photos only) | negative_observation_window | — |
 | [2026-11-10-e01](2026-11-10/e01/README.md) | Tide-gate status check (closed; no flood) | infrastructure_status_check | — |
 | [2026-11-12-e01](2026-11-12/e01/README.md) | Post-peak check after a street-level morning tide: no water above grates; rain starting | negative_observation_window | — |
+| [2026-11-12-e02](2026-11-12/e02/README.md) | Evening rain flood: level with the lawn step at 18:24, gone before 19:10 | flood_episode | — |
