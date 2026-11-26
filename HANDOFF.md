@@ -1,7 +1,7 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-11-17 09:20 EST (quiet weather; SMS retired, ntfy only;
-dispatch fixes shipped; Nov 12 evening rain flood filed, a model hit).** Rewrite wholesale each ship; <100 lines. BACKLOG
+**Snapshot: 2026-11-26 10:00 EST (COASTAL STORM LIVE: street flooded ~09:40
+after an 8.27 ft morning peak; tonight's table says 8.6 ft; event support).** Rewrite wholesale each ship; <100 lines. BACKLOG
 OPEN LOOPS is authoritative.
 
 ## Health check 2026-11-10 and follow-ups — repaired and verified
@@ -37,6 +37,18 @@ peaked +3.8 in over the grate at 09:30 EST; John looked at 10:50, after it
 fell back: no water, so not a direct test. **Give John the above-grate
 window in clock times next time.** No model change.
 
+## LIVE 2026-11-26 — read first
+
+Morning bay peak 8.267 ft MLLW at 08:54 EST; street reported flooded from
+about 09:37, 43 min after the peak, no rain (delayed, gate suspected, not
+seen). Tonight 21:07 EST: tide table (NWS product) 8.6 ft, Barnacle's curve
+7.0 ft; plan on the table. Log every report at once:
+`assets/observations/2026-11-26/` (episode e01, in progress; PLAYBOOK
+hand-off items pending). Give John above-landmark windows in clock times.
+Queued development and evidence, nothing approved:
+`history/plans/2026-11-26-storm-evidence-and-queue.md` (includes an alert
+defect: `last_sent_rank` never resets, so escalation alerts cannot fire).
+
 ## Waiting on John
 
 0. **Rain calls.** 2026-11-12 evening was a verified hit: lawn-step level
@@ -49,14 +61,6 @@ window in clock times next time.** No model change.
    log shows an hour of continuous failure. New page class, owner's call.
 2. **Rule 2 wording** (primary records vs derived scores) is John's to
    write; AGENTS.md is unchanged.
-
-## During the break (2026-09-28 → 2026-11-10), from the ledgers
-
-Bay above the SW grate on 15 tides (Sep 28–30, Oct 11–13, Oct 21–24, Oct
-27–29, Nov 7); one SMS (Oct 11). Oct 21 PM reached 6.80 ft MLLW while the
-morning forecast said dry (surge built +0.57 → +1.96 ft).
-Heron's October 9 revisit passed without action. NOAA's verified Sep 26 bay
-crest: 8.805 ft MLLW, +0.14 ft on the preliminary (`sep26-verified-bay-peak`).
 
 ## Standing state from the 2026-09-28 stopping point (unchanged)
 
