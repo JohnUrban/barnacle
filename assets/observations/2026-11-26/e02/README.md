@@ -8,7 +8,7 @@ Registered 2026-11-26 21:53 EST while the water was still receding.
 step at 21:15 EST, about 6.08 ft NAVD88 (+30.7 in over the SW grate). The
 previous highest in the ledger was 5.70 ft on 2026-09-26 09:13 (12.25 in up
 from the porch-step base). The 6.08 figure is derived, not read: first step top 5.41 plus the
-taped 8 in riser (`assets/porch-measurements.txt`). The 20:59 note ("approx
+taped 8 in riser (`assets/porch-measurements.txt`). The 21:00 note ("approx
 7 inches ... almost level with second step") suggests the riser where the
 owner reads may be slightly under 8 in. OPEN: owner to measure it.
 
@@ -17,8 +17,8 @@ owner reads may be slightly under 8 in. OPEN: owner to measure it.
 - [flood-measurements.txt](../flood-measurements.txt), "EPISODE 2" block: the
   owner's running notes, pasted as one message at 21:49 EST, unchanged.
 - Ledger rows 283-295 and 298-300 (`data/labeled_observations.csv`, observer
-  john; 298 and 300 are the owner's corrections, superseding rows 285 and
-  286), correction row 296, bands for rows 283 and 284 in
+  john; 298, 300 and 301 are the owner's corrections, superseding rows 285,
+  286 and 292), correction row 296, bands for rows 283 and 284 in
   `data/observation_bounds.jsonl`; see the [episode registry](../../episodes.json).
 - [gauge-sources/](gauge-sources/README.md): raw preliminary NOAA pulls,
   Sandy Hook and The Battery.
@@ -39,7 +39,7 @@ preliminary 6-minute reading at or before the observation, NAVD88 = MLLW − 2.8
 | 20:52 | 4.25 in up the second-step wall | 5.76 | 6.26 | −0.49 |
 | 20:54 | 4.75 in, "coming in fast" | 5.81 | 6.39 | −0.59 |
 | 20:59 | 6 in | 5.91 | 6.39 (20:54) | −0.48 |
-| 20:59 (second entry) | approx 7 in, almost level with the second step | about 5.99 | 6.39 (20:54) / 6.15 (21:00) | −0.2 to −0.4 |
+| 21:00 or 21:01 | approx 7 in, almost level with the second step (owner corrected the time from 8:59 at 22:01, row 301 supersedes row 292) | about 5.99 | 6.15 (21:00) | about −0.15 |
 | 21:15 | level with the second step, barely breaching | about 6.08 | 6.08 (21:12) | 0.0 |
 | 21:20 | flow reversed; 6.5 in above the first step | 5.95 | 6.27 (21:18) | −0.32 |
 | 21:37 | still 6 in above the first step | 5.91 | 5.79 (21:36) | +0.12 |
@@ -61,8 +61,9 @@ restricted connection between bay and street (the closed tide gate is the
 suspect; its state was not observed today). This morning's flood showed the
 same lag (street onset about 43 min after the bay peak).
 
-Entry order: the owner corrected "8:11" to 8:21 (21:58), so 8:17 then 8:21 is
-the order as written. Still open: two entries carry 8:59.
+Entry order: the owner corrected "8:11" to 8:21 (21:58) and the second "8:59"
+to 9:00 or 9:01 (22:01, a copy/paste error). Both questions are closed. The
+water rose about an inch in one to two minutes at 20:59 to 21:01.
 
 ## What Barnacle said (first pass, from the published files)
 

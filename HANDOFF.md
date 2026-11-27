@@ -43,7 +43,7 @@ from "not above the curb" (19:16) to level with the SECOND porch step at
 by 21:20, 4 in above the first step at 21:54. The street ran up to a foot
 BELOW the bay on the rise and crested when the two met (gate suspected, not
 seen). Table and first-pass scoring: `assets/observations/2026-11-26/e02/`.
-Still open with John (rows 285-286 superseded by 298, 300): the second 8:59 time,
+Still open with John (rows 285, 286, 292 superseded by 298, 300, 301):
 the second-step riser, later readings, photos. PLAYBOOK items PENDING for
 both episodes (gauge re-pull, MRMS, plots). Log every report at once; give
 windows in clock times. Next tide 2026-11-27 09:23 EST.
