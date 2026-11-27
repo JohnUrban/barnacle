@@ -15,10 +15,10 @@ owner reads may be slightly under 8 in. OPEN: owner to measure it.
 ## Sources
 
 - [flood-measurements.txt](../flood-measurements.txt), "EPISODE 2" block: the
-  owner's running notes, pasted as one message at 21:49 EST, unchanged.
-- Ledger rows 283-295 and 298-300 (`data/labeled_observations.csv`, observer
-  john; 298, 300 and 301 are the owner's corrections, superseding rows 285,
-  286 and 292), correction row 296, bands for rows 283 and 284 in
+  owner's running notes (current version pasted 22:04 EST; the first paste
+  of 21:49 and his correction messages are kept below it as history).
+- Ledger rows 283-295 and 297 (`data/labeled_observations.csv`, observer
+  john), bands for rows 283 and 284 in
   `data/observation_bounds.jsonl`; see the [episode registry](../../episodes.json).
 - [gauge-sources/](gauge-sources/README.md): raw preliminary NOAA pulls,
   Sandy Hook and The Battery.
@@ -32,14 +32,14 @@ preliminary 6-minute reading at or before the observation, NAVD88 = MLLW − 2.8
 |---|---|---|---|---|
 | 19:16 | street filling near the curb, not above it | < 4.16 | 4.98 | below by > 0.8 |
 | 19:54 | over sidewalk, halfway up the lawn step | 4.33–4.66 (about 4.50) | 5.75 | −1.25 |
-| 20:17 | 3 in up the first porch step (by fingers; owner corrected 4 to 3 at 21:57, row 298 supersedes row 285) | about 4.93 | 6.06 | −1.13 |
-| 20:21 | 4 in up the first porch step (measured; owner corrected the time from 8:11 at 21:58, row 300 supersedes row 286) | 5.01 | 6.12 (20:18) | −1.10 |
+| 20:17 | about 3 in up the first porch step (by fingers) | about 4.93 | 6.06 | −1.13 |
+| 20:21 | 4 in up the first porch step (measured) | 5.01 | 6.12 (20:18) | −1.10 |
 | 20:30 | 6.85 in up the first porch step | 5.25 | 6.16 | −0.90 |
 | 20:37 | 1 in up the second-step wall | 5.49 | 6.25 | −0.76 |
 | 20:52 | 4.25 in up the second-step wall | 5.76 | 6.26 | −0.49 |
 | 20:54 | 4.75 in, "coming in fast" | 5.81 | 6.39 | −0.59 |
 | 20:59 | 6 in | 5.91 | 6.39 (20:54) | −0.48 |
-| 21:00 or 21:01 | approx 7 in, almost level with the second step (owner corrected the time from 8:59 at 22:01, row 301 supersedes row 292) | about 5.99 | 6.15 (21:00) | about −0.15 |
+| 21:00 or 21:01 | approx 7 in, almost level with the second step | about 5.99 | 6.15 (21:00) | about −0.15 |
 | 21:15 | level with the second step, barely breaching | about 6.08 | 6.08 (21:12) | 0.0 |
 | 21:20 | flow reversed; 6.5 in above the first step | 5.95 | 6.27 (21:18) | −0.32 |
 | 21:37 | still 6 in above the first step | 5.91 | 5.79 (21:36) | +0.12 |
@@ -61,9 +61,21 @@ restricted connection between bay and street (the closed tide gate is the
 suspect; its state was not observed today). This morning's flood showed the
 same lag (street onset about 43 min after the bay peak).
 
-Entry order: the owner corrected "8:11" to 8:21 (21:58) and the second "8:59"
-to 9:00 or 9:01 (22:01, a copy/paste error). Both questions are closed. The
-water rose about an inch in one to two minutes at 20:59 to 21:01.
+The water rose about an inch in one to two minutes at 20:59 to 21:01.
+
+## Record corrections (2026-11-26 22:06 EST, owner decision)
+
+The first paste had three entry errors, which the owner corrected the same
+evening: the 8:17 finger estimate (4 in, really about 3), a time typed as 8:11
+(really 8:21), and a second 8:59 (a copy/paste error; 9:00 or 9:01). They were
+first logged as extra "supersedes" rows. John then asked "Why not just get rid
+of the error?" and approved fixing the rows in place: rows 285, 286 and 292
+now carry the corrected values, the three duplicate rows are gone, and so is
+a correction row for two mistakes of the agent's own (a bay-peak figure from a
+half-sampled series and a logging time written before reading the clock),
+which are fixed in the rows instead. Nothing else in the ledger changed. The
+as-appended state is in git (commits 133c228bd through e48e4ac97) and the
+superseded wording is in the notes file.
 
 ## What Barnacle said (first pass, from the published files)
 
