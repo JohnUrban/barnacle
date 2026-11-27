@@ -124,3 +124,33 @@ today's crest and clearing times to say more.
   section 2 leans to "both, labeled")?
 - For item 5, do you want a second alert when a later tide the same day is
   forecast higher, even at the same severity word?
+
+## Evening addendum (2026-11-26 21:55 EST, first pass, flood still receding)
+
+Evidence from episode 2026-11-26-e02 (`assets/observations/2026-11-26/e02/README.md`).
+Nothing here is approved to build.
+
+1. **The live nowcast published no street level for a tide-driven flood.**
+   `street_now_in` was empty on every run from 17:11 to 20:47 EST while the
+   bay rose from 2.1 to 6.3 ft NAVD88 and the owner watched the water climb
+   from the curb to the second-step wall. The first value (+33.5 in) and the
+   live "porch" push came at 20:55 to 20:56, when radar rain reached 0.32
+   in/hr. Cause not traced `[INFERRED: the street estimate is rain-triggered]`.
+   Bears on queue item 5 (an imminent rule for tides).
+2. **Street is not bay on the rise.** Thirteen readings beside the gauge: the
+   street was 0.5 to 1.25 ft below the bay from 19:54 to 20:59, equal at
+   21:15, above it by 21:37. Barnacle shows bay level (plus rain) as street
+   level, so its day peak was 4.5 in high (35.2 vs 30.7 in over the SW grate)
+   and it was up to a foot high on the rise.
+   Same lag as the morning (onset 43 min after the bay peak). Bears on item 6
+   (gate) and on the open science item "gate transfer".
+3. **The NWS product under-called tonight:** 8.6 ft at ten hours, 8.2 from
+   15:07, 8.8 from 20:08; observed crest 9.0 to 9.2 ft (preliminary).
+   Barnacle's own curve said 7.3 to 7.5 ft at midday (4.48 to 4.66 ft NAVD88). Bears on items 3 and 4: the
+   product was the better of the two again, and still low.
+4. **One hourly run (14:06 EST) published a day peak of 8.05 ft NAVD88**,
+   between runs saying 4.6 and 5.3. Unexplained; trace before anything else
+   reads that field.
+5. **Second porch step** is not a landmark in `model/elevations.md`; tonight's
+   crest is anchored to it through `assets/porch-measurements.txt`.
+

@@ -1,8 +1,8 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-11-26 10:00 EST (COASTAL STORM LIVE: street flooded ~09:40
-after an 8.27 ft morning peak; tonight's table says 8.6 ft; event support).** Rewrite wholesale each ship; <100 lines. BACKLOG
-OPEN LOOPS is authoritative.
+**Snapshot: 2026-11-26 21:55 EST (COASTAL STORM LIVE: evening flood reached
+the second porch step, highest in the ledger; receding; event support).**
+Rewrite wholesale each ship; <100 lines. BACKLOG OPEN LOOPS is authoritative.
 
 ## Health check 2026-11-10 and follow-ups — repaired and verified
 
@@ -29,25 +29,27 @@ Core production was healthy; defects fixed since (all class (c), no bump):
 
 John found the Snug Harbor Beach gate closed at 08:33 EST (photo) and infers
 it never reopened after late September `[INFERRED]`. Barnacle is gate-blind:
-while it is closed, tidal street calls for the intersection are expected to
-be wrong. 15 tides since Sep 28 PM peaked above the SW grate, none with a
-street observation. Best evidence: Sep 28 09:06 EDT, corner dry in his photo
-with the bay 10.4 in over the grate (2026-09-28-e01). 2026-11-12: bay
-peaked +3.8 in over the grate at 09:30 EST; John looked at 10:50, after it
-fell back: no water, so not a direct test. **Give John the above-grate
-window in clock times next time.** No model change.
+tidal street calls are expected to be wrong while it is closed. Evidence:
+Sep 28 09:06 EDT corner dry with the bay 10.4 in over the grate
+(2026-09-28-e01); both 2026-11-26 floods lagged the bay. No model change.
 
 ## LIVE 2026-11-26 — read first
 
-Morning bay peak 8.267 ft MLLW at 08:54 EST; street reported flooded from
-about 09:37, 43 min after the peak, no rain (delayed, gate suspected, not
-seen). Tonight 21:07 EST: tide table (NWS product) 8.6 ft, Barnacle's curve
-7.0 ft; plan on the table. Log every report at once:
-`assets/observations/2026-11-26/` (episode e01, in progress; PLAYBOOK
-hand-off items pending). Give John above-landmark windows in clock times.
+Two floods, one storm. **e01 morning:** bay 8.267 ft MLLW at 08:54 EST, street
+flooded from about 09:37, no rain. **e02 evening:** bay crest 9.0 to 9.2 ft
+(preliminary, noisy; highest reading 9.211 at 20:54); John's 13 readings run
+from "not above the curb" (19:16) to level with the SECOND porch step at
+21:15 (about 6.08 ft NAVD88, derived from the taped 8 in riser), flow reversed
+by 21:20, 6 in above the first step at 21:37. The street ran up to a foot
+BELOW the bay on the rise and crested when the two met (gate suspected, not
+seen). Table and first-pass scoring: `assets/observations/2026-11-26/e02/`.
+Still open with John: order of his 8:11/8:17 entries, the second 8:59 time,
+the second-step riser, later readings, photos. PLAYBOOK items PENDING for
+both episodes (gauge re-pull, MRMS, plots). Log every report at once; give
+windows in clock times. Next tide 2026-11-27 09:23 EST.
 Queued development and evidence, nothing approved:
-`history/plans/2026-11-26-storm-evidence-and-queue.md` (includes an alert
-defect: `last_sent_rank` never resets, so escalation alerts cannot fire).
+`history/plans/2026-11-26-storm-evidence-and-queue.md` (alert defect
+`last_sent_rank`; evening addendum: late nowcast, street shown as bay level).
 
 ## Waiting on John
 
@@ -85,8 +87,8 @@ a band is not computable. Bay is not street.
 Spec `model/v0.10.6.md`. 36-h surge decay/fallback ladder; seven-day tails
 and as-issued rain skill experimental. 18 landmarks; hourly site/JSON;
 ~10-min radar nowcast from two arms (GitHub: trigger-gated; launchd:
-unconditional while the Mac is awake). SMS imminent impact; ntfy/email longer
-lead; alert tide horizon 48 h. Consult live inputs, not this snapshot.
+unconditional while the Mac is awake). ntfy imminent impact (SMS retired);
+ntfy/email longer lead; alert tide horizon 48 h. Consult live inputs, not this snapshot.
 
 ## Heron, wind-shadow, Tern — ownership unchanged
 

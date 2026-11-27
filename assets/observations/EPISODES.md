@@ -42,3 +42,4 @@ IDs identify episodes, not independent storms. Historical sources remain at thei
 | [2026-11-12-e01](2026-11-12/e01/README.md) | Post-peak check after a street-level morning tide: no water above grates; rain starting | negative_observation_window | — |
 | [2026-11-12-e02](2026-11-12/e02/README.md) | Evening rain flood: level with the lawn step at 18:24, gone before 19:10 | flood_episode | — |
 | [2026-11-26-e01](2026-11-26/e01/README.md) | Morning coastal surge flood (in progress at registration) | flood_episode | — |
+| [2026-11-26-e02](2026-11-26/e02/README.md) | Evening coastal surge flood with rain: level with the second porch step at 21:15, highest in the ledger | flood_episode | — |
