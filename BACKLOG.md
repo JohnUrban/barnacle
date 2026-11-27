@@ -20,13 +20,15 @@ fixed (local-arm self-heal, ledger-due quiet heartbeat: ledger lines of
 2026-11-10). The third is the next item. This is ops repair, not a new
 development round; the stopping point above otherwise stands.
 
-- [ ] **Audit 2026-11-26-a1: full audit, report 01 filed, AWAITING INDEPENDENT REPLY.**
-      `audits/2026-11-26-a1/01-full-audit-claude-fable-5-2.md` (Claude Fable 5.2,
-      2026-11-26 23:36 EST) with five sweep reports and two owner screenshots.
-      Findings only; nothing fixed; no implementer assigned. John will pass it
-      to Codex for the reply (`02-…`), then decide who implements what. Eight
-      owner decisions are listed in its section 4. It is the authoritative
-      list of defects; the storm plan below is its evidence record.
+- [ ] **Full audit reviewed. Prioritize remediation and owner decisions.**
+      [Merged audit and independent reply](audits/2026-11-26-a1/02-merged-audit-sounding.md)
+      evaluates Fable's 82 items and incorporates Sounding's
+      [independent pass and worktree inventory](audits/2026-11-27-a1/01-independent-sounding.md).
+      First priorities are gauge quality before persistence, alert escalation,
+      conflicting household headlines and published-photo privacy. The audit
+      identifies the archived photo privately to John. See the merged repair
+      order and evidence limits before assigning changes. Additional findings
+      are open to independent review. Production remains v0.10.6.
 - [ ] **2026-11-26 storm: queued work and evidence (nothing approved to build).**
       `history/plans/2026-11-26-storm-evidence-and-queue.md`, an addendum to
       the 2026-09-25 storm follow-up plan. Six queued items: the
@@ -1010,3 +1012,5 @@ all findings verified — see audits/2026-08-03-a2/)**
 2026-11-26 | FACT | owner-finding-main-page-vs-seven-day | John, 22:27 EST, with two screenshots (audits/2026-11-26-a1/01-owner-screenshot-*.png): 'The main page shows the next high tide to be as bad as this one. The seven day outlook shows a completely different picture with the next high tide (i.e tomorrow morning) being much lower. The cards on the main page and 7-day page have the same inconsistency.' Checked against docs/forecast.json generated 2026-11-27T03:09:44Z: water_series (main chart, 'Tide + surge') peaks at 5.954 ft NAVD88 = +29.2 in over the SW grate at 2026-11-27 09:30; the tide table for the same tide (NWS product, the red diamond and the seven-day curve) is 6.9 ft MLLW = +6.7 in, curb 0. Gauge at the time: surge over astronomical fell from 4.33 ft (20:30) to 3.44 ft (22:18), about 0.5 ft/hr, faster than the 36-h fade the main curve assumes (about 2.9 ft still left at 09:30). For audit 2026-11-26-a1. Logged 22:28 [STATED for the report; VERIFIED for the numbers]
 2026-11-26 | FACT | owner-finding-widget-follows-main-page | John, 22:28 EST, adding to owner-finding-main-page-vs-seven-day: 'The widget shows what the main page shows, not the 7-day page.' So for the 2026-11-27 09:23 tide the main chart, the main-page cards and the widget carry Barnacle's own surge curve (about +29 in over the SW grate), while the seven-day chart and its cards carry the NWS-product number (about +7 in). For audit 2026-11-26-a1. Logged 23:16 [STATED]
 2026-11-26 | OPEN | audit-2026-11-26-a1-report-filed | report 01 of the full audit John requested at 22:10 EST: audits/2026-11-26-a1/01-full-audit-claude-fable-5-2.md, with sweep reports 01-sweep-{alerts,forecast,ops,records,surfaces}.md, probe scripts and John's two screenshots. Eight themes; the lead re-checked nine items (table in section 1), the rest is as reported by read-only subagents of the same session and awaits the independent reply. Explains the 14:06 EST 8.05 ft value (bad gauge readings taken as a +7.22 ft surge) and traces the silent nowcast (street level computed only when radar rain exceeds 0.3 in/hr). Corrects the lead's line alert-last-sent-rank-never-resets: stuck since 2026-09-25, with four candidate missed escalations. Nothing fixed. Filed 23:36 EST [VERIFIED for the nine re-checked items; otherwise INFERRED until replied to]
+2026-11-27 | DONE | full-audit-independent-reply | Sounding (Codex) froze an independent pass at 24ff1ec90, investigated all seven sibling worktrees, then checked Fable's O/FC/AL/OP/DD/UX findings individually. See audits/2026-11-26-a1/02-merged-audit-sounding.md for the combined ranking and qualifiers. Three escalation episodes lack a recorded base upgrade. The September case was delayed and acknowledged at 00421cb78. Remediation and owner policy decisions remain open. [VERIFIED]
+2026-11-27 | FACT | wind-shadow-interim | Frozen c2 evaluator on 24ff1ec90 at 13:07:42Z, 1,534 opportunities, 494 candidate, 1,021 fallback, 19 missing. Four completed episodes scorable at 24/30 h. Interim. NOAA source bundle and report under audits/2026-11-27-a1/. Heron remains a separate branch with an episode-aware evaluation outstanding. [VERIFIED]
