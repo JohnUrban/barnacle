@@ -1,6 +1,6 @@
 # HANDOFF — Bay Ave Barnacle in two minutes
 
-**Snapshot: 2026-11-26 21:55 EST (COASTAL STORM LIVE: evening flood reached
+**Snapshot: 2026-11-26 23:36 EST (COASTAL STORM LIVE: evening flood reached
 the second porch step, highest in the ledger; receding; event support).**
 Rewrite wholesale each ship; <100 lines. BACKLOG OPEN LOOPS is authoritative.
 
@@ -47,9 +47,9 @@ Entry errors were fixed IN PLACE by owner decision (e02 README). Still open:
 the second-step riser, later readings, photos. PLAYBOOK items PENDING for
 both episodes (gauge re-pull, MRMS, plots). Log every report at once; give
 windows in clock times. Next tide 2026-11-27 09:23 EST.
-Queued development and evidence, nothing approved:
-`history/plans/2026-11-26-storm-evidence-and-queue.md` (alert defect
-`last_sent_rank`; evening addendum: late nowcast, street shown as bay level).
+**FULL AUDIT filed, awaiting Codex's reply:** `audits/2026-11-26-a1/` (report
+01; nothing fixed; eight owner decisions in its section 4). Storm evidence:
+`history/plans/2026-11-26-storm-evidence-and-queue.md`.
 
 ## Waiting on John
 

@@ -149,8 +149,15 @@ Nothing here is approved to build.
    Barnacle's own curve said 7.3 to 7.5 ft at midday (4.48 to 4.66 ft NAVD88). Bears on items 3 and 4: the
    product was the better of the two again, and still low.
 4. **One hourly run (14:06 EST) published a day peak of 8.05 ft NAVD88**,
-   between runs saying 4.6 and 5.3. Unexplained; trace before anything else
-   reads that field.
+   between runs saying 4.6 and 5.3. Explained by audit 2026-11-26-a1 finding
+   FC-1: bad gauge readings at the end of the series were taken as a +7.22 ft
+   surge, with no plausibility guard.
 5. **Second porch step** is not a landmark in `model/elevations.md`; tonight's
    crest is anchored to it through `assets/porch-measurements.txt`.
 
+## Audit pointer (2026-11-26 23:20 EST)
+
+The full audit John asked for is `audits/2026-11-26-a1/01-full-audit-claude-fable-5-2.md`.
+It supersedes this file as the list of what needs fixing: the six queue items
+above map to its themes T1 (items 2, 4), T5 (items 1, 5), T7/T8 (item 3) and
+T4 (item 6). This file remains the evidence record for the storm.

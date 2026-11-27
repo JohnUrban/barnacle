@@ -88,7 +88,8 @@ superseded wording is in the notes file.
 - **Barnacle's own water curve** (day peak, NAVD88): 4.5 to 4.7 at midday (lawn
   step), 5.3 to 5.75 from 15:00 to 18:00 (around the first porch step), 5.99 at
   19:20, 6.17 at 20:08, 6.36 at 20:56. Observed street crest about 6.08. One
-  run (14:06 EST) published 8.05, unexplained, to be traced.
+  run (14:06 EST) published 8.05: a burst of bad gauge readings taken as a
+  +7.22 ft surge (audit 2026-11-26-a1, finding FC-1).
 - **Live radar nowcast:** published no street level until 20:55 EST, when the
   water was already 4.75 in up the second-step wall; the live "porch" push went
   out at 20:56. It then showed +31.5 to +35.1 in (bay level plus rain) against
