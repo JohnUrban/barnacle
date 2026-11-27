@@ -36,11 +36,11 @@ Sep 28 09:06 EDT corner dry with the bay 10.4 in over the grate
 ## LIVE 2026-11-26 — read first
 
 Two floods, one storm. **e01 morning:** bay 8.267 ft MLLW at 08:54 EST, street
-flooded from about 09:37, no rain. **e02 evening:** bay crest 9.0 to 9.2 ft
+flooded from about 09:37, about lawn-step level (recollection), no rain. **e02 evening:** bay crest 9.0 to 9.2 ft
 (preliminary, noisy; highest reading 9.211 at 20:54); John's 13 readings run
 from "not above the curb" (19:16) to level with the SECOND porch step at
 21:15 (about 6.08 ft NAVD88, derived from the taped 8 in riser), flow reversed
-by 21:20, 6 in above the first step at 21:37. The street ran up to a foot
+by 21:20, 4 in above the first step at 21:54. The street ran up to a foot
 BELOW the bay on the rise and crested when the two met (gate suspected, not
 seen). Table and first-pass scoring: `assets/observations/2026-11-26/e02/`.
 Still open with John: order of his 8:11/8:17 entries, the second 8:59 time,

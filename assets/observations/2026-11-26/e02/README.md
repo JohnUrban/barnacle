@@ -16,8 +16,8 @@ owner reads may be slightly under 8 in. OPEN: owner to measure it.
 
 - [flood-measurements.txt](../flood-measurements.txt), "EPISODE 2" block: the
   owner's running notes, pasted as one message at 21:49 EST, unchanged.
-- Ledger rows 283-295 (`data/labeled_observations.csv`, observer john),
-  correction row 296, bands for rows 283 and 284 in
+- Ledger rows 283-295 and 298-299 (`data/labeled_observations.csv`, observer
+  john; 298 is the owner's correction of the 8:17 entry), correction row 296, bands for rows 283 and 284 in
   `data/observation_bounds.jsonl`; see the [episode registry](../../episodes.json).
 - [gauge-sources/](gauge-sources/README.md): raw preliminary NOAA pulls,
   Sandy Hook and The Battery.
@@ -32,7 +32,7 @@ preliminary 6-minute reading at or before the observation, NAVD88 = MLLW − 2.8
 | 19:16 | street filling near the curb, not above it | < 4.16 | 4.98 | below by > 0.8 |
 | 19:54 | over sidewalk, halfway up the lawn step | 4.33–4.66 (about 4.50) | 5.75 | −1.25 |
 | 20:11 | 4 in up the first porch step (measured) | 5.01 | 5.99 | −0.98 |
-| 20:17 | 4 in up the first porch step (by fingers) | about 5.01 | 6.06 | −1.05 |
+| 20:17 | 3 in up the first porch step (by fingers; owner corrected 4 to 3 at 21:57, row 298 supersedes row 285) | about 4.93 | 6.06 | −1.13 |
 | 20:30 | 6.85 in up the first porch step | 5.25 | 6.16 | −0.90 |
 | 20:37 | 1 in up the second-step wall | 5.49 | 6.25 | −0.76 |
 | 20:52 | 4.25 in up the second-step wall | 5.76 | 6.26 | −0.49 |
@@ -42,6 +42,7 @@ preliminary 6-minute reading at or before the observation, NAVD88 = MLLW − 2.8
 | 21:15 | level with the second step, barely breaching | about 6.08 | 6.08 (21:12) | 0.0 |
 | 21:20 | flow reversed; 6.5 in above the first step | 5.95 | 6.27 (21:18) | −0.32 |
 | 21:37 | still 6 in above the first step | 5.91 | 5.79 (21:36) | +0.12 |
+| 21:54 | down to 4 in above the first step | 5.74 | 5.65 (21:48) | +0.09 |
 
 The Sandy Hook series is noisy at the crest (9.0 to 9.2 ft MLLW from 20:24 to
 21:18, highest reading 9.211 at 20:54; The Battery is smooth, peak 8.556 at
@@ -59,8 +60,9 @@ restricted connection between bay and street (the closed tide gate is the
 suspect; its state was not observed today). This morning's flood showed the
 same lag (street onset about 43 min after the bay peak).
 
-Entry-order questions put to the owner, not resolved here: the 8:17 entry is
-listed before the 8:11 entry, and two entries carry 8:59.
+Entry-order questions put to the owner, not resolved here: the 8:17 entry
+(now 3 in) is listed before the 8:11 entry (4 in), which fits an earlier true
+time; and two entries carry 8:59.
 
 ## What Barnacle said (first pass, from the published files)
 
