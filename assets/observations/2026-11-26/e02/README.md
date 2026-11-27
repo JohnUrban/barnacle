@@ -16,8 +16,9 @@ owner reads may be slightly under 8 in. OPEN: owner to measure it.
 
 - [flood-measurements.txt](../flood-measurements.txt), "EPISODE 2" block: the
   owner's running notes, pasted as one message at 21:49 EST, unchanged.
-- Ledger rows 283-295 and 298-299 (`data/labeled_observations.csv`, observer
-  john; 298 is the owner's correction of the 8:17 entry), correction row 296, bands for rows 283 and 284 in
+- Ledger rows 283-295 and 298-300 (`data/labeled_observations.csv`, observer
+  john; 298 and 300 are the owner's corrections, superseding rows 285 and
+  286), correction row 296, bands for rows 283 and 284 in
   `data/observation_bounds.jsonl`; see the [episode registry](../../episodes.json).
 - [gauge-sources/](gauge-sources/README.md): raw preliminary NOAA pulls,
   Sandy Hook and The Battery.
@@ -31,8 +32,8 @@ preliminary 6-minute reading at or before the observation, NAVD88 = MLLW − 2.8
 |---|---|---|---|---|
 | 19:16 | street filling near the curb, not above it | < 4.16 | 4.98 | below by > 0.8 |
 | 19:54 | over sidewalk, halfway up the lawn step | 4.33–4.66 (about 4.50) | 5.75 | −1.25 |
-| 20:11 | 4 in up the first porch step (measured) | 5.01 | 5.99 | −0.98 |
 | 20:17 | 3 in up the first porch step (by fingers; owner corrected 4 to 3 at 21:57, row 298 supersedes row 285) | about 4.93 | 6.06 | −1.13 |
+| 20:21 | 4 in up the first porch step (measured; owner corrected the time from 8:11 at 21:58, row 300 supersedes row 286) | 5.01 | 6.12 (20:18) | −1.10 |
 | 20:30 | 6.85 in up the first porch step | 5.25 | 6.16 | −0.90 |
 | 20:37 | 1 in up the second-step wall | 5.49 | 6.25 | −0.76 |
 | 20:52 | 4.25 in up the second-step wall | 5.76 | 6.26 | −0.49 |
@@ -60,9 +61,8 @@ restricted connection between bay and street (the closed tide gate is the
 suspect; its state was not observed today). This morning's flood showed the
 same lag (street onset about 43 min after the bay peak).
 
-Entry-order questions put to the owner, not resolved here: the 8:17 entry
-(now 3 in) is listed before the 8:11 entry (4 in), which fits an earlier true
-time; and two entries carry 8:59.
+Entry order: the owner corrected "8:11" to 8:21 (21:58), so 8:17 then 8:21 is
+the order as written. Still open: two entries carry 8:59.
 
 ## What Barnacle said (first pass, from the published files)
 
